@@ -1,0 +1,91 @@
+:root {
+  font-family: system-ui, sans-serif;
+  color: #172033;
+  background: #eef2f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.page {
+  width: min(640px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 64px 0;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 42px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.panel {
+  margin-top: 24px;
+  padding: 24px;
+  background: white;
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(30 50 80 / 8%);
+}
+
+form {
+  display: grid;
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 600;
+}
+
+input {
+  padding: 10px;
+  border: 1px solid #aab6c6;
+  border-radius: 4px;
+  font: inherit;
+}
+
+button {
+  width: fit-content;
+  padding: 10px 16px;
+  color: white;
+  background: #2457a6;
+  border: 0;
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #1b4381;
+}
+
+#backend-status {
+  color: #176b43;
+  font-weight: 600;
+}
+
+#login-message {
+  min-height: 24px;
+}
+
+.home-page {
+  min-height: 100vh;
+  padding: 64px 32px;
+  color: white;
+  background-image:
+    linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%)),
+    url("/HomeWizard.png");
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
