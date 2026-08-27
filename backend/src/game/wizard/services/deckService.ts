@@ -38,6 +38,10 @@ export class DeckService {
 	}
 	}
 
+  getCards(): Card[] {
+    return [...this.cards];
+  }
+
   draw(): Card | undefined {
     return this.cards.pop();
   }

@@ -1,11 +1,3 @@
-export interface Room {
-  id: number;
-  name: string;
-  maxPlayers: number;
-  players: string[];
-  status: "waiting" | "playing";
-}
-
 import type { Card } from "./card.js";
 
 export interface Room {
@@ -43,4 +35,5 @@ export interface WizardGameState {
   trumpCard: Card | null;
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
+  deck: Card[];
 }
