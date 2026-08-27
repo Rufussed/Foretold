@@ -1,10 +1,10 @@
 import type { FastifyInstance } from "fastify";
-import { wizardGameManager } from "../services/wizardGameManager.js";
+import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 
 export default async function wizardRoutes(server: FastifyInstance): Promise<void> {
   server.get("/lobby", async () => {
     return {
-      rooms: wizardGameManager.getRooms(),
+      rooms: wizardLobbyManager.getRooms(),
     };
   });
 
@@ -16,17 +16,24 @@ export default async function wizardRoutes(server: FastifyInstance): Promise<voi
     }
 
     const body = request.body as { name?: string };
-    const tokenUser = request.user as { sub?: number };
+    const tokenUser = request.user as {
+      sub?: number;
+      username?: string;
+    };
 
     if (!body.name || body.name.trim() === "") {
       return reply.status(400).send({ error: "Room name is required" });
     }
 
-    if (!tokenUser.sub) {
+    if (!tokenUser.sub || !tokenUser.username) {
       return reply.status(401).send({ error: "User identity missing" });
     }
 
-    const room = wizardGameManager.createRoom(body.name.trim(), Number(tokenUser.sub));
+    const room = wizardLobbyManager.createRoom(
+      body.name.trim(),
+      Number(tokenUser.sub),
+      tokenUser.username,
+    );
 
     return reply.send(room);
   });
@@ -49,7 +56,7 @@ export default async function wizardRoutes(server: FastifyInstance): Promise<voi
       return reply.status(401).send({ error: "User identity missing" });
     }
 
-    const room = wizardGameManager.joinRoom(body.roomId, tokenUser.username);
+    const room = wizardLobbyManager.joinRoom(body.roomId, tokenUser.username);
 
     if (!room) {
       return reply.status(400).send({ error: "Could not join room" });

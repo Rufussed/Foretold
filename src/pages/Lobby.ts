@@ -55,7 +55,7 @@ export function renderLobbyPage(container: HTMLElement): void {
 
     roomList.innerHTML = data.rooms
       .map(
-        (room: { id: string; name: string; players: string[]; maxPlayers: number }) =>
+        (room: { id: number; name: string; players: string[]; maxPlayers: number }) =>
           `
             <div class="panel">
               <h3>${room.name}</h3>
@@ -68,7 +68,13 @@ export function renderLobbyPage(container: HTMLElement): void {
 
     roomList.querySelectorAll<HTMLButtonElement>("[data-room-id]").forEach((button) => {
       button.addEventListener("click", async () => {
-        const roomId = button.dataset.roomId;
+        const roomIdValue = button.dataset.roomId;
+      
+        if (!roomIdValue) {
+          return;
+         }
+      
+        const roomId = Number(roomIdValue);
 
         if (!roomId) return;
 

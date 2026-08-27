@@ -13,7 +13,7 @@ interface PlayerRow {
   username: string;
 }
 
-class WizardGameManager {
+class WizardLobbyManager {
   private getRoomPlayers(roomId: number): string[] {
     const rows = db
       .prepare(
@@ -71,7 +71,11 @@ class WizardGameManager {
     return this.mapRoom(row);
   }
 
-  createRoom(name: string, createdBy: number): Room {
+  createRoom(
+    name: string,
+    createdBy: number,
+    username: string,
+  ): Room {
     const result = db
       .prepare(
         `
@@ -82,6 +86,13 @@ class WizardGameManager {
       .run(name, createdBy);
 
     const roomId = Number(result.lastInsertRowid);
+
+    db.prepare(
+      `
+        INSERT INTO room_players (room_id, user_id, username)
+        VALUES (?, ?, ?)
+      `,
+    ).run(roomId, createdBy, username);
 
     return this.getRoomById(roomId) as Room;
   }
@@ -126,4 +137,4 @@ class WizardGameManager {
   }
 }
 
-export const wizardGameManager = new WizardGameManager();
+export const wizardLobbyManager = new WizardLobbyManager();
