@@ -17,19 +17,20 @@ function renderCurrentRoute(container: HTMLElement): void {
     return;
   }
 
-  renderHomePage(container);
-
+  
   if (route === "#/lobby") {
     const token = localStorage.getItem("wizardToken");
-  
+    
     if (!token) {
       window.location.hash = "#/home";
       return;
     }
-  
+    
     renderLobbyPage(container);
     return;
   }
+
+  renderHomePage(container);
 }
 
 export function startRouter(container: HTMLElement): void {

@@ -16,12 +16,17 @@ export default async function wizardRoutes(server: FastifyInstance): Promise<voi
     }
 
     const body = request.body as { name?: string };
+    const tokenUser = request.user as { sub?: number };
 
     if (!body.name || body.name.trim() === "") {
       return reply.status(400).send({ error: "Room name is required" });
     }
 
-    const room = wizardGameManager.createRoom(body.name.trim());
+    if (!tokenUser.sub) {
+      return reply.status(401).send({ error: "User identity missing" });
+    }
+
+    const room = wizardGameManager.createRoom(body.name.trim(), Number(tokenUser.sub));
 
     return reply.send(room);
   });
@@ -33,13 +38,18 @@ export default async function wizardRoutes(server: FastifyInstance): Promise<voi
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
-    const body = request.body as { roomId?: string; username?: string };
+    const body = request.body as { roomId?: number };
+    const tokenUser = request.user as { username?: string };
 
-    if (!body.roomId || !body.username) {
-      return reply.status(400).send({ error: "roomId and username are required" });
+    if (!body.roomId) {
+      return reply.status(400).send({ error: "roomId is required" });
     }
 
-    const room = wizardGameManager.joinRoom(body.roomId, body.username);
+    if (!tokenUser.username) {
+      return reply.status(401).send({ error: "User identity missing" });
+    }
+
+    const room = wizardGameManager.joinRoom(body.roomId, tokenUser.username);
 
     if (!room) {
       return reply.status(400).send({ error: "Could not join room" });

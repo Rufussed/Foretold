@@ -2,7 +2,7 @@ export function renderNavbar(container: HTMLElement, isLoggedIn: boolean): void 
   container.innerHTML = `
     <nav class="navbar">
       <a href="#/home">Home</a>
-      <a href="#/lobby">Lobby</a>
+      ${isLoggedIn ? '<a href="#/lobby">Lobby</a>' : ""}
       ${isLoggedIn ? '<a href="#/profile">Profile</a>' : ""}
       ${isLoggedIn ? '<button type="button" id="navbar-logout">Log out</button>' : ""}
     </nav>

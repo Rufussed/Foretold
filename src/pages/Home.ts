@@ -4,7 +4,7 @@ import {
   logout,
   register,
 } from "../services/auth";
-import { renderNavbar } from "../components/Navbar";
+
 
 export function renderHomePage(container: HTMLElement): void {
   const token = localStorage.getItem("wizardToken");

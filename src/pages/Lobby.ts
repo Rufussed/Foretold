@@ -1,4 +1,5 @@
 const API_BASE = "http://127.0.0.1:3000";
+import { getCurrentUser } from "../services/auth";
 
 export function renderLobbyPage(container: HTMLElement): void {
   const token = localStorage.getItem("wizardToken");
@@ -71,21 +72,26 @@ export function renderLobbyPage(container: HTMLElement): void {
 
         if (!roomId) return;
 
-        const response = await fetch(`${API_BASE}/wizard/lobby/join`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            roomId,
-            username: "player-temp",
-          }),
-        });
+        try {
+          const user = await getCurrentUser();
 
-        if (response.ok) {
-          alert("Joined room");
-          await loadRooms();
+          const response = await fetch(`${API_BASE}/wizard/lobby/join`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              roomId,
+            }),
+          });
+
+          if (response.ok) {
+            await loadRooms();
+          }
+        } catch (error) {
+          console.error("Could not join room:", error);
+          window.location.hash = "#/home";
         }
       });
     });
