@@ -57,5 +57,6 @@ export interface PublicWizardGameState {
   trumpCard: Card | null;
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
+  phase: "predictions" | "playing" | "finished";
   deckCount: number;
 }

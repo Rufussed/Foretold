@@ -329,6 +329,7 @@ export class WizardGameService {
       trumpCard: game.trumpCard,
       currentTrick: game.currentTrick,
       status: game.status,
+      phase: game.phase,
       deckCount: game.deck.length,
     };
   }

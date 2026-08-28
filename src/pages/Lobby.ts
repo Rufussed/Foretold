@@ -59,6 +59,7 @@ export function renderLobbyPage(container: HTMLElement): void {
           `
             <div class="panel">
               <h3>${room.name}</h3>
+              <p>Room ID: ${room.id}</p>
               <p>${room.players.length}/${room.maxPlayers} players</p>
               <button type="button" data-room-id="${room.id}">Join</button>
             </div>
