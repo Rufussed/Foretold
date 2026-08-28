@@ -1,7 +1,33 @@
 import type { FastifyInstance } from "fastify";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
+import { WizardGameService } from "../services/wizardGameService.js";
+import { wizardSessionManager } from "../services/wizardSessionManager.js";
 
-export default async function wizardRoutes(server: FastifyInstance): Promise<void> {
+interface CreateGameBody {
+  roomId?: number;
+}
+
+interface PredictionBody {
+  prediction?: number;
+}
+
+interface PlayCardBody {
+  cardIndex?: number;
+}
+
+function getAuthenticatedUsername(request: {
+  user: unknown;
+}): string | null {
+  const tokenUser = request.user as { username?: string };
+
+  return tokenUser.username ?? null;
+}
+
+export default async function wizardRoutes(
+  server: FastifyInstance,
+): Promise<void> {
+  const wizardGameService = new WizardGameService();
+
   server.get("/lobby", async () => {
     return {
       rooms: wizardLobbyManager.getRooms(),
@@ -22,11 +48,15 @@ export default async function wizardRoutes(server: FastifyInstance): Promise<voi
     };
 
     if (!body.name || body.name.trim() === "") {
-      return reply.status(400).send({ error: "Room name is required" });
+      return reply.status(400).send({
+        error: "Room name is required",
+      });
     }
 
     if (!tokenUser.sub || !tokenUser.username) {
-      return reply.status(401).send({ error: "User identity missing" });
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
     }
 
     const room = wizardLobbyManager.createRoom(
@@ -46,22 +76,258 @@ export default async function wizardRoutes(server: FastifyInstance): Promise<voi
     }
 
     const body = request.body as { roomId?: number };
-    const tokenUser = request.user as { username?: string };
+    const username = getAuthenticatedUsername(request);
 
+    if (!username) {
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
+    }
+    
     if (!body.roomId) {
-      return reply.status(400).send({ error: "roomId is required" });
+      return reply.status(400).send({
+        error: "roomId is required",
+      });
     }
 
-    if (!tokenUser.username) {
-      return reply.status(401).send({ error: "User identity missing" });
-    }
-
-    const room = wizardLobbyManager.joinRoom(body.roomId, tokenUser.username);
+    const room = wizardLobbyManager.joinRoom(body.roomId, username);
 
     if (!room) {
-      return reply.status(400).send({ error: "Could not join room" });
+      return reply.status(400).send({
+        error: "Could not join room",
+      });
     }
 
     return reply.send(room);
+  });
+
+  server.post("/games", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const body = request.body as CreateGameBody;
+    const username = getAuthenticatedUsername(request);
+
+    if (!username) {
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
+    }
+
+    if (!body.roomId) {
+      return reply.status(400).send({
+        error: "roomId is required",
+      });
+    }
+    
+    if (wizardSessionManager.hasGame(body.roomId)) {
+      return reply.status(409).send({
+        error: "A game already exists for this room",
+      });
+    }
+    
+    const room = wizardLobbyManager.getRoomById(body.roomId);
+    
+    if (!room) {
+      return reply.status(404).send({
+        error: "Room not found",
+      });
+    }
+
+    if (!room.players.includes(username)) {
+      return reply.status(403).send({
+        error: "You are not a member of this room",
+      });
+    }
+    
+    if (room.players.length < 3 || room.players.length > 6) {
+      return reply.status(400).send({
+        error: "A Wizard game requires 3 to 6 players",
+      });
+    }
+
+    try {
+      const game = wizardGameService.createGame(
+        room.id,
+        room.players,
+      );
+      
+      game.status = "playing";
+      wizardSessionManager.saveGame(game);
+      
+      return reply.status(201).send(
+        wizardGameService.getPublicGameState(game, username),
+      );
+    } catch (error) {
+      return reply.status(400).send({
+        error: error instanceof Error
+        ? error.message
+        : "Could not create game",
+      });
+    }
+  });
+  
+  server.get("/games/:roomId", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    
+    const params = request.params as { roomId?: string };
+    const roomId = Number(params.roomId);
+    const username = getAuthenticatedUsername(request);
+
+    if (!username) {
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
+    }
+
+    
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({
+        error: "Invalid room ID",
+      });
+    }
+    
+    const game = wizardSessionManager.getGame(roomId);
+    
+    if (!game) {
+      return reply.status(404).send({
+        error: "Game not found",
+      });
+    }
+    
+    const isPlayer = game.players.some(
+      (player) => player.username === username,
+    );
+    
+    if (!isPlayer) {
+      return reply.status(403).send({
+        error: "You are not a player in this game",
+      });
+    }
+
+    return reply.send(
+      wizardGameService.getPublicGameState(game, username),
+    );
+  });
+  
+  server.post("/games/:roomId/predictions", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+    
+    const params = request.params as { roomId?: string };
+    const body = request.body as PredictionBody;
+    const roomId = Number(params.roomId);
+    const username = getAuthenticatedUsername(request);
+    
+    if (!username) {
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
+    }
+
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({
+        error: "Invalid room ID",
+      });
+    }
+    
+    const game = wizardSessionManager.getGame(roomId);
+    
+    if (!game) {
+      return reply.status(404).send({
+        error: "Game not found",
+      });
+    }
+    
+    try {
+      wizardGameService.submitPrediction(
+        game,
+        username,
+        Number(body.prediction),
+      );
+      
+      wizardSessionManager.saveGame(game);
+      
+      return reply.send(
+        wizardGameService.getPublicGameState(game, username),
+      );
+    } catch (error) {
+      return reply.status(400).send({
+        error: error instanceof Error
+        ? error.message
+        : "Could not submit prediction",
+      });
+    }
+  });
+  
+  server.post("/games/:roomId/cards", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const params = request.params as { roomId?: string };
+    const body = request.body as PlayCardBody;
+    const roomId = Number(params.roomId);
+    const username = getAuthenticatedUsername(request);
+    
+    if (!username) {
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
+    }
+
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({
+        error: "Invalid room ID",
+      });
+    }
+
+    const game = wizardSessionManager.getGame(roomId);
+
+    if (!game) {
+      return reply.status(404).send({
+        error: "Game not found",
+      });
+    }
+    
+    const currentPlayer =
+    game.players[game.currentPlayerIndex];
+
+    if (!currentPlayer || currentPlayer.username !== username) {
+      return reply.status(403).send({
+        error: "It is not your turn",
+      });
+    }
+    
+    try {
+      wizardGameService.playCard(
+        game,
+        Number(body.cardIndex),
+      );
+      
+      wizardSessionManager.saveGame(game);
+      
+      return reply.send(
+        wizardGameService.getPublicGameState(game, username),
+      );
+    } catch (error) {
+      return reply.status(400).send({
+        error: error instanceof Error
+        ? error.message
+        : "Could not play card",
+      });
+    }
   });
 }

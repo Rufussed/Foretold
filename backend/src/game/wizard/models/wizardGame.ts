@@ -36,4 +36,26 @@ export interface WizardGameState {
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
   deck: Card[];
+  phase: "predictions" | "playing" | "finished";
+}
+
+export interface PublicGamePlayer {
+  username: string;
+  hand: Card[];
+  handCount: number;
+  prediction: number | null;
+  tricksWon: number;
+  score: number;
+}
+
+export interface PublicWizardGameState {
+  roomId: number;
+  players: PublicGamePlayer[];
+  currentRound: number;
+  totalRounds: number;
+  currentPlayerIndex: number;
+  trumpCard: Card | null;
+  currentTrick: TrickState;
+  status: "waiting" | "playing" | "finished";
+  deckCount: number;
 }
