@@ -2,9 +2,12 @@ import type { FastifyInstance } from "fastify";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
+import { WizardBotService } from "../services/wizardBotService.js";
+import { registerWizardSocket } from "../websocket/wizardSocket.js";
 
 interface CreateGameBody {
   roomId?: number;
+  botCount?: number;
 }
 
 interface PredictionBody {
@@ -27,6 +30,9 @@ export default async function wizardRoutes(
   server: FastifyInstance,
 ): Promise<void> {
   const wizardGameService = new WizardGameService();
+  const wizardBotService = new WizardBotService(wizardGameService);
+
+  registerWizardSocket(server, wizardGameService);
 
   server.get("/lobby", async () => {
     return {
@@ -41,7 +47,10 @@ export default async function wizardRoutes(
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
-    const body = request.body as { name?: string };
+    const body = request.body as {
+      name?: string;
+      maxPlayers?: number;
+    };
     const tokenUser = request.user as {
       sub?: number;
       username?: string;
@@ -63,6 +72,7 @@ export default async function wizardRoutes(
       body.name.trim(),
       Number(tokenUser.sub),
       tokenUser.username,
+      body.maxPlayers,
     );
 
     return reply.send(room);
@@ -99,6 +109,42 @@ export default async function wizardRoutes(
     }
 
     return reply.send(room);
+  });
+
+  server.delete("/lobby/:roomId", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const params = request.params as { roomId?: string };
+    const roomId = Number(params.roomId);
+
+    const tokenUser = request.user as {
+      sub?: number;
+    };
+
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({ error: "Invalid room ID" });
+    }
+
+    if (!tokenUser.sub) {
+      return reply.status(401).send({ error: "User identity missing" });
+    }
+
+    const deleted = wizardLobbyManager.deleteRoom(
+      roomId,
+      Number(tokenUser.sub),
+    );
+
+    if (!deleted) {
+      return reply.status(403).send({
+        error: "Room cannot be deleted",
+      });
+    }
+
+    return reply.send({ success: true });
   });
 
   server.post("/games", async (request, reply) => {
@@ -143,18 +189,41 @@ export default async function wizardRoutes(
       });
     }
     
-    if (room.players.length < 3 || room.players.length > 6) {
+    const botCount = body.botCount ?? 0;
+
+    if (
+      !Number.isInteger(botCount) ||
+      botCount < 0 ||
+      botCount > room.maxPlayers - room.players.length
+    ) {
+      return reply.status(400).send({
+        error: "Invalid bot count",
+      });
+    }
+
+    const totalPlayers = room.players.length + botCount;
+
+    if (totalPlayers < 3 || totalPlayers > 6) {
       return reply.status(400).send({
         error: "A Wizard game requires 3 to 6 players",
       });
     }
 
+    const players = [
+      ...room.players,
+      ...Array.from(
+        { length: botCount },
+        (_, index) => `bot-${index + 1}`,
+      ),
+    ];
+
     try {
       const game = wizardGameService.createGame(
         room.id,
-        room.players,
+        players,
       );
       
+      wizardLobbyManager.setRoomStatus(room.id, "playing");
       game.status = "playing";
       wizardSessionManager.saveGame(game);
       
@@ -256,6 +325,7 @@ export default async function wizardRoutes(
         Number(body.prediction),
       );
       
+      wizardBotService.playAvailableTurns(game);
       wizardSessionManager.saveGame(game);
       
       return reply.send(
@@ -317,6 +387,7 @@ export default async function wizardRoutes(
         Number(body.cardIndex),
       );
       
+      wizardBotService.playAvailableTurns(game);
       wizardSessionManager.saveGame(game);
       
       return reply.send(

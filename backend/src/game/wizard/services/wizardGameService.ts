@@ -2,6 +2,8 @@ import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
 import { isJester } from "../models/card.js";
 import { ScoreCalculator } from "./scoreCalculator.js";
+import { WizardBotService } from "../services/wizardBotService.js";
+
 import type {
   GamePlayer,
   PlayedCard,
@@ -27,9 +29,8 @@ export class WizardGameService {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
     }
-
-    const totalRounds =
-	ROUND_COUNT_BY_PLAYER_NUMBER[usernames.length];
+  // const wizardBotService = new WizardBotService(wizardGameService);
+  const totalRounds = ROUND_COUNT_BY_PLAYER_NUMBER[usernames.length];
 
 	if (totalRounds === undefined) {
 	throw new Error("Unsupported player count");
@@ -41,6 +42,7 @@ export class WizardGameService {
       prediction: null,
       tricksWon: 0,
       score: 0,
+      roundScores: [],
     }));
 
     const currentTrick: TrickState = {
@@ -56,6 +58,7 @@ export class WizardGameService {
       players,
       currentRound: 1,
       totalRounds,
+      startingPlayerIndex: 0,
       currentPlayerIndex: 0,
       trumpCard: null,
       currentTrick,
@@ -160,17 +163,6 @@ export class WizardGameService {
 
     if (game.currentTrick.playedCards.length === game.players.length) {
       this.resolveTrick(game);
-
-      const allHandsEmpty = game.players.every(
-        (player) => player.hand.length === 0,
-      );
-
-      if (allHandsEmpty) {
-        this.finishRound(game);
-      } else {
-        this.startNextTrick(game);
-      }
-
       return;
     }
 
@@ -261,7 +253,7 @@ export class WizardGameService {
     
     if (allPredictionsSubmitted) {
       game.phase = "playing";
-      game.currentPlayerIndex = 0;
+      game.currentPlayerIndex = game.startingPlayerIndex;
       return;
     } else {
       game.currentPlayerIndex =
@@ -283,7 +275,11 @@ export class WizardGameService {
     }
 
     game.currentRound += 1;
-    game.currentPlayerIndex = 0;
+    game.startingPlayerIndex =
+      (game.startingPlayerIndex + 1) % game.players.length;
+
+    game.currentPlayerIndex = game.startingPlayerIndex;
+
     game.currentTrick = {
       playedCards: [],
       winnerUsername: null,
@@ -322,9 +318,11 @@ export class WizardGameService {
         prediction: player.prediction,
         tricksWon: player.tricksWon,
         score: player.score,
+        roundScores: player.roundScores,
       })),
       currentRound: game.currentRound,
       totalRounds: game.totalRounds,
+      startingPlayerIndex: game.startingPlayerIndex,
       currentPlayerIndex: game.currentPlayerIndex,
       trumpCard: game.trumpCard,
       currentTrick: game.currentTrick,
@@ -332,5 +330,17 @@ export class WizardGameService {
       phase: game.phase,
       deckCount: game.deck.length,
     };
+  }
+
+  advanceAfterTrick(game: WizardGameState): void {
+    const allHandsEmpty = game.players.every(
+      (player) => player.hand.length === 0,
+    );
+
+    if (allHandsEmpty) {
+      this.finishRound(game);
+    } else {
+      this.startNextTrick(game);
+    }
   }
 }

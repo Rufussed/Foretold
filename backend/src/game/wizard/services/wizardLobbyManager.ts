@@ -4,6 +4,7 @@ import type { Room } from "../models/wizardGame.js";
 interface RoomRow {
   id: number;
   name: string;
+  created_by: number;
   max_players: number;
   status: string;
 }
@@ -33,6 +34,7 @@ class WizardLobbyManager {
     return {
       id: row.id,
       name: row.name,
+      createdBy: row.created_by,
       maxPlayers: row.max_players,
       players: this.getRoomPlayers(row.id),
       status: row.status as "waiting" | "playing",
@@ -43,7 +45,7 @@ class WizardLobbyManager {
     const rows = db
       .prepare(
         `
-          SELECT id, name, max_players, status
+          SELECT id, name, created_by, max_players, status
           FROM rooms
           ORDER BY created_at DESC
         `,
@@ -57,7 +59,7 @@ class WizardLobbyManager {
     const row = db
       .prepare(
         `
-          SELECT id, name, max_players, status
+          SELECT id, name, created_by, max_players, status
           FROM rooms
           WHERE id = ?
         `,
@@ -75,15 +77,19 @@ class WizardLobbyManager {
     name: string,
     createdBy: number,
     username: string,
+    maxPlayers: number = 4,
   ): Room {
+     // Validate: ensure 3-6 range
+    const validMax = Math.max(3, Math.min(6, maxPlayers));
+
     const result = db
       .prepare(
         `
           INSERT INTO rooms (name, created_by, max_players, status)
-          VALUES (?, ?, 4, 'waiting')
+          VALUES (?, ?, ?, 'waiting')
         `,
       )
-      .run(name, createdBy);
+      .run(name, createdBy, validMax);
 
     const roomId = Number(result.lastInsertRowid);
 
@@ -134,6 +140,62 @@ class WizardLobbyManager {
     ).run(roomId, userRow.id, username);
 
     return this.getRoomById(roomId);
+  }
+
+  deleteRoom(
+    roomId: number,
+    userId: number,
+  ): boolean {
+    const room = db
+      .prepare(`
+        SELECT id, created_by, status
+        FROM rooms
+        WHERE id = ?
+      `)
+      .get(roomId) as {
+        id: number;
+        created_by: number;
+        status: string;
+      } | undefined;
+  
+    if (!room) {
+      return false;
+    }
+  
+    if (room.created_by !== userId) {
+      return false;
+    }
+  
+    if (room.status !== "waiting") {
+      return false;
+    }
+  
+    const deleteRoom = db.transaction(() => {
+      db.prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+      `).run(roomId);
+  
+      db.prepare(`
+        DELETE FROM rooms
+        WHERE id = ?
+      `).run(roomId);
+    });
+  
+    deleteRoom();
+  
+    return true;
+  }
+
+  setRoomStatus(
+    roomId: number,
+    status: "waiting" | "playing",
+  ): void {
+    db.prepare(`
+      UPDATE rooms
+      SET status = ?
+      WHERE id = ?
+    `).run(status, roomId);
   }
 }
 

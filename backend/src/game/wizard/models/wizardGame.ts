@@ -3,6 +3,7 @@ import type { Card } from "./card.js";
 export interface Room {
   id: number;
   name: string;
+  createdBy: number;
   maxPlayers: number;
   players: string[];
   status: "waiting" | "playing";
@@ -14,6 +15,7 @@ export interface GamePlayer {
   prediction: number | null;
   tricksWon: number;
   score: number;
+  roundScores: number[];
 }
 
 export interface PlayedCard {
@@ -31,6 +33,7 @@ export interface WizardGameState {
   players: GamePlayer[];
   currentRound: number;
   totalRounds: number;
+  startingPlayerIndex: number;
   currentPlayerIndex: number;
   trumpCard: Card | null;
   currentTrick: TrickState;
@@ -53,6 +56,7 @@ export interface PublicWizardGameState {
   players: PublicGamePlayer[];
   currentRound: number;
   totalRounds: number;
+  startingPlayerIndex: number;
   currentPlayerIndex: number;
   trumpCard: Card | null;
   currentTrick: TrickState;

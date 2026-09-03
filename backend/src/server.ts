@@ -4,6 +4,7 @@ import db from "./db/database.js";
 import authRoutes from "./routes/auth.js";
 import jwt from "@fastify/jwt";
 import wizardRoutes from "./game/wizard/routes/wizardRoutes.js";
+import websocket from "@fastify/websocket";
 
 const server = Fastify({
   logger: true,
@@ -32,8 +33,12 @@ server.get("/health/database", async () => {
 
 
 await server.register(cors, {
-  origin: "http://localhost:5173",
+  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
 });
+
+await server.register(websocket);
 
 await server.register(jwt, {
   secret: process.env.JWT_SECRET || "development-secret-change-me",

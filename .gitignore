@@ -27,3 +27,6 @@ dist/
 .env
 data/
 *.sqlite
+divideConcerns.md
+PROJECT_CONTEXT.md
+docs/
