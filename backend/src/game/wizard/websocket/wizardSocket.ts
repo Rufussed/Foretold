@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
-import { WizardBotService } from "../services/wizardBotService.js";
+import { WizardGameRunner } from "../services/wizardGameRunner.js";
 
 interface SocketQuery {
 	token?: string;
@@ -19,7 +19,6 @@ interface RoomConnection {
 	username: string;
 }
 
-const botProcessing = new Map<number, boolean>();
 const connections = new Map<number, Set<RoomConnection>>();
 
 function sendJson(socket: WebSocket, message: unknown): void {
@@ -28,7 +27,7 @@ function sendJson(socket: WebSocket, message: unknown): void {
 	}
 }
 
-function broadcastGameState(
+export function broadcastGameState(
 	roomId: number,
 	gameService: WizardGameService,
 ): void {
@@ -64,8 +63,11 @@ function removeConnection(roomId: number, connection: RoomConnection): void {
 export function registerWizardSocket(
 	server: FastifyInstance,
 	gameService: WizardGameService,
-): void {
-	const botService = new WizardBotService(gameService);
+): WizardGameRunner {
+	const runner = new WizardGameRunner(
+		gameService,
+		(roomId) => broadcastGameState(roomId, gameService),
+	);
 
 	server.get<{ Params: { roomId: string }; Querystring: SocketQuery }>(
 		"/games/:roomId/socket",
@@ -149,12 +151,8 @@ export function registerWizardSocket(
 					wizardSessionManager.saveGame(currentGame);
 					broadcastGameState(roomId, gameService);
 
-					void runBots(
-					roomId,
-					gameService,
-					botService,
-					);
-					
+					void runner.run(roomId);
+
 				} catch (error) {
 					sendJson(socket, {
 						type: "error",
@@ -168,51 +166,5 @@ export function registerWizardSocket(
 			});
 		},
 	);
-}
-
-async function runBots(
-  roomId: number,
-  gameService: WizardGameService,
-  botService: WizardBotService,
-): Promise<void> {
-  if (botProcessing.get(roomId)) {
-    return;
-  }
-
-  botProcessing.set(roomId, true);
-
-  try {
-    const game = wizardSessionManager.getGame(roomId);
-
-    if (!game) {
-      return;
-    }
-
-    await botService.playAvailableTurns(
-      game,
-      () => {
-        wizardSessionManager.saveGame(game);
-        broadcastGameState(roomId, gameService);
-      },
-      async () => {
-        await new Promise((resolve) => {
-          setTimeout(resolve, 2500);
-        });
-
-        gameService.advanceAfterTrick(game);
-
-        wizardSessionManager.saveGame(game);
-        broadcastGameState(roomId, gameService);
-
-        await new Promise((resolve) => {
-          setTimeout(resolve, 700);
-        });
-      },
-    );
-
-    wizardSessionManager.saveGame(game);
-    broadcastGameState(roomId, gameService);
-  } finally {
-    botProcessing.delete(roomId);
-  }
+	return runner;
 }

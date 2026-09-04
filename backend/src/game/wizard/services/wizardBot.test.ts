@@ -16,7 +16,7 @@ const game = gameService.createGame(
 game.status = "playing";
 
 gameService.submitPrediction(game, "alice", 0);
-botService.playAvailableTurns(game);
+// botService.playAvailableTurns(game);
 
 while (game.phase !== "finished") {
   const player = game.players[game.currentPlayerIndex];
@@ -41,7 +41,7 @@ while (game.phase !== "finished") {
     }
   }
 
-  botService.playAvailableTurns(game);
+  // botService.playAvailableTurns(game);
 }
 
 assert.equal(game.status, "finished");

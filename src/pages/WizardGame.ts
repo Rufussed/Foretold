@@ -42,6 +42,149 @@ interface GameState {
   deckCount: number;
 }
 
+interface DebugEvent {
+  id: number;
+  time: string;
+  type: "STATE" | "ACTION" | "ERROR" | "SOCKET";
+  message: string;
+}
+
+const debugEvents: DebugEvent[] = [];
+let debugEventId = 0;
+
+const MAX_DEBUG_EVENTS = 250;
+
+function recordDebugEvent(
+  type: DebugEvent["type"],
+  message: string,
+): void {
+  debugEvents.push({
+    id: ++debugEventId,
+    time: new Date().toLocaleTimeString(),
+    type,
+    message,
+  });
+
+  if (debugEvents.length > MAX_DEBUG_EVENTS) {
+    debugEvents.shift();
+  }
+}
+
+function formatDebugState(game: GameState): string {
+  const completedTricks = game.players.reduce(
+    (total, player) => total + player.tricksWon,
+    0,
+  );
+
+  const playedThisTrick = game.currentTrick.playedCards.length;
+
+  const expectedCards =
+    game.players.length * game.currentRound;
+
+  const remainingHandCards = game.players.reduce(
+    (total, player) => total + player.handCount,
+    0,
+  );
+
+  const completedTrickCards =
+    completedTricks * game.players.length;
+
+  const currentTrickCards =
+    playedThisTrick === game.players.length
+      ? 0
+      : playedThisTrick;
+
+  const accountedCards =
+    remainingHandCards +
+    currentTrickCards +
+    completedTrickCards;
+
+  const overallInvariant =
+    accountedCards === expectedCards;
+
+  const playerChecks = game.players.map((player) => {
+    const playedCurrentTrick =
+      game.currentTrick.playedCards.some(
+        (played) => played.username === player.username,
+      );
+
+  const completedTricksForPlayer =
+    completedTricks;
+
+  const currentTrickContribution =
+    playedThisTrick === game.players.length
+      ? 0
+      : playedCurrentTrick
+        ? 1
+        : 0;
+
+  const accountedForPlayer =
+    player.handCount +
+    completedTricksForPlayer +
+    currentTrickContribution;
+
+    const expectedForPlayer = game.currentRound;
+
+    const valid =
+      accountedForPlayer === expectedForPlayer;
+
+    return (
+      `${player.username}: ` +
+      `hand=${player.handCount}, ` +
+      `completed=${completedTricks}, ` +
+      `current=${playedCurrentTrick ? 1 : 0}, ` +
+      `total=${accountedForPlayer}/${expectedForPlayer}` +
+      `${valid ? " OK" : " *** FAIL ***"}`
+    );
+  });
+
+  const trickCards = game.currentTrick.playedCards
+    .map(
+      (played) =>
+        `${played.username}=${formatCard(played.card)}`,
+    )
+    .join(", ");
+
+  return [
+    `R${game.currentRound}/${game.totalRounds}`,
+    `phase=${game.phase}`,
+    `turn=${game.players[game.currentPlayerIndex]?.username ?? "UNKNOWN"}`,
+    `hands=[${game.players
+      .map(
+        (player) =>
+          `${player.username}:${player.handCount}`,
+      )
+      .join(", ")}]`,
+    `trick=${playedThisTrick}/${game.players.length}`,
+    `completedTricks=${completedTricks}`,
+    `trickCards=[${trickCards || "none"}]`,
+    `cards=${accountedCards}/${expectedCards}` +
+      ` ${overallInvariant ? "OK" : "*** INVARIANT FAIL ***"}`,
+    ...playerChecks,
+  ].join(" | ");
+}
+
+function recordGameState(game: GameState): void {
+  recordDebugEvent(
+    "STATE",
+    formatDebugState(game),
+  );
+}
+
+function formatDebugEvents(): string {
+  if (debugEvents.length === 0) {
+    return "No debugger events yet.";
+  }
+
+  return debugEvents
+    .map(
+      (event) =>
+        `#${event.id} [${event.time}] ` +
+        `[${event.type}] ${event.message}`,
+    )
+    .join("\n");
+}
+
 export async function renderWizardGamePage(
   container: HTMLElement,
   roomId: number,
@@ -56,6 +199,14 @@ export async function renderWizardGamePage(
   try {
     const user = await getCurrentUser();
     const game = await loadGame(roomId, token);
+    
+    recordDebugEvent(
+      "SOCKET",
+      `Initial HTTP game state loaded for room ${roomId}`,
+    );
+
+    recordGameState(game);
+
     const socket = createGameSocket(roomId, token);
 
     socket.addEventListener("message", (event) => {
@@ -63,16 +214,32 @@ export async function renderWizardGamePage(
         event.data as string,
       ) as GameSocketMessage;
 
+      if (message.type === "connected") {
+        recordDebugEvent(
+          "SOCKET",
+          `WebSocket connected to room ${roomId}`,
+        );
+      }
+
       if (message.type === "game_state" && message.state) {
+        const gameState = message.state as GameState;
+
+        recordGameState(gameState);
+
         renderGame(
           container,
-          message.state as GameState,
+          gameState,
           user.username,
           socket,
         );
       }
 
       if (message.type === "error") {
+        recordDebugEvent(
+          "ERROR",
+          message.error ?? "Action failed",
+        );
+
         const actionMessage =
           document.querySelector<HTMLParagraphElement>(
             "#action-message",
@@ -149,8 +316,14 @@ function renderGame(
     );
   }
 
+  const isTrickComplete =
+    game.phase === "playing" &&
+    game.currentTrick.playedCards.length ===
+      game.players.length;
+
   const isYourTurn =
-    currentPlayer.username === username;
+    currentPlayer.username === username &&
+    !isTrickComplete;
 
   const predictionsSubmitted =
     game.players.filter(
@@ -549,9 +722,11 @@ function renderGame(
                 ? "It is your turn to submit a prediction."
                 : `Waiting for ${currentPlayer.username} to submit a prediction.`
               : game.phase === "playing"
-                ? isYourTurn
-                  ? "It is your turn to play a card."
-                  : `Waiting for ${currentPlayer.username}.`
+                ? isTrickComplete
+                  ? "Trick complete. Waiting for the result..."
+                  : isYourTurn
+                    ? "It is your turn to play a card."
+                    : `Waiting for ${currentPlayer.username}.`
                 : "The game has finished."
           }
         </p>
@@ -597,9 +772,85 @@ function renderGame(
           `
           : ""
       }
+      <!-- DEBUGGER -->
 
+      <section class="panel">
+
+        <details open>
+
+          <summary>
+            <strong>Frontend Debugger</strong>
+          </summary>
+
+          <div
+            style="
+              margin-top: 1rem;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              gap: 1rem;
+            "
+          >
+
+            <span>
+              ${debugEvents.length} events
+            </span>
+
+            <button
+              type="button"
+              id="clear-debugger"
+            >
+              Clear
+            </button>
+
+          </div>
+
+          <pre
+            id="debug-log"
+            style="
+              margin-top: 1rem;
+              white-space: pre-wrap;
+              overflow-x: auto;
+              font-size: 0.8rem;
+              line-height: 1.5;
+              max-height: 500px;
+              overflow-y: auto;
+            "
+          >${formatDebugEvents()}</pre>
+
+        </details>
+
+      </section>
     </main>
   `;
+
+  const clearDebuggerButton =
+    document.querySelector<HTMLButtonElement>(
+      "#clear-debugger",
+    );
+
+  clearDebuggerButton?.addEventListener(
+    "click",
+    () => {
+      debugEvents.length = 0;
+      debugEventId = 0;
+
+      recordDebugEvent(
+        "SOCKET",
+        "Debugger cleared",
+      );
+
+      const debugLog =
+        document.querySelector<HTMLPreElement>(
+          "#debug-log",
+        );
+
+      if (debugLog) {
+        debugLog.textContent =
+          formatDebugEvents();
+      }
+    },
+  );
 
   const predictionForm =
     document.querySelector<HTMLFormElement>(
@@ -616,6 +867,11 @@ function renderGame(
 
       const prediction = Number(
         formData.get("prediction"),
+      );
+
+      recordDebugEvent(
+        "ACTION",
+        `USER ${username} -> submit_prediction prediction=${prediction}`,
       );
 
       sendSocketAction(
@@ -636,6 +892,15 @@ function renderGame(
         async () => {
           const cardIndex = Number(
             button.dataset.cardIndex,
+          );
+
+          const card = yourPlayer.hand[cardIndex];
+
+          recordDebugEvent(
+            "ACTION",
+            `USER ${username} -> play_card ` +
+            `index=${cardIndex} ` +
+            `card=${card ? formatCard(card) : "UNKNOWN"}`,
           );
 
           sendSocketAction(
@@ -659,6 +924,12 @@ function sendSocketAction(
   },
 ): void {
   if (socket.readyState !== WebSocket.OPEN) {
+    recordDebugEvent(
+      "ERROR",
+      `Attempted ${type}, but WebSocket is not open. ` +
+      `readyState=${socket.readyState}`,
+    );
+
     const actionMessage =
       document.querySelector<HTMLParagraphElement>(
         "#action-message",
@@ -672,12 +943,17 @@ function sendSocketAction(
     return;
   }
 
-  socket.send(
-    JSON.stringify({
-      type,
-      ...payload,
-    }),
+  const message = {
+    type,
+    ...payload,
+  };
+
+  recordDebugEvent(
+    "ACTION",
+    `SEND ${JSON.stringify(message)}`,
   );
+
+  socket.send(JSON.stringify(message));
 }
 
 function formatCard(
@@ -714,310 +990,3 @@ function getErrorMessage(
     : "An unexpected error occurred";
 }
 
-// import { getCurrentUser } from "../services/auth";
-// import {
-//   createGameSocket,
-//   type GameSocketMessage,
-// } from "../services/gameSocket";
-
-// const API_BASE = "http://127.0.0.1:3000";
-
-// interface Card {
-//   value: number;
-//   suit: string;
-// }
-
-// interface GamePlayer {
-//   username: string;
-//   hand: Card[];
-//   handCount: number;
-//   prediction: number | null;
-//   tricksWon: number;
-//   score: number;
-// }
-
-// interface PlayedCard {
-//   username: string;
-//   card: Card;
-// }
-
-// interface GameState {
-//   roomId: number;
-//   players: GamePlayer[];
-//   currentRound: number;
-//   totalRounds: number;
-//   currentPlayerIndex: number;
-//   trumpCard: Card | null;
-//   currentTrick: {
-//     playedCards: PlayedCard[];
-//     winnerUsername: string | null;
-//   };
-//   status: "waiting" | "playing" | "finished";
-//   phase: "predictions" | "playing" | "finished";
-//   deckCount: number;
-// }
-
-// export async function renderWizardGamePage(
-//   container: HTMLElement,
-//   roomId: number,
-// ): Promise<void> {
-//   const token = localStorage.getItem("wizardToken");
-
-//   if (!token) {
-//     window.location.hash = "#/home";
-//     return;
-//   }
-
-//   try {
-//     const user = await getCurrentUser();
-//     const game = await loadGame(roomId, token);
-
-//     const socket = createGameSocket(roomId, token);
-
-//     socket.addEventListener("message", (event) => {
-//       const message = JSON.parse(event.data as string) as GameSocketMessage;
-
-//       if (message.type === "game_state" && message.state) {
-//         renderGame(
-//           container,
-//           message.state as GameState,
-//           user.username,
-//           socket,
-//         );
-//       }
-
-//       if (message.type === "error") {
-//         const actionMessage =
-//           document.querySelector<HTMLParagraphElement>("#action-message");
-
-//         if (actionMessage) {
-//           actionMessage.textContent = message.error ?? "Action failed";
-//         }
-//       }
-//     });
-
-//     renderGame(container, game, user.username, socket);
-//   } catch (error) {
-//     container.innerHTML = `
-//       <main class="page">
-//         <section class="panel">
-//           <h1>Game error</h1>
-//           <p>${getErrorMessage(error)}</p>
-//           <a href="#/lobby">Back to Lobby</a>
-//         </section>
-//       </main>
-//     `;
-//   }
-// }
-
-// async function loadGame(
-//   roomId: number,
-//   token: string,
-// ): Promise<GameState> {
-//   const response = await fetch(
-//     `${API_BASE}/wizard/games/${roomId}`,
-//     {
-//       headers: {
-//         Authorization: `Bearer ${token}`,
-//       },
-//     },
-//   );
-
-//   const data = (await response.json()) as GameState & {
-//     error?: string;
-//   };
-
-//   if (!response.ok) {
-//     throw new Error(data.error ?? "Could not load game");
-//   }
-
-//   return data;
-// }
-
-// function renderGame(
-//   container: HTMLElement,
-//   game: GameState,
-//   username: string,
-//   socket: WebSocket,
-// ): void {
-//   const currentPlayer = game.players[game.currentPlayerIndex];
-//   const yourPlayer = game.players.find(
-//     (player) => player.username === username,
-//   );
-
-//   if (!yourPlayer || !currentPlayer) {
-//     throw new Error("Could not find player in game");
-//   }
-
-//   const isYourTurn = currentPlayer.username === username;
-
-//   container.innerHTML = `
-//     <main class="page">
-//       <nav class="navbar">
-//         <a href="#/home">Home</a>
-//         <a href="#/lobby">Lobby</a>
-//         <a href="#/profile">Profile</a>
-//       </nav>
-
-//       <section class="panel">
-//         <h1>Wizard Game</h1>
-//         <p>Room: ${game.roomId}</p>
-//         <p>Round: ${game.currentRound}/${game.totalRounds}</p>
-//         <p>Phase: ${game.phase}</p>
-//         <p>Trump: ${formatCard(game.trumpCard)}</p>
-//         <p>Current turn: ${currentPlayer.username}</p>
-//       </section>
-//       <section class="panel">
-//         <h2>Played cards this trick</h2>
-//         <div id="played-cards">
-//           ${
-//             game.currentTrick.playedCards.length === 0
-//               ? "<p>No cards played yet.</p>"
-//               : game.currentTrick.playedCards
-//                   .map(
-//                     (play) => `
-//                       <p>
-//                         ${play.username}: ${formatCard(play.card)}
-//                       </p>
-//                     `,
-//                   )
-//                   .join("")
-//           }
-//         </div>
-//       </section>
-//       <section class="panel">
-//         <h2>Players</h2>
-//         <div id="players-list">
-//           ${game.players
-//             .map(
-//               (player) => `
-//                 <p>
-//                   ${player.username}
-//                   - cards: ${player.handCount}
-//                   - prediction: ${formatPrediction(player.prediction)}
-//                   - tricks: ${player.tricksWon}
-//                   - score: ${player.score}
-//                 </p>
-//               `,
-//             )
-//             .join("")}
-//         </div>
-//       </section>
-
-//       <section class="panel">
-//         <h2>Your hand</h2>
-//         <div id="hand">
-//           ${yourPlayer.hand.length === 0
-//             ? "<p>No cards in hand.</p>"
-//             : yourPlayer.hand
-//                 .map(
-//                   (card, index) => `
-//                     <button
-//                       type="button"
-//                       data-card-index="${index}"
-//                       ${game.phase !== "playing" || !isYourTurn ? "disabled" : ""}
-//                     >
-//                       ${formatCard(card)}
-//                     </button>
-//                   `,
-//                 )
-//                 .join("")}
-//         </div>
-
-//         <p id="action-message">
-//           ${isYourTurn ? "It is your turn." : `Waiting for ${currentPlayer.username}.`}
-//         </p>
-//       </section>
-
-//       ${
-//         game.phase === "predictions" && isYourTurn
-//           ? `
-//             <section class="panel">
-//               <h2>Your prediction</h2>
-//               <form id="prediction-form">
-//                 <label>
-//                   Tricks
-//                   <input
-//                     name="prediction"
-//                     type="number"
-//                     min="0"
-//                     max="${game.currentRound}"
-//                     required
-//                   />
-//                 </label>
-//                 <button type="submit">Submit prediction</button>
-//               </form>
-//             </section>
-//           `
-//           : ""
-//       }
-//     </main>
-//   `;
-
-//   const predictionForm =
-//     document.querySelector<HTMLFormElement>("#prediction-form");
-
-//   predictionForm?.addEventListener("submit", async (event) => {
-//     event.preventDefault();
-
-//     const formData = new FormData(predictionForm);
-//     const prediction = Number(formData.get("prediction"));
-
-//     sendSocketAction(socket, "submit_prediction", { prediction });
-//   });
-
-//   container
-//     .querySelectorAll<HTMLButtonElement>("[data-card-index]")
-//     .forEach((button) => {
-//       button.addEventListener("click", async () => {
-//         const cardIndex = Number(button.dataset.cardIndex);
-
-//         sendSocketAction(socket, "play_card", { cardIndex });
-//       });
-//     });
-// }
-
-// function sendSocketAction(
-//   socket: WebSocket,
-//   type: "submit_prediction" | "play_card",
-//   payload: { prediction?: number; cardIndex?: number },
-// ): void {
-//   if (socket.readyState !== WebSocket.OPEN) {
-//     const actionMessage =
-//       document.querySelector<HTMLParagraphElement>("#action-message");
-
-//     if (actionMessage) {
-//       actionMessage.textContent = "Game connection is not ready";
-//     }
-
-//     return;
-//   }
-
-//   socket.send(JSON.stringify({ type, ...payload }));
-// }
-
-// function formatCard(card: Card | null): string {
-//   if (!card) {
-//     return "None";
-//   }
-
-//   if (card.value === 14) {
-//     return `Wizard of ${card.suit}`;
-//   }
-
-//   if (card.value === 0) {
-//     return `Jester of ${card.suit}`;
-//   }
-
-//   return `${card.value} of ${card.suit}`;
-// }
-
-// function formatPrediction(prediction: number | null): string {
-//   return prediction === null ? "not submitted" : String(prediction);
-// }
-
-// function getErrorMessage(error: unknown): string {
-//   return error instanceof Error
-//     ? error.message
-//     : "An unexpected error occurred";
-// }

@@ -2,8 +2,9 @@ import type { FastifyInstance } from "fastify";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
-import { WizardBotService } from "../services/wizardBotService.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
+import { WizardGameRunner } from "../services/wizardGameRunner.js";
+
 
 interface CreateGameBody {
   roomId?: number;
@@ -30,9 +31,9 @@ export default async function wizardRoutes(
   server: FastifyInstance,
 ): Promise<void> {
   const wizardGameService = new WizardGameService();
-  const wizardBotService = new WizardBotService(wizardGameService);
 
-  registerWizardSocket(server, wizardGameService);
+  const wizardGameRunner =
+    registerWizardSocket(server, wizardGameService);
 
   server.get("/lobby", async () => {
     return {
@@ -226,7 +227,9 @@ export default async function wizardRoutes(
       wizardLobbyManager.setRoomStatus(room.id, "playing");
       game.status = "playing";
       wizardSessionManager.saveGame(game);
-      
+
+      void wizardGameRunner.run(room.id);
+
       return reply.status(201).send(
         wizardGameService.getPublicGameState(game, username),
       );
@@ -325,7 +328,6 @@ export default async function wizardRoutes(
         Number(body.prediction),
       );
       
-      wizardBotService.playAvailableTurns(game);
       wizardSessionManager.saveGame(game);
       
       return reply.send(
@@ -387,7 +389,6 @@ export default async function wizardRoutes(
         Number(body.cardIndex),
       );
       
-      wizardBotService.playAvailableTurns(game);
       wizardSessionManager.saveGame(game);
       
       return reply.send(

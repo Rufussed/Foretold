@@ -2,7 +2,6 @@ import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
 import { isJester } from "../models/card.js";
 import { ScoreCalculator } from "./scoreCalculator.js";
-import { WizardBotService } from "../services/wizardBotService.js";
 
 import type {
   GamePlayer,
@@ -115,6 +114,14 @@ export class WizardGameService {
 
     if (game.phase !== "playing") {
       throw new Error("Cards cannot be played yet");
+    }
+    if (
+      game.currentTrick.playedCards.length ===
+      game.players.length
+    ) {
+      throw new Error(
+        "The current trick is complete. Waiting for it to be resolved.",
+      );
     }
 
     const currentPlayer = game.players[game.currentPlayerIndex];
