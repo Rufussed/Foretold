@@ -1,4 +1,4 @@
-import type { Card } from "./card.js";
+import type { Card, Suit } from "./card.js";
 
 export interface Room {
   id: number;
@@ -15,7 +15,7 @@ export interface GamePlayer {
   prediction: number | null;
   tricksWon: number;
   score: number;
-  roundScores: number[];
+  roundScores: RoundScore[];
 }
 
 export interface PlayedCard {
@@ -36,10 +36,11 @@ export interface WizardGameState {
   startingPlayerIndex: number;
   currentPlayerIndex: number;
   trumpCard: Card | null;
+  trumpSuit: Suit | null;
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
   deck: Card[];
-  phase: "predictions" | "playing" | "finished";
+  phase: "trump-selection" | "predictions" | "playing" | "finished";
 }
 
 export interface PublicGamePlayer {
@@ -49,6 +50,7 @@ export interface PublicGamePlayer {
   prediction: number | null;
   tricksWon: number;
   score: number;
+  roundScores: RoundScore[];
 }
 
 export interface PublicWizardGameState {
@@ -59,8 +61,15 @@ export interface PublicWizardGameState {
   startingPlayerIndex: number;
   currentPlayerIndex: number;
   trumpCard: Card | null;
+  trumpSuit: Suit | null;
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
-  phase: "predictions" | "playing" | "finished";
+  phase: "trump-selection" | "predictions" | "playing" | "finished";
   deckCount: number;
+}
+
+export interface RoundScore {
+  prediction: number;
+  tricksWon: number;
+  score: number;
 }

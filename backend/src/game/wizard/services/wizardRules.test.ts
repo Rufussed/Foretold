@@ -1,5 +1,7 @@
-import assert from "node:assert/strict";
+import { describe, it, expect } from "vitest";
+
 import { WizardRules } from "./wizardRules.js";
+
 import type { Card } from "../models/card.js";
 
 const rules = new WizardRules();
@@ -29,60 +31,181 @@ const jester: Card = {
   suit: "Yellow",
 };
 
-assert.equal(rules.getTrumpSuit(redTwo), "Red");
-assert.equal(rules.getTrumpSuit(wizard), null);
-assert.equal(rules.getTrumpSuit(jester), null);
+describe("WizardRules", () => {
+  describe("getTrumpSuit", () => {
+    it("returns the suit of a normal trump card", () => {
+      expect(rules.getTrumpSuit(redTwo)).toBe("Red");
+    });
 
-assert.equal(
-  rules.isValidCardPlay(blueSeven, [blueSeven, redTwo], "Blue"),
-  true,
-);
+    it("returns null when the trump card is a Wizard", () => {
+      expect(rules.getTrumpSuit(wizard)).toBeNull();
+    });
 
-assert.equal(
-  rules.isValidCardPlay(redTwo, [blueSeven, redTwo], "Blue"),
-  false,
-);
+    it("returns null when the trump card is a Jester", () => {
+      expect(rules.getTrumpSuit(jester)).toBeNull();
+    });
+    it("has no trump suit when the trump card is a Wizard", () => {
+      const trumpSuit = rules.getTrumpSuit(wizard);
 
-assert.equal(
-  rules.isValidCardPlay(redTwo, [redTwo], "Blue"),
-  true,
-);
+      expect(trumpSuit).toBeNull();
+    });
+  });
 
-assert.equal(
-  rules.isValidCardPlay(wizard, [blueSeven, wizard], "Blue"),
-  true,
-);
+  describe("isValidCardPlay", () => {
+    it("allows a card that follows the lead suit", () => {
+      expect(
+        rules.isValidCardPlay(
+          blueSeven,
+          [blueSeven, redTwo],
+          "Blue",
+        ),
+      ).toBe(true);
+    });
 
-assert.equal(
-  rules.compareCards(blueTen, blueSeven, null, "Blue") > 0,
-  true,
-);
+    it("rejects a card that does not follow the lead suit when the player has the suit", () => {
+      expect(
+        rules.isValidCardPlay(
+          redTwo,
+          [blueSeven, redTwo],
+          "Blue",
+        ),
+      ).toBe(false);
+    });
 
-assert.equal(
-  rules.compareCards(redTwo, blueTen, "Red", "Blue") > 0,
-  true,
-);
+    it("allows any card when the player does not have the lead suit", () => {
+      expect(
+        rules.isValidCardPlay(
+          redTwo,
+          [redTwo],
+          "Blue",
+        ),
+      ).toBe(true);
+    });
 
-assert.equal(
-  rules.compareCards(wizard, blueTen, "Red", "Blue") > 0,
-  true,
-);
+    it("always allows a Wizard", () => {
+      expect(
+        rules.isValidCardPlay(
+          wizard,
+          [blueSeven, wizard],
+          "Blue",
+        ),
+      ).toBe(true);
+    });
+  });
 
-assert.equal(
-  rules.compareCards(jester, blueTen, "Red", "Blue") < 0,
-  true,
-);
+  describe("compareCards", () => {
+    it("higher card of the lead suit wins", () => {
+      expect(
+        rules.compareCards(
+          blueTen,
+          blueSeven,
+          null,
+          "Blue",
+        ),
+      ).toBeGreaterThan(0);
+    });
 
-assert.equal(
-  rules.determineTrickWinner(
-    [
-      { username: "alice", card: blueSeven },
-      { username: "bob", card: redTwo },
-      { username: "carol", card: wizard },
-    ],
-    redTwo,
-  ),
-  "carol",
-);
+    it("trump card beats a card of the lead suit", () => {
+      expect(
+        rules.compareCards(
+          redTwo,
+          blueTen,
+          "Red",
+          "Blue",
+        ),
+      ).toBeGreaterThan(0);
+    });
 
-console.log("WizardRules behavior test passed");
+    it("Wizard beats a normal card", () => {
+      expect(
+        rules.compareCards(
+          wizard,
+          blueTen,
+          "Red",
+          "Blue",
+        ),
+      ).toBeGreaterThan(0);
+    });
+
+    it("Jester loses to a normal card", () => {
+      expect(
+        rules.compareCards(
+          jester,
+          blueTen,
+          "Red",
+          "Blue",
+        ),
+      ).toBeLessThan(0);
+    });
+  });
+
+  describe("determineTrickWinner", () => {
+    it("Wizard wins against normal cards", () => {
+      expect(
+        rules.determineTrickWinner(
+          [
+            { username: "alice", card: blueSeven },
+            { username: "bob", card: redTwo },
+            { username: "carol", card: wizard },
+          ],
+          "Red",
+          false,
+        ),
+      ).toBe("carol");
+    });
+
+    it("first Wizard wins when two Wizards are played in a normal round", () => {
+      expect(
+        rules.determineTrickWinner(
+          [
+            { username: "alice", card: wizard },
+            { username: "bob", card: wizard },
+          ],
+          "Red",
+          false,
+        ),
+      ).toBe("alice");
+    });
+
+    it("first Wizard wins when multiple Wizards are played in a normal round", () => {
+      expect(
+        rules.determineTrickWinner(
+          [
+            { username: "alice", card: wizard },
+            { username: "bob", card: wizard },
+            { username: "carol", card: blueSeven },
+          ],
+          "Red",
+          false,
+        ),
+      ).toBe("alice");
+    });
+
+    it("last Wizard wins when two Wizards are played in the final round", () => {
+      expect(
+        rules.determineTrickWinner(
+          [
+            { username: "alice", card: wizard },
+            { username: "bob", card: wizard },
+          ],
+          "Red",
+          true,
+        ),
+      ).toBe("bob");
+    });
+
+    it("last Wizard wins when multiple Wizards are played in the final round", () => {
+      expect(
+        rules.determineTrickWinner(
+          [
+            { username: "alice", card: wizard },
+            { username: "bob", card: wizard },
+            { username: "carol", card: wizard },
+          ],
+          "Red",
+          true,
+        ),
+      ).toBe("carol");
+    });
+  });
+});

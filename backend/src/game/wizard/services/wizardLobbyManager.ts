@@ -166,9 +166,9 @@ class WizardLobbyManager {
       return false;
     }
   
-    if (room.status !== "waiting") {
-      return false;
-    }
+    // if (room.status !== "waiting") {
+    //   return false;
+    // }
   
     const deleteRoom = db.transaction(() => {
       db.prepare(`
@@ -184,6 +184,63 @@ class WizardLobbyManager {
   
     deleteRoom();
   
+    return true;
+  }
+
+  resetStalePlayingRooms(activeRoomIds: Set<number>): void {
+    const rooms = db.prepare(`
+      SELECT id
+      FROM rooms
+      WHERE status = 'playing'
+    `).all() as { id: number }[];
+
+    const resetRoom = db.prepare(`
+      UPDATE rooms
+      SET status = 'waiting'
+      WHERE id = ?
+    `);
+
+    for (const room of rooms) {
+      if (!activeRoomIds.has(room.id)) {
+        resetRoom.run(room.id);
+      }
+    }
+  }
+
+  resetPlayingRooms(): void {
+    db.prepare(`
+      UPDATE rooms
+      SET status = 'waiting'
+      WHERE status = 'playing'
+    `).run();
+  }
+
+  deleteFinishedRoom(roomId: number): boolean {
+    const room = db.prepare(`
+      SELECT id, status
+      FROM rooms
+      WHERE id = ?
+    `).get(roomId) as {
+      id: number;
+      status: string;
+    } | undefined;
+
+    if (!room) return false;
+    if (room.status !== "playing") return false;
+
+    const deleteRoom = db.transaction(() => {
+      db.prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+      `).run(roomId);
+
+      db.prepare(`
+        DELETE FROM rooms
+        WHERE id = ?
+      `).run(roomId);
+    });
+
+    deleteRoom();
     return true;
   }
 

@@ -1,5 +1,5 @@
 import { isJester } from "../models/card.js";
-import type { Card } from "../models/card.js";
+import type { Card, Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "./wizardRules.js";
 import { WizardGameService } from "./wizardGameService.js";
@@ -11,6 +11,40 @@ export class WizardBotService {
 
   isBot(username: string): boolean {
     return username.startsWith("bot-");
+  }
+
+  chooseTrumpSuit(game: WizardGameState): Suit {
+    const player = game.players[game.currentPlayerIndex];
+
+    if (!player) {
+      throw new Error("Bot player does not exist");
+    }
+
+    const suits: Suit[] = ["Blue", "Red", "Yellow", "Green"];
+
+    let bestSuit: Suit = "Blue";
+    let bestCount = -1;
+    let bestValue = -1;
+
+    for (const suit of suits) {
+      const suitedCards = player.hand.filter(
+        (card) => card.suit === suit && card.value > 0 && card.value < 14,
+      );
+
+      const count = suitedCards.length;
+      const value = suitedCards.reduce(
+        (total, card) => total + card.value,
+        0,
+      );
+
+      if (count > bestCount || (count === bestCount && value > bestValue)) {
+        bestSuit = suit;
+        bestCount = count;
+        bestValue = value;
+      }
+    }
+
+    return bestSuit;
   }
 
   choosePrediction(game: WizardGameState): number {

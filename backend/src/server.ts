@@ -5,6 +5,8 @@ import authRoutes from "./routes/auth.js";
 import jwt from "@fastify/jwt";
 import wizardRoutes from "./game/wizard/routes/wizardRoutes.js";
 import websocket from "@fastify/websocket";
+import { wizardLobbyManager } from "./game/wizard/services/wizardLobbyManager.js";
+
 
 const server = Fastify({
   logger: true,
@@ -51,6 +53,8 @@ await server.register(authRoutes, {
 await server.register(wizardRoutes, {
   prefix: "/wizard",
 });
+
+wizardLobbyManager.resetPlayingRooms();
 
 try {
   await server.listen({

@@ -1,5 +1,5 @@
 import { getCurrentUser } from "../services/auth";
-
+import type { Suit } from "../../backend/src/game/wizard/models/card";
 import {
   createGameSocket,
   type GameSocketMessage,
@@ -19,6 +19,13 @@ interface GamePlayer {
   prediction: number | null;
   tricksWon: number;
   score: number;
+  roundScores: RoundScore[];
+}
+
+interface RoundScore {
+  prediction: number;
+  tricksWon: number;
+  score: number;
 }
 
 interface PlayedCard {
@@ -33,12 +40,17 @@ interface GameState {
   totalRounds: number;
   currentPlayerIndex: number;
   trumpCard: Card | null;
+  trumpSuit: Suit | null;
   currentTrick: {
     playedCards: PlayedCard[];
     winnerUsername: string | null;
   };
   status: "waiting" | "playing" | "finished";
-  phase: "predictions" | "playing" | "finished";
+  phase:
+  | "trump-selection"
+  | "predictions"
+  | "playing"
+  | "finished";
   deckCount: number;
 }
 
@@ -334,18 +346,22 @@ function renderGame(
     predictionsSubmitted === game.players.length;
 
   const phaseLabel =
-    game.phase === "predictions"
-      ? "Predictions"
-      : game.phase === "playing"
-        ? "Playing"
-        : "Finished";
+    game.phase === "trump-selection"
+      ? "Choose Trump"
+      : game.phase === "predictions"
+        ? "Predictions"
+        : game.phase === "playing"
+          ? "Playing"
+          : "Finished";
 
   const phaseDescription =
-    game.phase === "predictions"
-      ? `${predictionsSubmitted} / ${game.players.length} predictions submitted`
-      : game.phase === "playing"
-        ? "Cards are being played"
-        : "Game finished";
+    game.phase === "trump-selection"
+      ? `${currentPlayer.username} must choose the trump suit`
+      : game.phase === "predictions"
+        ? `${predictionsSubmitted} / ${game.players.length} predictions submitted`
+        : game.phase === "playing"
+          ? "Cards are being played"
+          : "Game finished";
 
   container.innerHTML = `
     <main class="page">
@@ -389,7 +405,10 @@ function renderGame(
 
           <div class="status-box">
             <span class="status-label">TRUMP</span>
-            <strong>${formatCard(game.trumpCard)}</strong>
+            <strong>${formatCard(game.trumpCard)}
+                    <div class="trump-suit">
+                      Trump Suit: ${game.trumpSuit ?? "None"}</div>
+            </strong>
           </div>
 
         </div>
@@ -536,7 +555,24 @@ function renderGame(
             `
             : ""
         }
+        ${
+          game.phase === "trump-selection" &&
+          currentPlayer.username === username
+            ? `
+              <section class="panel action-panel">
+                <h2>Choose Trump Suit</h2>
+                <p>The turned card is a Jester. Choose the trump suit for this round.</p>
 
+                <div class="trump-suit-buttons">
+                  <button type="button" data-trump-suit="Blue">Blue</button>
+                  <button type="button" data-trump-suit="Red">Red</button>
+                  <button type="button" data-trump-suit="Yellow">Yellow</button>
+                  <button type="button" data-trump-suit="Green">Green</button>
+                </div>
+              </section>
+            `
+            : ""
+        }
       </section>
 
       <!-- CURRENT TRICK -->
@@ -604,74 +640,61 @@ function renderGame(
 
       <!-- PLAYERS -->
       <section class="panel">
-
         <div class="section-heading">
           <div>
-            <h2>Players</h2>
-            <p>Game status and score</p>
+            <h2>Score</h2>
+            <p>Round-by-round results</p>
           </div>
         </div>
 
-        <div class="players-table">
+        <div class="score-table-wrapper">
+          <table class="score-table">
+            <thead>
+              <tr>
+                <th>Player</th>
+                ${Array.from(
+                  { length: game.totalRounds },
+                  (_, index) => `<th>R${index + 1}</th>`,
+                ).join("")}
+                <th>Total</th>
+              </tr>
+            </thead>
 
-          <div class="players-table-header">
-            <span>Player</span>
-            <span>Cards</span>
-            <span>Prediction</span>
-            <span>Tricks</span>
-            <span>Score</span>
-          </div>
+            <tbody>
+              ${game.players
+                .map(
+                  (player) => `
+                    <tr>
+                      <td>
+                        ${player.username}
+                        ${player.username === username ? " (You)" : ""}
+                      </td>
 
-          ${game.players
-            .map((player, index) => {
-              const isCurrent =
-                index === game.currentPlayerIndex;
+                      ${Array.from({ length: game.totalRounds }, (_, index) => {
+                        const roundScore = player.roundScores[index];
 
-              return `
-                <div
-                  class="players-table-row
-                    ${isCurrent ? "player-current" : ""}"
-                >
+                        if (!roundScore) {
+                          return `<td>—</td>`;
+                        }
 
-                  <span>
-                    ${
-                      isCurrent
-                        ? "▶ "
-                        : ""
-                    }
-                    ${player.username}
-                    ${
-                      player.username === username
-                        ? " (You)"
-                        : ""
-                    }
-                  </span>
+                        return `
+                          <td>
+                            <div class="round-score">${roundScore.score}</div>
+                            <div class="round-result">
+                              ${roundScore.prediction} / ${roundScore.tricksWon}
+                            </div>
+                          </td>
+                        `;
+                      }).join("")}
 
-                  <span>
-                    ${player.handCount}
-                  </span>
-
-                  <span>
-                    ${formatPrediction(
-                      player.prediction,
-                    )}
-                  </span>
-
-                  <span>
-                    ${player.tricksWon}
-                  </span>
-
-                  <span>
-                    ${player.score}
-                  </span>
-
-                </div>
-              `;
-            })
-            .join("")}
-
+                      <td class="total-score">${player.score}</td>
+                    </tr>
+                  `,
+                )
+                .join("")}
+            </tbody>
+          </table>
         </div>
-
       </section>
 
       <!-- YOUR HAND -->
@@ -911,16 +934,41 @@ function renderGame(
         },
       );
     });
+
+    container
+      .querySelectorAll<HTMLButtonElement>("[data-trump-suit]")
+      .forEach((button) => {
+        button.addEventListener("click", () => {
+          const suit = button.dataset.trumpSuit;
+
+          if (!suit) {
+            return;
+          }
+
+          recordDebugEvent(
+            "ACTION",
+            `USER ${username} -> choose_trump suit=${suit}`,
+          );
+
+          sendSocketAction(
+            socket,
+            "choose_trump",
+            { suit },
+          );
+        });
+      });
 }
 
 function sendSocketAction(
   socket: WebSocket,
   type:
     | "submit_prediction"
-    | "play_card",
+    | "play_card"
+    | "choose_trump",
   payload: {
     prediction?: number;
     cardIndex?: number;
+    suit?: string;
   },
 ): void {
   if (socket.readyState !== WebSocket.OPEN) {

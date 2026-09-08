@@ -1,7 +1,7 @@
 import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
 import { isJester } from "../models/card.js";
-import { ScoreCalculator } from "./scoreCalculator.js";
+import { ScoreCalculator } from "./wizardScoreCalculator.js";
 
 import type {
   GamePlayer,
@@ -10,6 +10,8 @@ import type {
   TrickState,
   WizardGameState,
 } from "../models/wizardGame.js";
+
+import type { Suit } from "../models/card.js";
 
 const ROUND_COUNT_BY_PLAYER_NUMBER: Record<number, number> = {
   3: 20,
@@ -60,6 +62,7 @@ export class WizardGameService {
       startingPlayerIndex: 0,
       currentPlayerIndex: 0,
       trumpCard: null,
+      trumpSuit: null,
       currentTrick,
       status: "waiting",
       deck: deck.getCards(),
@@ -95,6 +98,7 @@ export class WizardGameService {
   drawTrumpCard(game: WizardGameState): void {
     if (game.currentRound === game.totalRounds) {
       game.trumpCard = null;
+      game.trumpSuit = null;
       return;
     }
 
@@ -105,6 +109,14 @@ export class WizardGameService {
     }
 
     game.trumpCard = trumpCard;
+
+    if (isJester(trumpCard)) {
+      game.trumpSuit = null;
+      game.phase = "trump-selection";
+      return;
+    }
+
+    game.trumpSuit = this.rules.getTrumpSuit(trumpCard);
   }
 
   playCard(
@@ -184,7 +196,8 @@ export class WizardGameService {
 
     const winnerUsername = this.rules.determineTrickWinner(
       game.currentTrick.playedCards,
-      game.trumpCard,
+      game.trumpSuit,
+      game.currentRound === game.totalRounds,
     );
 
     if (!winnerUsername) {
@@ -332,6 +345,7 @@ export class WizardGameService {
       startingPlayerIndex: game.startingPlayerIndex,
       currentPlayerIndex: game.currentPlayerIndex,
       trumpCard: game.trumpCard,
+      trumpSuit: game.trumpSuit,
       currentTrick: game.currentTrick,
       status: game.status,
       phase: game.phase,
@@ -349,5 +363,32 @@ export class WizardGameService {
     } else {
       this.startNextTrick(game);
     }
+  }
+
+  chooseTrumpSuit(
+    game: WizardGameState,
+    username: string,
+    suit: Suit,
+  ): void {
+    if (game.phase !== "trump-selection") {
+      throw new Error("Trump suit cannot be selected right now");
+    }
+
+    const currentPlayer = game.players[game.currentPlayerIndex];
+
+    if (!currentPlayer) {
+      throw new Error("Current player does not exist");
+    }
+
+    if (currentPlayer.username !== username) {
+      throw new Error("It is not this player's turn");
+    }
+
+    if (!["Blue", "Red", "Yellow", "Green"].includes(suit)) {
+      throw new Error("Invalid trump suit");
+    }
+
+    game.trumpSuit = suit;
+    game.phase = "predictions";
   }
 }

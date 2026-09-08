@@ -1,6 +1,7 @@
 import { WizardBotService } from "./wizardBotService.js";
 import { WizardGameService } from "./wizardGameService.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
+import { wizardLobbyManager } from "./wizardLobbyManager.js";
 
 export type GameStateBroadcaster = (
   roomId: number,
@@ -28,7 +29,13 @@ async run(roomId: number): Promise<void> {
     while (true) {
       const game = wizardSessionManager.getGame(roomId);
 
-      if (!game || game.phase === "finished") {
+      if (!game) {
+        return;
+      }
+
+      if (game.phase === "finished") {
+        wizardLobbyManager.setRoomStatus(roomId, "waiting");
+        wizardSessionManager.deleteGame(roomId);
         return;
       }
 
@@ -71,6 +78,26 @@ async run(roomId: number): Promise<void> {
       // to trigger the runner after the human acts.
       if (!this.botService.isBot(currentPlayer.username)) {
         return;
+      }
+
+      // --------------------------------------------------
+      // BOT TRUMP SELECTION
+      // --------------------------------------------------
+
+      if (game.phase === "trump-selection") {
+        const trumpSuit = this.botService.chooseTrumpSuit(game);
+
+        this.gameService.chooseTrumpSuit(
+          game,
+          currentPlayer.username,
+          trumpSuit,
+        );
+
+        wizardSessionManager.saveGame(game);
+        this.broadcast(roomId);
+
+        await this.wait(700);
+        continue;
       }
 
       // --------------------------------------------------

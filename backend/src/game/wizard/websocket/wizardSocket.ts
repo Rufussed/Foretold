@@ -3,6 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
+import type { Suit } from "../models/card.js";
 
 interface SocketQuery {
 	token?: string;
@@ -12,6 +13,7 @@ interface SocketMessage {
 	type?: string;
 	prediction?: number;
 	cardIndex?: number;
+	suit?: string;
 }
 
 interface RoomConnection {
@@ -136,6 +138,7 @@ export function registerWizardSocket(
 							Number(message.prediction),
 						);
 					} else if (message.type === "play_card") {
+
 						const currentPlayer =
 							currentGame.players[currentGame.currentPlayerIndex];
 
@@ -144,6 +147,15 @@ export function registerWizardSocket(
 						}
 
 						gameService.playCard(currentGame, Number(message.cardIndex));
+
+					} else if (message.type === "choose_trump") {
+
+						gameService.chooseTrumpSuit(
+							currentGame,
+							username,
+							message.suit as Suit,
+						);
+
 					} else {
 						throw new Error("Unknown action");
 					}

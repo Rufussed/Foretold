@@ -25,7 +25,12 @@ export class ScoreCalculator {
         player.tricksWon,
       );
 
-      player.roundScores.push(roundScore);
+      player.roundScores.push({
+        prediction: player.prediction,
+        tricksWon: player.tricksWon,
+        score: roundScore,
+      });
+
       player.score += roundScore;
     }
   }

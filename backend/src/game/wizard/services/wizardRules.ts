@@ -107,24 +107,33 @@ export class WizardRules {
 
   determineTrickWinner(
     playedCards: Array<{ username: string; card: Card }>,
-    trumpCard: Card | null,
+    trumpSuit: Suit | null,
+    isFinalRound: boolean,
   ): string | null {
     if (playedCards.length === 0) {
       return null;
     }
 
-    const trumpSuit = this.getTrumpSuit(trumpCard);
-
     const leadSuit =
       playedCards.find(({ card }) => !isJester(card))?.card.suit ?? null;
 
-	const firstPlay = playedCards[0];
+    const wizardPlays = playedCards.filter(({ card }) => isWizard(card));
 
-	if (!firstPlay) {
-	return null;
-	}
+    if (wizardPlays.length > 0) {
+      if (isFinalRound) {
+        return wizardPlays[wizardPlays.length - 1]?.username ?? null;
+      }
 
-	let winningPlay = firstPlay;
+      return wizardPlays[0]?.username ?? null;
+    }
+
+    const firstPlay = playedCards[0];
+
+    if (!firstPlay) {
+      return null;
+    }
+
+    let winningPlay = firstPlay;
 
     for (const currentPlay of playedCards.slice(1)) {
       if (
