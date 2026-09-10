@@ -6,6 +6,7 @@ import {
 } from "../models/card.js";
 
 export class WizardRules {
+  // A Wizard or Jester turned as trump does not establish a trump suit.
   getTrumpSuit(trumpCard: Card | null): Suit | null {
     if (!trumpCard || isWizard(trumpCard) || isJester(trumpCard)) {
       return null;
@@ -14,6 +15,8 @@ export class WizardRules {
     return trumpCard.suit;
   }
 
+  // Wizards and Jesters are suit-independent, so they do not satisfy the
+  // requirement to hold a normal card in the lead suit.
   hasLeadSuit(hand: Card[], leadSuit: Suit | null): boolean {
     if (!leadSuit) {
       return false;
@@ -27,6 +30,8 @@ export class WizardRules {
     );
   }
 
+  // A player must follow the lead suit when possible. Special cards remain
+  // legal at any point in the trick.
   isValidCardPlay(
     card: Card,
     hand: Card[],
@@ -47,6 +52,8 @@ export class WizardRules {
     return card.suit === leadSuit;
   }
 
+  // Return a positive value when the first card wins, a negative value when
+  // the second wins, and zero when neither card outranks the other.
   compareCards(
     firstCard: Card,
     secondCard: Card,
@@ -105,6 +112,9 @@ export class WizardRules {
     return 0;
   }
 
+  // Determine the winner from cards played in turn order. In the final round
+  // Wizards are resolved in reverse play order, matching the game's special
+  // no-trump end-round rule.
   determineTrickWinner(
     playedCards: Array<{ username: string; card: Card }>,
     trumpSuit: Suit | null,
@@ -117,6 +127,8 @@ export class WizardRules {
     const leadSuit =
       playedCards.find(({ card }) => !isJester(card))?.card.suit ?? null;
 
+    // Handle Wizards before ordinary card comparison because multiple
+    // Wizards require a different ordering in the final round.
     const wizardPlays = playedCards.filter(({ card }) => isWizard(card));
 
     if (wizardPlays.length > 0) {

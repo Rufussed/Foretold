@@ -7,6 +7,8 @@ export type GameStateBroadcaster = (
   roomId: number,
 ) => void;
 
+// Advances bot turns automatically while yielding on human turns. The socket
+// handler starts this runner again whenever a human submits an action.
 export class WizardGameRunner {
   private readonly botService: WizardBotService;
   private readonly runningRooms = new Set<number>();
@@ -19,6 +21,7 @@ export class WizardGameRunner {
   }
 
 async run(roomId: number): Promise<void> {
+  // A Set prevents simultaneous runner loops from processing the same room.
   if (this.runningRooms.has(roomId)) {
     return;
   }
@@ -34,6 +37,8 @@ async run(roomId: number): Promise<void> {
       }
 
       if (game.phase === "finished") {
+        // Finished games are removed from memory and their lobby becomes
+        // available for a new game.
         wizardLobbyManager.setRoomStatus(roomId, "waiting");
         wizardSessionManager.deleteGame(roomId);
         return;
@@ -48,7 +53,8 @@ async run(roomId: number): Promise<void> {
         game.currentTrick.playedCards.length ===
           game.players.length
       ) {
-        // Keep the completed trick visible.
+        // Keep the completed trick visible briefly before clearing it and
+        // moving the winner into the lead position.
         await this.wait(2500);
 
         const currentGame =
@@ -74,8 +80,8 @@ async run(roomId: number): Promise<void> {
         return;
       }
 
-      // Human's turn: stop and wait for the socket
-      // to trigger the runner after the human acts.
+      // Human's turn: stop and wait for the socket to trigger the runner after
+      // the human acts.
       if (!this.botService.isBot(currentPlayer.username)) {
         return;
       }

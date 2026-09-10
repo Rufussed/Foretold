@@ -3,6 +3,8 @@ import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
 import { renderWizardGamePage } from "../pages/WizardGame";
 
+// The frontend uses hash routes so navigation works without a server-side
+// fallback configuration. Protected routes redirect unauthenticated users.
 function renderCurrentRoute(container: HTMLElement): void {
   const route = window.location.hash || "#/home";
 
@@ -62,6 +64,7 @@ function renderCurrentRoute(container: HTMLElement): void {
 }
 
 export function startRouter(container: HTMLElement): void {
+  // Render immediately and then re-render whenever the URL hash changes.
   renderCurrentRoute(container);
 
   window.addEventListener("hashchange", () => {

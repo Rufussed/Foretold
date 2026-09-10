@@ -7,6 +7,8 @@ import type {
 
 const TOKEN_KEY = "wizardToken";
 
+// Authentication owns network calls and token persistence; pages only submit
+// user input and react to success or failure.
 export async function login(
   username: string,
   password: string,
@@ -69,6 +71,8 @@ export async function getCurrentUser(): Promise<User> {
     throw new Error("Not logged in");
   }
 
+  // An invalid token is removed immediately so protected routes cannot keep
+  // treating the browser as authenticated.
   const response = await fetch(`${API_BASE}/users/me`, {
     headers: {
       Authorization: `Bearer ${token}`,

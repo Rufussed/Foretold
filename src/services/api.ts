@@ -1,5 +1,7 @@
 export const API_BASE = "http://127.0.0.1:3000";
 
+// Kept separate from the UI so the health check can be reused without making
+// pages know how the backend is addressed.
 interface BackendHealth {
   status: string;
   message: string;

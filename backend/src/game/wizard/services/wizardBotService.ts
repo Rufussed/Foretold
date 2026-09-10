@@ -9,10 +9,15 @@ export class WizardBotService {
 
   constructor(private readonly gameService: WizardGameService) {}
 
+  // Bot usernames use a prefix so the game runner can distinguish automated
+  // players from human players without adding another player-state field.
   isBot(username: string): boolean {
     return username.startsWith("bot-");
   }
 
+  // Choose the suit with the strongest overall hand: suit length is the
+  // primary factor, and the sum of card values breaks ties. Wizards and
+  // Jesters are excluded because they do not provide ordinary suit strength.
   chooseTrumpSuit(game: WizardGameState): Suit {
     const player = game.players[game.currentPlayerIndex];
 
@@ -47,6 +52,8 @@ export class WizardBotService {
     return bestSuit;
   }
 
+  // Estimate the bid from high cards. The round number is also the maximum
+  // legal prediction, so the cap keeps the bot inside the game contract.
   choosePrediction(game: WizardGameState): number {
     const player = game.players[game.currentPlayerIndex];
 
@@ -61,6 +68,8 @@ export class WizardBotService {
     return Math.min(prediction, game.currentRound);
   }
 
+  // Return the first legal card. This is intentionally a simple strategy:
+  // WizardRules remains the single source of truth for following-suit rules.
   chooseCardIndex(game: WizardGameState): number {
     const player = game.players[game.currentPlayerIndex];
 

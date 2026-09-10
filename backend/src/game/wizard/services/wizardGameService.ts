@@ -20,6 +20,8 @@ const ROUND_COUNT_BY_PLAYER_NUMBER: Record<number, number> = {
   6: 10,
 };
 
+// Owns the mutable game state and enforces the order of Wizard phases. Rule
+// comparisons stay in WizardRules so this service remains an orchestrator.
 export class WizardGameService {
   private readonly rules = new WizardRules();
   private readonly scoreCalculator = new ScoreCalculator();
@@ -30,7 +32,7 @@ export class WizardGameService {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
     }
-  // const wizardBotService = new WizardBotService(wizardGameService);
+  // The number of rounds is derived from the fixed 60-card deck.
   const totalRounds = ROUND_COUNT_BY_PLAYER_NUMBER[usernames.length];
 
 	if (totalRounds === undefined) {
@@ -76,6 +78,8 @@ export class WizardGameService {
   }
 
   dealRound(game: WizardGameState): void {
+    // Each round starts with fresh hands and trick counters. Cumulative scores
+    // remain on the players across rounds.
     const cardsPerPlayer = game.currentRound;
 
     for (const player of game.players) {
@@ -96,6 +100,8 @@ export class WizardGameService {
   }
 
   drawTrumpCard(game: WizardGameState): void {
+    // The final round uses every remaining card for hands, so no trump card is
+    // drawn. A Jester requires the current player to choose the trump suit.
     if (game.currentRound === game.totalRounds) {
       game.trumpCard = null;
       game.trumpSuit = null;
@@ -123,6 +129,8 @@ export class WizardGameService {
     game: WizardGameState,
     cardIndex: number,
   ): void {
+    // This method validates and records one play. A complete trick is resolved
+    // immediately, while the caller advances to the next trick afterward.
 
     if (game.phase !== "playing") {
       throw new Error("Cards cannot be played yet");
@@ -194,6 +202,8 @@ export class WizardGameService {
       throw new Error("The trick is not complete");
     }
 
+    // The winner leads the next trick, so update the turn index as part of
+    // resolving the current trick rather than when the next trick begins.
     const winnerUsername = this.rules.determineTrickWinner(
       game.currentTrick.playedCards,
       game.trumpSuit,
@@ -237,6 +247,8 @@ export class WizardGameService {
     username: string,
     prediction: number,
   ): void {
+    // Predictions are collected in rotation. Once all are present, play starts
+    // with the round's starting player, not the player who bid last.
     const currentPlayer = game.players[game.currentPlayerIndex];
 
     if (game.phase !== "predictions") {
@@ -282,6 +294,8 @@ export class WizardGameService {
   }
 
   finishRound(game: WizardGameState): void {
+    // Scores are calculated before either ending the game or preparing the next
+    // round, ensuring the final round is included in the results.
     if (game.players.some((player) => player.prediction === null)) {
       throw new Error("All players must submit predictions");
     }
@@ -318,6 +332,7 @@ export class WizardGameService {
     game: WizardGameState,
     username: string,
   ): PublicWizardGameState {
+    // Hide every other player's hand while preserving card counts for the UI.
     const requestingPlayer = game.players.find(
       (player) => player.username === username,
     );
@@ -370,6 +385,8 @@ export class WizardGameService {
     username: string,
     suit: Suit,
   ): void {
+    // Only the player who received a Jester as trump may choose the suit, and
+    // selecting it moves the game back into the prediction phase.
     if (game.phase !== "trump-selection") {
       throw new Error("Trump suit cannot be selected right now");
     }

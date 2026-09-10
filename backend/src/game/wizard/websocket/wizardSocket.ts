@@ -23,6 +23,8 @@ interface RoomConnection {
 
 const connections = new Map<number, Set<RoomConnection>>();
 
+// Keep WebSocket payload formatting in one place so every event uses the same
+// JSON serialization and only sends to open connections.
 function sendJson(socket: WebSocket, message: unknown): void {
 	if (socket.readyState === socket.OPEN) {
 		socket.send(JSON.stringify(message));
@@ -33,6 +35,8 @@ export function broadcastGameState(
 	roomId: number,
 	gameService: WizardGameService,
 ): void {
+	// Each player receives a personalized public state because hand visibility
+	// depends on the username attached to that connection.
 	const game = wizardSessionManager.getGame(roomId);
 	const roomConnections = connections.get(roomId);
 
@@ -66,6 +70,8 @@ export function registerWizardSocket(
 	server: FastifyInstance,
 	gameService: WizardGameService,
 ): WizardGameRunner {
+	// The runner is shared by all connections in a room; it serializes bot and
+	// human-driven state transitions through the session manager.
 	const runner = new WizardGameRunner(
 		gameService,
 		(roomId) => broadcastGameState(roomId, gameService),
@@ -75,6 +81,7 @@ export function registerWizardSocket(
 		"/games/:roomId/socket",
 		{ websocket: true },
 		async (socket, request) => {
+			// Authenticate the token before registering the socket or exposing state.
 			const roomId = Number(request.params.roomId);
 			const token = request.query.token;
 
@@ -114,6 +121,8 @@ export function registerWizardSocket(
 			broadcastGameState(roomId, gameService);
 
 			socket.on("message", (rawMessage: { toString(): string }) => {
+				// Parse and validate each action against the current game state. The
+				// service remains responsible for enforcing game rules and turn order.
 				let message: SocketMessage;
 
 				try {

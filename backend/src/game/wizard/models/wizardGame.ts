@@ -1,5 +1,7 @@
 import type { Card, Suit } from "./card.js";
 
+// A lobby room exists before a game starts and keeps the player list used to
+// initialize the game state.
 export interface Room {
   id: number;
   name: string;
@@ -18,6 +20,8 @@ export interface GamePlayer {
   roundScores: RoundScore[];
 }
 
+// A played card retains its owner so the rules service can return a username
+// rather than exposing internal player-array indexes.
 export interface PlayedCard {
   username: string;
   card: Card;
@@ -43,6 +47,8 @@ export interface WizardGameState {
   phase: "trump-selection" | "predictions" | "playing" | "finished";
 }
 
+// This is the client-safe projection of WizardGameState. Other players' cards
+// are omitted while hand sizes remain available to render the game UI.
 export interface PublicGamePlayer {
   username: string;
   hand: Card[];

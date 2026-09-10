@@ -1,6 +1,8 @@
 import type { WizardGameState } from "../models/wizardGame.js";
 
 export class ScoreCalculator {
+  // Wizard rewards an exact bid with a base bonus; misses lose ten points per
+  // trick of difference.
   calculateRoundScore(
     prediction: number,
     actualTricks: number,
@@ -12,6 +14,7 @@ export class ScoreCalculator {
     return Math.abs(prediction - actualTricks) * -10;
   }
 
+  // Record both the round result and the cumulative score for every player.
   updatePlayerScores(game: WizardGameState): void {
     for (const player of game.players) {
       if (player.prediction === null) {
@@ -35,6 +38,8 @@ export class ScoreCalculator {
     }
   }
 
+  // Return the first player with the highest score. Ties intentionally remain
+  // tied by preserving the existing player order.
   getWinner(game: WizardGameState): string | null {
     if (game.players.length === 0) {
       return null;

@@ -29,6 +29,8 @@ export interface Card {
   suit: Suit;
 }
 
+// Wizards and Jesters have special behavior and are not treated like normal
+// numbered cards when validating plays or comparing trick winners.
 export function isWizard(card: Card): boolean {
   return card.value === 14;
 }

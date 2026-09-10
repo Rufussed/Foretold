@@ -6,6 +6,8 @@ export interface GameSocketMessage {
 	error?: string;
 }
 
+// WebSocket is selected from the current page protocol so secure deployments
+// use wss while local HTTP development uses ws.
 export function createGameSocket(
 	roomId: number,
 	token: string,

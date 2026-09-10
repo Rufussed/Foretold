@@ -10,6 +10,7 @@ export class DeckService {
     this.reset();
   }
 
+  // Build the standard 60-card deck: four suits with values 0 through 14.
   reset(): void {
     this.cards = [];
 
@@ -23,6 +24,8 @@ export class DeckService {
     }
   }
 
+  // Fisher-Yates shuffle gives every card a new position without changing the
+  // deck contents or its 60-card size.
 	shuffle(): void {
 	for (let index = this.cards.length - 1; index > 0; index--) {
 		const randomIndex = Math.floor(Math.random() * (index + 1));
@@ -38,6 +41,7 @@ export class DeckService {
 	}
 	}
 
+  // Return a copy so callers cannot mutate the service's internal deck array.
   getCards(): Card[] {
     return [...this.cards];
   }
