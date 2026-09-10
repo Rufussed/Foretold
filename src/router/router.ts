@@ -3,10 +3,30 @@ import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
 import { renderWizardGamePage } from "../pages/WizardGame";
 
+// PlayCanvas is large; only pull the visualizer bundle in when it's actually
+// needed instead of paying for it on every route.
+let visualizerModule: typeof import("../pages/Visualizer") | null = null;
+
+async function destroyVisualizer(): Promise<void> {
+  visualizerModule?.destroyVisualizer();
+}
+
+async function loadVisualizer(
+  container: HTMLElement,
+  roomId: number,
+): Promise<void> {
+  visualizerModule ??= await import("../pages/Visualizer");
+  visualizerModule.renderVisualizerPage(container, roomId);
+}
+
 // The frontend uses hash routes so navigation works without a server-side
 // fallback configuration. Protected routes redirect unauthenticated users.
 function renderCurrentRoute(container: HTMLElement): void {
   const route = window.location.hash || "#/home";
+
+  if (!route.startsWith("#/game/") || !route.endsWith("/visualizer")) {
+    destroyVisualizer();
+  }
 
   if (route === "#/profile") {
     const token = localStorage.getItem("wizardToken");
@@ -41,7 +61,10 @@ function renderCurrentRoute(container: HTMLElement): void {
       return;
     }
 
-    const roomIdText = route.slice("#/game/".length);
+    const isVisualizerRoute = route.endsWith("/visualizer");
+    const roomIdText = isVisualizerRoute
+      ? route.slice("#/game/".length, -"/visualizer".length)
+      : route.slice("#/game/".length);
     const roomId = Number(roomIdText);
 
     if (!Number.isInteger(roomId) || roomId <= 0) {
@@ -53,6 +76,11 @@ function renderCurrentRoute(container: HTMLElement): void {
           </section>
         </main>
       `;
+      return;
+    }
+
+    if (isVisualizerRoute) {
+      void loadVisualizer(container, roomId);
       return;
     }
 

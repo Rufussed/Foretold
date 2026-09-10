@@ -30,3 +30,13 @@ data/
 divideConcerns.md
 PROJECT_CONTEXT.md
 docs/
+
+# Blender auto-backup copies - noise, and as large as the file itself
+*.blend1
+
+# Mixamo character source downloads - large, and re-downloadable
+blender/witch1.fbx
+blender/wizard1.fbx
+
+# Exported build artifacts - re-export these from the .blend sources
+*.glb

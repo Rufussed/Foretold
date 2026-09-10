@@ -516,3 +516,65 @@ button:hover {
     min-height: 80px;
   }
 }
+
+.visualizer-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.visualizer-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.visualizer-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.visualizer-nav {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.visualizer-nav a {
+  padding: 8px 14px;
+  color: white;
+  background: rgb(23 32 51 / 50%);
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-nav a:hover {
+  background: rgb(23 32 51 / 70%);
+}
+
+#wizard-visualizer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ddd;
+  font-size: 1.1rem;
+  background: #000;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#wizard-visualizer-loading.hidden {
+  opacity: 0;
+}

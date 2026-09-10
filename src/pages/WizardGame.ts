@@ -370,6 +370,7 @@ function renderGame(
         <a href="#/home">Home</a>
         <a href="#/lobby">Lobby</a>
         <a href="#/profile">Profile</a>
+        <a href="#/game/${game.roomId}/visualizer">3D View</a>
       </nav>
 
       <!-- GAME HEADER -->
@@ -1020,14 +1021,6 @@ function formatCard(
   }
 
   return `${card.value} of ${card.suit}`;
-}
-
-function formatPrediction(
-  prediction: number | null,
-): string {
-  return prediction === null
-    ? "—"
-    : String(prediction);
 }
 
 function getErrorMessage(
