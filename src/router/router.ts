@@ -1,7 +1,7 @@
 import { renderHomePage } from "../pages/Home";
 import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
-import { renderWizardGamePage } from "../pages/WizardGame";
+import { destroyWizardGamePage, renderWizardGamePage } from "../pages/WizardGame";
 
 // three.js is large; only pull the visualizer bundle in when it's actually
 // needed instead of paying for it on every route.
@@ -9,6 +9,14 @@ let visualizerModule: typeof import("../pages/Visualizer") | null = null;
 
 async function destroyVisualizer(): Promise<void> {
   visualizerModule?.destroyVisualizer();
+}
+
+// The waiting room also pulls in three.js for its avatar portraits.
+let roomModule: typeof import("../pages/Room") | null = null;
+
+async function loadRoom(container: HTMLElement, roomId: number): Promise<void> {
+  roomModule ??= await import("../pages/Room");
+  void roomModule.renderRoomPage(container, roomId);
 }
 
 async function loadVisualizer(
@@ -27,6 +35,9 @@ function renderCurrentRoute(container: HTMLElement): void {
   if (!route.startsWith("#/game/") || !route.endsWith("/visualizer")) {
     destroyVisualizer();
   }
+
+  roomModule?.destroyRoomPage();
+  destroyWizardGamePage();
 
   if (route === "#/profile") {
     const token = localStorage.getItem("wizardToken");
@@ -50,6 +61,25 @@ function renderCurrentRoute(container: HTMLElement): void {
     }
     
     renderLobbyPage(container);
+    return;
+  }
+
+  if (route.startsWith("#/room/")) {
+    const token = localStorage.getItem("wizardToken");
+
+    if (!token) {
+      window.location.hash = "#/home";
+      return;
+    }
+
+    const roomId = Number(route.slice("#/room/".length));
+
+    if (!Number.isInteger(roomId) || roomId <= 0) {
+      window.location.hash = "#/lobby";
+      return;
+    }
+
+    void loadRoom(container, roomId);
     return;
   }
 

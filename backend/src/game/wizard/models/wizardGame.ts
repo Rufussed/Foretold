@@ -1,4 +1,11 @@
+import type { AvatarId } from "./avatar.js";
 import type { Card, Suit } from "./card.js";
+
+// A room member and the avatar they claimed, if any, while the room waits.
+export interface RoomPlayer {
+  username: string;
+  avatar: AvatarId | null;
+}
 
 // A lobby room exists before a game starts and keeps the player list used to
 // initialize the game state.
@@ -7,12 +14,13 @@ export interface Room {
   name: string;
   createdBy: number;
   maxPlayers: number;
-  players: string[];
+  players: RoomPlayer[];
   status: "waiting" | "playing";
 }
 
 export interface GamePlayer {
   username: string;
+  avatar: AvatarId;
   hand: Card[];
   prediction: number | null;
   tricksWon: number;
@@ -51,6 +59,7 @@ export interface WizardGameState {
 // are omitted while hand sizes remain available to render the game UI.
 export interface PublicGamePlayer {
   username: string;
+  avatar: AvatarId;
   hand: Card[];
   handCount: number;
   prediction: number | null;

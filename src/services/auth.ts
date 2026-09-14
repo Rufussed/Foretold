@@ -64,6 +64,10 @@ export async function register(
   return data;
 }
 
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
+}
+
 export async function getCurrentUser(): Promise<User> {
   const token = localStorage.getItem(TOKEN_KEY);
 

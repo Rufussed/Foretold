@@ -71,10 +71,10 @@ export const AMBIENT = {
 // ══════════════════════════════════════════════════════════════════════════
 
 export const CAMERA = {
-  // Mouse orbit/pan/zoom, handed over once the intro camera animation has
-  // finished (straight away if there isn't one), so the authored camera move
-  // still plays untouched first.
-  orbitControls: true,
+  // Whether mouse orbit/pan/zoom starts switched on; press O to toggle it.
+  // The controls take over once the intro camera animation has finished
+  // (straight away if there isn't one), so the authored move plays first.
+  orbitControls: false,
 
   // Fallback orbit target if the table can't be found; normally the target is
   // placed on the camera's line of sight so taking control doesn't jump.
@@ -217,4 +217,167 @@ export const DEFAULT_TORCH: TorchSettings = {
 export const TORCH_OVERRIDES: Record<string, Partial<TorchSettings>> = {
   "torch.001": { castShadows: true },
   "torch.003": { castShadows: true },
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// AVATAR PICKER  (waiting room)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Framing for the six live avatar portraits. Each camera sits at face height,
+// in front of the character; its facing is read from the rig. Sizes are in
+// multiples of each character's own hip-to-face height, so characters of
+// different sizes are framed alike.
+export const AVATAR_PICKER = {
+  // Vertical field of view of each portrait camera, in degrees. three default: 50.
+  fov: 30,
+
+  // How much of the character fits vertically: 1 is hips to face, larger
+  // zooms out.
+  span: 1.6,
+
+  // Where the camera aims, relative to the face: 0 looks straight at it,
+  // negative tilts down the body while the camera stays at face height.
+  lookOffset: -0.3,
+
+  // Turns the camera around the character, in degrees; 0 is straight on.
+  azimuthDegrees: 0,
+
+  // The one light, placed at the camera and aimed at the face.
+  keyLightIntensity: 3,
+
+  // Fill, so the side away from the key light isn't pure black. three default: 1.
+  ambientIntensity: 0.6,
+
+  // Taken avatars are drawn this much dimmer, 0 black to 1 unchanged.
+  takenBrightness: 0.3,
+
+  // Portraits are small, so they can afford full sharpness on HD screens.
+  maxPixelRatio: 2,
+
+  // Portraits redraw at most this often, leaving headroom for the page.
+  targetFps: 30,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// EMOTES
+// ══════════════════════════════════════════════════════════════════════════
+
+export const EMOTES = {
+  // Blend into an emote and back out to idle, in seconds.
+  crossfadeSeconds: 0.2,
+
+  // Minimum gap between emotes on one character, in seconds.
+  cooldownSeconds: 1.5,
+
+  // A press during the cooldown: "queue" plays the newest press once it ends,
+  // "drop" ignores it.
+  onCooldownHit: "queue" as "queue" | "drop",
+
+  // Stand-in for AI players deciding to emote: bots in a live game, or every
+  // seat on the demo table, emote at random within this many seconds.
+  aiEnabled: true,
+  aiMinSeconds: 6,
+  aiMaxSeconds: 15,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// DEV CONTROLS  (dev builds only)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const DEV = {
+  // "/" steps every seat through the clips; "." rotates the characters round
+  // the seats, on the demo table only (a live game seats the real players).
+  demoControls: true,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// SELF PORTRAIT  (your own character, bottom right of the table view)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Same framing controls as AVATAR_PICKER; the size on screen is set in CSS
+// (.visualizer-self-view in style.css).
+export const SELF_PORTRAIT = {
+  // Vertical field of view, in degrees. three default: 50.
+  fov: 30,
+
+  // How much of the character fits vertically, in hip-to-face heights. Lower
+  // fills the box more; too low crops raised-arm emotes.
+  span: 1.8,
+
+  // Aim relative to the face: 0 straight at it, negative tilts down the body.
+  lookOffset: -0.15,
+
+  // Turns the camera around the character, in degrees; 0 is straight on.
+  azimuthDegrees: 0,
+
+  // The one light, at the camera and aimed at the face.
+  keyLightIntensity: 3,
+
+  // Fill so the side away from the key light isn't pure black. three default: 1.
+  ambientIntensity: 0.6,
+
+  maxPixelRatio: 2,
+  targetFps: 30,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// CARDS  (code-generated faces, until handmade textures replace them)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const CARDS = {
+  // Face colour for each suit, as CSS colours.
+  suitColors: {
+    Red: "#c62828",
+    Green: "#2e7d32",
+    Blue: "#1565c0",
+    Yellow: "#f9a825",
+  } as Record<string, string>,
+
+  // Trump card colour when there's no trump suit: a Jester was turned up, or a
+  // Wizard whose suit hasn't been chosen yet.
+  noTrumpColor: "#8a8a8a",
+
+  // Pixel size of each generated face; 5:7, matching the card mesh.
+  textureWidth: 512,
+  textureHeight: 716,
+
+  // Corner label height, as a fraction of the card width.
+  labelSize: 0.18,
+
+  // White outline around the label, as a fraction of the label height.
+  outlineWidth: 0.08,
+
+  // Gap from the card's top and side edges to the outlined number, as a
+  // fraction of the label height. The mesh's corners are rounded to about
+  // 0.25 of the label height, so much below 0.1 starts to clip.
+  labelMargin: 0.12,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// CARD HANDLING  (your hand, on the scene canvas)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const CARD_HANDLING = {
+  // Outline around the card under the pointer, or being dragged.
+  outlineColor: "#ffd54f",
+
+  // Outline thickness on each side, as a fraction of the card width.
+  outlineWidth: 0.015,
+
+  // How far a clicked card rises so its whole face shows, in card lengths.
+  raiseLengths: 1.2,
+
+  // How quickly cards glide to where they're going; higher is snappier.
+  followSpeed: 12,
+
+  // Pointer travel, in pixels, before a press becomes a drag instead of a click.
+  dragThresholdPx: 6,
+
+  // A card counts as dropped on the play area when released above where the
+  // raised cards sit, plus this many pixels.
+  playAreaMarginPx: 0,
+
+  // How long a played card waits for the server to accept it before it
+  // returns to the hand.
+  pendingPlaySeconds: 5,
 };

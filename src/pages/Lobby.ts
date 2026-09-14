@@ -76,39 +76,13 @@ export async function renderLobbyPage(container: HTMLElement): Promise<void> {
           id: number;
           name: string;
           createdBy: number;
-          players: string[];
+          players: { username: string; avatar: string | null }[];
           maxPlayers: number;
           status: "waiting" | "playing";
         }) => {
-          const minimumBots = Math.max(
-            0,
-            3 - room.players.length,
+          const isMember = room.players.some(
+            (player) => player.username === currentUser.username,
           );
-
-          const maximumBots =
-            room.maxPlayers - room.players.length;
-
-          if (minimumBots > maximumBots) {
-            return "";
-          }
-
-          const botOptions = Array.from(
-            {
-              length: maximumBots - minimumBots + 1,
-            },
-            (_, index) => {
-              const botCount = minimumBots + index;
-
-              return `
-                <option
-                  value="${botCount}"
-                  ${botCount === minimumBots ? "selected" : ""}
-                >
-                  ${botCount}
-                </option>
-              `;
-            },
-          ).join("");
 
           return `
             <div class="panel">
@@ -124,22 +98,9 @@ export async function renderLobbyPage(container: HTMLElement): Promise<void> {
                 type="button"
                 data-room-id="${room.id}"
               >
-                Join
+                ${isMember ? "Open room" : "Join"}
               </button>
 
-              <label>
-                Bots
-                <select data-bot-count-room-id="${room.id}">
-                  ${botOptions}
-                </select>
-              </label>
-
-              <button
-                type="button"
-                data-start-room-id="${room.id}"
-              >
-                Start Game
-              </button>
               ${
                 room.createdBy === currentUser.id && room.status === "waiting"
                   ? `
@@ -177,120 +138,11 @@ export async function renderLobbyPage(container: HTMLElement): Promise<void> {
             return;
           }
 
-          button.disabled = true;
-
-          try {
-            const response = await fetch(
-              `${API_BASE}/wizard/lobby/join`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({ roomId }),
-              },
-            );
-
-            const data = (await response.json()) as {
-              error?: string;
-            };
-
-            if (!response.ok) {
-              throw new Error(
-                data.error ?? "Could not join room",
-              );
-            }
-
-            await loadRooms();
-          } catch (error) {
-            console.error("Could not join room:", error);
-
-            alert(
-              error instanceof Error
-                ? error.message
-                : "Could not join room",
-            );
-
-            button.disabled = false;
-          }
+          // The waiting room joins on arrival, so it doubles as a room link.
+          window.location.hash = `#/room/${roomId}`;
         });
       });
 
-    /*
-     * START GAME
-     */
-    roomList
-      .querySelectorAll<HTMLButtonElement>("[data-start-room-id]")
-      .forEach((button) => {
-        button.addEventListener("click", async () => {
-          const roomIdValue = button.dataset.startRoomId;
-
-          if (!roomIdValue) {
-            return;
-          }
-
-          const roomId = Number(roomIdValue);
-
-          if (!Number.isInteger(roomId) || roomId <= 0) {
-            return;
-          }
-
-          const botCountSelect =
-            roomList.querySelector<HTMLSelectElement>(
-              `[data-bot-count-room-id="${roomId}"]`,
-            );
-
-          const botCount = Number(
-            botCountSelect?.value ?? 0,
-          );
-
-          if (!Number.isInteger(botCount) || botCount < 0) {
-            return;
-          }
-
-          button.disabled = true;
-
-          try {
-            const response = await fetch(
-              `${API_BASE}/wizard/games`,
-              {
-                method: "POST",
-                headers: {
-                  "Content-Type": "application/json",
-                  Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify({
-                  roomId,
-                  botCount,
-                }),
-              },
-            );
-
-            const data = (await response.json()) as {
-              error?: string;
-            };
-
-            if (!response.ok && response.status !== 409) {
-              throw new Error(
-                data.error ?? "Could not start game",
-              );
-            }
-
-            window.location.hash = `#/game/${roomId}`;
-          } catch (error) {
-            console.error("Could not start game:", error);
-
-            button.disabled = false;
-
-            alert(
-              error instanceof Error
-                ? error.message
-                : "Could not start game",
-            );
-          }
-        });
-      });
       /*
  * DELETE ROOM
  */

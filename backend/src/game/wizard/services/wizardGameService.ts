@@ -12,6 +12,7 @@ import type {
 } from "../models/wizardGame.js";
 
 import type { Suit } from "../models/card.js";
+import { AVATAR_IDS, type AvatarId } from "../models/avatar.js";
 
 const ROUND_COUNT_BY_PLAYER_NUMBER: Record<number, number> = {
   3: 20,
@@ -19,6 +20,46 @@ const ROUND_COUNT_BY_PLAYER_NUMBER: Record<number, number> = {
   5: 12,
   6: 10,
 };
+
+// Players keep the avatar they claimed in the lobby. Bots, and anyone who
+// never chose, get a random avatar from those left, so everyone has one.
+function assignAvatars(
+  usernames: string[],
+  claimedAvatars: ReadonlyMap<string, AvatarId | null>,
+): AvatarId[] {
+  const taken = new Set<AvatarId>();
+
+  const claims = usernames.map((username) => {
+    const avatar = claimedAvatars.get(username) ?? null;
+
+    if (avatar === null || taken.has(avatar)) {
+      return null;
+    }
+
+    taken.add(avatar);
+    return avatar;
+  });
+
+  const unclaimed = AVATAR_IDS.filter((avatar) => !taken.has(avatar));
+
+  // Fisher-Yates shuffle of the leftovers.
+  for (let i = unclaimed.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const swap = unclaimed[i] as AvatarId;
+    unclaimed[i] = unclaimed[j] as AvatarId;
+    unclaimed[j] = swap;
+  }
+
+  return claims.map((avatar) => {
+    const assigned = avatar ?? unclaimed.shift();
+
+    if (!assigned) {
+      throw new Error("Not enough avatars for every player");
+    }
+
+    return assigned;
+  });
+}
 
 // Owns the mutable game state and enforces the order of Wizard phases. Rule
 // comparisons stay in WizardRules so this service remains an orchestrator.
@@ -28,6 +69,7 @@ export class WizardGameService {
   createGame(
     roomId: number,
     usernames: string[],
+    claimedAvatars: ReadonlyMap<string, AvatarId | null> = new Map(),
   ): WizardGameState {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
@@ -39,8 +81,11 @@ export class WizardGameService {
 	throw new Error("Unsupported player count");
 	}
 
-    const players: GamePlayer[] = usernames.map((username) => ({
+    const avatars = assignAvatars(usernames, claimedAvatars);
+
+    const players: GamePlayer[] = usernames.map((username, index) => ({
       username,
+      avatar: avatars[index] as AvatarId,
       hand: [],
       prediction: null,
       tricksWon: 0,
@@ -345,6 +390,7 @@ export class WizardGameService {
       roomId: game.roomId,
       players: game.players.map((player) => ({
         username: player.username,
+        avatar: player.avatar,
         hand:
           player.username === username
             ? player.hand

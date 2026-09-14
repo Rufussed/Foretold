@@ -578,3 +578,280 @@ button:hover {
 #wizard-visualizer-loading.hidden {
   opacity: 0;
 }
+/* ---------------------------------------------------------
+   WAITING ROOM
+   --------------------------------------------------------- */
+
+.room-page [hidden] {
+  display: none !important;
+}
+
+.room-count {
+  margin-top: -12px;
+  color: #5b6b82;
+}
+
+.room-message {
+  min-height: 1.4em;
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.room-players {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.room-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.room-player-avatar {
+  margin-left: auto;
+  color: #5b6b82;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.room-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------
+   AVATAR PICKER
+   --------------------------------------------------------- */
+
+.avatar-picker {
+  position: relative;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+/* Prefixed to outrank the global button:hover and button:disabled styles. */
+.avatar-picker .avatar-cell {
+  display: grid;
+  gap: 4px;
+  width: auto;
+  padding: 8px;
+  color: #172033;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.avatar-picker .avatar-cell:hover:not(:disabled) {
+  background: #f5f7fa;
+  border-color: #2457a6;
+}
+
+/* Thicker outline; padding shrinks by the same amount so nothing shifts. */
+.avatar-picker .avatar-cell.is-selected,
+.avatar-picker .avatar-cell.is-selected:hover {
+  padding: 6px;
+  background: #eef4ff;
+  border: 3px solid #2457a6;
+}
+
+.avatar-picker .avatar-cell.is-taken {
+  color: #8391a7;
+  background: #eceff3;
+  cursor: not-allowed;
+}
+
+.avatar-view {
+  display: block;
+  aspect-ratio: 1;
+}
+
+.avatar-owner {
+  min-height: 1.2em;
+  color: #5b6b82;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* One shared canvas over the grid; clicks pass through to the cells. */
+.avatar-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.visualizer-emotes {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  transform: translateX(-50%);
+}
+
+/* Prefixed to outrank the global button:hover style. */
+.visualizer-page .visualizer-emotes button {
+  padding: 8px 14px;
+  color: white;
+  background: rgb(23 32 51 / 50%);
+  border: 0;
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-page .visualizer-emotes button:hover {
+  background: rgb(23 32 51 / 70%);
+}
+
+/* Your own character, bottom right of the table view. The canvas fills the
+   whole box and the name sits over its lower edge. */
+.visualizer-self {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+  width: 196px;
+  height: 220px;
+  margin: 0;
+  overflow: hidden;
+  background: rgb(23 32 51 / 50%);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-self[hidden] {
+  display: none;
+}
+
+.visualizer-self-view {
+  position: absolute;
+  inset: 0;
+}
+
+.visualizer-self-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.visualizer-self-name {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 18px 8px 8px;
+  overflow: hidden;
+  color: white;
+  background: linear-gradient(transparent, rgb(23 32 51 / 70%));
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Narrow screens: a smaller portrait, and emotes kept clear of it on the left. */
+@media (max-width: 640px) {
+  .visualizer-self {
+    width: 126px;
+    height: 150px;
+  }
+
+  .visualizer-emotes {
+    right: 150px;
+    left: 16px;
+    justify-content: flex-start;
+    transform: none;
+  }
+}
+
+/* Prediction prompt: just above your card fan, clear of the trump card, with
+   no backdrop so the hand stays usable. The camera keeps the full scene height
+   in view, so the fan's top sits at the same fraction of the height (~73%) on
+   any window shape; raise "bottom" to lift the prompt higher. */
+.visualizer-page .prediction-modal {
+  position: absolute;
+  bottom: 28%;
+  left: 50%;
+  z-index: 2;
+  width: min(440px, calc(100% - 32px));
+  padding: 20px 24px;
+  color: white;
+  text-align: center;
+  background: rgb(23 32 51 / 85%);
+  border-radius: 14px;
+  box-shadow: 0 12px 32px rgb(0 0 0 / 35%);
+  transform: translateX(-50%);
+  backdrop-filter: blur(6px);
+}
+
+.visualizer-page .prediction-modal[hidden] {
+  display: none;
+}
+
+.prediction-modal h2 {
+  margin: 0 0 4px;
+  font-size: 26px;
+}
+
+.prediction-round {
+  margin: 0 0 16px;
+  color: #c9d3e3;
+  font-size: 14px;
+}
+
+.prediction-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Prefixed to outrank the global button styles. */
+.visualizer-page .prediction-options button {
+  min-width: 48px;
+  padding: 10px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.visualizer-page .prediction-options button.is-chosen {
+  color: #172033;
+  background: #f9a825;
+}
+
+.visualizer-page .prediction-options button:disabled:not(.is-chosen) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.prediction-error {
+  min-height: 1.2em;
+  margin: 12px 0 0;
+  color: #ffb4a8;
+  font-weight: 600;
+}

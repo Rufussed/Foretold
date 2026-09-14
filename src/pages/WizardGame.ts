@@ -197,10 +197,25 @@ function formatDebugEvents(): string {
     .join("\n");
 }
 
+// The page's game socket, and a count of page mounts. Leaving the page closes
+// the socket; otherwise every later game update would redraw this view over
+// whatever page is now showing (such as the 3D view). The count stops a load
+// that finishes after you've left from opening a socket or drawing.
+let activeSocket: WebSocket | null = null;
+let mountCount = 0;
+
+export function destroyWizardGamePage(): void {
+  mountCount += 1;
+  activeSocket?.close();
+  activeSocket = null;
+}
+
 export async function renderWizardGamePage(
   container: HTMLElement,
   roomId: number,
 ): Promise<void> {
+  destroyWizardGamePage();
+  const mount = mountCount;
   const token = localStorage.getItem("wizardToken");
 
   if (!token) {
@@ -219,9 +234,18 @@ export async function renderWizardGamePage(
 
     recordGameState(game);
 
+    if (mount !== mountCount) {
+      return;
+    }
+
     const socket = createGameSocket(roomId, token);
+    activeSocket = socket;
 
     socket.addEventListener("message", (event) => {
+      if (mount !== mountCount) {
+        return;
+      }
+
       const message = JSON.parse(
         event.data as string,
       ) as GameSocketMessage;
@@ -271,6 +295,10 @@ export async function renderWizardGamePage(
       socket,
     );
   } catch (error) {
+    if (mount !== mountCount) {
+      return;
+    }
+
     container.innerHTML = `
       <main class="page">
         <section class="panel">

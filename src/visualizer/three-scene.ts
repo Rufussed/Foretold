@@ -9,6 +9,7 @@ import {
   DEFAULT_TORCH,
   ANIMATION,
   CAMERA,
+  DEV,
   RENDER,
   TORCH_OVERRIDES,
 } from "./config";
@@ -43,9 +44,28 @@ export interface WizardSceneHandle {
   destroy: () => void;
 }
 
+// What the page needs from the scene to handle pointer input on it.
+export interface SceneView {
+  camera: THREE.Camera;
+  canvas: HTMLCanvasElement;
+  // Keeps the orbit controls from reacting while true, e.g. during a card drag.
+  holdOrbit(held: boolean): void;
+}
+
 export interface WizardSceneOptions {
   onLoading?: (loading: boolean) => void;
   onError?: (message: string) => void;
+  // Fill the table with one of each character. For working on the scene
+  // without a game; a live game seats its real players instead.
+  demo?: boolean;
+  // Called once the environment is loaded and characters can be seated.
+  onReady?: (
+    players: PlayerCharacters,
+    environment: THREE.Object3D,
+    view: SceneView,
+  ) => void;
+  // Called every frame with the elapsed seconds, before characters animate.
+  onUpdate?: (deltaSeconds: number) => void;
 }
 
 // Walk up from a torch's light to its collection-instance root ("torch.003"),
@@ -100,6 +120,21 @@ export function createWizardScene(
   camera.position.set(0, 6, 12);
 
   let controls: OrbitControls | null = null;
+  // Orbit controls start as CAMERA.orbitControls says and the O key toggles
+  // them. Something else, like a card drag, can hold them off meanwhile.
+  let orbitOn = CAMERA.orbitControls;
+  let orbitHeld = false;
+  const applyOrbit = () => {
+    if (controls) controls.enabled = orbitOn && !orbitHeld;
+  };
+  const onOrbitKey = (event: KeyboardEvent) => {
+    if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
+    if (event.key.toLowerCase() !== "o") return;
+    orbitOn = !orbitOn;
+    applyOrbit();
+    console.info(`[camera] orbit controls ${orbitOn ? "on" : "off"}`);
+  };
+  window.addEventListener("keydown", onOrbitKey);
   let mixer: THREE.AnimationMixer | null = null;
   let players: PlayerCharacters | null = null;
   let onKeyDown: ((event: KeyboardEvent) => void) | null = null;
@@ -140,6 +175,7 @@ export function createWizardScene(
     controls.minDistance = CAMERA.minDistance;
     controls.maxDistance = CAMERA.maxDistance;
     controls.update();
+    applyOrbit();
   };
 
   options.onLoading?.(true);
@@ -234,27 +270,27 @@ export function createWizardScene(
         }
       }
 
-      if (CAMERA.orbitControls) {
-        const intro = introCamera as THREE.AnimationAction | null;
-        if (!intro || !mixer) {
+      // Controls are set up once the intro camera move ends, whether or not
+      // they start switched on; the O key toggles them.
+      const intro = introCamera as THREE.AnimationAction | null;
+      if (!intro || !mixer) {
+        enableOrbit(gltf.scene);
+      } else {
+        const envMixer = mixer;
+        const onFinished = (event: { action: THREE.AnimationAction }) => {
+          if (event.action !== intro) return;
+          envMixer.removeEventListener("finished", onFinished);
+          // A clamped action keeps writing its last pose every frame, which
+          // would override the controls; but stopping it restores the
+          // camera's pre-animation pose. Keep the final framing across it.
+          const position = camera.position.clone();
+          const quaternion = camera.quaternion.clone();
+          intro.stop();
+          camera.position.copy(position);
+          camera.quaternion.copy(quaternion);
           enableOrbit(gltf.scene);
-        } else {
-          const envMixer = mixer;
-          const onFinished = (event: { action: THREE.AnimationAction }) => {
-            if (event.action !== intro) return;
-            envMixer.removeEventListener("finished", onFinished);
-            // A clamped action keeps writing its last pose every frame, which
-            // would override the controls; but stopping it restores the
-            // camera's pre-animation pose. Keep the final framing across it.
-            const position = camera.position.clone();
-            const quaternion = camera.quaternion.clone();
-            intro.stop();
-            camera.position.copy(position);
-            camera.quaternion.copy(quaternion);
-            enableOrbit(gltf.scene);
-          };
-          envMixer.addEventListener("finished", onFinished);
-        }
+        };
+        envMixer.addEventListener("finished", onFinished);
       }
 
       const seats = new Map<SeatId, THREE.Object3D>();
@@ -269,9 +305,10 @@ export function createWizardScene(
 
       players = createPlayerCharacters(seats);
       const seatPlayers = players;
-      // One of each character. In dev, "." moves everyone round a seat
-      // (rotation 1..6, wrapping) so every character can be checked in every
-      // chair — there are six characters but only five seats.
+
+      // Demo table: one of each character. In dev, "." moves everyone round a
+      // seat (rotation 1..6, wrapping) so every character can be checked in
+      // every chair — there are six characters but only five seats.
       let rotation = 1;
       const seatCharacters = () => {
         const assignment = SEAT_IDS.map((seat, i) => {
@@ -286,7 +323,7 @@ export function createWizardScene(
           `[players] rotation ${rotation}/${CHARACTER_IDS.length}: ${assignment.join(" ")}`,
         );
       };
-      seatCharacters();
+      if (options.demo) seatCharacters();
 
       // Everyone idles by default. In dev, "/" steps through the clips:
       // rotation 0 is all idle, 1..6 give each seat a different clip, then
@@ -305,12 +342,11 @@ export function createWizardScene(
           `[players] clips ${clipRotation}/${CLIP_NAMES.length}: ${assignment.join(" ")}`,
         );
       };
-      assignClips();
 
-      if (import.meta.env.DEV) {
+      if (import.meta.env.DEV && DEV.demoControls) {
         onKeyDown = (event) => {
           if (event.repeat) return;
-          if (event.key === ".") {
+          if (event.key === "." && options.demo) {
             rotation = (rotation % CHARACTER_IDS.length) + 1;
             seatCharacters();
           } else if (event.key === "/") {
@@ -321,6 +357,15 @@ export function createWizardScene(
         };
         window.addEventListener("keydown", onKeyDown);
       }
+
+      options.onReady?.(seatPlayers, gltf.scene, {
+        camera,
+        canvas: renderer.domElement,
+        holdOrbit: (held) => {
+          orbitHeld = held;
+          applyOrbit();
+        },
+      });
 
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizard = {
@@ -347,6 +392,7 @@ export function createWizardScene(
     const dt = (now - last) / 1000;
     last = now;
     mixer?.update(dt);
+    options.onUpdate?.(dt);
     players?.update(dt);
     controls?.update();
     renderer.render(scene, camera);
@@ -359,6 +405,7 @@ export function createWizardScene(
       disposed = true;
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("keydown", onOrbitKey);
       if (onKeyDown) window.removeEventListener("keydown", onKeyDown);
       controls?.dispose();
       players?.dispose();
