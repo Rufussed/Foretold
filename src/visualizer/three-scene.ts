@@ -13,6 +13,7 @@ import {
   RENDER,
   TORCH_OVERRIDES,
 } from "./config";
+import { createCameraFollow, type CameraFollow } from "./camera-follow";
 import {
   createPlayerCharacters,
   CHARACTER_IDS,
@@ -48,8 +49,16 @@ export interface WizardSceneHandle {
 export interface SceneView {
   camera: THREE.Camera;
   canvas: HTMLCanvasElement;
+  // The table's renderer, for other drawing that should reuse what it already
+  // holds on the GPU, such as headshots.
+  renderer: THREE.WebGLRenderer;
   // Keeps the orbit controls from reacting while true, e.g. during a card drag.
   holdOrbit(held: boolean): void;
+  // Runs once the intro camera move has finished; straight away if it has.
+  whenIntroDone(callback: () => void): void;
+  // Turns the camera toward a point in the world, or back to its normal view
+  // with null. A change of point switches orbit controls off.
+  lookToward(point: THREE.Vector3 | null): void;
 }
 
 export interface WizardSceneOptions {
@@ -124,8 +133,31 @@ export function createWizardScene(
   // them. Something else, like a card drag, can hold them off meanwhile.
   let orbitOn = CAMERA.orbitControls;
   let orbitHeld = false;
+  // Turns the camera toward whoever's turn it is while orbit controls are off.
+  let follow: CameraFollow | null = null;
+  let lookingAt: THREE.Vector3 | null = null;
+  let introDone = false;
+  const introWaiters: Array<() => void> = [];
+  // The intro camera move has finished, or there wasn't one.
+  const finishIntro = () => {
+    if (introDone) return;
+    introDone = true;
+    follow?.captureRest();
+    console.info("[camera] intro finished");
+    for (const waiter of introWaiters.splice(0)) waiter();
+  };
+  // How far ahead of the camera the orbit target sits: the table's distance.
+  let orbitDistance = 10;
   const applyOrbit = () => {
-    if (controls) controls.enabled = orbitOn && !orbitHeld;
+    if (!controls) return;
+    const active = orbitOn && !orbitHeld;
+    if (active && !controls.enabled) {
+      // Orbit from wherever the camera is looking now, so nothing jumps.
+      controls.target
+        .copy(camera.position)
+        .addScaledVector(camera.getWorldDirection(new THREE.Vector3()), orbitDistance);
+    }
+    controls.enabled = active;
   };
   const onOrbitKey = (event: KeyboardEvent) => {
     if (event.repeat || event.ctrlKey || event.metaKey || event.altKey) return;
@@ -168,9 +200,8 @@ export function createWizardScene(
       ? new THREE.Box3().setFromObject(table).getCenter(new THREE.Vector3())
       : new THREE.Vector3(...CAMERA.target);
     controls = new OrbitControls(camera, renderer.domElement);
-    controls.target
-      .copy(camera.position)
-      .addScaledVector(forward, camera.position.distanceTo(focus));
+    orbitDistance = camera.position.distanceTo(focus);
+    controls.target.copy(camera.position).addScaledVector(forward, orbitDistance);
     controls.enablePan = true;
     controls.minDistance = CAMERA.minDistance;
     controls.maxDistance = CAMERA.maxDistance;
@@ -190,6 +221,7 @@ export function createWizardScene(
       const gltfCamera = gltf.cameras[0] as THREE.PerspectiveCamera | undefined;
       if (gltfCamera) camera = gltfCamera;
       resize();
+      follow = createCameraFollow(camera);
 
       gltf.scene.traverse((object) => {
         // Lights: the exported intensities don't match how they looked in
@@ -274,6 +306,7 @@ export function createWizardScene(
       // they start switched on; the O key toggles them.
       const intro = introCamera as THREE.AnimationAction | null;
       if (!intro || !mixer) {
+        finishIntro();
         enableOrbit(gltf.scene);
       } else {
         const envMixer = mixer;
@@ -288,6 +321,7 @@ export function createWizardScene(
           intro.stop();
           camera.position.copy(position);
           camera.quaternion.copy(quaternion);
+          finishIntro();
           enableOrbit(gltf.scene);
         };
         envMixer.addEventListener("finished", onFinished);
@@ -361,9 +395,26 @@ export function createWizardScene(
       options.onReady?.(seatPlayers, gltf.scene, {
         camera,
         canvas: renderer.domElement,
+        renderer,
         holdOrbit: (held) => {
           orbitHeld = held;
           applyOrbit();
+        },
+        whenIntroDone: (callback) => {
+          if (introDone) callback();
+          else introWaiters.push(callback);
+        },
+        lookToward: (point) => {
+          const changed = point === null ? lookingAt !== null : !lookingAt?.equals(point);
+          lookingAt = point ? point.clone() : null;
+          // Orbit controls are for testing: when the turn moves the camera,
+          // it takes the camera back from them.
+          if (changed && orbitOn) {
+            orbitOn = false;
+            applyOrbit();
+            console.info("[camera] orbit controls off: following the turn");
+          }
+          follow?.setTarget(point);
         },
       });
 
@@ -394,7 +445,10 @@ export function createWizardScene(
     mixer?.update(dt);
     options.onUpdate?.(dt);
     players?.update(dt);
-    controls?.update();
+    // Orbit controls drive the camera while they're on; otherwise, once the
+    // intro has played, it follows the turn.
+    if (controls?.enabled) controls.update();
+    else if (introDone) follow?.update(dt);
     renderer.render(scene, camera);
   };
   resize();
@@ -403,6 +457,7 @@ export function createWizardScene(
   return {
     destroy: () => {
       disposed = true;
+      introWaiters.length = 0;
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", onOrbitKey);

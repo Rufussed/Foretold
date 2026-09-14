@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
-import { loadCharacterAsset, type CharacterId } from "./character-assets";
+import { findBone, loadCharacterAsset, type CharacterId } from "./character-assets";
 import { createCharacterAnimator, type CharacterAnimator } from "./character-animator";
 import { CHARACTER_SEATING, DEFAULT_SEATING } from "./config";
 
@@ -26,6 +26,8 @@ export interface PlayerCharacters {
   clearPlayer(seat: SeatId): void;
   update(deltaSeconds: number): void;
   dispose(): void;
+  // Where a seated character's head is, in world space; null if the seat is empty.
+  headPosition(seat: SeatId): THREE.Vector3 | null;
   // Development aid: live animation state for a seat, or null if empty.
   debug(seat: SeatId): CharacterDebugState | null;
 }
@@ -46,6 +48,8 @@ interface SeatedCharacter {
   character: CharacterId;
   root: THREE.Object3D;
   animator: CharacterAnimator;
+  head: THREE.Object3D | null;
+  headTop: THREE.Object3D | null;
 }
 
 // Seating offsets are written in Blender axes (Z up) so they match what an
@@ -122,7 +126,13 @@ export function createPlayerCharacters(
       seatNode.add(root);
 
       const animator = createCharacterAnimator(root, asset.clips, character);
-      seated.set(seat, { character, root, animator });
+      seated.set(seat, {
+        character,
+        root,
+        animator,
+        head: findBone(root, "mixamorig:Head") ?? null,
+        headTop: findBone(root, "mixamorig:HeadTop_End") ?? null,
+      });
 
       // Plain idle unless a variant was chosen for this seat.
       animator.playLoop(idlePreference.get(seat) ?? "idle");
@@ -175,6 +185,14 @@ export function createPlayerCharacters(
       for (const seat of [...seated.keys()]) removeSeated(seat);
       // Cached assets are shared with other screens and outlive this scene;
       // the renderer's forceContextLoss releases their GPU copies.
+    },
+
+    headPosition(seat) {
+      const instance = seated.get(seat);
+      if (!instance) return null;
+      // Midway between the base of the skull and the top of the head.
+      const base = (instance.head ?? instance.root).getWorldPosition(new THREE.Vector3());
+      return instance.headTop ? base.lerp(instance.headTop.getWorldPosition(new THREE.Vector3()), 0.5) : base;
     },
 
     debug(seat) {

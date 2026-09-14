@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor, trumpFaceTexture } from "./card-textures";
-import { CARD_HANDLING } from "./config";
+import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
 import { applyPlacement, type Placement } from "./placement";
 import type { TableLayout } from "./table-layout";
 
@@ -16,8 +16,10 @@ export interface TableCards {
   // Your hand, from game state. The order you've arranged cards still in hand
   // is kept; new cards join at the end, so a fresh deal arrives in server order.
   setHand(cards: readonly Card[]): void;
-  // Cards played in the current trick, in play order.
-  setTrick(cards: readonly Card[]): void;
+  // Cards played in the current trick, in play order. A newly played card
+  // with an origin (the spot in another player's hand it came from) rises out
+  // of it first, then turns into place on its played-card slot.
+  setTrick(cards: readonly Card[], origins?: ReadonlyMap<string, Placement>): void;
   // The turned-up trump card, painted in the trump suit's colour; null hides it.
   setTrump(card: Card | null, trumpSuit: Suit | null): void;
   update(deltaSeconds: number): void;
@@ -30,6 +32,17 @@ export interface TableCards {
   releaseDealt(key: string): void;
   // Keeps the trump card hidden while it's being dealt.
   holdTrump(held: boolean): void;
+
+  // The cards showing in the trick, in play order, and the trump card if it's
+  // showing: for the end-of-trick reward, which gathers copies of them.
+  trickCardObjects(): Array<{ key: string; object: THREE.Object3D }>;
+  trumpCardObject(): THREE.Object3D | null;
+  // Outlines this trick card, the one winning so far, as hovering does; null for none.
+  setLeading(key: string | null): void;
+  // Hides these trick cards until they leave the trick.
+  suppressTrick(keys: readonly string[]): void;
+  // Hides the trump card until a different trump is set or a deal begins.
+  suppressTrump(): void;
 
   // The hand card under a ray, if any.
   cardAt(raycaster: THREE.Raycaster): string | null;
@@ -68,7 +81,13 @@ interface TableCard {
   raised: boolean;
   drag: THREE.Vector3 | null; // environment-local position while dragged
   placed: boolean;
+  flight: { from: Placement; startedAt: number } | null; // another player's play
 }
+
+const smooth = (x: number) => {
+  const t = Math.min(Math.max(x, 0), 1);
+  return t * t * (3 - 2 * t);
+};
 
 // Your hand on card01..card20, the trick on played-card-1..6 and the trump:
 // card objects that glide between those targets.
@@ -88,8 +107,11 @@ export function createTableCards(
   let trickOrder: string[] = [];
   let pending: { key: string; since: number } | null = null;
   let hovered: string | null = null;
+  let leading: string | null = null;
   let held = new Set<string>();
   let trumpHeld = false;
+  const suppressed = new Set<string>();
+  let trumpSuppressed = false;
   let clock = 0;
   let warnedOverflow = false;
 
@@ -100,7 +122,15 @@ export function createTableCards(
 
     const { object, outline } = factory.build(`table-card-${key}`, cardTexture(card));
     object.userData.cardKey = key;
-    const entry: TableCard = { key, object, outline, raised: false, drag: null, placed: false };
+    const entry: TableCard = {
+      key,
+      object,
+      outline,
+      raised: false,
+      drag: null,
+      placed: false,
+      flight: null,
+    };
     cards.set(key, entry);
     return entry;
   };
@@ -111,6 +141,35 @@ export function createTableCards(
     card: string | null;
     color: string | null;
   } | null = null;
+
+  // Another player's card: up out of their hand, then over to its slot while
+  // turning face up. Returns false once it has arrived.
+  const flyFromHand = (entry: TableCard, slot: Placement): boolean => {
+    const flight = entry.flight;
+    if (!flight) return false;
+    const lift = Math.max(OPPONENT_PLAYS.liftSeconds, 1e-6);
+    const travel = Math.max(OPPONENT_PLAYS.travelSeconds, 1e-6);
+    const t = clock - flight.startedAt;
+    const raised = flight.from.position
+      .clone()
+      .addScaledVector(up, OPPONENT_PLAYS.liftLengths * factory.length * flight.from.scale.z);
+
+    if (t < lift) {
+      entry.object.position.lerpVectors(flight.from.position, raised, smooth(t / lift));
+      entry.object.quaternion.copy(flight.from.quaternion);
+      return true;
+    }
+    if (t < lift + travel) {
+      const k = smooth((t - lift) / travel);
+      entry.object.position.lerpVectors(raised, slot.position, k);
+      entry.object.quaternion.slerpQuaternions(flight.from.quaternion, slot.quaternion, k);
+      entry.object.scale.copy(slot.scale);
+      return true;
+    }
+    entry.flight = null;
+    applyPlacement(entry.object, slot);
+    return false;
+  };
 
   const visibleHand = () => handOrder.filter((key) => key !== pending?.key && !held.has(key));
 
@@ -154,6 +213,7 @@ export function createTableCards(
     setTrump(card, trumpSuit) {
       if (!trumpSlot) return;
       if (!card) {
+        trumpSuppressed = false;
         if (trump) {
           trump.object.visible = false;
           trump.card = null;
@@ -169,14 +229,26 @@ export function createTableCards(
         trump = { object: built.object, face: built.face, card: null, color: null };
       }
       if (trump.face) trump.face.map = texture;
-      trump.object.visible = !trumpHeld;
+      if (trump.card !== cardKey(card)) trumpSuppressed = false;
+      trump.object.visible = !trumpHeld && !trumpSuppressed;
       trump.card = cardKey(card);
       trump.color = trumpColor(trumpSuit);
     },
 
-    setTrick(cardsPlayed) {
+    setTrick(cardsPlayed, origins) {
       trickOrder = cardsPlayed.map(cardKey);
-      for (const card of cardsPlayed) ensure(card);
+      for (const key of [...suppressed]) {
+        if (!trickOrder.includes(key)) suppressed.delete(key);
+      }
+      for (const card of cardsPlayed) {
+        const entry = ensure(card);
+        const from = origins?.get(entry.key);
+        if (from && !entry.placed) {
+          applyPlacement(entry.object, from);
+          entry.flight = { from, startedAt: clock };
+          entry.placed = true;
+        }
+      }
       if (pending && trickOrder.includes(pending.key)) pending = null;
     },
 
@@ -193,6 +265,18 @@ export function createTableCards(
         if (!target) {
           entry.object.visible = false;
           entry.placed = false;
+          entry.flight = null;
+          continue;
+        }
+
+        if (suppressed.has(entry.key)) {
+          entry.object.visible = false;
+          continue;
+        }
+
+        if (flyFromHand(entry, target.slot)) {
+          entry.object.visible = true;
+          entry.outline.visible = false;
           continue;
         }
 
@@ -210,7 +294,8 @@ export function createTableCards(
         entry.object.position.lerp(destination, follow);
         entry.object.quaternion.slerp(target.slot.quaternion, follow);
         entry.object.visible = true;
-        entry.outline.visible = hovered === entry.key || entry.drag !== null;
+        entry.outline.visible =
+          hovered === entry.key || entry.drag !== null || (leading === entry.key && trickOrder.includes(entry.key));
       }
     },
 
@@ -239,7 +324,36 @@ export function createTableCards(
 
     holdTrump(isHeld) {
       trumpHeld = isHeld;
-      if (trump?.card) trump.object.visible = !isHeld;
+      if (isHeld) trumpSuppressed = false;
+      if (trump?.card) trump.object.visible = !isHeld && !trumpSuppressed;
+    },
+
+    trickCardObjects() {
+      return trickOrder.flatMap((key) => {
+        const object = cards.get(key)?.object;
+        return object?.visible && !suppressed.has(key) ? [{ key, object }] : [];
+      });
+    },
+
+    setLeading(key) {
+      leading = key;
+    },
+
+    trumpCardObject() {
+      return trump?.card && trump.object.visible ? trump.object : null;
+    },
+
+    suppressTrick(keys) {
+      for (const key of keys) {
+        suppressed.add(key);
+        const object = cards.get(key)?.object;
+        if (object) object.visible = false;
+      }
+    },
+
+    suppressTrump() {
+      trumpSuppressed = true;
+      if (trump) trump.object.visible = false;
     },
 
     cardAt(raycaster) {

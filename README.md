@@ -62,3 +62,16 @@ hard-coded in the scene; the visualiser reads what's in the file.
 - `blender/addons/parent_empty.py` adds **Ctrl+Shift+P**: parents the selected
   object to an empty at its origin, for placing and scaling characters without
   touching their imported transforms.
+
+## Playing from other devices
+
+`npm run play` starts the backend and frontend together and asks how the game
+should be reachable:
+
+- **Localhost**: this computer only.
+- **Local Wi-Fi**: other devices on the same network open `http://<this computer's IP>:5173`.
+- **Tailscale** (shown when connected): devices on your tailnet open `http://<tailscale IP>:5173`.
+
+It prints the address to open. Use `npm run play -- --mode lan` to skip the
+question, or `--dry-run` to see what it would do. Stop any `npm run dev`
+servers first, as it uses the same ports.

@@ -1,11 +1,11 @@
 import { getCurrentUser } from "../services/auth";
+import { API_BASE } from "../services/api";
 import type { Suit } from "../../backend/src/game/wizard/models/card";
 import {
   createGameSocket,
   type GameSocketMessage,
 } from "../services/gameSocket";
 
-const API_BASE = "http://127.0.0.1:3000";
 
 interface Card {
   value: number;

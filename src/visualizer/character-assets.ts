@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { characterTextureLimit, limitTextureSizes } from "./texture-limit";
 import {
   AVATAR_IDS,
   type AvatarId,
@@ -62,7 +63,7 @@ export function loadCharacterAsset(
   if (cached) return cached;
 
   const pending = CHARACTER_IDS.includes(character)
-    ? loader.loadAsync(characterUrl(character)).then((gltf) => {
+    ? loader.loadAsync(characterUrl(character)).then(async (gltf) => {
         gltf.scene.traverse((child) => {
           const mesh = child as THREE.SkinnedMesh;
           if (!mesh.isMesh) return;
@@ -74,6 +75,7 @@ export function loadCharacterAsset(
           // limbs can be culled while still on screen.
           if (mesh.isSkinnedMesh) mesh.frustumCulled = false;
         });
+        await limitTextureSizes(gltf.scene, characterTextureLimit());
         return {
           template: gltf.scene,
           clips: new Map(

@@ -1,4 +1,5 @@
 import { isJester } from "../models/card.js";
+import { isBotName } from "../models/bot.js";
 import type { Card, Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "./wizardRules.js";
@@ -12,7 +13,7 @@ export class WizardBotService {
   // Bot usernames use a prefix so the game runner can distinguish automated
   // players from human players without adding another player-state field.
   isBot(username: string): boolean {
-    return username.startsWith("bot-");
+    return isBotName(username);
   }
 
   // Choose the suit with the strongest overall hand: suit length is the

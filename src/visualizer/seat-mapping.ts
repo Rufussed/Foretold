@@ -28,30 +28,27 @@ export function characterForUsername(username: string): CharacterId {
   return CHARACTER_IDS[(hash >>> 0) % CHARACTER_IDS.length];
 }
 
-// Picks `count` of the seats, evenly spaced through the given order, so a small
-// game is spread round the table rather than bunched on one side.
-export function spreadSeats(order: readonly SeatId[], count: number): SeatId[] {
-  if (count >= order.length) return order.slice(0, count);
-  return Array.from(
-    { length: count },
-    (_, index) => order[Math.round(((index + 0.5) * order.length) / count - 0.5)],
-  );
+// The character a player appears as: their claimed avatar, or the stand-in
+// picked from their name.
+export function characterForPlayer(player: SeatablePlayer): CharacterId {
+  return isCharacterId(player.avatar) ? player.avatar : characterForUsername(player.username);
 }
 
 // Snapshots arrive many times a round; warn about a duplicate only once.
 const reportedDuplicates = new Set<string>();
 
 // Every client sees the table from its own chair, which holds the camera and
-// is never drawn. The other players take seats in turn order, starting from the
-// player after the local one and wrapping around, following `seatOrder`: pass
-// the seats clockwise from the local player's left so turn order runs
-// clockwise. With fewer than five, they're spread evenly. 3-6 players leaves
-// 2-5 characters, so five seats always suffice. A viewer who isn't playing
-// sees everyone from the first player, up to five.
+// is never drawn. Seat numbers decide which seats a game uses: with k other
+// players, seat2..seat(k+1). Within those, players sit in turn order, starting
+// from the player after the local one and wrapping around, following
+// `clockwiseSeats` (the seats clockwise from the local player's left), so
+// turns and the deal pass clockwise round the table. 3-6 players leaves 2-5
+// characters, so five seats always suffice. A viewer who isn't playing sees
+// everyone from the first player, up to five.
 export function computeSeatAssignments(
   players: readonly SeatablePlayer[],
   localUsername: string,
-  seatOrder: readonly SeatId[] = SEAT_IDS,
+  clockwiseSeats: readonly SeatId[] = SEAT_IDS,
 ): SeatAssignment[] {
   const seen = new Set<string>();
   const unique = players.filter((player) => {
@@ -72,13 +69,12 @@ export function computeSeatAssignments(
       ? unique
       : [...unique.slice(local + 1), ...unique.slice(0, local)];
 
-  const opponents = ordered.slice(0, seatOrder.length);
-  const seats = spreadSeats(seatOrder, opponents.length);
+  const opponents = ordered.slice(0, SEAT_IDS.length);
+  const used = SEAT_IDS.slice(0, opponents.length);
+  const seats = clockwiseSeats.filter((seat) => used.includes(seat));
   return opponents.map((player, index) => ({
     seat: seats[index],
     username: player.username,
-    character: isCharacterId(player.avatar)
-      ? player.avatar
-      : characterForUsername(player.username),
+    character: characterForPlayer(player),
   }));
 }

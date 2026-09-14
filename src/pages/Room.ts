@@ -72,7 +72,7 @@ export async function renderRoomPage(
 
         <div id="room-start" class="room-start" hidden>
           <label>
-            Bots
+            NPCs
             <select id="room-bots"></select>
           </label>
           <button type="button" id="room-start-button">Start game</button>

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "play": "node scripts/play.mjs"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",

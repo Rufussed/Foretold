@@ -16,14 +16,14 @@ export interface SeatSync {
 export function createSeatSync(
   characters: PlayerCharacters,
   // Seats clockwise from the local player's left; see computeSeatAssignments.
-  seatOrder: readonly SeatId[] = SEAT_IDS,
+  clockwiseSeats: readonly SeatId[] = SEAT_IDS,
 ): SeatSync {
   const occupants = new Map<SeatId, { username: string; character: CharacterId }>();
 
   return {
     applyPlayers(players, localUsername) {
       const wanted = new Map(
-        computeSeatAssignments(players, localUsername, seatOrder).map((assignment) => [
+        computeSeatAssignments(players, localUsername, clockwiseSeats).map((assignment) => [
           assignment.seat,
           assignment,
         ]),

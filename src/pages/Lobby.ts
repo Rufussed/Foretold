@@ -1,6 +1,6 @@
 import { getCurrentUser } from "../services/auth";
+import { API_BASE } from "../services/api";
 
-const API_BASE = "http://127.0.0.1:3000";
 
 export async function renderLobbyPage(container: HTMLElement): Promise<void> {
   const token = localStorage.getItem("wizardToken");

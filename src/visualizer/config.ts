@@ -71,7 +71,8 @@ export const AMBIENT = {
 // ══════════════════════════════════════════════════════════════════════════
 
 export const CAMERA = {
-  // Whether mouse orbit/pan/zoom starts switched on; press O to toggle it.
+  // Whether mouse orbit/pan/zoom starts switched on; press O to toggle it. For
+  // testing: in a live game, a change of turn switches them back off.
   // The controls take over once the intro camera animation has finished
   // (straight away if there isn't one), so the authored move plays first.
   orbitControls: false,
@@ -83,6 +84,30 @@ export const CAMERA = {
   // How close and far the orbit controls may be dollied, in scene units.
   minDistance: 1,
   maxDistance: 40,
+};
+
+// In a live game the camera turns toward whoever's turn it is, and back to its
+// normal view (where the intro camera move ends) on your turn. Orbit controls
+// are for testing: a change of turn switches them off, and with them off the
+// camera glides back to its normal place.
+export const CAMERA_FOLLOW = {
+  enabled: true,
+
+  // How far to turn, 0 not at all to 1 looking straight at them, putting the
+  // active player in the centre of the view.
+  amount: 1,
+
+  // How long a turn takes, in seconds, easing in and out.
+  turnSeconds: 3,
+
+  // Pause after the turn changes before the camera starts turning, in seconds:
+  // long enough for another player's card to reach the play area
+  // (OPPONENT_PLAYS: 0.4s up out of the hand plus 0.6s across).
+  delaySeconds: 1,
+
+  // Aim this far above the middle of the player's card set, in scene units:
+  // raise it to centre on their face rather than their cards.
+  lookHeight: 0.4,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -137,6 +162,10 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 export const RENDER = {
   maxHeight: 1080, // tallest drawing buffer, in pixels
   maxPixelRatio: 1, // never draw more than 1 buffer pixel per CSS pixel
+  // Character textures are shrunk to at most this many pixels a side as they
+  // load. Graphics memory goes with the square: 4096 needs 4x 2048.
+  characterTextureSize: 2048,
+  touchCharacterTextureSize: 1024, // phones and tablets
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -337,6 +366,13 @@ export const CARDS = {
   // Wizard whose suit hasn't been chosen yet.
   noTrumpColor: "#8a8a8a",
 
+  // Wizard and Jester faces: these suits' colours, top of the card to bottom.
+  specialCardGradient: ["Red", "Yellow", "Green", "Blue"],
+
+  // Face colour of cards whose faces you never see: other players' hands and
+  // the stack. Only glimpsed edge-on, if at all.
+  hiddenFaceColor: "#d8d2c4",
+
   // Pixel size of each generated face; 5:7, matching the card mesh.
   textureWidth: 512,
   textureHeight: 716,
@@ -380,4 +416,123 @@ export const CARD_HANDLING = {
   // How long a played card waits for the server to accept it before it
   // returns to the hand.
   pendingPlaySeconds: 5,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// DEALING  (at the start of each round, from the stack at the table's centre)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const DEALING = {
+  // How far above the top of the stack a card travels, in scene units.
+  liftHeight: 0.35,
+
+  // Rising straight up off the stack, staying flat.
+  liftSeconds: 0.15,
+
+  // Travelling flat to above where it's going.
+  travelSeconds: 0.35,
+
+  // Turning into place as it settles.
+  settleSeconds: 0.25,
+
+  // Time between one card leaving the stack and the next. Shorter than the
+  // three phases above means several cards are in the air at once.
+  intervalSeconds: 0.25,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// OTHER PLAYERS' PLAYS  (bots' pacing is set in the backend: wizardTiming.ts)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const OPPONENT_PLAYS = {
+  // How far a played card rises out of its player's hand first, in card lengths.
+  liftLengths: 1.2,
+
+  // Rising out of the hand.
+  liftSeconds: 0.4,
+
+  // Travelling to its played-card slot, turning face up into place on the way.
+  travelSeconds: 0.6,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// HEADSHOTS  (the other players' pictures, bottom left)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Framing controls as for AVATAR_PICKER, tighter to show head and shoulders.
+export const HEADSHOTS = {
+  // Rendered image size in pixels; shown smaller, so it stays sharp.
+  size: 128,
+  fov: 30,
+  // How much of the character fits vertically, in hip-to-face heights.
+  span: 0.75,
+  // Aim relative to the face: 0 straight at it, negative tilts down.
+  lookOffset: -0.05,
+  azimuthDegrees: 0,
+  keyLightIntensity: 3,
+  ambientIntensity: 0.7,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// TRICK REWARD  (a tesseract for the winner of each trick)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const TESSERACT = {
+  // Its size at scale 1, in scene units across; the model itself is ~5 units.
+  size: 0.5,
+
+  // When tinted to the trump colour. The model's own glow strength is 10 and
+  // it's half see-through, which bleaches a colour toward white; a gentler
+  // glow and a more solid body keep the trump colour dominant.
+  tintGlow: 1.5,
+  tintOpacity: 0.9,
+};
+
+export const TRICK_REWARD = {
+  // Wait after the trick completes, so the last card lands first
+  // (OPPONENT_PLAYS: 0.4s up plus 0.6s across).
+  startDelaySeconds: 1.1,
+  // The cards in play shrinking into a point.
+  gatherSeconds: 0.5,
+  // The tesseract growing from that point to startScale.
+  growSeconds: 0.4,
+  startScale: 1,
+  // Floating to just above the winner's head, at startScale.
+  floatSeconds: 1.2,
+  // Swelling to peakScale there.
+  swellSeconds: 0.4,
+  peakScale: 2,
+  // Diving down into their head as it shrinks away; quick.
+  diveSeconds: 0.25,
+  // How far above the winner's head it hovers, in scene units.
+  aboveHead: 0.8,
+  // For your own wins: how far in front of the camera it hovers.
+  cameraDistance: 2.5,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// ANNOUNCER  (the "what's going on" banner, top centre)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const ANNOUNCER = {
+  // How long each announcement (a prediction, a won hand) stays up before the next.
+  messageSeconds: 2.5,
+  // How long a rule reminder (after a card that can't be played) stays up at
+  // most; it goes sooner if the next card is played first.
+  noticeSeconds: 5,
+  // How long each player's end-of-round score line stays up.
+  resultSeconds: 5,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// TRUMP CROWN  (the 👑 hovering over the middle of the trump card)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Values ending in Lengths are card lengths, so they keep their size relative to the card.
+export const TRUMP_CROWN = {
+  sizeLengths: 0.45, // how big the crown is
+  verticalOffset: 0.1, // crown height from the card's middle, in scene units; negative is lower
+  frontLengths: 0.15, // how far toward the camera, so it sits just in front
+  bobLengths: 0.05, // how far it bobs up and down
+  bobSeconds: 2.4, // one bob, up and back down
 };

@@ -26,9 +26,12 @@ const textures = new Map<string, THREE.CanvasTexture>();
 // is made twice and unused ones are never made. When the artwork arrives, this
 // is the one place to load it instead.
 export function cardTexture(card: Card, options: CardFaceOptions = {}): THREE.Texture {
-  const color = options.color ?? CARDS.suitColors[card.suit] ?? "#808080";
+  // Wizards and Jesters belong to no suit: they get every suit's colour, in a
+  // gradient down the card, unless a colour is asked for.
+  const special = card.value === 0 || card.value === 14;
+  const color = options.color ?? (special ? null : CARDS.suitColors[card.suit] ?? "#808080");
   const label = options.label ?? cardLabel(card);
-  const key = `${cardKey(card)} ${color} ${label}`;
+  const key = `${cardKey(card)} ${color ?? "gradient"} ${label}`;
   const cached = textures.get(key);
   if (cached) return cached;
 
@@ -40,7 +43,14 @@ export function cardTexture(card: Card, options: CardFaceOptions = {}): THREE.Te
   const context = canvas.getContext("2d");
   if (!context) throw new Error("2D canvas unavailable for card faces");
 
-  context.fillStyle = color;
+  if (color) {
+    context.fillStyle = color;
+  } else {
+    const gradient = context.createLinearGradient(0, 0, 0, height);
+    const stops = CARDS.specialCardGradient;
+    stops.forEach((suit, i) => gradient.addColorStop(i / (stops.length - 1), CARDS.suitColors[suit] ?? "#808080"));
+    context.fillStyle = gradient;
+  }
   context.fillRect(0, 0, width, height);
 
   const size = Math.round(width * CARDS.labelSize);
@@ -83,13 +93,16 @@ export function blankCardTexture(): THREE.Texture {
   return cardTexture({ suit: "Blue", value: 0 }, { color: CARDS.hiddenFaceColor, label: "" });
 }
 
-// The trump suit's colour. A plain trump card is its own suit; a Wizard takes
-// the suit its dealer chooses; a Jester, or a Wizard still waiting for its
-// suit, has none.
+// The trump suit's colour. A plain trump card is its own suit; a Wizard or
+// Jester takes the suit the round's first player chooses. Grey with no suit.
 export function trumpColor(trumpSuit: string | null): string {
   return trumpSuit ? CARDS.suitColors[trumpSuit] ?? CARDS.noTrumpColor : CARDS.noTrumpColor;
 }
 
+// The turned-up trump card in the trump colour. A Wizard or Jester keeps its
+// gradient until its suit is chosen, then shows just that colour, unlabelled.
 export function trumpFaceTexture(card: Card, trumpSuit: string | null): THREE.Texture {
-  return cardTexture(card, { color: trumpColor(trumpSuit) });
+  if (!trumpSuit) return cardTexture(card);
+  const special = card.value === 0 || card.value === 14;
+  return cardTexture(card, { color: trumpColor(trumpSuit), ...(special ? { label: "" } : {}) });
 }

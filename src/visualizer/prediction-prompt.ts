@@ -13,9 +13,15 @@ export interface PredictionPrompt {
 // dealt this round. The choice goes to the server as `submit_prediction`, as
 // the text interface sends it. There's no backdrop, so the table and your hand
 // stay usable while you decide.
+export interface PredictionPromptOptions {
+  // While true the prompt stays closed, e.g. until every card has been dealt.
+  blocked?(): boolean;
+}
+
 export function createPredictionPrompt(
   root: HTMLElement,
   game: GameConnection,
+  options: PredictionPromptOptions = {},
 ): PredictionPrompt {
   const modal = document.createElement("section");
   modal.className = "prediction-modal";
@@ -74,7 +80,8 @@ export function createPredictionPrompt(
       const open =
         state?.phase === "predictions" &&
         isLocalTurn(game) &&
-        localPlayer(game)?.prediction === null;
+        localPlayer(game)?.prediction === null &&
+        !options.blocked?.();
 
       if (!state || !open) {
         modal.hidden = true;

@@ -34,8 +34,16 @@ server.get("/health/database", async () => {
 });
 
 
+// Where the server listens, and which frontend pages may call it. Both default
+// to this computer only; `npm run play` (scripts/play.mjs) sets them for
+// playing from other devices on your Wi-Fi or over Tailscale.
+const host = process.env.HOST || "127.0.0.1";
+const corsOrigins = process.env.CORS_ORIGINS
+  ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+  : ["http://localhost:5173", "http://127.0.0.1:5173"];
+
 await server.register(cors, {
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173"],
+  origin: corsOrigins,
   methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
 });
@@ -59,10 +67,10 @@ wizardLobbyManager.resetPlayingRooms();
 try {
   await server.listen({
     port: 3000,
-    host: "127.0.0.1",
+    host,
   });
 
-  console.log("Wizard backend running at http://localhost:3000");
+  console.log(`Wizard backend running at http://${host}:3000`);
 } catch (error) {
   server.log.error(error);
   process.exit(1);

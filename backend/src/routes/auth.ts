@@ -1,6 +1,7 @@
 import bcrypt from "bcrypt";
 import type { FastifyInstance } from "fastify";
 import { UserService } from "../services/userService.js";
+import { isBotName } from "../game/wizard/models/bot.js";
 
 interface RegisterBody {
   username: string;
@@ -30,6 +31,13 @@ export default async function authRoutes(
       if (!username || !password || !displayName || !email) {
         return reply.status(400).send({
           error: "All fields are required",
+        });
+      }
+
+      // " NPC" at the end of a name marks a bot.
+      if (isBotName(username.trim())) {
+        return reply.status(400).send({
+          error: "Usernames ending in NPC are reserved for computer players",
         });
       }
 

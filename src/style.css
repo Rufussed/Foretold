@@ -855,3 +855,361 @@ button:hover {
   color: #ffb4a8;
   font-weight: 600;
 }
+
+/* Trump choice after a Wizard or Jester is turned up: one swatch per suit. */
+.trump-options {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.visualizer-page .trump-options button {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  padding: 8px 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 10px;
+}
+
+.trump-swatch {
+  width: 100%;
+  max-width: 64px;
+  aspect-ratio: 5 / 7;
+  border: 2px solid rgb(255 255 255 / 60%);
+  border-radius: 6px;
+}
+
+.visualizer-page .trump-options button:hover:not(:disabled),
+.visualizer-page .trump-options button.is-chosen {
+  border-color: #ffd54f;
+}
+
+.visualizer-page .trump-options button:disabled:not(.is-chosen) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ---------------------------------------------------------
+   GAME HUD
+   --------------------------------------------------------- */
+
+.visualizer-page .hud-panel {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 12px;
+  color: white;
+  font-size: 13px;
+  background: rgb(23 32 51 / 60%);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-page .hud-panel[hidden] {
+  display: none;
+}
+
+/* Top right: the whole game. */
+.hud-status {
+  top: 16px;
+  right: 16px;
+  width: 240px;
+}
+
+.hud-round {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hud-phase {
+  margin: 2px 0 8px;
+  color: #c9d3e3;
+}
+
+.hud-trump {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px;
+  font-weight: 600;
+}
+
+.hud-trump-swatch {
+  width: 12px;
+  height: 16px;
+  border: 1px solid rgb(255 255 255 / 50%);
+  border-radius: 2px;
+}
+
+.hud-trump-swatch[hidden] {
+  display: none;
+}
+
+.hud-scores {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.hud-scores th {
+  padding-bottom: 2px;
+  color: #9fb0c8;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.hud-scores td {
+  padding: 2px 0;
+}
+
+.hud-scores th:last-child,
+.hud-scores td:last-child {
+  text-align: right;
+}
+
+.hud-scores tr.is-you td {
+  color: #ffd54f;
+  font-weight: 700;
+}
+
+/* A labelled count: this round's prediction or tricks won. */
+.hud-stat {
+  display: grid;
+  justify-items: center;
+  line-height: 1.15;
+}
+
+.hud-stat-label {
+  color: #9fb0c8;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Bottom right, beside your 196px portrait box. */
+.hud-self {
+  right: 224px;
+  bottom: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+/* Bottom left: the other players. */
+.hud-opponents {
+  bottom: 16px;
+  left: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.hud-opponent {
+  display: grid;
+  grid-template-columns: 64px auto auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.hud-opponent-face {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0;
+}
+
+.hud-opponent-face img {
+  width: 48px;
+  height: 48px;
+  background: rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.hud-opponent-face figcaption {
+  max-width: 64px;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Narrow screens: status below the nav, emotes to its left, clear of the
+   corner panels. */
+@media (max-width: 640px) {
+  .hud-status {
+    top: 60px;
+    width: 190px;
+  }
+
+  .hud-self {
+    right: 154px;
+  }
+
+  .visualizer-emotes {
+    top: 60px;
+    right: 222px;
+    bottom: auto;
+  }
+}
+
+/* What's going on, top centre (see hud/announcer.ts). */
+.visualizer-page .hud-announcer {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 2;
+  width: max-content;
+  max-width: min(560px, calc(100% - 560px));
+  margin: 0;
+  padding: 10px 18px;
+  color: white;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: pre-line; /* round results put the total on its own line */
+  background: rgb(23 32 51 / 75%);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgb(0 0 0 / 30%);
+  transform: translateX(-50%);
+  backdrop-filter: blur(6px);
+}
+
+.visualizer-page .hud-announcer[hidden] {
+  display: none;
+}
+
+.hud-announcer.is-new {
+  animation: hud-announce 0.3s ease-out;
+}
+
+.hud-announcer-text {
+  margin: 0;
+}
+
+/* Round results: the player's headshot and name, then the text beside it. */
+.visualizer-page .hud-announcer.has-portrait {
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: center;
+  gap: 14px;
+  text-align: left;
+}
+
+.visualizer-page .hud-announcer-face[hidden] {
+  display: none;
+}
+
+.visualizer-page .hud-announcer-face img {
+  width: 64px;
+  height: 64px;
+}
+
+.visualizer-page .hud-announcer-face figcaption {
+  max-width: 96px;
+}
+
+@keyframes hud-announce {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* A total just added to: flashes three times, green for points won, red for lost. */
+.hud-scores td.is-gain {
+  animation: hud-flash-gain 0.4s steps(1, end) 3;
+}
+
+.hud-scores td.is-loss {
+  animation: hud-flash-loss 0.4s steps(1, end) 3;
+}
+
+@keyframes hud-flash-gain {
+  0% { color: #4caf50; }
+  50% { color: inherit; }
+}
+
+@keyframes hud-flash-loss {
+  0% { color: #ef5350; }
+  50% { color: inherit; }
+}
+
+/* Mid-width screens: the banner fits between the nav and the status panel. */
+@media (max-width: 1100px) {
+  .visualizer-page .hud-announcer {
+    top: 64px;
+    max-width: calc(100% - 300px);
+    font-size: 15px;
+  }
+}
+
+/* Narrow screens: below the nav, left of the status panel. */
+@media (max-width: 640px) {
+  .visualizer-page .hud-announcer {
+    top: 60px;
+    left: 16px;
+    max-width: calc(100% - 238px);
+    font-size: 13px;
+    text-align: left;
+    transform: none;
+  }
+
+  .hud-announcer.is-new {
+    animation: none;
+  }
+}
+
+/* Dev builds: what went wrong in the 3D view (see diagnostics.ts). */
+.visualizer-page .visualizer-diagnostics {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  z-index: 5;
+  width: min(520px, calc(100% - 32px));
+  max-height: 60%;
+  overflow: auto;
+  padding: 12px 14px;
+  color: white;
+  font-size: 12px;
+  background: rgb(120 20 20 / 90%);
+  border-radius: 10px;
+  transform: translateX(-50%);
+}
+
+.visualizer-page .visualizer-diagnostics[hidden] {
+  display: none;
+}
+
+.visualizer-diagnostics-title {
+  margin: 0 28px 6px 0;
+  font-weight: 700;
+}
+
+.visualizer-diagnostics pre {
+  margin: 0;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.visualizer-page .visualizer-diagnostics-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: auto;
+  padding: 2px 8px;
+  font-size: 18px;
+  background: transparent;
+}

@@ -32,6 +32,23 @@ Visibility, selection and timeline are restored. The environment GLB is untouche
 All skin influences are exported; test runtime performance/deformation in Three.js.
 If intentional metal materials are introduced later, update the material check.
 
+## Texture optimization
+
+Run `import optimize_character_textures as opt; opt.run(max_size=1024, quality=82, normal_quality=90)`
+inside Blender with characters.blend open. Requires Pillow in Blender's Python
+(available on this machine). Images referenced by material texture nodes are
+resized without upscaling and repacked in place. Colour spaces and alpha are
+preserved. Colour images use WebP quality 82; normals use quality 90; other
+non-colour data maps use lossless WebP. The same settings skip already optimized
+images to avoid repeated lossy compression. Restore original packed images from
+the timestamped backup if increasing resolution or changing quality substantially.
+Run `export_characters.run()` afterward to update the web assets.
+`texture-optimization-report.json` records the latest pass.
+
+Goatman's original 14.83 MB GLB had 10.93 MB of embedded textures: seven 4K
+images, including a 6.05 MB hair diffuse/alpha image. Geometry, animation and
+metadata together accounted for about 3.90 MB. Textures were the main size cause.
+
 ## Resting hands
 
 `adjust_resting_hands.run(character='goatman')` reproduces the arm correction:

@@ -1,6 +1,6 @@
 import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
-import { isJester } from "../models/card.js";
+import { isJester, isWizard } from "../models/card.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 
 import type {
@@ -146,7 +146,8 @@ export class WizardGameService {
 
   drawTrumpCard(game: WizardGameState): void {
     // The final round uses every remaining card for hands, so no trump card is
-    // drawn. A Jester requires the current player to choose the trump suit.
+    // drawn. A Wizard or a Jester turned up has no suit of its own, so the
+    // round's first player chooses the trump suit.
     if (game.currentRound === game.totalRounds) {
       game.trumpCard = null;
       game.trumpSuit = null;
@@ -161,7 +162,7 @@ export class WizardGameService {
 
     game.trumpCard = trumpCard;
 
-    if (isJester(trumpCard)) {
+    if (isJester(trumpCard) || isWizard(trumpCard)) {
       game.trumpSuit = null;
       game.phase = "trump-selection";
       return;
@@ -431,7 +432,7 @@ export class WizardGameService {
     username: string,
     suit: Suit,
   ): void {
-    // Only the player who received a Jester as trump may choose the suit, and
+    // Only the round's first player may choose the suit after a Wizard or Jester, and
     // selecting it moves the game back into the prediction phase.
     if (game.phase !== "trump-selection") {
       throw new Error("Trump suit cannot be selected right now");

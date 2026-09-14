@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
@@ -286,13 +287,8 @@ export default async function wizardRoutes(
       });
     }
 
-    const players = [
-      ...room.players.map((player) => player.username),
-      ...Array.from(
-        { length: botCount },
-        (_, index) => `bot-${index + 1}`,
-      ),
-    ];
+    const humans = room.players.map((player) => player.username);
+    const players = [...humans, ...pickBotNames(botCount, humans)];
 
     try {
       const game = wizardGameService.createGame(
