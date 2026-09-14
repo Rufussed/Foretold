@@ -1,9 +1,9 @@
-import { createWizardScene, type WizardSceneHandle } from "../visualizer/scene";
+import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
 
 let activeScene: WizardSceneHandle | null = null;
 
 // The router swaps container.innerHTML on navigation, which would otherwise
-// leak the previous PlayCanvas app (it keeps its own render loop running
+// leak the previous three.js renderer (its animation loop keeps running
 // independent of the DOM). Tear it down before mounting a new one.
 export function destroyVisualizer(): void {
   activeScene?.destroy();

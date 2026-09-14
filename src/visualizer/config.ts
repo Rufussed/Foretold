@@ -1,106 +1,180 @@
 // Tweakable scene parameters. Edit and reload — no build step needed.
 //
+// Values here are in three.js terms: lights use physical units (candela,
+// inverse-square falloff) and shadows use three's shadow-map settings.
+//
 // ─────────────────────────────────────────────────────────────────────────
-// WANT SHARPER SHADOWS?  → SHADOWS.type = "hard", raise SHADOWS.resolution,
-//                          lower SHADOWS.penumbraSize.
-// WANT DARKER SHADOWS?   → lower AMBIENT.* and DEFAULT_TORCH.brightnessMultiplier.
-//                          (SHADOWS.intensity is already at its 1.0 maximum;
-//                          washed-out shadows are almost always fill light,
-//                          not the shadow itself. See AMBIENT below.)
+// WANT SHARPER SHADOWS?  → SHADOWS.type = "hard", raise SHADOWS.resolution.
+// WANT DARKER SHADOWS?   → lower AMBIENT.intensity first, then
+//                          DEFAULT_TORCH.brightnessMultiplier. Washed-out
+//                          shadows are almost always fill light, not the
+//                          shadow setting.
 // ─────────────────────────────────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════════════════════════
 // SHADOWS
 // ══════════════════════════════════════════════════════════════════════════
 
+// Each value notes three's own default, so it's clear what has been changed
+// and what to reset to.
 export const SHADOWS = {
-  // "hard" — single-sample PCF. Crisp, sharply defined edges everywhere.
-  //          Cheapest and by far the sharpest option.
-  // "pcf"  — 3x3 filtered PCF. Slightly softened edges, hides stair-stepping.
-  // "soft" — PCSS. Penumbra widens with distance from the caster (contact
-  //          hardening), the closest approximation to raytraced shadows.
-  //          Sharp at contact points, soft further away.
-  type: "hard" as "hard" | "pcf" | "soft",
+  // Filtering algorithm: "hard" is crisp but aliased, "pcf" softens the edge,
+  // "soft" blurs it uniformly (no distance-based contact hardening — three
+  // removed PCFSoftShadowMap and has no PCSS equivalent). three default: pcf.
+  type: "pcf" as "hard" | "pcf" | "soft",
 
-  // Shadow map size in px. This is the single biggest lever on sharpness —
-  // more texels covering the same area means finer detail in the shadow.
-  // 1024 / 2048 / 4096. Above 4096 costs a lot for little gain.
-  resolution: 4096,
+  // Shadow map size in px per light; the biggest lever on sharpness, at the
+  // cost of memory. three default: 512.
+  resolution: 2048,
 
-  // How dark shadowed areas go. 0 = invisible, 1 = fully occluded (max).
-  // Already maxed — if shadows still look weak, it's fill light. See AMBIENT.
+  // How dark a shadowed area goes, 0 invisible to 1 fully occluded. three default: 1.
   intensity: 1,
 
-  // Bias pushes shadow lookups away from the surface to avoid self-shadowing
-  // artifacts. Too HIGH detaches the shadow from the object ("peter-panning",
-  // which reads as soft/floaty). Too LOW gives shadow acne (stripey noise).
-  // Lowered from 0.02 — that was high enough to visibly detach shadows.
+  // Offsets the lookup along the surface normal to kill shadow acne without
+  // detaching the shadow. three default: 0.
   normalOffsetBias: 0.004,
+
+  // Depth offset to kill acne; too high makes shadows float off their object
+  // ("peter-panning"). Applied negated, as three expects. three default: 0.
   shadowBias: 0.002,
 
-  // ── "soft" (PCSS) only — ignored for "hard" and "pcf" ──
-  // Effective light size. THE sharpness control for soft shadows: smaller =
-  // tighter penumbra = sharper. Was 1.5, which read quite blurry.
-  penumbraSize: 0.35,
-  // How fast the shadow softens with distance. Higher = stays sharper longer.
-  penumbraFalloff: 3,
-  // Sample counts. Higher = smoother gradients, more GPU cost.
-  samples: 16,
-  blockerSamples: 16,
+  // "soft" only: blur width of the variance shadow. three default: 1.
+  softRadius: 1,
+
+  // "soft" only: blur sample count, higher is smoother and slower. three default: 8.
+  softSamples: 8,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-// AMBIENT / FILL LIGHT  — the real "how dark are my shadows" controls
+// AMBIENT  — the real "how dark are my shadows" control
 // ══════════════════════════════════════════════════════════════════════════
 //
-// A shadow is only as dark as whatever else is lighting that spot. Ambient
-// light and the skybox illuminate surfaces regardless of occlusion, so they
-// set the floor on how dark a shadow can ever get. Turn these down to make
-// shadows read strongly; turn them up if the scene goes too murky.
+// A shadow is only as dark as whatever else lights that spot. Ambient light
+// reaches every surface regardless of occlusion, so it sets the floor on how
+// dark a shadow can get. Turn it down for stronger shadows.
 
 export const AMBIENT = {
-  // Base light applied to everything, [r, g, b] 0-1. Near-black = deepest
-  // shadows. A slight blue reads as moonlight rather than dead black.
+  // Colour of the light every surface receives regardless of occlusion;
+  // near-black keeps shadows deep, a little blue reads as moonlight.
   color: [0.02, 0.025, 0.04] as [number, number, number],
 
-  // How much the procedural sky contributes as ambient light. This is a big
-  // one at night — the sky dome fills shadows in from every direction.
-  skyboxIntensity: 0.15,
+  // Multiplier on that colour. three default: 1.
+  intensity: 0.9,
 
-  // Overall scene brightness multiplier applied after lighting. Lower for a
-  // darker, higher-contrast image.
-  exposure: 1,
+  // Renderer tone-mapping exposure; lower is darker and higher contrast.
+  // three default: 1 (and NoToneMapping — this scene uses ACES Filmic).
+  exposure: 0.9,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-// SKY
+// CAMERA
 // ══════════════════════════════════════════════════════════════════════════
 
-export const SKY = {
-  elevation: -85, // sun angle; negative = below horizon (night)
-  azimuth: 0,
-  starBrightness: 0.4,
-  starDensity: 1,
-  moonIntensity: 1.5,
-  nightBrightness: 0.03, // raises the darkest parts of the sky — also fills shadows
-  twilightGlow: 0.1,
+export const CAMERA = {
+  // Mouse orbit/pan/zoom, handed over once the intro camera animation has
+  // finished (straight away if there isn't one), so the authored camera move
+  // still plays untouched first.
+  orbitControls: true,
+
+  // Fallback orbit target if the table can't be found; normally the target is
+  // placed on the camera's line of sight so taking control doesn't jump.
+  target: [0, 1, 0] as [number, number, number],
+
+  // How close and far the orbit controls may be dollied, in scene units.
+  minDistance: 1,
+  maxDistance: 40,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// CHARACTERS
+// ══════════════════════════════════════════════════════════════════════════
+
+export interface SeatingCorrection {
+  // Offset from the seat target, in Blender axes and seat-local units:
+  //   X = sideways along the seat, + to the seat's right
+  //   Y = away from the table, - toward it
+  //   Z = up
+  position?: [number, number, number];
+  rotation?: [number, number, number]; // Blender XYZ rotation, in degrees
+  scale?: number; // uniform; the seat already supplies ~3x
+}
+
+// Seating offsets use Blender's axes and units: they read exactly as the
+// Location/Rotation of an object parented to a seat empty would in Blender.
+// So +Y is the seat's local Y, and 0.3 is 0.3 on that axis (0.9 in world,
+// since the seat scales 3x). Applied to every character.
+export const DEFAULT_SEATING: SeatingCorrection = {
+  // Seat +Y points away from the table, so negative brings characters forward
+  // toward it. Net zero: characters sit exactly on their seat target.
+  position: [0, 0, 0],
+};
+
+// Extra per-character nudges on top of DEFAULT_SEATING, keyed by character id.
+// Positions and rotations add; scale multiplies. No height offsets: every
+// character attaches at its seat target's height, so height is set by the
+// targets in Blender.
+export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
+  // position: [x, y, z] offset from the seat target — x sideways, y away from
+  // the table (negative toward it), z up. Adds to DEFAULT_SEATING.
+  // scale: uniform size multiplier, applied around the character's origin, so
+  // it can also raise or lower the feet a little.
+  "forest-elf": { position: [0, 0, 0.037], scale: 0.9},
+  "blind-wizard": { position: [0, 0, 0.05], scale: 0.95 },
+  "black-witch": { position: [0, 0, 0.018], scale: 0.95 },
+  "kungfu-girl": { position: [0, 0, -0.05], scale: 0.9 },
+  "goatman": { position: [0, 0, 0], scale: 0.85 },
+  "demon": { position: [0, 0, -0.015], scale: 0.9 },
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// RENDER RESOLUTION
+// ══════════════════════════════════════════════════════════════════════════
+
+// The scene is drawn at canvasHeight x pixelRatio pixels, so a 4K display
+// costs four times a 1080p one. These cap that: the buffer never exceeds
+// maxHeight rows, and the browser scales the result up to fill the canvas.
+// Raise maxHeight for sharpness, lower it for framerate.
+export const RENDER = {
+  maxHeight: 1080, // tallest drawing buffer, in pixels
+  maxPixelRatio: 1, // never draw more than 1 buffer pixel per CSS pixel
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// ANIMATION
+// ══════════════════════════════════════════════════════════════════════════
+
+export const ANIMATION = {
+  // Playback speed for every clip: 1 is as authored, 0.5 half speed.
+  // three default: 1.
+  timeScale: 1,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
 // LIGHT INTENSITY
 // ══════════════════════════════════════════════════════════════════════════
 
+// three.js uses physical light units: point/spot intensity is candela and
+// falls off with the inverse square of distance. The torches sit ~6-8 units
+// from the table, so values are in the tens-to-hundreds, not fractions.
 export const LIGHTING = {
-  // Overall multiplier applied on top of the base intensities below.
-  // The scene renders much dimmer here than it looked in Blender, so bump
-  // this up/down to compensate.
-  scale: 10,
+  // Global multiplier over both intensities below, for dimming or brightening
+  // the whole scene in one place.
+  scale: 1,
 
-  // Base intensity (before `scale`) for the torch point lights.
-  torchIntensity: 0.25,
+  // Candela for each torch point light, before `scale` and the per-torch
+  // multiplier. Falls off as 1/d², so ~90 reads as a modest pool at 6-8 units.
+  torchIntensity: 90,
 
-  // Base intensity (before `scale`) for the overhead spot light.
-  overheadIntensity: 0.4,
+  // Candela for the overhead spot, before `scale`; it sits higher up, so it
+  // needs a larger figure than the torches to land with similar strength.
+  overheadIntensity: 200,
+
+  // How fast light falls off with distance, and so how far a torch throws.
+  // 2 is physically correct (inverse-square); 1.5 or 1.2 spreads the pool
+  // much wider without blowing out the area right beside the flame, whereas
+  // raising intensity needs 4x the candela to double the reach.
+  // three default: 2.
+  falloff: 1.8,
 };
 
 // The overhead "top light" spot. Casts shadows alongside the override
@@ -123,31 +197,24 @@ export interface TorchSettings {
   brightnessMultiplier: number;
 }
 
-// Applied to any torch not listed in TORCH_OVERRIDES below.
+// Applied to any torch not listed in TORCH_OVERRIDES below. Every torch
+// lights the scene; only the ones listed there also cast shadows.
 //
-// IMPORTANT for shadow darkness: these torches do NOT cast shadows, so they
-// light shadowed areas straight through the objects that should be blocking
-// them — the main reason shadows look washed out. Drop brightnessMultiplier
-// to deepen shadows; raise it for a brighter but flatter scene.
+// Note that non-casting torches light straight through objects that should be
+// blocking them, so raising this softens the shadows the other two cast.
 export const DEFAULT_TORCH: TorchSettings = {
-  color: [1, 0.55, 0.25], // warm orange — the raw exported torch color reads too red in-engine
+  color: [1, 0.55, 0.25], // warm orange — the raw exported torch colour reads too red
   castShadows: false,
-  brightnessMultiplier: 0.35, // lowered from 1 so the shadow-casting torches dominate
+  brightnessMultiplier: 1,
 };
 
-// Per-torch overrides, keyed by the torch's entity name in the scene
-// hierarchy (torch.001 .. torch.006, matching Blender's collection instances).
-// Only list what differs from DEFAULT_TORCH — unlisted fields fall back to it.
+// Per-torch overrides, keyed by the torch's name in Blender (torch.001 ..
+// torch.006 — three sanitises these to "torch001", which is handled for you).
+// Only list what differs from DEFAULT_TORCH.
 //
-// NOTE: an earlier version of this file documented that torch.001 + torch.003
-// sit ~90-120° apart around the table and were found (by testing) to cancel
-// each other's shadows out — each torch's light fills back in the shadow the
-// other one casts. torch.002 + torch.006 were used instead as the closest
-// angular pair (~32° apart) specifically to avoid that. This config
-// deliberately overrides that finding and uses torch.001 + torch.003 anyway
-// — if the shadows look washed out/absent, that's the likely cause; swap
-// back to torch.002 + torch.006 to confirm.
+// Shadows come from these two alone: six shadow-casting lights would wash
+// each other out, since every torch fills in the shadow the others cast.
 export const TORCH_OVERRIDES: Record<string, Partial<TorchSettings>> = {
-  "torch.001": { castShadows: true, brightnessMultiplier: 3 },
-  "torch.003": { castShadows: true, brightnessMultiplier: 3 },
+  "torch.001": { castShadows: true },
+  "torch.003": { castShadows: true },
 };

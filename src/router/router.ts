@@ -3,7 +3,7 @@ import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
 import { renderWizardGamePage } from "../pages/WizardGame";
 
-// PlayCanvas is large; only pull the visualizer bundle in when it's actually
+// three.js is large; only pull the visualizer bundle in when it's actually
 // needed instead of paying for it on every route.
 let visualizerModule: typeof import("../pages/Visualizer") | null = null;
 
