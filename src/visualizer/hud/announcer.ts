@@ -78,6 +78,14 @@ export function createAnnouncer(
     board?.dispose();
     board = null;
     banner.classList.toggle("has-results", !!next.results);
+    // On phones the score panel shares the top of the screen, so the results
+    // board goes just below it; elsewhere CSS keeps it at the top, beside it.
+    const narrow = window.matchMedia("(max-width: 640px)").matches;
+    const panel = next.results && narrow ? root.querySelector<HTMLElement>(".hud-status") : null;
+    banner.style.top =
+      panel && !panel.hidden
+        ? `${Math.round(panel.getBoundingClientRect().bottom - root.getBoundingClientRect().top + 12)}px`
+        : "";
     textEl.hidden = !!next.results;
     textEl.textContent = next.results ? "" : next.text;
     if (next.results) {
@@ -134,18 +142,18 @@ export function createAnnouncer(
       if (previous) {
         for (const text of eventMessages(previous, state, game.localUsername)) queue.push({ text });
 
-        const results = roundResults(previous, state, game.localUsername);
+        const results = roundResults(previous, state);
         if (results.length) {
           // The table keeps last round's totals until each line is read.
           scores.holdScores(new Map(results.map((result) => [result.username, result.total - result.points])));
-          // One board for the whole round, cards appearing lowest points first.
+          // One board for the whole round, the best round's card first.
           const cards: ResultCard[] = results.map((result) => {
             const player = state.players.find((candidate) => candidate.username === result.username);
             return {
               username: result.username,
               name: result.username,
               character: player ? characterForPlayer(player) : characterForUsername(result.username),
-              text: result.text,
+              lines: result.lines,
               points: result.points,
             };
           });

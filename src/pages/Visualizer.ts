@@ -4,6 +4,8 @@ import { createGameSocket, type GameSocketMessage } from "../services/gameSocket
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
+import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
+import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
 import { createEmoteTrigger, type EmoteTrigger } from "../visualizer/emote-trigger";
 import type { GameConnection } from "../visualizer/game-connection";
 import { createGameHud, type GameHud } from "../visualizer/hud/game-hud";
@@ -54,9 +56,13 @@ export async function renderVisualizerPage(
   let trumpPrompt: TrumpPrompt | null = null;
   let gameHud: GameHud | null = null;
   let diagnostics: Diagnostics | null = null;
+  let music: BackgroundMusic | null = null;
+  let musicToggle: MusicToggle | null = null;
 
   teardown = () => {
     destroyed = true;
+    musicToggle?.dispose();
+    music?.dispose();
     useHeadshotRenderer(null);
     diagnostics?.dispose();
     cardTable?.dispose();
@@ -94,6 +100,14 @@ export async function renderVisualizerPage(
       </figure>
     </main>
   `;
+
+  // The ambient track loops while this view is open, with a mute button over
+  // the score panel's corner.
+  const pageEl = container.querySelector<HTMLElement>(".visualizer-page");
+  if (pageEl) {
+    music = createBackgroundMusic();
+    musicToggle = createMusicToggle(pageEl, music);
+  }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
     "#wizard-visualizer-canvas",

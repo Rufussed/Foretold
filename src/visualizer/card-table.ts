@@ -258,7 +258,7 @@ export function createCardTable({
           const roundOver = state.players.every((player) => player.handCount === 0);
           const color = trumpColor(state.trumpSuit);
           upcomingRewards.push({
-            at: clock + TRICK_REWARD.startDelaySeconds,
+            at: clock + TRICK_REWARD.startDelaySeconds + TRICK_REWARD.winnerHoldSeconds,
             start: () => startReward(destinationFor(winner), roundOver, color),
           });
         }

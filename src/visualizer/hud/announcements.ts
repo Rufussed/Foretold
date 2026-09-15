@@ -4,8 +4,16 @@ import type { Card } from "../../../backend/src/game/wizard/models/card";
 // What the top-centre banner says, worked out from game state alone. No DOM
 // and no timing: announcer.ts decides when each line shows.
 
+export interface RoundResultLine {
+  label: string;
+  value: string; // signed, e.g. "+20" or "-10"
+}
+
 export interface RoundResult {
   username: string;
+  // The breakdown: prediction, tricks, total, each a label and a signed value.
+  lines: RoundResultLine[];
+  // The same as plain text, one line each.
   text: string;
   // This round's points, and the running total once they're added.
   points: number;
@@ -18,12 +26,6 @@ export function cardName(card: Card): string {
   if (card.value === 14) return "Wizard";
   if (card.value === 0) return "Jester";
   return `${card.suit} ${card.value}`;
-}
-
-function ordinal(place: number): string {
-  const tens = place % 100;
-  if (tens >= 11 && tens <= 13) return `${place}th`;
-  return `${place}${["th", "st", "nd", "rd"][place % 10] ?? "th"}`;
 }
 
 // After the server refuses a card: the follow-suit rule, with the suit led.
@@ -102,9 +104,9 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   return messages;
 }
 
-// When a round has just been scored: a line per player, lowest points first,
-// ending with the round's winner. Empty otherwise.
-export function roundResults(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): RoundResult[] {
+// When a round has just been scored: a result per player, the round's best
+// first and the rest in descending order. Empty otherwise.
+export function roundResults(previous: PublicWizardGameState, next: PublicWizardGameState): RoundResult[] {
   const scored = next.players.filter((player) => {
     const before = previous.players.find((p) => p.username === player.username);
     return before && player.roundScores.length > before.roundScores.length;
@@ -112,29 +114,33 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
   if (!scored.length) return [];
 
   const last = (player: PublicGamePlayer) => player.roundScores[player.roundScores.length - 1]!;
+  // "2 * 10" with non-breaking spaces, so a label wraps before it, not inside it.
+  const times = (count: number) => `${count}\u00a0*\u00a010`;
+  // Every value carries its sign, so the signs line up in a column.
+  const signed = (points: number) => (points >= 0 ? `+${points}` : String(points));
   const ordered = [...scored].sort(
-    (a, b) => last(a).score - last(b).score || b.username.localeCompare(a.username),
+    (a, b) => last(b).score - last(a).score || a.username.localeCompare(b.username),
   );
 
   return ordered.map((player) => {
     const { prediction, tricksWon, score } = last(player);
-    // Equal points share a place; only a sole top scorer wins the round, and
-    // "last" needs someone above.
-    const place = 1 + scored.filter((other) => last(other).score > score).length;
-    const tied = scored.some((other) => other !== player && last(other).score === score);
-    const lastPlace = place > 1 && !scored.some((other) => last(other).score < score);
-    const is = player.username === local ? "are" : "is";
-    const position = lastPlace ? "Last" : ordinal(place);
-    const standing = `${nameOf(player.username, local)} ${is} ${tied ? `equal ${position}` : position}`;
-    // Four lines: placement, whether the prediction came true, the points
-    // multiplier, the round's total.
-    const breakdown =
-      prediction === tricksWon
-        ? `True Prediction +20\nTricks ${tricksWon} * 10`
-        : `False Prediction ${prediction}\nTricks ${tricksWon}, ${Math.abs(prediction - tricksWon)} * -10`;
+    const off = Math.abs(prediction - tricksWon);
+    const lines: RoundResultLine[] = [
+      ...(prediction === tricksWon
+        ? [
+            { label: "Prediction Bonus", value: "+20" },
+            { label: `Trick Bonus ${times(tricksWon)}`, value: signed(tricksWon * 10) },
+          ]
+        : [
+            { label: "False Prediction", value: "+0" },
+            { label: `Prediction Off By ${times(off)}`, value: signed(-off * 10) },
+          ]),
+      { label: "Total Points", value: signed(score) },
+    ];
     return {
       username: player.username,
-      text: `${standing}\n${breakdown}\nTotal ${score} points!`,
+      lines,
+      text: lines.map((line) => `${line.label} ${line.value}`).join("\n"),
       points: score,
       total: player.score,
     };

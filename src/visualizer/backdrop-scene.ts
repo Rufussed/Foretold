@@ -6,6 +6,7 @@ import {
   prepareEnvironment,
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
+import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 
 export interface BackdropScene {
   dispose(): void;
@@ -33,6 +34,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
   const target = new THREE.Vector3();
   let mixer: THREE.AnimationMixer | null = null;
+  let sparks: TorchSparks | null = null;
   let disposed = false;
 
   const resize = () => {
@@ -50,6 +52,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
     .then((gltf) => {
       if (disposed) return;
       prepareEnvironment(gltf.scene);
+      sparks = createTorchSparks(gltf.scene);
       gltf.scene.traverse((object) => {
         if (CARD_NODE_RE.test(object.name)) object.visible = false;
       });
@@ -104,6 +107,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
     );
     camera.lookAt(target);
     mixer?.update(deltaSeconds);
+    sparks?.update(deltaSeconds);
     renderer.render(scene, camera);
   };
   tick();
@@ -116,6 +120,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
       mixer?.stopAllAction();
+      sparks?.dispose();
       renderer.dispose();
       // Frees this context's GPU memory at once; the 3D view needs its own.
       renderer.forceContextLoss();

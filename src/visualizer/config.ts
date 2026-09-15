@@ -497,6 +497,8 @@ export const TRICK_REWARD = {
   // Wait after the trick completes, so the last card lands first
   // (OPPONENT_PLAYS: 0.4s up plus 0.6s across).
   startDelaySeconds: 1.1,
+  // Then the finished trick stays on the table this long before it shrinks.
+  winnerHoldSeconds: 1,
   // The cards in play shrinking into a point.
   gatherSeconds: 0.5,
   // The tesseract growing from that point to startScale.
@@ -526,7 +528,7 @@ export const ANNOUNCER = {
   // most; it goes sooner if the next card is played first.
   noticeSeconds: 5,
   // End of round: each player's result card appears this long after the last,
-  // lowest points first...
+  // the round's best first...
   resultRevealSeconds: 1,
   // ...and once every card is showing, they all stay up this long.
   resultHoldSeconds: 10,
@@ -562,4 +564,51 @@ export const BACKDROP = {
   startDegrees: 180,
   // Shadows cost a lot for a slow background; switch off for weaker devices.
   shadows: true,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// MUSIC  (the ambient track looping while the 3D view is open)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const MUSIC = {
+  url: "/sound/deuslower-medieval-ambient-236809.mp3",
+  // 0 silent to 1 full volume; kept low so it stays in the background.
+  volume: 0.35,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// SPARKS  (embers rising from the torches)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Distances are scene units, times seconds. Every spark drifts the same way;
+// that direction eases to a new random one every windChangeSeconds. Each spark
+// also weaves across the drift in a sine wave.
+export const SPARKS = {
+  enabled: true,
+  perTorchPerSecond: 3, // how many sparks each torch gives off
+  maxParticles: 300, // most alive at once, across all torches; new ones wait for room
+  emitOffsetY: -0.35, // start this far below the torch's light, inside the flame
+  emitRadius: 0.1, // scatter of each spark's starting point
+
+  lifeMinSeconds: 10, // each spark lives a random time between these
+  lifeMaxSeconds: 20,
+
+  size: 0.15, // size at full flare
+  sizeRandomness: 0.5, // fraction each spark's size may vary
+  flareFraction: 0.12, // share of its life spent flaring up; then it fades
+
+  speedMin: 0.4, // slowest drift
+  speedMax: 1.2, // fastest drift
+  rise: 0.05, // upward speed added to the drift (0 lets them fall freely)
+
+  windChangeSeconds: 15, // time to ease to a new drift direction
+  windVertical: 0.5, // how far the drift may tilt up or down (0 level, 1 steeply)
+
+  waveFrequency: 0.8, // weaves per second
+  waveAmplitude: 0.08, // how far a spark weaves to each side
+  waveRandomness: 0.5, // fraction each spark's wave frequency and size may vary
+
+  colorStart: [1, 0.85, 0.45] as [number, number, number], // as it flares
+  colorEnd: [1, 0.3, 0.05] as [number, number, number], // as it dies
+  brightness: 3, // glow strength
 };

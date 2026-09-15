@@ -1,11 +1,12 @@
 import type { CharacterId } from "../character-assets";
+import type { RoundResultLine } from "./announcements";
 import { headshotUrl } from "./headshots";
 
 export interface ResultCard {
   username: string;
   name: string; // shown under the headshot
   character: CharacterId;
-  text: string; // the result lines, "\n" between them
+  lines: RoundResultLine[]; // label and signed value per line
   points: number;
 }
 
@@ -15,7 +16,7 @@ export interface ResultsBoard {
 
 // A round's results as a grid of equal cards, one per player, three to a row:
 // headshot and name, the result lines beside. Cards appear in the order given
-// (lowest points first), one every revealSeconds; onReveal fires as each shows.
+// (best round first), one every revealSeconds; onReveal fires as each shows.
 export function createResultsBoard(
   container: HTMLElement,
   cards: readonly ResultCard[],
@@ -24,6 +25,7 @@ export function createResultsBoard(
 ): ResultsBoard {
   const grid = document.createElement("div");
   grid.className = "hud-results";
+  grid.style.setProperty("--columns", String(Math.max(1, Math.min(3, cards.length))));
   container.append(grid);
 
   const timers: number[] = [];
@@ -41,11 +43,18 @@ export function createResultsBoard(
     name.textContent = card.name;
     face.append(image, name);
 
-    const text = document.createElement("p");
-    text.className = "hud-result-text";
-    text.textContent = card.text;
+    // Labels on the left, values in a column of their own so the signs align.
+    const lines = document.createElement("dl");
+    lines.className = "hud-result-lines";
+    for (const line of card.lines) {
+      const label = document.createElement("dt");
+      label.textContent = line.label;
+      const value = document.createElement("dd");
+      value.textContent = line.value;
+      lines.append(label, value);
+    }
 
-    element.append(face, text);
+    element.append(face, lines);
     headshotUrl(card.character)
       .then((url) => {
         if (!disposed) image.src = url;

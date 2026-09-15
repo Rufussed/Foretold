@@ -40,6 +40,17 @@ function findTorchRootName(object: THREE.Object3D | null): string | null {
   return null;
 }
 
+// The torch flames to throw sparks from: each torch's point light, which sits
+// in its flame.
+export function torchFlames(root: THREE.Object3D): THREE.Object3D[] {
+  const flames: THREE.Object3D[] = [];
+  root.traverse((object) => {
+    const light = object as THREE.PointLight;
+    if (light.isPointLight && findTorchRootName(light)) flames.push(light);
+  });
+  return flames;
+}
+
 export function configureRenderer(renderer: THREE.WebGLRenderer): void {
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = {
