@@ -1,4 +1,5 @@
 import { API_BASE } from "../services/api";
+import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
 import { getCurrentUser, getToken } from "../services/auth";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
@@ -75,6 +76,10 @@ export async function renderRoomPage(
             NPCs
             <select id="room-bots"></select>
           </label>
+          <label>
+            Rounds
+            <select id="room-rounds"></select>
+          </label>
           <button type="button" id="room-start-button">Start game</button>
         </div>
 
@@ -95,6 +100,23 @@ export async function renderRoomPage(
   const playersEl = element<HTMLUListElement>("#room-players");
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
+  const roundsEl = element<HTMLSelectElement>("#room-rounds");
+  let humanCount = 0;
+
+  // Rounds to choose from: a full game for this many players down to 1. A
+  // longer choice than the new player count allows falls back to a full game.
+  const updateRoundOptions = () => {
+    const full = fullRoundCount(humanCount + Number(botsEl.value || 0));
+    const values = full ? Array.from({ length: full }, (_, index) => String(full - index)) : [];
+    const current = [...roundsEl.options].map((option) => option.value);
+    if (current.join() === values.join()) return;
+    const selected = roundsEl.value;
+    roundsEl.replaceChildren(
+      ...values.map((value, index) => new Option(index === 0 ? `Full game (${value})` : value, value)),
+    );
+    roundsEl.value = values.includes(selected) ? selected : values[0] ?? "";
+  };
+  botsEl.addEventListener("change", updateRoundOptions);
   const startButton = element<HTMLButtonElement>("#room-start-button");
   const waitingEl = element<HTMLParagraphElement>("#room-waiting");
 
@@ -174,6 +196,8 @@ export async function renderRoomPage(
         botsEl.value = options.includes(selected) ? selected : options[0] ?? "";
       }
 
+      humanCount = room.players.length;
+      updateRoundOptions();
       startButton.disabled = options.length === 0;
     }
   };
@@ -260,7 +284,7 @@ export async function renderRoomPage(
 
         if (latest.status === "playing") {
           if (isMember) {
-            window.location.hash = `#/game/${roomId}`;
+            window.location.hash = `#/game/${roomId}/visualizer`;
           } else {
             showMessage("This game has already started.");
           }
@@ -290,7 +314,7 @@ export async function renderRoomPage(
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ roomId, botCount: Number(botsEl.value) }),
+        body: JSON.stringify({ roomId, botCount: Number(botsEl.value), maxRounds: Number(roundsEl.value) }),
       });
 
       const data = (await response.json()) as { error?: string };
@@ -300,7 +324,7 @@ export async function renderRoomPage(
         throw new Error(data.error ?? "Could not start game");
       }
 
-      window.location.hash = `#/game/${roomId}`;
+      window.location.hash = `#/game/${roomId}/visualizer`;
     } catch (error) {
       showMessage(
         error instanceof Error ? error.message : "Could not start game",

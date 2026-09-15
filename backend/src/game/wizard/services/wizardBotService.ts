@@ -3,6 +3,7 @@ import { isBotName } from "../models/bot.js";
 import type { Card, Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "./wizardRules.js";
+import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 export class WizardBotService {
@@ -66,7 +67,13 @@ export class WizardBotService {
       return card.value === 14 || card.value >= 12;
     }).length;
 
-    return Math.min(prediction, game.currentRound);
+    // As last predictor, step off a number the rules forbid.
+    const choice = Math.min(prediction, game.currentRound);
+    return avoidForbiddenPrediction(
+      choice,
+      forbiddenPrediction(game.players, game.currentRound),
+      game.currentRound,
+    );
   }
 
   // Return the first legal card. This is intentionally a simple strategy:

@@ -394,11 +394,11 @@ function renderGame(
   container.innerHTML = `
     <main class="page">
 
-      <nav class="navbar">
+      <nav class="navbar game-nav">
         <a href="#/home">Home</a>
         <a href="#/lobby">Lobby</a>
         <a href="#/profile">Profile</a>
-        <a href="#/game/${game.roomId}/visualizer">3D View</a>
+        <a class="game-nav-visualizer" href="#/game/${game.roomId}/visualizer">Back to 3D Visualizer</a>
       </nav>
 
       <!-- GAME HEADER -->

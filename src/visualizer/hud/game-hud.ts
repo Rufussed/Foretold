@@ -1,5 +1,5 @@
 import type { GameConnection } from "../game-connection";
-import { createAnnouncer } from "./announcer";
+import { createAnnouncer, type AnnouncerOptions } from "./announcer";
 import { followSuitMessage } from "./announcements";
 import { createGameStatusPanel } from "./game-status-panel";
 import type { HudPart } from "./hud-part";
@@ -14,10 +14,14 @@ export interface GameHud extends HudPart {
 // The in-game overlay: what's going on (top centre), the game status and
 // scores (top right), your round (bottom right) and the other players' round
 // (bottom left).
-export function createGameHud(root: HTMLElement, game: GameConnection): GameHud {
+export function createGameHud(
+  root: HTMLElement,
+  game: GameConnection,
+  options: AnnouncerOptions = {},
+): GameHud {
   const statusPanel = createGameStatusPanel(root, game);
   // After the panel, so a round's scores are held back before it redraws.
-  const announcer = createAnnouncer(root, game, statusPanel);
+  const announcer = createAnnouncer(root, game, statusPanel, options);
   const parts = [statusPanel, announcer, createSelfRoundStats(root, game), createOpponentGrid(root, game)];
 
   return {

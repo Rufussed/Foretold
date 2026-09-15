@@ -29,8 +29,8 @@ interface Press {
 }
 
 // Pointer handling for your hand on the scene canvas. Hovering outlines a card.
-// A click raises it to be read and another click lowers it. Dragging sideways
-// moves it within the hand; dropping it above the raised cards plays it, if
+// A click or tap raises it to be read and another lowers it. Dragging sideways
+// moves it within the hand; dropping it above the play line plays it, if
 // playing is allowed. Reading and rearranging work at any time.
 export function createCardControls(options: CardControlsOptions): CardControls {
   const { canvas, camera, cards } = options;
@@ -56,11 +56,11 @@ export function createCardControls(options: CardControlsOptions): CardControls {
     };
   };
 
-  // Anywhere above where the raised cards sit counts as the play area.
+  // Anywhere above the play line (CARD_HANDLING.playLineLengths) counts as the play area.
   const inPlayArea = (event: PointerEvent) => {
     const targets = cards.handTargets();
     if (!targets.length) return false;
-    const line = Math.min(...targets.map((target) => toScreen(target.raised).y));
+    const line = Math.min(...targets.map((target) => toScreen(target.playLine).y));
     return event.clientY < line - CARD_HANDLING.playAreaMarginPx;
   };
 

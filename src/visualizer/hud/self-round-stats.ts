@@ -10,7 +10,7 @@ export function createSelfRoundStats(root: HTMLElement, game: GameConnection): H
   box.hidden = true;
 
   const prediction = createRoundStat("Prediction");
-  const won = createRoundStat("Won");
+  const won = createRoundStat("Tricks");
   box.append(prediction.element, won.element);
   root.append(box);
 

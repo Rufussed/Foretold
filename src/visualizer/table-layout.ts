@@ -3,7 +3,8 @@ import { SEAT_IDS, type SeatId } from "./player-characters";
 import { numberedNodes, placementOf, type Placement } from "./placement";
 
 export interface TableLayout {
-  // Your hand targets, card01..card20.
+  // Your hand targets, card01..card20 (card01 at the right). Use centredSlots
+  // to pick the ones a hand of a given size sits on.
   readonly localHand: readonly Placement[];
   // Played-card targets, played-card-1..6.
   readonly played: readonly Placement[];
@@ -15,6 +16,16 @@ export interface TableLayout {
   readonly clockwiseSeats: readonly SeatId[];
   // Your hand targets turned about the table's centre to face a seat.
   handFor(seat: SeatId): readonly Placement[];
+}
+
+// The middle `count` slots of a card set, so a hand sits centred on the fan:
+// with 20 slots, 1 card uses card10, and 4 cards use card09 to card12. The
+// first slot is floor((slots - count) / 2); an odd spare slot goes on the high
+// numbered side.
+export function centredSlots<T>(slots: readonly T[], count: number): readonly T[] {
+  const shown = Math.max(0, Math.min(count, slots.length));
+  const start = Math.floor((slots.length - shown) / 2);
+  return slots.slice(start, start + shown);
 }
 
 const UP = new THREE.Vector3(0, 1, 0);

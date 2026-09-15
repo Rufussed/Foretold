@@ -4,12 +4,14 @@ import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor, trumpFaceTexture } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
 import { applyPlacement, type Placement } from "./placement";
-import type { TableLayout } from "./table-layout";
+import { centredSlots, type TableLayout } from "./table-layout";
 
 export interface HandTarget {
   key: string;
   home: THREE.Vector3; // world position in its hand slot
   raised: THREE.Vector3; // world position when raised to be read
+  // Drop a dragged card above this to play it (CARD_HANDLING.playLineLengths).
+  playLine: THREE.Vector3;
 }
 
 export interface TableCards {
@@ -173,10 +175,16 @@ export function createTableCards(
 
   const visibleHand = () => handOrder.filter((key) => key !== pending?.key && !held.has(key));
 
+  // A hand card's slot: centred for the whole hand, cards still being dealt
+  // included, so each lands where it stays and nothing shifts mid-deal.
+  const handSlotFor = (key: string): Placement | undefined => {
+    const hand = handOrder.filter((candidate) => candidate !== pending?.key);
+    return centredSlots(handSlots, hand.length)[hand.indexOf(key)];
+  };
+
   const targetOf = (entry: TableCard): { slot: Placement; lift: number } | null => {
-    const handIndex = visibleHand().indexOf(entry.key);
-    if (handIndex !== -1) {
-      const slot = handSlots[handIndex];
+    if (visibleHand().includes(entry.key)) {
+      const slot = handSlotFor(entry.key);
       return slot ? { slot, lift: entry.raised ? liftFor(slot) : 0 } : null;
     }
     if (pending?.key === entry.key) {
@@ -314,7 +322,7 @@ export function createTableCards(
     releaseDealt(key) {
       if (!held.delete(key)) return;
       const entry = cards.get(key);
-      const slot = handSlots[visibleHand().indexOf(key)];
+      const slot = handSlotFor(key);
       if (!entry || !slot) return;
       // Appear exactly where the dealt card came to rest: no drop-in.
       applyPlacement(entry.object, slot);
@@ -402,18 +410,22 @@ export function createTableCards(
     },
 
     handTargets() {
-      return visibleHand()
-        .slice(0, handSlots.length)
-        .map((key, index) => {
-          const slot = handSlots[index];
-          return {
-            key,
-            home: environment.localToWorld(slot.position.clone()),
-            raised: environment.localToWorld(
-              slot.position.clone().addScaledVector(up, liftFor(slot)),
-            ),
-          };
-        });
+      return visibleHand().flatMap((key) => {
+        const slot = handSlotFor(key);
+        if (!slot) return [];
+        return [{
+          key,
+          home: environment.localToWorld(slot.position.clone()),
+          raised: environment.localToWorld(
+            slot.position.clone().addScaledVector(up, liftFor(slot)),
+          ),
+          playLine: environment.localToWorld(
+            slot.position
+              .clone()
+              .addScaledVector(up, CARD_HANDLING.playLineLengths * factory.length * slot.scale.z),
+          ),
+        }];
+      });
     },
 
     moveInHand(key, index) {

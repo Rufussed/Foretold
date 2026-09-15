@@ -11,6 +11,27 @@ async function destroyVisualizer(): Promise<void> {
   visualizerModule?.destroyVisualizer();
 }
 
+// Behind every page but the 3D view: the table scene, slowly circled. Also
+// three.js, so loaded on first use; kept alive across those pages and removed
+// when the 3D view (which draws the table itself) opens.
+let backdropModule: typeof import("../visualizer/backdrop-scene") | null = null;
+let backdrop: { dispose(): void } | null = null;
+let backdropWanted = false;
+
+async function showBackdrop(): Promise<void> {
+  backdropWanted = true;
+  if (backdrop) return;
+  backdropModule ??= await import("../visualizer/backdrop-scene");
+  // The route may have changed to the 3D view while the module loaded.
+  if (backdropWanted && !backdrop) backdrop = backdropModule.createBackdropScene(document.body);
+}
+
+function hideBackdrop(): void {
+  backdropWanted = false;
+  backdrop?.dispose();
+  backdrop = null;
+}
+
 // The waiting room also pulls in three.js for its avatar portraits.
 let roomModule: typeof import("../pages/Room") | null = null;
 
@@ -34,6 +55,9 @@ function renderCurrentRoute(container: HTMLElement): void {
 
   if (!route.startsWith("#/game/") || !route.endsWith("/visualizer")) {
     destroyVisualizer();
+    void showBackdrop();
+  } else {
+    hideBackdrop();
   }
 
   roomModule?.destroyRoomPage();

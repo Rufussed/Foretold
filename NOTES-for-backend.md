@@ -37,10 +37,17 @@ Players pick one of six avatars before a game starts, first come first served.
 ## Bots
 
 - **Names** (new `botNames.ts`, `models/bot.ts`): bots are called
-  `"<name> NPC"`, e.g. `Morgana NPC`, drawn at random from the editable list in
-  `botNames.ts`. The ` NPC` suffix is now what marks a bot:
+  `"<name> NPC"`, e.g. `Morgana NPC`, drawn at random from the editable lists
+  in `botNames.ts`. Names suit the bot's avatar: male names for goatman, demon
+  and blind-wizard, female names for forest-elf, black-witch and kungfu-girl
+  (`AVATAR_NAME_LIST`). The ` NPC` suffix is now what marks a bot:
   `WizardBotService.isBot` uses `isBotName` instead of `startsWith("bot-")`.
   `wizardBot.test.ts` data updated to match.
+- **Game start** (`routes/wizardRoutes.ts`, `POST /wizard/games`): avatars are
+  assigned first, with `assignAvatars` (now exported from
+  `wizardGameService.ts`) over the humans plus a placeholder per bot; each bot
+  is then named for its avatar, and every avatar is passed to `createGame` as a
+  claim, so it keeps those assignments. `createGame`'s signature is unchanged.
 - **Registration** (`routes/auth.ts`): usernames ending in ` NPC` are refused
   (400), so a person can't pass as a bot.
 - **Pacing** (new `wizardTiming.ts`, used by `wizardGameRunner.ts`):
@@ -60,6 +67,37 @@ chooses the suit either way.
 In the published Wizard rules it's the other way round: a Wizard means the
 dealer chooses, and a Jester means no trump. This follows what was asked for
 in this project; change it back if you'd rather follow the published rules.
+
+## Rule change: the last prediction can't match the tricks
+
+New `gameplayRulesConfig.ts` (tweakable) and `gameplayRules.ts` (logic, shared
+with the visualiser):
+
+- `forbiddenPrediction(players, tricksThisRound)`: for the round's last
+  predictor, the number that would make everyone's predictions add up to the
+  tricks in the round; null for anyone else, or when that number is out of
+  range. `GAMEPLAY_RULES.lastPredictionCannotMatchTricks` switches the rule.
+- `wizardGameService.ts` `submitPrediction` refuses it with an error.
+- `wizardBotService.ts` `choosePrediction`: a bot that would pick it goes one
+  lower (`npcForbiddenGoesLowerChance`, 75%) or one higher, within 0..tricks.
+- `wizardGameRunner.ts`: a bot now waits `botPlayDelayMs` before predicting, as
+  before playing a card, then checks it's still its prediction to make.
+
+Predictions already ran in dealing order (from the round's starting player);
+that's unchanged.
+
+## Shorter games: max rounds
+
+- New `models/rounds.ts`: `fullRoundCount(players)` (20/15/12/10), moved out
+  of `wizardGameService.ts` so the waiting room can offer the right choices.
+- `POST /wizard/games` accepts optional `maxRounds` (400 unless a whole number
+  from 1 to the full game's rounds); `createGame(roomId, usernames, claims,
+  maxRounds?)` uses it as `totalRounds`.
+- `drawTrumpCard`: no trump card only when the deck is empty (a full game's
+  last round). Before, that was keyed on `currentRound === totalRounds`, which
+  would wrongly skip trumps in a shortened game's last round.
+- `determineTrickWinner`'s final-round Wizard rule still applies to the game's
+  last round, full or shortened.
 
 ## Playing from other devices
 

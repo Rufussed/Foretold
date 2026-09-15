@@ -1,18 +1,12 @@
 import * as THREE from "three";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { ANIMATION, CAMERA, DEV, RENDER } from "./config";
 import {
-  LIGHTING,
-  SHADOWS,
-  AMBIENT,
-  OVERHEAD_LIGHT,
-  DEFAULT_TORCH,
-  ANIMATION,
-  CAMERA,
-  DEV,
-  RENDER,
-  TORCH_OVERRIDES,
-} from "./config";
+  configureRenderer,
+  createAmbientLight,
+  prepareEnvironment,
+} from "./environment-setup";
+import { loadTableScene } from "./table-scene-asset";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
 import {
   createPlayerCharacters,
@@ -23,23 +17,6 @@ import {
   type SeatId,
 } from "./player-characters";
 
-// three's GLTFLoader sanitises names: "torch.001" arrives as "torch001", and
-// duplicates gain a "_1" suffix. Compare on a canonical form so config keys
-// can stay written the way Blender shows them.
-const canonicalName = (name: string): string =>
-  name
-    .replace(/_\d+$/, "")
-    .replace(/[^a-z0-9]/gi, "")
-    .toLowerCase();
-
-const TORCH_OVERRIDES_BY_CANONICAL = new Map(
-  Object.entries(TORCH_OVERRIDES).map(([k, v]) => [canonicalName(k), v]),
-);
-
-const TORCH_NAME_RE = /^torch\d+$/;
-const SHADOW_CASTER_NAME_RE = /chair|table|card/i;
-const GROUND_PLANE_NAME = "ground";
-const WIZARD_TABLE_MODEL_URL = "/models/wizard/Wizard.glb";
 
 export interface WizardSceneHandle {
   destroy: () => void;
@@ -77,16 +54,6 @@ export interface WizardSceneOptions {
   onUpdate?: (deltaSeconds: number) => void;
 }
 
-// Walk up from a torch's light to its collection-instance root ("torch.003"),
-// which is what TORCH_OVERRIDES is keyed by.
-function findTorchRootName(object: THREE.Object3D | null): string | null {
-  for (let o = object; o; o = o.parent) {
-    const name = canonicalName(o.name);
-    if (TORCH_NAME_RE.test(name)) return name;
-  }
-  return null;
-}
-
 // Blender writes custom properties into glTF `extras`; GLTFLoader surfaces
 // them as userData. Numeric props arrive as 0/1 rather than booleans.
 function extrasBoolean(
@@ -110,19 +77,10 @@ export function createWizardScene(
 ): WizardSceneHandle {
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
   renderer.setPixelRatio(window.devicePixelRatio);
-  renderer.shadowMap.enabled = true;
-  renderer.shadowMap.type = {
-    hard: THREE.BasicShadowMap,
-    pcf: THREE.PCFShadowMap,
-    soft: THREE.VSMShadowMap,
-  }[SHADOWS.type];
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = AMBIENT.exposure;
+  configureRenderer(renderer);
 
   const scene = new THREE.Scene();
-  scene.add(
-    new THREE.AmbientLight(new THREE.Color(...AMBIENT.color), AMBIENT.intensity),
-  );
+  scene.add(createAmbientLight());
 
   // Replaced once the glTF's own camera is found.
   let camera = new THREE.PerspectiveCamera(45, 1, 0.1, 1000);
@@ -211,9 +169,8 @@ export function createWizardScene(
 
   options.onLoading?.(true);
 
-  new GLTFLoader().load(
-    WIZARD_TABLE_MODEL_URL,
-    (gltf) => {
+  loadTableScene()
+    .then((gltf) => {
       if (disposed) return;
       scene.add(gltf.scene);
 
@@ -223,60 +180,7 @@ export function createWizardScene(
       resize();
       follow = createCameraFollow(camera);
 
-      gltf.scene.traverse((object) => {
-        // Lights: the exported intensities don't match how they looked in
-        // Blender, so drive them from config.ts instead.
-        const light = object as THREE.Light;
-        if (light.isLight) {
-          if ((light as THREE.PointLight).isPointLight) {
-            const torchName = findTorchRootName(light);
-            const override =
-              (torchName && TORCH_OVERRIDES_BY_CANONICAL.get(torchName)) || {};
-            const settings = { ...DEFAULT_TORCH, ...override };
-            light.intensity =
-              LIGHTING.torchIntensity *
-              LIGHTING.scale *
-              settings.brightnessMultiplier;
-            if (settings.color) light.color = new THREE.Color(...settings.color);
-            light.castShadow = settings.castShadows;
-            (light as THREE.PointLight).decay = LIGHTING.falloff;
-          }
-          if ((light as THREE.SpotLight).isSpotLight) {
-            (light as THREE.SpotLight).decay = LIGHTING.falloff;
-            light.intensity = LIGHTING.overheadIntensity * LIGHTING.scale;
-            if (OVERHEAD_LIGHT.color) {
-              light.color = new THREE.Color(...OVERHEAD_LIGHT.color);
-            }
-            light.castShadow = OVERHEAD_LIGHT.castShadows;
-          }
-          // Only the shadow-casting light types carry a `shadow`.
-          const caster = light as THREE.PointLight | THREE.SpotLight;
-          if (caster.castShadow && caster.shadow) {
-            caster.shadow.mapSize.set(SHADOWS.resolution, SHADOWS.resolution);
-            caster.shadow.bias = -SHADOWS.shadowBias;
-            caster.shadow.normalBias = SHADOWS.normalOffsetBias;
-            caster.shadow.intensity = SHADOWS.intensity;
-            if (SHADOWS.type === "soft") {
-              caster.shadow.radius = SHADOWS.softRadius;
-              caster.shadow.blurSamples = SHADOWS.softSamples;
-            }
-          }
-        }
-
-        // Players are spawned at runtime; hide any character left baked into
-        // the environment export. Seat targets are empties, so never affected.
-        if ((object as THREE.SkinnedMesh).isSkinnedMesh) object.visible = false;
-
-        const mesh = object as THREE.Mesh;
-        if (mesh.isMesh) {
-          if (SHADOW_CASTER_NAME_RE.test(mesh.name)) {
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
-          } else if (mesh.name === GROUND_PLANE_NAME) {
-            mesh.receiveShadow = true;
-          }
-        }
-      });
+      prepareEnvironment(gltf.scene);
 
       // Environment clips only (camera move, torch flicker): characters are
       // separate assets with their own mixers. Every clip here plays at once
@@ -430,10 +334,8 @@ export function createWizardScene(
       }
 
       options.onLoading?.(false);
-    },
-    undefined,
-    (err) => options.onError?.(`Failed to load scene: ${err}`),
-  );
+    })
+    .catch((err) => options.onError?.(`Failed to load scene: ${err}`));
 
   let frame = 0;
   let last = performance.now();

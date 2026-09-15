@@ -2,7 +2,7 @@ import type { CardFactory, CardObject } from "./card-objects";
 import { blankCardTexture } from "./card-textures";
 import type { SeatId } from "./player-characters";
 import { applyPlacement } from "./placement";
-import type { TableLayout } from "./table-layout";
+import { centredSlots, type TableLayout } from "./table-layout";
 
 export interface OpponentHands {
   // How many cards each other player holds, from game state.
@@ -37,16 +37,17 @@ export function createOpponentHands(factory: CardFactory, layout: TableLayout): 
 
   const refresh = (seat: SeatId) => {
     const hand = handOf(seat);
-    const slots = layout.handFor(seat);
-    const visible = Math.min(hand.count, hand.shown ?? hand.count, slots.length);
+    // Centred for the cards they hold, so dealt cards land where they stay and
+    // the fan re-centres as cards are played.
+    const slots = centredSlots(layout.handFor(seat), hand.count);
+    const visible = Math.min(hand.shown ?? hand.count, slots.length);
     while (hand.cards.length < visible) {
       const index = hand.cards.length;
-      const card = factory.build(`opponent-seat${seat}-card${index + 1}`, blankCardTexture());
-      applyPlacement(card.object, slots[index]);
-      hand.cards.push(card);
+      hand.cards.push(factory.build(`opponent-seat${seat}-card${index + 1}`, blankCardTexture()));
     }
     hand.cards.forEach((card, index) => {
       card.object.visible = index < visible;
+      if (index < visible) applyPlacement(card.object, slots[index]);
     });
   };
 

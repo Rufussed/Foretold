@@ -20,11 +20,12 @@ import { createTableLayout } from "../visualizer/table-layout";
 import { createTurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
 
-const EMOTE_LABELS: Record<Emote, string> = {
-  laugh: "Laugh",
-  disbelief: "Disbelief",
-  disapproval: "Disapproval",
-  thumbsUp: "Thumbs up",
+// Each emote button shows an emoji; the name is its tooltip and accessible label.
+const EMOTE_BUTTONS: Record<Emote, { emoji: string; name: string }> = {
+  laugh: { emoji: "😂", name: "Laugh" },
+  disbelief: { emoji: "😲", name: "Disbelief" },
+  disapproval: { emoji: "👎", name: "Disapproval" },
+  thumbsUp: { emoji: "👍", name: "Thumbs up" },
 };
 
 
@@ -77,13 +78,13 @@ export async function renderVisualizerPage(
       <nav class="visualizer-nav">
         <a href="#/home">Home</a>
         <a href="#/lobby">Lobby</a>
-        <a href="#/game/${roomId}">Back to Game</a>
+        <a href="#/game/${roomId}">Technical View</a>
       </nav>
 
       <div class="visualizer-emotes" id="visualizer-emotes">
         ${EMOTE_NAMES.map(
           (emote) =>
-            `<button type="button" data-emote="${emote}">${EMOTE_LABELS[emote]}</button>`,
+            `<button type="button" data-emote="${emote}" title="${EMOTE_BUTTONS[emote].name}" aria-label="${EMOTE_BUTTONS[emote].name}">${EMOTE_BUTTONS[emote].emoji}</button>`,
         ).join("")}
       </div>
 
@@ -194,7 +195,10 @@ export async function renderVisualizerPage(
     trumpPrompt = createTrumpPrompt(page, gameConnection, {
       blocked: () => !cardTable || cardTable.dealing,
     });
-    gameHud = createGameHud(page, gameConnection);
+    // The banner's gameplay lines wait until every card, trump included, has landed.
+    gameHud = createGameHud(page, gameConnection, {
+      blocked: () => !cardTable || cardTable.dealing,
+    });
   }
 
   const applyLatestState = () => {
@@ -242,6 +246,7 @@ export async function renderVisualizerPage(
         onDealDone: () => {
           predictionPrompt?.applyState();
           trumpPrompt?.applyState();
+          gameHud?.applyState();
         },
       });
       if (import.meta.env.DEV) {

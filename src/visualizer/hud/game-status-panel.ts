@@ -1,13 +1,11 @@
-import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
-import { trumpColor } from "../card-textures";
 import type { GameConnection } from "../game-connection";
 import type { ScoreBoard } from "./announcer";
 import type { HudPart } from "./hud-part";
 
 export type GameStatusPanel = HudPart & ScoreBoard;
 
-// Top right: the whole game at a glance. Which round, what's happening now,
-// the trump suit, and everyone's total score.
+// Top right: the whole game at a glance. Which round, and everyone's total
+// score. What's happening now is the banner's job; the trump card shows trumps.
 export function createGameStatusPanel(root: HTMLElement, game: GameConnection): GameStatusPanel {
   const panel = document.createElement("section");
   panel.className = "hud-panel hud-status";
@@ -15,19 +13,13 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
   panel.hidden = true;
   panel.innerHTML = `
     <p class="hud-round"></p>
-    <p class="hud-phase"></p>
-    <p class="hud-trump"><span class="hud-trump-swatch"></span><span class="hud-trump-name"></span></p>
     <table class="hud-scores">
-      <thead><tr><th scope="col">Player</th><th scope="col">Score</th></tr></thead>
       <tbody></tbody>
     </table>
   `;
   root.append(panel);
 
   const roundEl = panel.querySelector<HTMLElement>(".hud-round")!;
-  const phaseEl = panel.querySelector<HTMLElement>(".hud-phase")!;
-  const swatchEl = panel.querySelector<HTMLElement>(".hud-trump-swatch")!;
-  const trumpEl = panel.querySelector<HTMLElement>(".hud-trump-name")!;
   const scoresEl = panel.querySelector<HTMLTableSectionElement>("tbody")!;
 
   // Totals held back while round results are announced, and one row per player
@@ -38,32 +30,6 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
 
   const nameOf = (username: string) => (username === game.localUsername ? "You" : username);
 
-  const describePhase = (state: PublicWizardGameState): string => {
-    const current = state.players[state.currentPlayerIndex]?.username ?? "";
-    const whose = current === game.localUsername ? "your turn" : `${current}'s turn`;
-    switch (state.phase) {
-      case "trump-selection":
-        return current === game.localUsername ? "Choose the trump suit" : `${current} is choosing trump`;
-      case "predictions":
-        return `Bidding · ${whose}`;
-      case "playing":
-        return state.currentTrick.winnerUsername
-          ? `${nameOf(state.currentTrick.winnerUsername)} won the trick`
-          : `Playing · ${whose}`;
-      case "finished": {
-        const leader = [...state.players].sort((a, b) => b.score - a.score)[0];
-        return leader ? `Game over · ${nameOf(leader.username)} won` : "Game over";
-      }
-    }
-  };
-
-  const describeTrump = (state: PublicWizardGameState): { text: string; color: string | null } => {
-    if (!state.trumpCard) return { text: "No trump", color: null };
-    if (state.trumpSuit) return { text: `Trump: ${state.trumpSuit}`, color: trumpColor(state.trumpSuit) };
-    if (state.trumpCard.value === 14 || state.trumpCard.value === 0) return { text: "Trump: to be chosen", color: null };
-    return { text: "No trump", color: null };
-  };
-
   const applyState = () => {
     const state = game.state();
     if (!state) {
@@ -72,12 +38,7 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
     }
 
     roundEl.textContent = `Round ${state.currentRound} of ${state.totalRounds}`;
-    phaseEl.textContent = describePhase(state);
 
-    const trump = describeTrump(state);
-    trumpEl.textContent = trump.text;
-    swatchEl.hidden = !trump.color;
-    if (trump.color) swatchEl.style.background = trump.color;
 
     const shown = (player: { username: string; score: number }) => held.get(player.username) ?? player.score;
     const ranked = [...state.players].sort(

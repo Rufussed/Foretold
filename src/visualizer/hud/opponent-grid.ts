@@ -39,7 +39,7 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
     face.append(image, name);
 
     const prediction = createRoundStat("Prediction");
-    const won = createRoundStat("Won");
+    const won = createRoundStat("Tricks");
     element.append(face, prediction.element, won.element);
     return { element, image, prediction, won, character: null };
   };

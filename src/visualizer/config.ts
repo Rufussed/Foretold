@@ -327,14 +327,14 @@ export const DEV = {
 // (.visualizer-self-view in style.css).
 export const SELF_PORTRAIT = {
   // Vertical field of view, in degrees. three default: 50.
-  fov: 30,
+  fov: 36,
 
   // How much of the character fits vertically, in hip-to-face heights. Lower
   // fills the box more; too low crops raised-arm emotes.
-  span: 1.8,
+  span: 1.95,
 
   // Aim relative to the face: 0 straight at it, negative tilts down the body.
-  lookOffset: -0.15,
+  lookOffset: -0.35,
 
   // Turns the camera around the character, in degrees; 0 is straight on.
   azimuthDegrees: 0,
@@ -400,8 +400,13 @@ export const CARD_HANDLING = {
   // Outline thickness on each side, as a fraction of the card width.
   outlineWidth: 0.015,
 
-  // How far a clicked card rises so its whole face shows, in card lengths.
-  raiseLengths: 1.2,
+  // How far a clicked card rises, in card lengths.
+  raiseLengths: 0.5,
+
+  // How far above the hand a dragged card must be dropped to play it, in card
+  // lengths. Separate from raiseLengths, so a small raise doesn't make cards
+  // easy to play by accident.
+  playLineLengths: 1.2,
 
   // How quickly cards glide to where they're going; higher is snappier.
   followSpeed: 12,
@@ -520,8 +525,11 @@ export const ANNOUNCER = {
   // How long a rule reminder (after a card that can't be played) stays up at
   // most; it goes sooner if the next card is played first.
   noticeSeconds: 5,
-  // How long each player's end-of-round score line stays up.
-  resultSeconds: 5,
+  // End of round: each player's result card appears this long after the last,
+  // lowest points first...
+  resultRevealSeconds: 1,
+  // ...and once every card is showing, they all stay up this long.
+  resultHoldSeconds: 10,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -535,4 +543,23 @@ export const TRUMP_CROWN = {
   frontLengths: 0.15, // how far toward the camera, so it sits just in front
   bobLengths: 0.05, // how far it bobs up and down
   bobSeconds: 2.4, // one bob, up and back down
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// BACKDROP  (the table scene behind every page but the 3D view)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const BACKDROP = {
+  // Radius: the camera's distance from the table centre. Starts where the game
+  // view's intro camera move ends (12.78: 11.76 out and 5 up).
+  radius: 36,
+  // Camera height above the table centre; must be less than radius.
+  height: 5,
+  // Seconds for one full circle of the table.
+  secondsPerTurn: 60,
+  // Where the circle starts, in degrees around the table; 180 is where the
+  // game view's camera sits.
+  startDegrees: 180,
+  // Shadows cost a lot for a slow background; switch off for weaker devices.
+  shadows: true,
 };

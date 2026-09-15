@@ -1,16 +1,19 @@
 import type { FastifyInstance } from "fastify";
 import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
-import { WizardGameService } from "../services/wizardGameService.js";
+import { assignAvatars, WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-import { isAvatarId } from "../models/avatar.js";
+import { isAvatarId, type AvatarId } from "../models/avatar.js";
+import { fullRoundCount } from "../models/rounds.js";
 
 
 interface CreateGameBody {
   roomId?: number;
   botCount?: number;
+  // Optional cap for a shorter game, 1 up to a full game's rounds.
+  maxRounds?: number;
 }
 
 interface PredictionBody {
@@ -287,17 +290,34 @@ export default async function wizardRoutes(
       });
     }
 
+    const fullRounds = fullRoundCount(totalPlayers) ?? 0;
+    const maxRounds = body.maxRounds ?? undefined;
+
+    if (
+      maxRounds !== undefined &&
+      (!Number.isInteger(maxRounds) || maxRounds < 1 || maxRounds > fullRounds)
+    ) {
+      return reply.status(400).send({
+        error: `Max rounds must be between 1 and ${fullRounds}`,
+      });
+    }
+
+    // Avatars first, so each bot can be named to suit its avatar; the bots'
+    // avatars then go to createGame as claims, so it keeps these assignments.
+    // Bot slots are placeholders ending in " NPC", which no player can register.
     const humans = room.players.map((player) => player.username);
-    const players = [...humans, ...pickBotNames(botCount, humans)];
+    const claims = new Map<string, AvatarId | null>(
+      room.players.map((player) => [player.username, player.avatar]),
+    );
+    const botSlots = Array.from({ length: botCount }, (_, index) => `bot slot ${index} NPC`);
+    const avatars = assignAvatars([...humans, ...botSlots], claims);
+    const botAvatars = avatars.slice(humans.length);
+    const botNames = pickBotNames(botAvatars, humans);
+    botNames.forEach((name, index) => claims.set(name, botAvatars[index] ?? null));
+    const players = [...humans, ...botNames];
 
     try {
-      const game = wizardGameService.createGame(
-        room.id,
-        players,
-        new Map(
-          room.players.map((player) => [player.username, player.avatar]),
-        ),
-      );
+      const game = wizardGameService.createGame(room.id, players, claims, maxRounds);
       
       wizardLobbyManager.setRoomStatus(room.id, "playing");
       game.status = "playing";

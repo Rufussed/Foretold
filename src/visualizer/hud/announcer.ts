@@ -1,10 +1,9 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
-import type { CharacterId } from "../character-assets";
 import { ANNOUNCER } from "../config";
 import type { GameConnection } from "../game-connection";
-import { characterForPlayer } from "../seat-mapping";
+import { characterForPlayer, characterForUsername } from "../seat-mapping";
 import { eventMessages, roundResults, statusMessage } from "./announcements";
-import { headshotUrl } from "./headshots";
+import { createResultsBoard, type ResultCard, type ResultsBoard } from "./round-results-board";
 import type { HudPart } from "./hud-part";
 
 export interface Announcer extends HudPart {
@@ -23,9 +22,11 @@ export interface ScoreBoard {
 
 interface Announcement {
   text: string;
-  // A player's headshot and name, shown beside the text (round results).
-  portrait?: { name: string; character: CharacterId };
+  // A round's results, shown as a board of cards instead of the text.
+  results?: ResultCard[];
   seconds?: number; // defaults to ANNOUNCER.messageSeconds
+  // May show while cards are being dealt (last round's results).
+  duringDeal?: boolean;
   // Also ends early as soon as the next card is played.
   untilNextPlay?: boolean;
   onShow?: () => void;
@@ -35,26 +36,29 @@ interface Announcement {
 const playKey = (state: PublicWizardGameState) =>
   `${state.currentRound}:${state.currentTrick.playedCards.length}:${state.currentTrick.winnerUsername ?? ""}`;
 
-// Top centre: what's going on. One-off events (a prediction, a won hand, round
-// results) each show for ANNOUNCER.messageSeconds, round results for
-// resultSeconds, in order; between them the banner says whose move it is.
-export function createAnnouncer(root: HTMLElement, game: GameConnection, scores: ScoreBoard): Announcer {
+// Top centre: what's going on. One-off events (a prediction, a won trick) each
+// show for ANNOUNCER.messageSeconds, in order; a round's results show as a board
+// of cards (see round-results-board.ts); between them, whose move it is.
+export interface AnnouncerOptions {
+  // While true (cards being dealt), only last round's results show; everything
+  // else waits until the deal has landed, trump card included.
+  blocked?(): boolean;
+}
+
+export function createAnnouncer(
+  root: HTMLElement,
+  game: GameConnection,
+  scores: ScoreBoard,
+  options: AnnouncerOptions = {},
+): Announcer {
   const banner = document.createElement("div");
   banner.className = "hud-announcer";
   banner.setAttribute("role", "status");
   banner.hidden = true;
-  banner.innerHTML = `
-    <figure class="hud-opponent-face hud-announcer-face" hidden>
-      <img alt="" />
-      <figcaption></figcaption>
-    </figure>
-    <p class="hud-announcer-text"></p>
-  `;
+  banner.innerHTML = `<p class="hud-announcer-text"></p>`;
   root.append(banner);
-  const face = banner.querySelector<HTMLElement>(".hud-announcer-face")!;
-  const faceImage = face.querySelector("img")!;
-  const faceName = face.querySelector("figcaption")!;
   const textEl = banner.querySelector<HTMLElement>(".hud-announcer-text")!;
+  let board: ResultsBoard | null = null;
 
   const queue: Announcement[] = [];
   let showing = false;
@@ -65,24 +69,21 @@ export function createAnnouncer(root: HTMLElement, game: GameConnection, scores:
   let shownAtPlay: string | null = null;
 
   const show = (next: Announcement | null) => {
-    if (!next?.text) return;
-    const same = shown?.text === next.text && shown?.portrait?.name === next.portrait?.name;
+    if (!next?.text && !next?.results) return;
+    const same = !next.results && !shown?.results && shown?.text === next.text;
     shown = next;
     banner.hidden = false;
     if (same) return;
 
-    textEl.textContent = next.text;
-    face.hidden = !next.portrait;
-    banner.classList.toggle("has-portrait", !!next.portrait);
-    if (next.portrait) {
-      faceName.textContent = next.portrait.name;
-      faceImage.removeAttribute("src");
-      const wanted = next;
-      headshotUrl(next.portrait.character)
-        .then((url) => {
-          if (shown === wanted) faceImage.src = url;
-        })
-        .catch((error) => console.warn("[announcer] no headshot:", error));
+    board?.dispose();
+    board = null;
+    banner.classList.toggle("has-results", !!next.results);
+    textEl.hidden = !!next.results;
+    textEl.textContent = next.results ? "" : next.text;
+    if (next.results) {
+      board = createResultsBoard(banner, next.results, ANNOUNCER.resultRevealSeconds, (card) =>
+        scores.revealScore(card.username, card.points),
+      );
     }
     // Restart the fade-in for each new line.
     banner.classList.remove("is-new");
@@ -90,14 +91,28 @@ export function createAnnouncer(root: HTMLElement, game: GameConnection, scores:
     banner.classList.add("is-new");
   };
 
+  const hide = () => {
+    banner.hidden = true;
+    shown = null;
+    board?.dispose();
+    board = null;
+  };
+
   const showStatus = () => {
+    if (options.blocked?.()) {
+      hide();
+      return;
+    }
     const state = game.state();
     const text = state && statusMessage(state, game.localUsername);
     if (text) show({ text });
   };
 
   const showNext = () => {
-    const next = queue.shift();
+    // While dealing, only what may show during a deal goes next.
+    const blocked = options.blocked?.() ?? false;
+    const index = blocked ? queue.findIndex((item) => item.duringDeal) : queue.length ? 0 : -1;
+    const next = index === -1 ? undefined : queue.splice(index, 1)[0];
     if (!next) {
       showing = false;
       showStatus();
@@ -123,15 +138,24 @@ export function createAnnouncer(root: HTMLElement, game: GameConnection, scores:
         if (results.length) {
           // The table keeps last round's totals until each line is read.
           scores.holdScores(new Map(results.map((result) => [result.username, result.total - result.points])));
-          for (const result of results) {
+          // One board for the whole round, cards appearing lowest points first.
+          const cards: ResultCard[] = results.map((result) => {
             const player = state.players.find((candidate) => candidate.username === result.username);
-            queue.push({
+            return {
+              username: result.username,
+              name: result.username,
+              character: player ? characterForPlayer(player) : characterForUsername(result.username),
               text: result.text,
-              portrait: player ? { name: player.username, character: characterForPlayer(player) } : undefined,
-              seconds: ANNOUNCER.resultSeconds,
-              onShow: () => scores.revealScore(result.username, result.points),
-            });
-          }
+              points: result.points,
+            };
+          });
+          queue.push({
+            text: "",
+            results: cards,
+            // The first card shows at once; the hold starts when the last appears.
+            seconds: (cards.length - 1) * ANNOUNCER.resultRevealSeconds + ANNOUNCER.resultHoldSeconds,
+            duringDeal: true,
+          });
         }
       }
       previous = state;

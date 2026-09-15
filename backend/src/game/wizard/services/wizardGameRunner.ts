@@ -124,16 +124,28 @@ async run(roomId: number): Promise<void> {
       // --------------------------------------------------
 
       if (game.phase === "predictions") {
+        // The same pause as before a bot plays, then make sure it's still
+        // this bot's prediction to make.
+        await this.wait(WIZARD_TIMING.botPlayDelayMs);
+        const stillPredicting = wizardSessionManager.getGame(roomId);
+        if (
+          !stillPredicting ||
+          stillPredicting.phase !== "predictions" ||
+          stillPredicting.players[stillPredicting.currentPlayerIndex]?.username !== currentPlayer.username
+        ) {
+          continue;
+        }
+
         const prediction =
-          this.botService.choosePrediction(game);
+          this.botService.choosePrediction(stillPredicting);
 
         this.gameService.submitPrediction(
-          game,
+          stillPredicting,
           currentPlayer.username,
           prediction,
         );
 
-        wizardSessionManager.saveGame(game);
+        wizardSessionManager.saveGame(stillPredicting);
         this.broadcast(roomId);
 
         await this.wait(700);

@@ -12,7 +12,7 @@ import { createOpponentHands, type OpponentHands } from "./opponent-hands";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
 import { createTableCards, type TableCards } from "./table-cards";
-import type { TableLayout } from "./table-layout";
+import { centredSlots, type TableLayout } from "./table-layout";
 import type { SceneView } from "./three-scene";
 import { createTrickRewards, type RewardDestination, type TrickRewards } from "./trick-rewards";
 import { createTrumpCrown } from "./trump-crown";
@@ -120,6 +120,10 @@ export function createCardTable({
     }
     for (const seat of shown.keys()) opponents.setShown(seat, 0);
 
+    // Cards each recipient gets this deal, to centre their slots on the fan.
+    const dealtTo = (matches: (planned: PlannedCard) => boolean) => plan.filter(matches).length;
+    const localCount = dealtTo((planned) => planned.to !== "trump" && planned.to.kind === "local");
+
     const steps = plan.flatMap((planned): DealStep[] => {
       const { to, card, slot } = planned;
       if (to === "trump") {
@@ -128,12 +132,13 @@ export function createCardTable({
           : [];
       }
       if (to.kind === "local") {
-        const target = layout.localHand[slot];
+        const target = centredSlots(layout.localHand, localCount)[slot];
         const key = cardKey(card);
         return target ? [{ target, face: cardTexture(card), onLanded: () => cards.releaseDealt(key) }] : [];
       }
       const seat = to.seat;
-      const target = layout.handFor(seat)[slot];
+      const seatCount = dealtTo((other) => other.to !== "trump" && other.to.kind === "seat" && other.to.seat === seat);
+      const target = centredSlots(layout.handFor(seat), seatCount)[slot];
       return target
         ? [{
             target,
@@ -223,7 +228,8 @@ export function createCardTable({
       if (played.username === game.localUsername) continue;
       const seat = seatOf(played.username);
       if (seat === null) continue;
-      const from = layout.handFor(seat)[opponents.visibleCount(seat) - 1];
+      const showing = opponents.visibleCount(seat);
+      const from = centredSlots(layout.handFor(seat), showing)[showing - 1];
       if (from) origins.set(key, from);
     }
     cards.setTrick(state.currentTrick.playedCards.map((played) => played.card), origins);

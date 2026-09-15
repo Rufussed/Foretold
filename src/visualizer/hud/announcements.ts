@@ -43,12 +43,20 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       const turnedUp = `${state.trumpCard?.value === 14 ? "A Wizard" : "A Jester"} was turned up for trumps`;
       return current === local ? `${turnedUp}: choose the trump suit.` : `${turnedUp}: ${current} is choosing the suit.`;
     }
-    case "predictions":
+    case "predictions": {
       if (!current) return null;
-      return `${nameOf(current, local)} must make a Prediction.`;
+      // Predictions go in dealing order: first, next, ..., last.
+      const made = state.players.filter((player) => player.prediction !== null).length;
+      const order = made === 0 ? "first" : made === state.players.length - 1 ? "last" : "next";
+      return `${nameOf(current, local)} ${current === local ? "Predict" : "Predicts"} ${order}`;
+    }
     case "playing":
       // A finished trick keeps its own announcement until the next one starts.
       if (!current || state.currentTrick.winnerUsername) return null;
+      // The first card of each trick: that player leads.
+      if (state.currentTrick.playedCards.length === 0) {
+        return current === local ? "You lead" : `${current} leads`;
+      }
       return current === local ? "Your Turn." : `${current}'s turn.`;
     case "finished": {
       const winner = [...state.players].sort((a, b) => b.score - a.score)[0];
@@ -67,9 +75,9 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     for (const player of next.players) {
       const before = previous.players.find((p) => p.username === player.username);
       if (before?.prediction === null && player.prediction !== null) {
-        const wins = player.prediction === 1 ? "Win" : "Wins";
+        const tricks = player.prediction === 1 ? "Trick" : "Tricks";
         const predicts = player.username === local ? "Predict" : "Predicts";
-        messages.push(`${nameOf(player.username, local)} ${predicts} ${player.prediction} ${wins}`);
+        messages.push(`${nameOf(player.username, local)} ${predicts} ${player.prediction} ${tricks}`);
       }
     }
   }
@@ -88,7 +96,7 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   if (winner && previous.currentTrick.winnerUsername !== winner) {
     const played = next.currentTrick.playedCards.find((entry) => entry.username === winner);
     const wins = winner === local ? "Win" : "Wins";
-    messages.push(`${nameOf(winner, local)} ${wins}${played ? ` with ${cardName(played.card)}` : ""}`);
+    messages.push(`${nameOf(winner, local)} ${wins} the Trick${played ? ` with ${cardName(played.card)}` : ""}`);
   }
 
   return messages;
@@ -122,8 +130,8 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
     // multiplier, the round's total.
     const breakdown =
       prediction === tricksWon
-        ? `True Prediction +20\nWins ${tricksWon} * 10`
-        : `False Prediction ${prediction}\nWins ${tricksWon}, ${Math.abs(prediction - tricksWon)} * -10`;
+        ? `True Prediction +20\nTricks ${tricksWon} * 10`
+        : `False Prediction ${prediction}\nTricks ${tricksWon}, ${Math.abs(prediction - tricksWon)} * -10`;
     return {
       username: player.username,
       text: `${standing}\n${breakdown}\nTotal ${score} points!`,

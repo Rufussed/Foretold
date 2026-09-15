@@ -1,5 +1,6 @@
 import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
+import { forbiddenPrediction } from "../gameplayRules.js";
 import { isJester, isWizard } from "../models/card.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 
@@ -13,17 +14,11 @@ import type {
 
 import type { Suit } from "../models/card.js";
 import { AVATAR_IDS, type AvatarId } from "../models/avatar.js";
-
-const ROUND_COUNT_BY_PLAYER_NUMBER: Record<number, number> = {
-  3: 20,
-  4: 15,
-  5: 12,
-  6: 10,
-};
+import { fullRoundCount } from "../models/rounds.js";
 
 // Players keep the avatar they claimed in the lobby. Bots, and anyone who
 // never chose, get a random avatar from those left, so everyone has one.
-function assignAvatars(
+export function assignAvatars(
   usernames: string[],
   claimedAvatars: ReadonlyMap<string, AvatarId | null>,
 ): AvatarId[] {
@@ -70,16 +65,25 @@ export class WizardGameService {
     roomId: number,
     usernames: string[],
     claimedAvatars: ReadonlyMap<string, AvatarId | null> = new Map(),
+    // Cap on rounds, for a shorter game; at most a full game.
+    maxRounds?: number,
   ): WizardGameState {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
     }
-  // The number of rounds is derived from the fixed 60-card deck.
-  const totalRounds = ROUND_COUNT_BY_PLAYER_NUMBER[usernames.length];
+    // A full game's length comes from the fixed 60-card deck; maxRounds can cut
+    // it short.
+    const fullRounds = fullRoundCount(usernames.length);
 
-	if (totalRounds === undefined) {
-	throw new Error("Unsupported player count");
-	}
+    if (fullRounds === undefined) {
+      throw new Error("Unsupported player count");
+    }
+
+    if (maxRounds !== undefined && (!Number.isInteger(maxRounds) || maxRounds < 1 || maxRounds > fullRounds)) {
+      throw new Error(`Max rounds must be between 1 and ${fullRounds}`);
+    }
+
+    const totalRounds = maxRounds ?? fullRounds;
 
     const avatars = assignAvatars(usernames, claimedAvatars);
 
@@ -145,10 +149,11 @@ export class WizardGameService {
   }
 
   drawTrumpCard(game: WizardGameState): void {
-    // The final round uses every remaining card for hands, so no trump card is
-    // drawn. A Wizard or a Jester turned up has no suit of its own, so the
-    // round's first player chooses the trump suit.
-    if (game.currentRound === game.totalRounds) {
+    // A Wizard or a Jester turned up has no suit of its own, so the round's
+    // first player chooses the trump suit. Only when every card went into hands
+    // (a full game's last round) is there no card left to turn up; a shortened
+    // game still draws one.
+    if (game.deck.length === 0) {
       game.trumpCard = null;
       game.trumpSuit = null;
       return;
@@ -321,6 +326,13 @@ export class WizardGameService {
 
     if (currentPlayer.prediction !== null) {
       throw new Error("Player has already submitted a prediction");
+    }
+
+    // The last predictor can't make the predictions add up to the tricks.
+    if (prediction === forbiddenPrediction(game.players, game.currentRound)) {
+      throw new Error(
+        `The last prediction can't be ${prediction}: predictions can't add up to the ${game.currentRound} tricks this round`,
+      );
     }
 
     currentPlayer.prediction = prediction;

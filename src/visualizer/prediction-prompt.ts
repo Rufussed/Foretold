@@ -1,3 +1,4 @@
+import { forbiddenPrediction } from "../../backend/src/game/wizard/gameplayRules";
 import { isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 
 export interface PredictionPrompt {
@@ -40,24 +41,29 @@ export function createPredictionPrompt(
   const optionsEl = modal.querySelector<HTMLDivElement>(".prediction-options")!;
   const errorEl = modal.querySelector<HTMLParagraphElement>(".prediction-error")!;
 
-  let builtForRound = 0;
+  // What the buttons were built for: the tricks this round and any forbidden number.
+  let builtFor = "";
   let sending = false;
 
   const setButtonsEnabled = (enabled: boolean) => {
     for (const button of optionsEl.querySelectorAll("button")) button.disabled = !enabled;
   };
 
-  const buildOptions = (cardsDealt: number) => {
+  // One button per allowed prediction; the last predictor loses the number
+  // that would make everyone's predictions add up to the tricks.
+  const buildOptions = (cardsDealt: number, forbidden: number | null) => {
     optionsEl.replaceChildren(
-      ...Array.from({ length: cardsDealt + 1 }, (_, tricks) => {
-        const button = document.createElement("button");
-        button.type = "button";
-        button.textContent = String(tricks);
-        button.dataset.prediction = String(tricks);
-        return button;
-      }),
+      ...Array.from({ length: cardsDealt + 1 }, (_, tricks) => tricks)
+        .filter((tricks) => tricks !== forbidden)
+        .map((tricks) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = String(tricks);
+          button.dataset.prediction = String(tricks);
+          return button;
+        }),
     );
-    builtForRound = cardsDealt;
+    builtFor = `${cardsDealt}:${forbidden}`;
   };
 
   optionsEl.addEventListener("click", (event) => {
@@ -92,7 +98,8 @@ export function createPredictionPrompt(
 
       // The round number is also the number of cards dealt.
       const cardsDealt = state.currentRound;
-      if (builtForRound !== cardsDealt) buildOptions(cardsDealt);
+      const forbidden = forbiddenPrediction(state.players, cardsDealt);
+      if (builtFor !== `${cardsDealt}:${forbidden}`) buildOptions(cardsDealt, forbidden);
       roundEl.textContent = `Round ${state.currentRound} of ${state.totalRounds} · ${cardsDealt} ${cardsDealt === 1 ? "card" : "cards"}`;
       if (!sending) setButtonsEnabled(true);
       modal.hidden = false;
