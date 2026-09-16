@@ -5,6 +5,10 @@ import authRoutes from "./routes/auth.js";
 import jwt from "@fastify/jwt";
 import wizardRoutes from "./game/wizard/routes/wizardRoutes.js";
 import websocket from "@fastify/websocket";
+import fastifyStatic from "@fastify/static";
+import { existsSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { wizardLobbyManager } from "./game/wizard/services/wizardLobbyManager.js";
 
 
@@ -34,10 +38,14 @@ server.get("/health/database", async () => {
 });
 
 
+// Where the server listens. Hosting providers pass the port in PORT; locally
+// it stays on 3000, which the dev frontend expects (src/services/api.ts).
+const port = Number(process.env.PORT) || 3000;
 // Where the server listens, and which frontend pages may call it. Both default
 // to this computer only; `npm run play` (scripts/play.mjs) sets them for
 // playing from other devices on your Wi-Fi or over Tailscale.
-const host = process.env.HOST || "127.0.0.1";
+// With PORT set (a hosting provider) listen publicly; otherwise this computer only.
+const host = process.env.HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const corsOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
   : ["http://localhost:5173", "http://127.0.0.1:5173"];
@@ -62,15 +70,25 @@ await server.register(wizardRoutes, {
   prefix: "/wizard",
 });
 
+// In production the built frontend (npm run build -> dist/) is served from
+// this same server, so the page, API and WebSocket share one origin.
+const frontendDist = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../dist",
+);
+if (existsSync(frontendDist)) {
+  await server.register(fastifyStatic, { root: frontendDist });
+}
+
 wizardLobbyManager.resetPlayingRooms();
 
 try {
   await server.listen({
-    port: 3000,
+    port,
     host,
   });
 
-  console.log(`Wizard backend running at http://${host}:3000`);
+  console.log(`Wizard backend running at http://${host}:${port}`);
 } catch (error) {
   server.log.error(error);
   process.exit(1);
