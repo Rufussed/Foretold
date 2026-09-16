@@ -1,4 +1,4 @@
-import db from "../../../db/database.js";
+import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
 
@@ -174,7 +174,7 @@ class WizardLobbyManager {
     //   return false;
     // }
   
-    const deleteRoom = db.transaction(() => {
+    transaction(() => {
       db.prepare(`
         DELETE FROM room_players
         WHERE room_id = ?
@@ -185,8 +185,6 @@ class WizardLobbyManager {
         WHERE id = ?
       `).run(roomId);
     });
-  
-    deleteRoom();
   
     return true;
   }
@@ -232,7 +230,7 @@ class WizardLobbyManager {
     if (!room) return false;
     if (room.status !== "playing") return false;
 
-    const deleteRoom = db.transaction(() => {
+    transaction(() => {
       db.prepare(`
         DELETE FROM room_players
         WHERE room_id = ?
@@ -243,8 +241,6 @@ class WizardLobbyManager {
         WHERE id = ?
       `).run(roomId);
     });
-
-    deleteRoom();
     return true;
   }
 
