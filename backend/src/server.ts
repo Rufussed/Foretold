@@ -9,7 +9,13 @@ import { wizardLobbyManager } from "./game/wizard/services/wizardLobbyManager.js
 
 
 const server = Fastify({
-  logger: true,
+    logger: true,
+    ajv: {
+        customOptions: {
+            removeAdditional: false,
+            coerceTypes: false,
+        },
+    },
 });
 
 

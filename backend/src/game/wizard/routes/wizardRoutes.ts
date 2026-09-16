@@ -5,7 +5,8 @@ import { assignAvatars, WizardGameService } from "../services/wizardGameService.
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-import { isAvatarId, type AvatarId } from "../models/avatar.js";
+import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
+// import { AVATAR_IDS, isAvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 
 
@@ -47,7 +48,24 @@ export default async function wizardRoutes(
   });
 
   // A single room, so the waiting room can poll without refetching the list.
-  server.get("/lobby/:roomId", async (request, reply) => {
+    server.get(
+      "/lobby/:roomId",
+      {
+        schema: {
+          params: {
+            type: "object",
+            required: ["roomId"],
+            additionalProperties: false,
+            properties: {
+              roomId: {
+                type: "string",
+                pattern: "^[1-9][0-9]*$"
+              }
+            }
+          }
+        }
+      },
+      async (request, reply) => {
     const params = request.params as { roomId?: string };
     const roomId = Number(params.roomId);
 
@@ -64,7 +82,30 @@ export default async function wizardRoutes(
     return reply.send(room);
   });
 
-  server.post("/lobby/create", async (request, reply) => {
+  //add schema to no create games, false typeofs
+  server.post(
+      "/lobby/create",
+      {
+          schema: {
+              body: {
+                  type: "object",
+                  required: ["name"],
+                  additionalProperties: false,
+                  properties: {
+                      name: {
+                          type: "string",
+                          minLength: 1
+                      },
+                      maxPlayers: {
+                          type: "integer",
+                          minimum: 3,
+                          maximum: 6
+                      }
+                  }
+              }
+          }
+      },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -102,7 +143,25 @@ export default async function wizardRoutes(
     return reply.send(room);
   });
 
-  server.post("/lobby/join", async (request, reply) => {
+  //added schema to not join false typeofs
+  server.post(
+    "/lobby/join",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "integer",
+              minimum: 1
+            }
+          }
+        }
+      }
+    },
+  async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -137,7 +196,42 @@ export default async function wizardRoutes(
 
   // First come, first served: a second claim of the same avatar in a room is
   // rejected. Sending { avatar: null } releases the caller's current avatar.
-  server.post("/lobby/:roomId/avatar", async (request, reply) => {
+  server.post(
+    "/lobby/:roomId/avatar",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["avatar"],
+          additionalProperties: false,
+          properties: {
+            avatar: {
+              anyOf: [
+                {
+                  type: "string",
+                  enum: [...AVATAR_IDS]
+                },
+                {
+                  type: "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+  async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -192,7 +286,24 @@ export default async function wizardRoutes(
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
 
-  server.delete("/lobby/:roomId", async (request, reply) => {
+  server.delete(
+    "/lobby/:roomId",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -228,7 +339,32 @@ export default async function wizardRoutes(
     return reply.send({ success: true });
   });
 
-  server.post("/games", async (request, reply) => {
+  server.post(
+    "/games",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "integer",
+              minimum: 1
+            },
+            botCount: {
+              type: "integer",
+              minimum: 0
+            },
+            maxRounds: {
+              type: "integer",
+              minimum: 1
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -337,7 +473,24 @@ export default async function wizardRoutes(
     }
   });
   
-  server.get("/games/:roomId", async (request, reply) => {
+  server.get(
+    "/games/:roomId",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -384,7 +537,35 @@ export default async function wizardRoutes(
     );
   });
   
-  server.post("/games/:roomId/predictions", async (request, reply) => {
+  server.post(
+    "/games/:roomId/predictions",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["prediction"],
+          additionalProperties: false,
+          properties: {
+            prediction: {
+              type: "integer",
+              minimum: 0
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -437,7 +618,35 @@ export default async function wizardRoutes(
     }
   });
   
-  server.post("/games/:roomId/cards", async (request, reply) => {
+  server.post(
+    "/games/:roomId/cards",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["cardIndex"],
+          additionalProperties: false,
+          properties: {
+            cardIndex: {
+              type: "integer",
+              minimum: 0
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {

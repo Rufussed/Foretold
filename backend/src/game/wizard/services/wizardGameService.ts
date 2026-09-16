@@ -215,11 +215,6 @@ export class WizardGameService {
       throw new Error("Card does not exist");
     }
 
-    // const leadSuit =
-    //   game.currentTrick.playedCards.find(
-    //     ({ card: playedCard }) => !isJester(playedCard),
-    //   )?.card.suit ?? null;
-
     //Handles if Wizard is play first, there is no Suit
     const leadSuit = this.rules.getLeadSuit(
       game.currentTrick.playedCards,

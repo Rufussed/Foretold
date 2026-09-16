@@ -3,7 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-import type { Suit } from "../models/card.js";
+import { SUITS, type Suit } from "../models/card.js";
 
 interface SocketQuery {
 	token?: string;
@@ -14,6 +14,13 @@ interface SocketMessage {
 	prediction?: number;
 	cardIndex?: number;
 	suit?: string;
+}
+
+function isSuit(value: unknown): value is Suit {
+  return (
+    typeof value === "string" &&
+    (SUITS as readonly string[]).includes(value)
+  );
 }
 
 interface RoomConnection {
