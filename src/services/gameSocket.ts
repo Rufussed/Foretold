@@ -1,3 +1,5 @@
+import { BACKEND_PORT } from "./api";
+
 export interface GameSocketMessage {
 	type: "connected" | "game_state" | "error";
 	roomId?: number;
@@ -13,7 +15,7 @@ export function createGameSocket(
 	token: string,
 ): WebSocket {
 	const socketProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-	const socketUrl = `${socketProtocol}://127.0.0.1:3000/wizard/games/${roomId}/socket?token=${encodeURIComponent(token)}`;
+	const socketUrl = `${socketProtocol}://${window.location.hostname}:${BACKEND_PORT}/wizard/games/${roomId}/socket?token=${encodeURIComponent(token)}`;
 
 	return new WebSocket(socketUrl);
 }

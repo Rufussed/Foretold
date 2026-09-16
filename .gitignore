@@ -30,3 +30,13 @@ data/
 divideConcerns.md
 PROJECT_CONTEXT.md
 docs/
+
+# Blender auto-backup copies - noise, and as large as the file itself
+*.blend1
+
+
+
+# All subfolders of blender/ (fbx, textures, export-backups, __pycache__, ...)
+blender/*/
+
+blender/*.glb

@@ -2,6 +2,7 @@ import { WizardBotService } from "./wizardBotService.js";
 import { WizardGameService } from "./wizardGameService.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
 import { wizardLobbyManager } from "./wizardLobbyManager.js";
+import { WIZARD_TIMING } from "../wizardTiming.js";
 
 export type GameStateBroadcaster = (
   roomId: number,
@@ -91,15 +92,27 @@ async run(roomId: number): Promise<void> {
       // --------------------------------------------------
 
       if (game.phase === "trump-selection") {
-        const trumpSuit = this.botService.chooseTrumpSuit(game);
+        // Pause first, so every player sees who is choosing, then make sure
+        // nothing changed meanwhile.
+        await this.wait(WIZARD_TIMING.botTrumpDelayMs);
+        const stillChoosing = wizardSessionManager.getGame(roomId);
+        if (
+          !stillChoosing ||
+          stillChoosing.phase !== "trump-selection" ||
+          stillChoosing.players[stillChoosing.currentPlayerIndex]?.username !== currentPlayer.username
+        ) {
+          continue;
+        }
+
+        const trumpSuit = this.botService.chooseTrumpSuit(stillChoosing);
 
         this.gameService.chooseTrumpSuit(
-          game,
+          stillChoosing,
           currentPlayer.username,
           trumpSuit,
         );
 
-        wizardSessionManager.saveGame(game);
+        wizardSessionManager.saveGame(stillChoosing);
         this.broadcast(roomId);
 
         await this.wait(700);
@@ -111,16 +124,28 @@ async run(roomId: number): Promise<void> {
       // --------------------------------------------------
 
       if (game.phase === "predictions") {
+        // The same pause as before a bot plays, then make sure it's still
+        // this bot's prediction to make.
+        await this.wait(WIZARD_TIMING.botPlayDelayMs);
+        const stillPredicting = wizardSessionManager.getGame(roomId);
+        if (
+          !stillPredicting ||
+          stillPredicting.phase !== "predictions" ||
+          stillPredicting.players[stillPredicting.currentPlayerIndex]?.username !== currentPlayer.username
+        ) {
+          continue;
+        }
+
         const prediction =
-          this.botService.choosePrediction(game);
+          this.botService.choosePrediction(stillPredicting);
 
         this.gameService.submitPrediction(
-          game,
+          stillPredicting,
           currentPlayer.username,
           prediction,
         );
 
-        wizardSessionManager.saveGame(game);
+        wizardSessionManager.saveGame(stillPredicting);
         this.broadcast(roomId);
 
         await this.wait(700);
@@ -132,12 +157,34 @@ async run(roomId: number): Promise<void> {
       // --------------------------------------------------
 
       if (game.phase === "playing") {
+        // Give the table a moment to follow along before a bot plays.
+        await this.wait(WIZARD_TIMING.botPlayDelayMs);
+
+        const currentGame =
+          wizardSessionManager.getGame(roomId);
+
+        if (!currentGame) {
+          return;
+        }
+
+        // The game may have moved on while the bot waited.
+        const stillBotsTurn =
+          currentGame.phase === "playing" &&
+          currentGame.players[currentGame.currentPlayerIndex]?.username ===
+            currentPlayer.username &&
+          currentGame.currentTrick.playedCards.length <
+            currentGame.players.length;
+
+        if (!stillBotsTurn) {
+          continue;
+        }
+
         const cardIndex =
-          this.botService.chooseCardIndex(game);
+          this.botService.chooseCardIndex(currentGame);
 
-        this.gameService.playCard(game, cardIndex);
+        this.gameService.playCard(currentGame, cardIndex);
 
-        wizardSessionManager.saveGame(game);
+        wizardSessionManager.saveGame(currentGame);
         this.broadcast(roomId);
 
         await this.wait(700);

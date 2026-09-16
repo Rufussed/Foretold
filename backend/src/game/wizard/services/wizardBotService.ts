@@ -1,7 +1,9 @@
 import { isJester } from "../models/card.js";
+import { isBotName } from "../models/bot.js";
 import type { Card, Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "./wizardRules.js";
+import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 export class WizardBotService {
@@ -12,7 +14,7 @@ export class WizardBotService {
   // Bot usernames use a prefix so the game runner can distinguish automated
   // players from human players without adding another player-state field.
   isBot(username: string): boolean {
-    return username.startsWith("bot-");
+    return isBotName(username);
   }
 
   // Choose the suit with the strongest overall hand: suit length is the
@@ -65,7 +67,13 @@ export class WizardBotService {
       return card.value === 14 || card.value >= 12;
     }).length;
 
-    return Math.min(prediction, game.currentRound);
+    // As last predictor, step off a number the rules forbid.
+    const choice = Math.min(prediction, game.currentRound);
+    return avoidForbiddenPrediction(
+      choice,
+      forbiddenPrediction(game.players, game.currentRound),
+      game.currentRound,
+    );
   }
 
   // Return the first legal card. This is intentionally a simple strategy:
@@ -77,10 +85,16 @@ export class WizardBotService {
       throw new Error("Bot player does not exist");
     }
 
-    const leadSuit =
-      game.currentTrick.playedCards.find(
-        ({ card }) => !isJester(card),
-      )?.card.suit ?? null;
+
+    //Handles if Wizard is play first, there is no Suit
+    const leadSuit = this.rules.getLeadSuit(
+      game.currentTrick.playedCards,
+    );
+
+    // const leadSuit =
+    //   game.currentTrick.playedCards.find(
+    //     ({ card }) => !isJester(card),
+    //   )?.card.suit ?? null;
 
     const playableIndex = player.hand.findIndex((card: Card) =>
       this.rules.isValidCardPlay(card, player.hand, leadSuit),

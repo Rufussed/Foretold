@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS room_players (
   room_id INTEGER NOT NULL,
   user_id INTEGER NOT NULL,
   username TEXT NOT NULL,
+  avatar TEXT,
   joined_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE(room_id, user_id),
   FOREIGN KEY (room_id) REFERENCES rooms(id),

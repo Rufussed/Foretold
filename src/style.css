@@ -30,7 +30,7 @@ h2 {
 .panel {
   margin-top: 24px;
   padding: 24px;
-  background: white;
+  background: rgb(255 255 255 / 75%); /* the table scene shows through */
   border: 1px solid #d9e0ea;
   border-radius: 8px;
   box-shadow: 0 8px 24px rgb(30 50 80 / 8%);
@@ -82,17 +82,56 @@ button:hover {
   min-height: 100vh;
   padding: 64px 32px;
   color: white;
-  background-image:
-    linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%)),
-    url("/HomeWizard.png");
+  /* The table scene shows through (see backdrop-scene.ts). */
+  background-image: linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%));
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
 }
 
+/* The table scene behind every page but the 3D view: full window, under all
+   page content. */
+.backdrop-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
 /* =========================================================
    WIZARD GAME
    ========================================================= */
+
+/* The links at the top of every page but the 3D view, in a box like the
+   panels so they stay readable over the table scene behind. */
+.navbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: rgb(255 255 255 / 75%);
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+}
+
+/* Technical View: the way back to the 3D view, a full button on the right. */
+.game-nav .game-nav-visualizer {
+  margin-left: auto;
+  padding: 10px 16px;
+  color: white;
+  font-weight: 600;
+  text-decoration: none;
+  background: #2457a6;
+  border-radius: 4px;
+}
+
+.game-nav .game-nav-visualizer:hover {
+  background: #1b4381;
+}
 
 .game-header {
   display: flex;
@@ -515,4 +554,812 @@ button:hover {
     width: 110px;
     min-height: 80px;
   }
+}
+
+.visualizer-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.visualizer-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.visualizer-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.visualizer-nav {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  gap: 8px;
+  z-index: 1;
+}
+
+.visualizer-nav a {
+  padding: 8px 14px;
+  color: white;
+  background: rgb(23 32 51 / 50%);
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-nav a:hover {
+  background: rgb(23 32 51 / 70%);
+}
+
+#wizard-visualizer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ddd;
+  font-size: 1.1rem;
+  background: #000;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#wizard-visualizer-loading.hidden {
+  opacity: 0;
+}
+/* ---------------------------------------------------------
+   WAITING ROOM
+   --------------------------------------------------------- */
+
+.room-page [hidden] {
+  display: none !important;
+}
+
+.room-count {
+  margin-top: -12px;
+  color: #5b6b82;
+}
+
+.room-message {
+  min-height: 1.4em;
+  color: #b3261e;
+  font-weight: 600;
+}
+
+.room-players {
+  display: grid;
+  gap: 8px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.room-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+  font-weight: 600;
+}
+
+.room-player-avatar {
+  margin-left: auto;
+  color: #5b6b82;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.room-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------
+   AVATAR PICKER
+   --------------------------------------------------------- */
+
+.avatar-picker {
+  position: relative;
+}
+
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+/* Prefixed to outrank the global button:hover and button:disabled styles. */
+.avatar-picker .avatar-cell {
+  display: grid;
+  gap: 4px;
+  width: auto;
+  padding: 8px;
+  color: #172033;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+}
+
+.avatar-picker .avatar-cell:hover:not(:disabled) {
+  background: #f5f7fa;
+  border-color: #2457a6;
+}
+
+/* Thicker outline; padding shrinks by the same amount so nothing shifts. */
+.avatar-picker .avatar-cell.is-selected,
+.avatar-picker .avatar-cell.is-selected:hover {
+  padding: 6px;
+  background: #eef4ff;
+  border: 3px solid #2457a6;
+}
+
+.avatar-picker .avatar-cell.is-taken {
+  color: #8391a7;
+  background: #eceff3;
+  cursor: not-allowed;
+}
+
+.avatar-view {
+  display: block;
+  aspect-ratio: 1;
+}
+
+.avatar-owner {
+  min-height: 1.2em;
+  color: #5b6b82;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* One shared canvas over the grid; clicks pass through to the cells. */
+.avatar-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Emotes: a 2x2 grid of emoji left of your portrait, above your prediction and
+   tricks box (.hud-self, about 100px tall at bottom 16px). */
+.visualizer-emotes {
+  position: absolute;
+  right: 224px;
+  bottom: 124px;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 44px);
+  gap: 8px;
+}
+
+/* Prefixed to outrank the global button:hover style. */
+.visualizer-page .visualizer-emotes button {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 24px;
+  line-height: 1;
+  background: rgb(23 32 51 / 60%);
+  border: 0;
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-page .visualizer-emotes button:hover {
+  background: rgb(23 32 51 / 70%);
+}
+
+/* Your own character, bottom right of the table view. The canvas fills the
+   whole box and the name sits over its lower edge. */
+.visualizer-self {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+  width: 196px;
+  height: 220px;
+  margin: 0;
+  overflow: hidden;
+}
+
+/* A circle behind the character, as for the smaller portraits, filling the
+   box's width at the top; the name sits in the space below it. */
+.visualizer-self::before {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  content: "";
+  background: rgb(23 32 51 / 50%);
+  border-radius: 50%;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-self[hidden] {
+  display: none;
+}
+
+/* The character's view: the circle's square, so the character sits on the
+   circle and clear of the name below. */
+.visualizer-self-view {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1;
+}
+
+.visualizer-self-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.visualizer-self-name {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  padding: 4px 8px 6px;
+  overflow: hidden;
+  color: white;
+  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere; /* long names wrap rather than being cut off */
+}
+
+/* Narrow screens: a smaller portrait, and emotes kept clear of it on the left. */
+@media (max-width: 640px) {
+  .visualizer-self {
+    width: 126px;
+    height: 172px; /* room under the circle for a name on two lines */
+  }
+
+  .visualizer-self-name {
+    font-size: 12px;
+  }
+
+  .visualizer-emotes {
+    right: 154px;
+  }
+}
+
+/* Prediction prompt: just above your card fan, clear of the trump card, with
+   no backdrop so the hand stays usable. The camera keeps the full scene height
+   in view, so the fan's top sits at the same fraction of the height (~73%) on
+   any window shape; raise "bottom" to lift the prompt higher. */
+.visualizer-page .prediction-modal {
+  position: absolute;
+  bottom: calc(28% + 20px);
+  left: 50%;
+  z-index: 2;
+  /* Sized to its buttons, never wider than the screen. */
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 13px 19px;
+  color: white;
+  text-align: center;
+  /* The same box as the HUD panels (.hud-panel). */
+  background: rgb(23 32 51 / 60%);
+  border-radius: 12px;
+  transform: translateX(-50%);
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-page .prediction-modal[hidden] {
+  display: none;
+}
+
+.prediction-modal h2 {
+  margin: 0 0 2px;
+  font-size: 26px;
+}
+
+.prediction-round {
+  margin: 0 0 10px;
+  color: #c9d3e3;
+  font-size: 14px;
+}
+
+.prediction-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Prefixed to outrank the global button styles. */
+.visualizer-page .prediction-options button {
+  min-width: 48px;
+  padding: 10px 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.visualizer-page .prediction-options button.is-chosen {
+  color: #172033;
+  background: #f9a825;
+}
+
+.visualizer-page .prediction-options button:disabled:not(.is-chosen) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.prediction-error {
+  margin: 6px 0 0;
+  color: #ffb4a8;
+  font-weight: 600;
+}
+
+/* No reason to show: take no space, so the bottom padding matches the top. */
+.prediction-error:empty {
+  display: none;
+}
+
+/* Trump choice after a Wizard or Jester is turned up: one swatch per suit. */
+/* Sits 30px higher than the prediction box it shares a position with. */
+.visualizer-page .prediction-modal.trump-modal {
+  bottom: calc(28% + 50px);
+}
+
+.trump-options {
+  display: grid;
+  /* Equal columns, so every swatch is the same size whatever its label. */
+  grid-template-columns: repeat(4, 72px);
+  gap: 10px;
+}
+
+.visualizer-page .trump-options button {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  justify-items: center;
+  width: 100%; /* fill the column, not the global fit-content */
+  padding: 8px 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+  background: transparent;
+  border: 2px solid transparent;
+  border-radius: 10px;
+}
+
+.trump-swatch {
+  width: 56px;
+  aspect-ratio: 5 / 7;
+  border: 2px solid rgb(255 255 255 / 60%);
+  border-radius: 6px;
+}
+
+.visualizer-page .trump-options button:hover:not(:disabled),
+.visualizer-page .trump-options button.is-chosen {
+  border-color: #ffd54f;
+}
+
+.visualizer-page .trump-options button:disabled:not(.is-chosen) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ---------------------------------------------------------
+   GAME HUD
+   --------------------------------------------------------- */
+
+.visualizer-page .hud-panel {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 12px;
+  color: white;
+  font-size: 13px;
+  background: rgb(23 32 51 / 60%);
+  border-radius: 12px;
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-page .hud-panel[hidden] {
+  display: none;
+}
+
+/* Top right: the whole game. */
+.hud-status {
+  top: 16px;
+  right: 16px;
+  width: 240px;
+}
+
+.hud-round {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.hud-scores {
+  width: 100%;
+  margin-top: 1.2em; /* a line's gap below the round, where the column titles were */
+  border-collapse: collapse;
+}
+
+.hud-scores td {
+  padding: 2px 0;
+}
+
+.hud-scores td:last-child {
+  text-align: right;
+}
+
+.hud-scores tr.is-you td {
+  color: #ffd54f;
+  font-weight: 700;
+}
+
+/* A labelled count: this round's prediction or tricks won. */
+.hud-stat {
+  display: grid;
+  justify-items: center;
+  line-height: 1.15;
+}
+
+.hud-stat-label {
+  color: #9fb0c8;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-stat-value {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+/* Bottom right, beside your 196px portrait box. */
+.hud-self {
+  right: 224px;
+  bottom: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+/* Bottom left: the other players. */
+.hud-opponents {
+  bottom: 16px;
+  left: 16px;
+  display: grid;
+  gap: 8px;
+}
+
+.hud-opponent {
+  display: grid;
+  grid-template-columns: 96px auto auto;
+  align-items: center;
+  gap: 14px;
+}
+
+.hud-opponent-face {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0;
+}
+
+.hud-opponent-face img {
+  width: 48px;
+  height: 48px;
+  background: rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Names show in full, wrapping onto a second line rather than being cut off. */
+.hud-opponent-face figcaption {
+  max-width: 96px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* Narrow screens: status below the nav, emotes to its left, clear of the
+   corner panels. */
+@media (max-width: 640px) {
+  .hud-status {
+    top: 60px;
+    width: 190px;
+  }
+
+  .hud-self {
+    right: 154px;
+  }
+
+
+}
+
+/* Mute button for the music, over the top-right corner of the score panel
+   (.hud-status: top 16px, right 16px). */
+.visualizer-page .music-toggle {
+  position: absolute;
+  top: 22px;
+  right: 22px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: white;
+  background: rgb(255 255 255 / 12%);
+  border: 0;
+  border-radius: 8px;
+}
+
+.visualizer-page .music-toggle:hover {
+  background: rgb(255 255 255 / 22%);
+}
+
+.visualizer-page .music-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (max-width: 640px) {
+  /* The score panel sits below the nav on phones. */
+  .visualizer-page .music-toggle {
+    top: 66px;
+  }
+}
+
+/* What's going on, top centre (see hud/announcer.ts). */
+.visualizer-page .hud-announcer {
+  position: absolute;
+  top: 16px;
+  left: 50%;
+  z-index: 2;
+  width: max-content;
+  max-width: min(560px, calc(100% - 560px));
+  margin: 0;
+  padding: 13px 19px;
+  color: white;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  /* The same box as the HUD panels (.hud-panel). */
+  background: rgb(23 32 51 / 60%);
+  border-radius: 12px;
+  transform: translateX(-50%);
+  backdrop-filter: blur(4px);
+}
+
+.visualizer-page .hud-announcer[hidden] {
+  display: none;
+}
+
+.hud-announcer.is-new {
+  animation: hud-announce 0.3s ease-out;
+}
+
+.hud-announcer-text {
+  margin: 0;
+  white-space: pre-line; /* round results put the total on its own line */
+}
+
+/* Round results: a board of equal cards, three to a row. */
+/* At the top, only as wide as the cards need, centred in the space left of the
+   240px score panel so the totals it flashes stay in view. (Phones: below the
+   panel instead, see announcer.ts.) */
+.visualizer-page .hud-announcer.has-results {
+  left: calc((100% - 256px) / 2);
+  right: auto;
+  width: max-content;
+  max-width: calc(100% - 288px);
+  transform: translateX(-50%);
+  max-width: none;
+  text-align: left;
+}
+
+.hud-results {
+  display: grid;
+  /* Up to three equal columns, each as wide as the widest card needs
+     (--columns is set to the number of cards, at most 3). */
+  grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
+  grid-auto-rows: 1fr;
+  gap: 10px;
+}
+
+/* Headshot and name on one line, the breakdown below it. */
+.hud-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  gap: 10px;
+  padding: 10px;
+  background: rgb(255 255 255 / 7%);
+  border-radius: 10px;
+  animation: hud-result-in 0.3s ease-out;
+}
+
+.hud-results .hud-result-face img {
+  width: 36px;
+  height: 36px;
+}
+
+.hud-results .hud-result-face figcaption {
+  max-width: none;
+  font-size: 13px;
+  text-align: left;
+}
+
+/* The breakdown: labels, then values in their own column so the +/- signs
+   line up. */
+.hud-results .hud-result-face {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+}
+
+
+
+.hud-result-lines {
+  display: grid;
+  text-align: left;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  column-gap: 8px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.hud-result-lines dt {
+  margin: 0;
+}
+
+.hud-result-lines dd {
+  margin: 0;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-align: left;
+  white-space: nowrap;
+}
+
+@keyframes hud-result-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes hud-announce {
+  from { opacity: 0; transform: translate(-50%, -6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* A total just added to: flashes three times, green for points won, red for lost. */
+.hud-scores td.is-gain {
+  animation: hud-flash-gain 0.4s steps(1, end) 3;
+}
+
+.hud-scores td.is-loss {
+  animation: hud-flash-loss 0.4s steps(1, end) 3;
+}
+
+@keyframes hud-flash-gain {
+  0% { color: #4caf50; }
+  50% { color: inherit; }
+}
+
+@keyframes hud-flash-loss {
+  0% { color: #ef5350; }
+  50% { color: inherit; }
+}
+
+/* Mid-width screens: the banner fits between the nav and the status panel;
+   the results board goes below the nav, full width. */
+@media (max-width: 1100px) {
+  .visualizer-page .hud-announcer {
+    top: 64px;
+    max-width: calc(100% - 300px);
+    font-size: 15px;
+  }
+
+  .visualizer-page .hud-announcer.has-results {
+    top: 16px;
+  }
+}
+
+/* Narrow screens: below the nav, left of the status panel. */
+@media (max-width: 640px) {
+  .visualizer-page .hud-announcer {
+    top: 60px;
+    left: 16px;
+    max-width: calc(100% - 238px);
+    font-size: 13px;
+    text-align: left;
+    transform: none;
+  }
+
+  .hud-announcer.is-new {
+    animation: none;
+  }
+
+  /* Phones: one full-width card to a row, so no line has to wrap. */
+  .visualizer-page .hud-announcer.has-results {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    max-width: none;
+    transform: none;
+  }
+
+  .visualizer-page .hud-results {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+
+}
+
+/* Dev builds: what went wrong in the 3D view (see diagnostics.ts). */
+.visualizer-page .visualizer-diagnostics {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  z-index: 5;
+  width: min(520px, calc(100% - 32px));
+  max-height: 60%;
+  overflow: auto;
+  padding: 12px 14px;
+  color: white;
+  font-size: 12px;
+  background: rgb(120 20 20 / 90%);
+  border-radius: 10px;
+  transform: translateX(-50%);
+}
+
+.visualizer-page .visualizer-diagnostics[hidden] {
+  display: none;
+}
+
+.visualizer-diagnostics-title {
+  margin: 0 28px 6px 0;
+  font-weight: 700;
+}
+
+.visualizer-diagnostics pre {
+  margin: 0;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.visualizer-page .visualizer-diagnostics-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: auto;
+  padding: 2px 8px;
+  font-size: 18px;
+  background: transparent;
 }

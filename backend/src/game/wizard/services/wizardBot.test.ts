@@ -10,7 +10,7 @@ const rules = new WizardRules();
 
 const game = gameService.createGame(
   1,
-  ["alice", "bot-1", "bot-2", "bot-3"],
+  ["alice", "Merlin NPC", "Morgana NPC", "Esmeralda NPC"],
 );
 
 game.status = "playing";

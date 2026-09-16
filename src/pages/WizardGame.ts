@@ -1,11 +1,11 @@
 import { getCurrentUser } from "../services/auth";
+import { API_BASE } from "../services/api";
 import type { Suit } from "../../backend/src/game/wizard/models/card";
 import {
   createGameSocket,
   type GameSocketMessage,
 } from "../services/gameSocket";
 
-const API_BASE = "http://127.0.0.1:3000";
 
 interface Card {
   value: number;
@@ -197,10 +197,25 @@ function formatDebugEvents(): string {
     .join("\n");
 }
 
+// The page's game socket, and a count of page mounts. Leaving the page closes
+// the socket; otherwise every later game update would redraw this view over
+// whatever page is now showing (such as the 3D view). The count stops a load
+// that finishes after you've left from opening a socket or drawing.
+let activeSocket: WebSocket | null = null;
+let mountCount = 0;
+
+export function destroyWizardGamePage(): void {
+  mountCount += 1;
+  activeSocket?.close();
+  activeSocket = null;
+}
+
 export async function renderWizardGamePage(
   container: HTMLElement,
   roomId: number,
 ): Promise<void> {
+  destroyWizardGamePage();
+  const mount = mountCount;
   const token = localStorage.getItem("wizardToken");
 
   if (!token) {
@@ -219,9 +234,18 @@ export async function renderWizardGamePage(
 
     recordGameState(game);
 
+    if (mount !== mountCount) {
+      return;
+    }
+
     const socket = createGameSocket(roomId, token);
+    activeSocket = socket;
 
     socket.addEventListener("message", (event) => {
+      if (mount !== mountCount) {
+        return;
+      }
+
       const message = JSON.parse(
         event.data as string,
       ) as GameSocketMessage;
@@ -271,6 +295,10 @@ export async function renderWizardGamePage(
       socket,
     );
   } catch (error) {
+    if (mount !== mountCount) {
+      return;
+    }
+
     container.innerHTML = `
       <main class="page">
         <section class="panel">
@@ -366,10 +394,11 @@ function renderGame(
   container.innerHTML = `
     <main class="page">
 
-      <nav class="navbar">
+      <nav class="navbar game-nav">
         <a href="#/home">Home</a>
         <a href="#/lobby">Lobby</a>
         <a href="#/profile">Profile</a>
+        <a class="game-nav-visualizer" href="#/game/${game.roomId}/visualizer">Back to 3D Visualizer</a>
       </nav>
 
       <!-- GAME HEADER -->
@@ -1020,14 +1049,6 @@ function formatCard(
   }
 
   return `${card.value} of ${card.suit}`;
-}
-
-function formatPrediction(
-  prediction: number | null,
-): string {
-  return prediction === null
-    ? "—"
-    : String(prediction);
 }
 
 function getErrorMessage(

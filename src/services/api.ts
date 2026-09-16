@@ -1,4 +1,8 @@
-export const API_BASE = "http://127.0.0.1:3000";
+// The backend runs on this port of whichever machine served the page, so the
+// same frontend works from this computer, another device on your Wi-Fi, or over
+// Tailscale (see scripts/play.mjs).
+export const BACKEND_PORT = 3000;
+export const API_BASE = `${window.location.protocol}//${window.location.hostname}:${BACKEND_PORT}`;
 
 // Kept separate from the UI so the health check can be reused without making
 // pages know how the backend is addressed.

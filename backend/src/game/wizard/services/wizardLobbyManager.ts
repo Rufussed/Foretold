@@ -1,5 +1,6 @@
 import db from "../../../db/database.js";
-import type { Room } from "../models/wizardGame.js";
+import { isAvatarId, type AvatarId } from "../models/avatar.js";
+import type { Room, RoomPlayer } from "../models/wizardGame.js";
 
 interface RoomRow {
   id: number;
@@ -10,16 +11,16 @@ interface RoomRow {
 }
 
 interface PlayerRow {
-  room_id: number;
   username: string;
+  avatar: string | null;
 }
 
 class WizardLobbyManager {
-  private getRoomPlayers(roomId: number): string[] {
+  private getRoomPlayers(roomId: number): RoomPlayer[] {
     const rows = db
       .prepare(
         `
-          SELECT username
+          SELECT username, avatar
           FROM room_players
           WHERE room_id = ?
           ORDER BY joined_at ASC
@@ -27,7 +28,10 @@ class WizardLobbyManager {
       )
       .all(roomId) as PlayerRow[];
 
-    return rows.map((row) => row.username);
+    return rows.map((row) => ({
+      username: row.username,
+      avatar: isAvatarId(row.avatar) ? row.avatar : null,
+    }));
   }
 
   private mapRoom(row: RoomRow): Room {
@@ -110,7 +114,7 @@ class WizardLobbyManager {
       return null;
     }
 
-    if (room.players.includes(username)) {
+    if (room.players.some((player) => player.username === username)) {
       return room;
     }
 
@@ -241,6 +245,31 @@ class WizardLobbyManager {
     });
 
     deleteRoom();
+    return true;
+  }
+
+  // Returns false when someone else in the room already holds the avatar. The
+  // unique index on (room_id, avatar) enforces this, so simultaneous claims
+  // cannot both succeed. Passing null releases the player's current avatar.
+  claimAvatar(
+    roomId: number,
+    username: string,
+    avatar: AvatarId | null,
+  ): boolean {
+    try {
+      db.prepare(`
+        UPDATE room_players
+        SET avatar = ?
+        WHERE room_id = ? AND username = ?
+      `).run(avatar, roomId, username);
+    } catch (error) {
+      if ((error as { code?: string }).code === "SQLITE_CONSTRAINT_UNIQUE") {
+        return false;
+      }
+
+      throw error;
+    }
+
     return true;
   }
 

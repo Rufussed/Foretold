@@ -1,14 +1,19 @@
 import type { FastifyInstance } from "fastify";
+import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
-import { WizardGameService } from "../services/wizardGameService.js";
+import { assignAvatars, WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
+import { isAvatarId, type AvatarId } from "../models/avatar.js";
+import { fullRoundCount } from "../models/rounds.js";
 
 
 interface CreateGameBody {
   roomId?: number;
   botCount?: number;
+  // Optional cap for a shorter game, 1 up to a full game's rounds.
+  maxRounds?: number;
 }
 
 interface PredictionBody {
@@ -39,6 +44,24 @@ export default async function wizardRoutes(
     return {
       rooms: wizardLobbyManager.getRooms(),
     };
+  });
+
+  // A single room, so the waiting room can poll without refetching the list.
+  server.get("/lobby/:roomId", async (request, reply) => {
+    const params = request.params as { roomId?: string };
+    const roomId = Number(params.roomId);
+
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({ error: "Invalid room ID" });
+    }
+
+    const room = wizardLobbyManager.getRoomById(roomId);
+
+    if (!room) {
+      return reply.status(404).send({ error: "Room not found" });
+    }
+
+    return reply.send(room);
   });
 
   server.post("/lobby/create", async (request, reply) => {
@@ -110,6 +133,63 @@ export default async function wizardRoutes(
     }
 
     return reply.send(room);
+  });
+
+  // First come, first served: a second claim of the same avatar in a room is
+  // rejected. Sending { avatar: null } releases the caller's current avatar.
+  server.post("/lobby/:roomId/avatar", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const params = request.params as { roomId?: string };
+    const body = (request.body ?? {}) as { avatar?: unknown };
+    const roomId = Number(params.roomId);
+    const username = getAuthenticatedUsername(request);
+
+    if (!username) {
+      return reply.status(401).send({
+        error: "User identity missing",
+      });
+    }
+
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({ error: "Invalid room ID" });
+    }
+
+    const requested = body.avatar;
+    const avatar =
+      requested === null ? null : isAvatarId(requested) ? requested : undefined;
+
+    if (avatar === undefined) {
+      return reply.status(400).send({ error: "Unknown avatar" });
+    }
+
+    const room = wizardLobbyManager.getRoomById(roomId);
+
+    if (!room) {
+      return reply.status(404).send({ error: "Room not found" });
+    }
+
+    if (!room.players.some((player) => player.username === username)) {
+      return reply.status(403).send({
+        error: "You are not a member of this room",
+      });
+    }
+
+    if (room.status !== "waiting") {
+      return reply.status(409).send({
+        error: "Avatars can only be changed before the game starts",
+      });
+    }
+
+    if (!wizardLobbyManager.claimAvatar(roomId, username, avatar)) {
+      return reply.status(409).send({ error: "That avatar is taken" });
+    }
+
+    return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
 
   server.delete("/lobby/:roomId", async (request, reply) => {
@@ -184,7 +264,7 @@ export default async function wizardRoutes(
       });
     }
 
-    if (!room.players.includes(username)) {
+    if (!room.players.some((player) => player.username === username)) {
       return reply.status(403).send({
         error: "You are not a member of this room",
       });
@@ -210,19 +290,34 @@ export default async function wizardRoutes(
       });
     }
 
-    const players = [
-      ...room.players,
-      ...Array.from(
-        { length: botCount },
-        (_, index) => `bot-${index + 1}`,
-      ),
-    ];
+    const fullRounds = fullRoundCount(totalPlayers) ?? 0;
+    const maxRounds = body.maxRounds ?? undefined;
+
+    if (
+      maxRounds !== undefined &&
+      (!Number.isInteger(maxRounds) || maxRounds < 1 || maxRounds > fullRounds)
+    ) {
+      return reply.status(400).send({
+        error: `Max rounds must be between 1 and ${fullRounds}`,
+      });
+    }
+
+    // Avatars first, so each bot can be named to suit its avatar; the bots'
+    // avatars then go to createGame as claims, so it keeps these assignments.
+    // Bot slots are placeholders ending in " NPC", which no player can register.
+    const humans = room.players.map((player) => player.username);
+    const claims = new Map<string, AvatarId | null>(
+      room.players.map((player) => [player.username, player.avatar]),
+    );
+    const botSlots = Array.from({ length: botCount }, (_, index) => `bot slot ${index} NPC`);
+    const avatars = assignAvatars([...humans, ...botSlots], claims);
+    const botAvatars = avatars.slice(humans.length);
+    const botNames = pickBotNames(botAvatars, humans);
+    botNames.forEach((name, index) => claims.set(name, botAvatars[index] ?? null));
+    const players = [...humans, ...botNames];
 
     try {
-      const game = wizardGameService.createGame(
-        room.id,
-        players,
-      );
+      const game = wizardGameService.createGame(room.id, players, claims, maxRounds);
       
       wizardLobbyManager.setRoomStatus(room.id, "playing");
       game.status = "playing";

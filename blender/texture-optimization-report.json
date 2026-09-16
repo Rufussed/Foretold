@@ -1,0 +1,215 @@
+{
+  "file": "/home/rlane/Work/wizard-game/blender/characters.blend",
+  "max_size": 1024,
+  "quality": 82,
+  "backup": "/home/rlane/Work/wizard-game/blender/characters.before-texture-optimization-20260914-195432-148691.blend",
+  "images": [
+    {
+      "image": "file1.001",
+      "status": "already optimized"
+    },
+    {
+      "image": "file2.002",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 220510,
+      "packed": true
+    },
+    {
+      "image": "file3.001",
+      "status": "already optimized"
+    },
+    {
+      "image": "file2.001",
+      "status": "already optimized"
+    },
+    {
+      "image": "file4.001",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 198322,
+      "packed": true
+    },
+    {
+      "image": "file5",
+      "status": "already optimized"
+    },
+    {
+      "image": "file6",
+      "status": "already optimized"
+    },
+    {
+      "image": "file6__roughness",
+      "status": "already optimized"
+    },
+    {
+      "image": "file1.002",
+      "status": "already optimized"
+    },
+    {
+      "image": "file3.002",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 175636,
+      "packed": true
+    },
+    {
+      "image": "file5.001",
+      "status": "already optimized"
+    },
+    {
+      "image": "file4.002",
+      "status": "already optimized"
+    },
+    {
+      "image": "file4.002__roughness",
+      "status": "already optimized"
+    },
+    {
+      "image": "file6.001",
+      "status": "already optimized"
+    },
+    {
+      "image": "file7",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 163172,
+      "packed": true
+    },
+    {
+      "image": "file9",
+      "status": "already optimized"
+    },
+    {
+      "image": "file8",
+      "status": "already optimized"
+    },
+    {
+      "image": "file8__roughness",
+      "status": "already optimized"
+    },
+    {
+      "image": "file2.003",
+      "status": "already optimized"
+    },
+    {
+      "image": "file2.005",
+      "status": "already optimized"
+    },
+    {
+      "image": "Demon__diffuse.png",
+      "status": "already optimized"
+    },
+    {
+      "image": "Demon__normal.png",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 167160,
+      "packed": true
+    },
+    {
+      "image": "file1",
+      "status": "already optimized"
+    },
+    {
+      "image": "file2",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 180004,
+      "packed": true
+    },
+    {
+      "image": "file4",
+      "status": "already optimized"
+    },
+    {
+      "image": "file3",
+      "status": "already optimized"
+    },
+    {
+      "image": "file3__roughness",
+      "status": "already optimized"
+    },
+    {
+      "image": "lola_diffuse.png",
+      "status": "already optimized"
+    },
+    {
+      "image": "lola_normal.png",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        1024,
+        1024
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 215248,
+      "packed": true
+    }
+  ]
+}
