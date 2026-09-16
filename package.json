@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "play": "node scripts/play.mjs"
+    "play": "node scripts/play.mjs",
+    "build:deploy": "npm install --include=dev && npm --prefix backend install && npm run build",
+    "start": "npm --prefix backend start"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
