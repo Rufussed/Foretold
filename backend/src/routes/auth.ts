@@ -1,4 +1,4 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import type { FastifyInstance } from "fastify";
 import { UserService } from "../services/userService.js";
 import { isBotName } from "../game/wizard/models/bot.js";
