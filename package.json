@@ -8,18 +8,19 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "play": "node scripts/play.mjs",
-    "build:deploy": "npm install --include=dev && npm --prefix backend install && npm run build",
-    "start": "npm --prefix backend start"
+    "start": "node server.js",
+    "postinstall": "npm --prefix backend install && vite build"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
     "tailwindcss": "^4.3.3",
-    "typescript": "~6.0.2",
-    "vite": "^8.2.2"
+    "typescript": "~6.0.2"
   },
   "dependencies": {
     "@types/three": "^0.186.0",
     "qrcode": "^1.5.4",
-    "three": "^0.186.0"
+    "three": "^0.186.0",
+    "tsx": "^4.23.13",
+    "vite": "^8.2.2"
   }
 }
