@@ -2,7 +2,7 @@ import { API_BASE } from "../services/api";
 import { getCurrentUser, getToken } from "../services/auth";
 import { createGameSocket, type GameSocketMessage } from "../services/gameSocket";
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
-import { isBotName } from "../../backend/src/game/wizard/models/bot";
+import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -13,13 +13,14 @@ import { useHeadshotRenderer } from "../visualizer/hud/headshots";
 import { createCardTable, type CardTable } from "../visualizer/card-table";
 import { createDiagnostics, type Diagnostics } from "../visualizer/diagnostics";
 import { EMOTE_NAMES, SEAT_IDS, type Emote } from "../visualizer/player-characters";
+import { createTableDirector, type TableDirector } from "../visualizer/table-director";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
 import { createTableLayout } from "../visualizer/table-layout";
-import { createTurnCamera } from "../visualizer/turn-camera";
+import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
 
 // Each emote button shows an emoji; the name is its tooltip and accessible label.
@@ -55,6 +56,7 @@ export async function renderVisualizerPage(
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
   let gameHud: GameHud | null = null;
+  let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
@@ -66,6 +68,7 @@ export async function renderVisualizerPage(
     useHeadshotRenderer(null);
     diagnostics?.dispose();
     cardTable?.dispose();
+    tableDirector?.dispose();
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
     gameHud?.dispose();
@@ -141,6 +144,8 @@ export async function renderVisualizerPage(
       });
       if (response.ok) {
         latestState = (await response.json()) as PublicWizardGameState;
+        // An all-NPC game: you watch from your own NPC's seat.
+        localUsername = seatNameFor(localUsername, latestState.players) ?? localUsername;
       }
     } catch (error) {
       console.warn("[visualizer] no live game, showing the demo table:", error);
@@ -155,7 +160,7 @@ export async function renderVisualizerPage(
   let seatSync: SeatSync | null = null;
   let trigger: EmoteTrigger | null = null;
   let aiEmotes: { update(deltaSeconds: number): void } | null = null;
-  let turnCamera: { applyState(): void } | null = null;
+  let turnCamera: TurnCamera | null = null;
 
   // Your own character, bottom right: the avatar you claimed, or a stand-in
   // picked from your name when there's no game to read it from.
@@ -199,19 +204,49 @@ export async function renderVisualizerPage(
       }
     : null;
 
+  // Plays each server snapshot out as a chain of steps (camera turns,
+  // announcements, the trick reward, the deal), each starting when the one
+  // before is done; see table-director.ts. The card table and the HUD follow
+  // what it has shown so far.
+  const director = createTableDirector({
+    initial: null,
+    localUsername: localUsername ?? "",
+    applyTable: () => cardTable?.applyState(),
+    applyHud: () => {
+      predictionPrompt?.applyState();
+      trumpPrompt?.applyState();
+      gameHud?.applyState();
+    },
+    dealing: () => cardTable?.dealing ?? false,
+    lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
+    whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
+    playTrickReward: (done) => (cardTable ? cardTable.playTrickReward(done) : done()),
+  });
+  tableDirector = director;
+  const tableConnection: GameConnection | null = gameConnection && {
+    ...gameConnection,
+    state: () => director.tableState(),
+  };
+  const hudConnection: GameConnection | null = gameConnection && {
+    ...gameConnection,
+    state: () => director.hudState(),
+  };
+
   const page = container.querySelector<HTMLElement>(".visualizer-page");
   if (gameConnection && page) {
     // Bidding waits until every card has been dealt.
-    predictionPrompt = createPredictionPrompt(page, gameConnection, {
-      blocked: () => !cardTable || cardTable.dealing,
+    // Prompts open once your turn has been announced.
+    predictionPrompt = createPredictionPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown(),
     });
     // A Wizard or Jester turned up for trump: the round's first player picks the suit.
-    trumpPrompt = createTrumpPrompt(page, gameConnection, {
-      blocked: () => !cardTable || cardTable.dealing,
+    trumpPrompt = createTrumpPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown(),
     });
     // The banner's gameplay lines wait until every card, trump included, has landed.
-    gameHud = createGameHud(page, gameConnection, {
+    gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
+      statusBlocked: () => !director.turnShown(),
     });
   }
 
@@ -220,11 +255,8 @@ export async function renderVisualizerPage(
       seatSync.applyPlayers(latestState.players, localUsername);
     }
     updateSelfPortrait();
-    cardTable?.applyState();
-    turnCamera?.applyState();
-    predictionPrompt?.applyState();
-    trumpPrompt?.applyState();
-    gameHud?.applyState();
+    // Before the table exists the newest snapshot waits; onReady applies it.
+    if (cardTable && latestState) director.push(latestState);
   };
 
   scene = createWizardScene(canvas, {
@@ -254,27 +286,23 @@ export async function renderVisualizerPage(
         environment,
         view,
         layout,
-        game: gameConnection,
+        game: tableConnection,
         seatOf: (username) => sync?.seatOf(username) ?? null,
         headOf: (seat) => players.headPosition(seat),
-        onDealDone: () => {
-          predictionPrompt?.applyState();
-          trumpPrompt?.applyState();
-          gameHud?.applyState();
-        },
+        onDealDone: () => director.dealt(),
       });
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizardCards = cardTable.cards;
         (window as unknown as Record<string, unknown>).__wizardTable = cardTable;
       }
 
-      // Live games: the camera turns toward whoever's turn it is.
+      // Live games: the camera turns toward players when the director says.
       if (sync && gameConnection) {
         turnCamera = createTurnCamera({
           view,
           environment,
           layout,
-          game: gameConnection,
+          localUsername: gameConnection.localUsername,
           seatOf: (username) => sync.seatOf(username),
         });
       }

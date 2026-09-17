@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { BOT_NAME_SUFFIX, seatNameFor } from "../models/bot.js";
 import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 import { assignAvatars, WizardGameService } from "../services/wizardGameService.js";
@@ -272,17 +273,21 @@ export default async function wizardRoutes(
     
     const botCount = body.botCount ?? 0;
 
+    // One NPC more than the free seats means an all-NPC game: the host's seat
+    // goes to "<host> NPC" and they watch. Only when the host is alone.
+    const allNpcs = room.players.length === 1 && botCount === room.maxPlayers;
+
     if (
       !Number.isInteger(botCount) ||
       botCount < 0 ||
-      botCount > room.maxPlayers - room.players.length
+      (botCount > room.maxPlayers - room.players.length && !allNpcs)
     ) {
       return reply.status(400).send({
         error: "Invalid bot count",
       });
     }
 
-    const totalPlayers = room.players.length + botCount;
+    const totalPlayers = allNpcs ? botCount : room.players.length + botCount;
 
     if (totalPlayers < 3 || totalPlayers > 6) {
       return reply.status(400).send({
@@ -305,11 +310,16 @@ export default async function wizardRoutes(
     // Avatars first, so each bot can be named to suit its avatar; the bots'
     // avatars then go to createGame as claims, so it keeps these assignments.
     // Bot slots are placeholders ending in " NPC", which no player can register.
-    const humans = room.players.map((player) => player.username);
-    const claims = new Map<string, AvatarId | null>(
-      room.players.map((player) => [player.username, player.avatar]),
+    const humans = room.players.map((player) =>
+      allNpcs ? `${player.username}${BOT_NAME_SUFFIX}` : player.username,
     );
-    const botSlots = Array.from({ length: botCount }, (_, index) => `bot slot ${index} NPC`);
+    const claims = new Map<string, AvatarId | null>(
+      room.players.map((player, index) => [humans[index]!, player.avatar]),
+    );
+    const botSlots = Array.from(
+      { length: allNpcs ? botCount - 1 : botCount },
+      (_, index) => `bot slot ${index} NPC`,
+    );
     const avatars = assignAvatars([...humans, ...botSlots], claims);
     const botAvatars = avatars.slice(humans.length);
     const botNames = pickBotNames(botAvatars, humans);
@@ -326,7 +336,7 @@ export default async function wizardRoutes(
       void wizardGameRunner.run(room.id);
 
       return reply.status(201).send(
-        wizardGameService.getPublicGameState(game, username),
+        wizardGameService.getPublicGameState(game, seatNameFor(username, game.players) ?? username),
       );
     } catch (error) {
       return reply.status(400).send({
@@ -369,18 +379,17 @@ export default async function wizardRoutes(
       });
     }
     
-    const isPlayer = game.players.some(
-      (player) => player.username === username,
-    );
+    // Watching an all-NPC game counts: the host sits as "<host> NPC".
+    const seatName = seatNameFor(username, game.players);
     
-    if (!isPlayer) {
+    if (!seatName) {
       return reply.status(403).send({
         error: "You are not a player in this game",
       });
     }
 
     return reply.send(
-      wizardGameService.getPublicGameState(game, username),
+      wizardGameService.getPublicGameState(game, seatName),
     );
   });
   

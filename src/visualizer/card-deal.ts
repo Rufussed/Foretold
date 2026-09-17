@@ -39,9 +39,10 @@ const smooth = (x: number) => {
 };
 
 // The card stack at the table's centre, and dealing from it. Each card rises
-// straight up off the top staying flat, travels flat to above where it's
-// going, then turns into place as it settles. The next card leaves the stack
-// DEALING.intervalSeconds after the one before.
+// straight up off the top staying flat, travels flat to just past where it's
+// going (DEALING.approachDistance further from the middle, so it turns clear
+// of the cards already there), then turns and settles back into place. The
+// next card leaves the stack DEALING.intervalSeconds after the one before.
 export function createCardDeal(factory: CardFactory, layout: TableLayout): CardDeal {
   // The stack targets hold their cards face up; turn each over about its long
   // axis so the stack lies face down.
@@ -91,7 +92,10 @@ export function createCardDeal(factory: CardFactory, layout: TableLayout): CardD
 
     const cruise = Math.max(stackTop, step.target.position.y) + DEALING.liftHeight;
     const above = from.position.clone().setY(cruise);
-    const over = step.target.position.clone().setY(cruise);
+    // Past its place, on the line out from the middle of the table.
+    const outward = step.target.position.clone().sub(from.position).setY(0);
+    if (outward.lengthSq() > 1e-8) outward.normalize().multiplyScalar(DEALING.approachDistance);
+    const over = step.target.position.clone().add(outward).setY(cruise);
 
     if (t < lift) {
       card.object.position.lerpVectors(from.position, above, smooth(t / lift));

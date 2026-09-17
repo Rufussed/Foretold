@@ -5,9 +5,8 @@ import { createCardControls } from "./card-controls";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor, trumpFaceTexture } from "./card-textures";
-import { TRICK_REWARD } from "./config";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
-import { isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
+import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
@@ -41,6 +40,9 @@ export interface CardTable {
   readonly dealing: boolean;
   // Call after every game-state update.
   applyState(): void;
+  // Live games: the finished trick's cards gather (with the trump, after a
+  // round's last trick) and a tesseract goes to its winner; done once it has.
+  playTrickReward(done: () => void): void;
   // The server refused an action; a card waiting to be played returns.
   refused(): void;
   // Demo table: gather the cards and deal a fresh random round.
@@ -76,7 +78,7 @@ export function createCardTable({
 
   // Only on your turn while cards are being played; the server has the final
   // say either way. Always allowed on the demo table.
-  const canPlay = () => !game || (game.state()?.phase === "playing" && isLocalTurn(game));
+  const canPlay = () => !game || (game.state()?.phase === "playing" && canAct(game) && isLocalTurn(game));
 
   const onPlay = (key: string) => {
     if (!game) {
@@ -170,13 +172,15 @@ export function createCardTable({
   };
 
   let dealtRound: number | null = null;
-  let clock = 0;
-  let rewardedTrick: string | null = null;
-  const upcomingRewards: Array<{ at: number; start: () => void }> = [];
 
   // Gathers the trick's cards (and, after a round's last trick, the trump)
   // into their centre and sends a tesseract to the winner.
-  const startReward = (destination: RewardDestination | null, roundOver: boolean, color: string | null) => {
+  const startReward = (
+    destination: RewardDestination | null,
+    roundOver: boolean,
+    color: string | null,
+    done?: () => void,
+  ) => {
     const trick = cards.trickCardObjects();
     const trumpObject = roundOver ? cards.trumpCardObject() : null;
     const centreOf = (objects: readonly THREE.Object3D[]) =>
@@ -196,7 +200,7 @@ export function createCardTable({
       point,
       destination,
       color: roundOver ? color : null,
-    });
+    }, done);
     cards.suppressTrick(trick.map((card) => card.key));
     if (trumpObject) cards.suppressTrump();
   };
@@ -214,7 +218,6 @@ export function createCardTable({
   const applyState = () => {
     const state = game?.state();
     if (!game || !state) return;
-    const firstUpdate = knownTrick === null;
 
     const hand = localPlayer(game)?.hand ?? [];
     cards.setHand(hand);
@@ -232,7 +235,15 @@ export function createCardTable({
       const from = centredSlots(layout.handFor(seat), showing)[showing - 1];
       if (from) origins.set(key, from);
     }
-    cards.setTrick(state.currentTrick.playedCards.map((played) => played.card), origins);
+    // Watching your NPC: its plays rise out of your hand like everyone else's.
+    const fromHand = new Set(
+      canAct(game)
+        ? []
+        : state.currentTrick.playedCards
+            .filter((played) => played.username === game.localUsername)
+            .map((played) => cardKey(played.card)),
+    );
+    cards.setTrick(state.currentTrick.playedCards.map((played) => played.card), origins, fromHand);
     knownTrick = new Set(state.currentTrick.playedCards.map((played) => cardKey(played.card)));
     // The card winning the trick so far, by the server's own rules.
     const leader = rules.determineTrickWinner(
@@ -244,26 +255,8 @@ export function createCardTable({
     cards.setLeading(leadingPlay ? cardKey(leadingPlay.card) : null);
     cards.setTrump(state.trumpCard, state.trumpSuit);
 
-    // A finished trick: once its last card has landed, its cards gather and
-    // the winner gets a tesseract. After a round's last trick the trump goes
-    // too, and that tesseract takes the trump colour. Not replayed for a trick
-    // already finished when the table opened.
-    const trick = state.currentTrick;
-    const winner = trick.winnerUsername;
-    if (winner && trick.playedCards.length === state.players.length) {
-      const trickId = `${state.currentRound}:${trick.playedCards.map((played) => cardKey(played.card)).join(",")}`;
-      if (trickId !== rewardedTrick) {
-        rewardedTrick = trickId;
-        if (!firstUpdate) {
-          const roundOver = state.players.every((player) => player.handCount === 0);
-          const color = trumpColor(state.trumpSuit);
-          upcomingRewards.push({
-            at: clock + TRICK_REWARD.startDelaySeconds + TRICK_REWARD.winnerHoldSeconds,
-            start: () => startReward(destinationFor(winner), roundOver, color),
-          });
-        }
-      }
-    }
+    // A finished trick's reward waits for the table director
+    // (playTrickReward), in step with the camera and announcements.
 
     const counts = new Map<SeatId, number>();
     for (const player of state.players) {
@@ -369,16 +362,20 @@ export function createCardTable({
       return dealPending;
     },
     applyState,
+    playTrickReward(done) {
+      const winner = game?.state()?.currentTrick.winnerUsername;
+      const state = game?.state();
+      if (!winner || !state) {
+        done();
+        return;
+      }
+      const roundOver = state.players.every((player) => player.handCount === 0);
+      startReward(destinationFor(winner), roundOver, trumpColor(state.trumpSuit), done);
+    },
     refused: () => cards.cancelPlay(),
     redealDemo,
     playTestReward,
     update(deltaSeconds) {
-      clock += deltaSeconds;
-      for (let i = upcomingRewards.length - 1; i >= 0; i--) {
-        if (clock < upcomingRewards[i].at) continue;
-        const [due] = upcomingRewards.splice(i, 1);
-        due.start();
-      }
       deal.update(deltaSeconds);
       cards.update(deltaSeconds);
       rewards.update(deltaSeconds);

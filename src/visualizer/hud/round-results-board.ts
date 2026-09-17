@@ -14,9 +14,11 @@ export interface ResultsBoard {
   dispose(): void;
 }
 
-// A round's results as a grid of equal cards, one per player, three to a row:
-// headshot and name, the result lines beside. Cards appear in the order given
-// (best round first), one every revealSeconds; onReveal fires as each shows.
+// A round's results as equal cards, one per player, up to three to a row and
+// centred: headshot and name, the result lines below. A single best score is
+// highlighted with a crown; a tie for best highlights no one. Cards appear in
+// the order given (best round first), one every revealSeconds; onReveal fires
+// as each shows.
 export function createResultsBoard(
   container: HTMLElement,
   cards: readonly ResultCard[],
@@ -25,8 +27,10 @@ export function createResultsBoard(
 ): ResultsBoard {
   const grid = document.createElement("div");
   grid.className = "hud-results";
-  grid.style.setProperty("--columns", String(Math.max(1, Math.min(3, cards.length))));
   container.append(grid);
+  // The round's winner: only a single best score counts, a tie has none.
+  const best = Math.max(...cards.map((card) => card.points));
+  const winner = cards.filter((card) => card.points === best).length === 1 ? best : null;
 
   const timers: number[] = [];
   let disposed = false;
@@ -34,6 +38,7 @@ export function createResultsBoard(
   const build = (card: ResultCard) => {
     const element = document.createElement("div");
     element.className = "hud-result";
+    element.classList.toggle("is-winner", card.points === winner);
 
     const face = document.createElement("figure");
     face.className = "hud-opponent-face hud-result-face";

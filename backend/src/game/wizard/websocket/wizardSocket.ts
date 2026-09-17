@@ -4,6 +4,7 @@ import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import type { Suit } from "../models/card.js";
+import { isBotName, seatNameFor } from "../models/bot.js";
 
 interface SocketQuery {
 	token?: string;
@@ -107,11 +108,15 @@ export function registerWizardSocket(
 
 			const game = wizardSessionManager.getGame(roomId);
 
-			if (!game || !game.players.some((player) => player.username === username)) {
+			// Watching an all-NPC game: the host sits (and sees the table) as "<host> NPC".
+			const seatName = game && seatNameFor(username, game.players);
+
+			if (!game || !seatName) {
 				socket.close(1008, "You are not a player in this game");
 				return;
 			}
 
+			username = seatName;
 			const connection: RoomConnection = { socket, username };
 			const roomConnections = connections.get(roomId) ?? new Set();
 			roomConnections.add(connection);
@@ -129,6 +134,12 @@ export function registerWizardSocket(
 					message = JSON.parse(rawMessage.toString()) as SocketMessage;
 				} catch {
 					sendJson(socket, { type: "error", error: "Invalid message" });
+					return;
+				}
+
+				// The server plays a watched NPC's moves.
+				if (isBotName(username)) {
+					sendJson(socket, { type: "error", error: "You are watching this game" });
 					return;
 				}
 

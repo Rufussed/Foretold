@@ -1,4 +1,5 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
+import { isBotName } from "../../backend/src/game/wizard/models/bot";
 
 // The local player's side of a live game, shared by the parts of the
 // visualiser that read game state and send moves.
@@ -18,4 +19,9 @@ export function localPlayer(game: GameConnection) {
 export function isLocalTurn(game: GameConnection): boolean {
   const state = game.state();
   return state?.players[state.currentPlayerIndex]?.username === game.localUsername;
+}
+
+// False when watching your own NPC play (an all-NPC game): the server makes its moves.
+export function canAct(game: GameConnection): boolean {
+  return !isBotName(game.localUsername);
 }

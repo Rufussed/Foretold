@@ -19,7 +19,8 @@ export interface RewardPlan {
 }
 
 export interface TrickRewards {
-  play(plan: RewardPlan): void;
+  // onDone: called once the reward has finished (the tesseract has gone).
+  play(plan: RewardPlan, onDone?: () => void): void;
   update(deltaSeconds: number): void;
   // Development aid: every reward in progress.
   debug(): Array<{ phase: string; elapsed: number; scale: number; position: number[] | null }>;
@@ -39,6 +40,7 @@ interface Reward {
   lastHead: THREE.Vector3 | null;
   phase: string;
   scale: number;
+  onDone?: () => void;
 }
 
 const clamp01 = (t: number) => Math.min(Math.max(t, 0), 1);
@@ -64,6 +66,11 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
 
   const toLocal = (world: THREE.Vector3) => environment.worldToLocal(world.clone());
 
+  const finish = (index: number) => {
+    const [done] = rewards.splice(index, 1);
+    done?.onDone?.();
+  };
+
   // Where it hovers and where it dives to, in environment space.
   const destinationPoints = (reward: Reward) => {
     const destination = reward.plan.destination!;
@@ -82,7 +89,7 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
   };
 
   return {
-    play(plan) {
+    play(plan, onDone) {
       const gathered = plan.cards.map((card) => {
         const copy = card.clone(true);
         copy.visible = true;
@@ -92,7 +99,7 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
         environment.add(copy);
         return { copy, from: copy.position.clone(), fromScale: copy.scale.clone() };
       });
-      rewards.push({ plan, gathered, tesseract: null, elapsed: 0, lastHead: null, phase: "gather", scale: 0 });
+      rewards.push({ plan, gathered, tesseract: null, elapsed: 0, lastHead: null, phase: "gather", scale: 0, onDone });
     },
 
     update(deltaSeconds) {
@@ -124,7 +131,7 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
         }
 
         if (!reward.plan.destination) {
-          if (t >= gather) rewards.splice(index, 1);
+          if (t >= gather) finish(index);
           continue;
         }
         if (t < gather) continue;
@@ -132,7 +139,7 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
         if (!reward.tesseract) {
           if (!model) {
             // Still loading; give up rather than wait forever.
-            if (t > gather + 5) rewards.splice(index, 1);
+            if (t > gather + 5) finish(index);
             continue;
           }
           reward.tesseract = createTesseract(model, environment);
@@ -165,7 +172,7 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
           scale = peakScale * (1 - k);
         } else {
           tesseract.dispose();
-          rewards.splice(index, 1);
+          finish(index);
           continue;
         }
 

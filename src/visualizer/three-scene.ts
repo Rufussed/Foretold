@@ -36,7 +36,8 @@ export interface SceneView {
   whenIntroDone(callback: () => void): void;
   // Turns the camera toward a point in the world, or back to its normal view
   // with null. A change of point switches orbit controls off.
-  lookToward(point: THREE.Vector3 | null): void;
+  // onArrive: called once the camera has finished turning there.
+  lookToward(point: THREE.Vector3 | null, onArrive?: () => void): void;
 }
 
 export interface WizardSceneOptions {
@@ -311,7 +312,7 @@ export function createWizardScene(
           if (introDone) callback();
           else introWaiters.push(callback);
         },
-        lookToward: (point) => {
+        lookToward: (point, onArrive) => {
           const changed = point === null ? lookingAt !== null : !lookingAt?.equals(point);
           lookingAt = point ? point.clone() : null;
           // Orbit controls are for testing: when the turn moves the camera,
@@ -321,7 +322,8 @@ export function createWizardScene(
             applyOrbit();
             console.info("[camera] orbit controls off: following the turn");
           }
-          follow?.setTarget(point);
+          if (follow) follow.setTarget(point, onArrive);
+          else onArrive?.();
         },
       });
 

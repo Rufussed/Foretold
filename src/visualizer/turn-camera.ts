@@ -1,28 +1,32 @@
 import * as THREE from "three";
 import { CAMERA_FOLLOW } from "./config";
-import { isLocalTurn, type GameConnection } from "./game-connection";
 import type { SeatId } from "./player-characters";
 import type { TableLayout } from "./table-layout";
 import type { SceneView } from "./three-scene";
+
+export interface TurnCamera {
+  // Turns toward a player, or back to the normal view for null (also used for
+  // you); done once the camera is there.
+  lookAt(username: string | null, done: () => void): void;
+}
 
 export interface TurnCameraOptions {
   view: SceneView;
   environment: THREE.Object3D;
   layout: TableLayout;
-  game: GameConnection;
+  localUsername: string;
   seatOf(username: string): SeatId | null;
 }
 
-// Turns the camera toward whoever's turn it is, whether they're bidding,
-// choosing trump or playing. On your own turn, and once the game is over, it
-// eases back to the normal view.
+// Turns the camera toward a player at the table: whoever's move it is, or a
+// trick's winner. The table director says when.
 export function createTurnCamera({
   view,
   environment,
   layout,
-  game,
+  localUsername,
   seatOf,
-}: TurnCameraOptions): { applyState(): void } {
+}: TurnCameraOptions): TurnCamera {
   const aims = new Map<SeatId, THREE.Vector3>();
 
   // Just above the middle of that player's card set, which faces them.
@@ -40,14 +44,10 @@ export function createTurnCamera({
   };
 
   return {
-    applyState() {
-      const state = game.state();
-      const current = state?.players[state.currentPlayerIndex];
+    lookAt(username, done) {
       const seat =
-        CAMERA_FOLLOW.enabled && state && state.phase !== "finished" && current && !isLocalTurn(game)
-          ? seatOf(current.username)
-          : null;
-      view.lookToward(seat === null ? null : aimAt(seat));
+        CAMERA_FOLLOW.enabled && username !== null && username !== localUsername ? seatOf(username) : null;
+      view.lookToward(seat === null ? null : aimAt(seat), done);
     },
   };
 }

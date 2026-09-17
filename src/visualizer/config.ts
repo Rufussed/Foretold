@@ -100,10 +100,9 @@ export const CAMERA_FOLLOW = {
   // How long a turn takes, in seconds, easing in and out.
   turnSeconds: 3,
 
-  // Pause after the turn changes before the camera starts turning, in seconds:
-  // long enough for another player's card to reach the play area
-  // (OPPONENT_PLAYS: 0.4s up out of the hand plus 0.6s across).
-  delaySeconds: 1,
+  // Pause before the camera starts turning, in seconds. The table director
+  // already waits for cards to land, so the turn starts with its announcement.
+  delaySeconds: 0,
 
   // Aim this far above the middle of the player's card set, in scene units:
   // raise it to centre on their face rather than their cards.
@@ -429,7 +428,7 @@ export const CARD_HANDLING = {
 
 export const DEALING = {
   // How far above the top of the stack a card travels, in scene units.
-  liftHeight: 0.35,
+  liftHeight: 0.9,
 
   // Rising straight up off the stack, staying flat.
   liftSeconds: 0.15,
@@ -437,8 +436,13 @@ export const DEALING = {
   // Travelling flat to above where it's going.
   travelSeconds: 0.35,
 
+  // How far past its place the card carries on, away from the table's middle,
+  // before it turns and settles back into the fan: without this it turns where
+  // it lands and clips through the cards beside it. In scene units.
+  approachDistance: 1,
+
   // Turning into place as it settles.
-  settleSeconds: 0.25,
+  settleSeconds: 0.5,
 
   // Time between one card leaving the stack and the next. Shorter than the
   // three phases above means several cards are in the air at once.
