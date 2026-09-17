@@ -15,6 +15,11 @@ interface PlayerRow {
   avatar: string | null;
 }
 
+type JoinRoomResult =
+  | { success: true; room: Room; alreadyMember: boolean }
+  | { success: false; reason: "not-found" | "playing" | "full" | "user-not-found" };
+
+
 class WizardLobbyManager {
   private getRoomPlayers(roomId: number): RoomPlayer[] {
     const rows = db
@@ -107,94 +112,90 @@ class WizardLobbyManager {
     return this.getRoomById(roomId) as Room;
   }
 
-  joinRoom(roomId: number, username: string): Room | null {
-    const room = this.getRoomById(roomId);
+  joinRoom(roomId: number, username: string): JoinRoomResult {
+    const join = db.transaction((): JoinRoomResult => {
+      const room = this.getRoomById(roomId);
 
-    if (!room) {
-        return null;
-    }
+      if (!room) {
+        return { success: false, reason: "not-found" };
+      }
 
-    if (room.players.some((player) => player.username === username)) {
-        return room;
-    }
+      if (room.players.some((player) => player.username === username)) {
+        return {
+          success: true,
+          room,
+          alreadyMember: true,
+        };
+      }
 
-    if (room.status !== "waiting") {
-        return null;
-    }
+      if (room.status !== "waiting") {
+        return { success: false, reason: "playing" };
+      }
 
-    if (room.players.length >= room.maxPlayers) {
-        return null;
-    }
+      if (room.players.length >= room.maxPlayers) {
+        return { success: false, reason: "full" };
+      }
 
-    const userRow = db
-      .prepare(
-        `
+      const userRow = db
+        .prepare(`
           SELECT id
           FROM users
           WHERE username = ?
-        `,
-      )
-      .get(username) as { id: number } | undefined;
+        `)
+        .get(username) as { id: number } | undefined;
 
-    if (!userRow) {
-      return null;
-    }
+      if (!userRow) {
+        return { success: false, reason: "user-not-found" };
+      }
 
-    db.prepare(
-      `
-        INSERT OR IGNORE INTO room_players (room_id, user_id, username)
+      db.prepare(`
+        INSERT INTO room_players (room_id, user_id, username)
         VALUES (?, ?, ?)
-      `,
-    ).run(roomId, userRow.id, username);
+      `).run(roomId, userRow.id, username);
 
-    return this.getRoomById(roomId);
+      return {
+        success: true,
+        room: this.getRoomById(roomId) as Room,
+        alreadyMember: false,
+      };
+    });
+
+    return join();
   }
 
-  deleteRoom(
-    roomId: number,
-    userId: number,
-  ): boolean {
+  deleteRoom(roomId: number, userId: number): boolean {
     const room = db
       .prepare(`
         SELECT id, created_by, status
         FROM rooms
         WHERE id = ?
       `)
-      .get(roomId) as {
-        id: number;
-        created_by: number;
-        status: string;
-      } | undefined;
-  
-    if (!room) {
-      return false;
-    }
-  
-    if (room.created_by !== userId) {
-      return false;
-    }
-  
-    // if (room.status !== "waiting") {
-    //   return false;
-    // }
-  
+      .get(roomId) as
+        | { id: number; created_by: number; status: string }
+        | undefined;
+
+    if (!room) return false;
+    if (room.created_by !== userId) return false;
+    if (room.status !== "waiting") return false;
+
     const deleteRoom = db.transaction(() => {
       db.prepare(`
         DELETE FROM room_players
         WHERE room_id = ?
       `).run(roomId);
-  
+
       db.prepare(`
         DELETE FROM rooms
         WHERE id = ?
       `).run(roomId);
     });
-  
+
     deleteRoom();
-  
+
     return true;
   }
 
+  //most likely useless, but the idea is to restart games from where they left off
   resetStalePlayingRooms(activeRoomIds: Set<number>): void {
     const rooms = db.prepare(`
       SELECT id
@@ -220,36 +221,12 @@ class WizardLobbyManager {
       UPDATE rooms
       SET status = 'waiting'
       WHERE status = 'playing'
+        AND id NOT IN (
+          SELECT room_id
+          FROM games
+          WHERE status != 'finished'
+        )
     `).run();
-  }
-
-  deleteFinishedRoom(roomId: number): boolean {
-    const room = db.prepare(`
-      SELECT id, status
-      FROM rooms
-      WHERE id = ?
-    `).get(roomId) as {
-      id: number;
-      status: string;
-    } | undefined;
-
-    if (!room) return false;
-    if (room.status !== "playing") return false;
-
-    const deleteRoom = db.transaction(() => {
-      db.prepare(`
-        DELETE FROM room_players
-        WHERE room_id = ?
-      `).run(roomId);
-
-      db.prepare(`
-        DELETE FROM rooms
-        WHERE id = ?
-      `).run(roomId);
-    });
-
-    deleteRoom();
-    return true;
   }
 
   // Returns false when someone else in the room already holds the avatar. The

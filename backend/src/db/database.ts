@@ -16,6 +16,9 @@ mkdirSync(path.dirname(databasePath), { recursive: true });
 
 const db = new Database(databasePath);
 
+//to enforce foregin-key constraints
+db.pragma("foreign_keys = ON");
+
 const schemaPath = path.resolve(currentDirectory, "schema.sql");
 const schema = readFileSync(schemaPath, "utf8");
 

@@ -167,7 +167,13 @@ export class WizardGameService {
 
     game.trumpCard = trumpCard;
 
-    if (isJester(trumpCard) || isWizard(trumpCard)) {
+    if (isJester(trumpCard)) {
+      game.trumpSuit = null;
+      game.phase = "predictions";
+      return;
+    }
+
+    if (isWizard(trumpCard)) {
       game.trumpSuit = null;
       game.phase = "trump-selection";
       return;

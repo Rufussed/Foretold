@@ -183,15 +183,33 @@ export default async function wizardRoutes(
       });
     }
 
-    const room = wizardLobbyManager.joinRoom(body.roomId, username);
+    const result = wizardLobbyManager.joinRoom(body.roomId, username);
 
-    if (!room) {
-      return reply.status(400).send({
-        error: "Could not join room",
+    if (!result.success) {
+      if (result.reason === "not-found") {
+        return reply.status(404).send({
+          error: "Room not found",
+        });
+      }
+
+      if (result.reason === "playing") {
+        return reply.status(409).send({
+          error: "Game already started",
+        });
+      }
+
+      if (result.reason === "full") {
+        return reply.status(409).send({
+          error: "Room is full",
+        });
+      }
+
+      return reply.status(401).send({
+        error: "User not found",
       });
     }
 
-    return reply.send(room);
+    return reply.send(result.room);
   });
 
   // First come, first served: a second claim of the same avatar in a room is
@@ -321,7 +339,7 @@ export default async function wizardRoutes(
       return reply.status(400).send({ error: "Invalid room ID" });
     }
 
-    if (!tokenUser.sub) {
+    if (tokenUser.sub === undefined) {
       return reply.status(401).send({ error: "User identity missing" });
     }
 

@@ -1,26 +1,40 @@
 import type { WizardGameState } from "../models/wizardGame.js";
+import { wizardGameRepository } from "./wizardGameRepository.js";
 
 export class WizardSessionManager {
   private readonly games = new Map<number, WizardGameState>();
 
-  // This in-memory store is the single source of truth for active games. It
-  // currently does not survive a backend restart.
   saveGame(game: WizardGameState): void {
     this.games.set(game.roomId, game);
+    wizardGameRepository.saveGame(game);
   }
 
-  //checks and sabes in one synchronous operation
+  // Checks and saves in one synchronous operation.
   saveGameIfAbsent(game: WizardGameState): boolean {
     if (this.games.has(game.roomId)) {
       return false;
     }
 
     this.games.set(game.roomId, game);
+    wizardGameRepository.saveGame(game);
     return true;
   }
 
   getGame(roomId: number): WizardGameState | null {
-    return this.games.get(roomId) ?? null;
+    const activeGame = this.games.get(roomId);
+
+    if (activeGame) {
+      return activeGame;
+    }
+
+    const savedGame = wizardGameRepository.loadGame(roomId);
+
+    if (!savedGame || savedGame.status === "finished") {
+      return null;
+    }
+
+    this.games.set(roomId, savedGame);
+    return savedGame;
   }
 
   hasGame(roomId: number): boolean {
@@ -30,7 +44,6 @@ export class WizardSessionManager {
   deleteGame(roomId: number): void {
     this.games.delete(roomId);
   }
-
 }
 
 export const wizardSessionManager = new WizardSessionManager();
