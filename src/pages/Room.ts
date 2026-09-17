@@ -102,11 +102,13 @@ export async function renderRoomPage(
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
   let humanCount = 0;
+  let maxPlayers = 0;
 
   // Rounds to choose from: a full game for this many players down to 1. A
   // longer choice than the new player count allows falls back to a full game.
   const updateRoundOptions = () => {
-    const full = fullRoundCount(humanCount + Number(botsEl.value || 0));
+    // The all-NPC option replaces the host, so the table is never over full.
+    const full = fullRoundCount(Math.min(humanCount + Number(botsEl.value || 0), maxPlayers));
     const values = full ? Array.from({ length: full }, (_, index) => String(full - index)) : [];
     const current = [...roundsEl.options].map((option) => option.value);
     if (current.join() === values.join()) return;
@@ -179,9 +181,12 @@ export async function renderRoomPage(
     waitingEl.hidden = isHost;
 
     if (isHost) {
-      // A game needs 3 to 6 players; bots make up the difference.
+      // A game needs 3 to 6 players; bots make up the difference. Alone, the
+      // host can also pick one NPC per seat: an all-NPC game, played by
+      // "<host> NPC" while they watch.
+      const freeSeats = room.maxPlayers - room.players.length;
       const minimumBots = Math.max(0, 3 - room.players.length);
-      const maximumBots = room.maxPlayers - room.players.length;
+      const maximumBots = room.players.length === 1 ? room.maxPlayers : freeSeats;
       const options = Array.from(
         { length: Math.max(0, maximumBots - minimumBots + 1) },
         (_, index) => String(minimumBots + index),
@@ -191,12 +196,17 @@ export async function renderRoomPage(
       if (current.join() !== options.join()) {
         const selected = botsEl.value;
         botsEl.replaceChildren(
-          ...options.map((value) => new Option(value, value)),
+          ...options.map((value) =>
+            new Option(Number(value) > freeSeats ? `${value} (watch your NPC)` : value, value),
+          ),
         );
-        botsEl.value = options.includes(selected) ? selected : options[0] ?? "";
+        // Every free seat filled, unless the host already chose.
+        const fallback = options.includes(String(freeSeats)) ? String(freeSeats) : options[0] ?? "";
+        botsEl.value = current.length && options.includes(selected) ? selected : fallback;
       }
 
       humanCount = room.players.length;
+      maxPlayers = room.maxPlayers;
       updateRoundOptions();
       startButton.disabled = options.length === 0;
     }

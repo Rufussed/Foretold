@@ -1,5 +1,5 @@
 import { forbiddenPrediction } from "../../backend/src/game/wizard/gameplayRules";
-import { isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
+import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 
 export interface PredictionPrompt {
   // Call after every game-state update; opens or closes the prompt.
@@ -78,6 +78,9 @@ export function createPredictionPrompt(
     sending = true;
     setButtonsEnabled(false);
     button.classList.add("is-chosen");
+    // Close straight away: the table may still be showing earlier moves when
+    // the server's answer arrives. It reopens if the server refuses.
+    modal.hidden = true;
   });
 
   return {
@@ -85,6 +88,7 @@ export function createPredictionPrompt(
       const state = game.state();
       const open =
         state?.phase === "predictions" &&
+        canAct(game) &&
         isLocalTurn(game) &&
         localPlayer(game)?.prediction === null &&
         !options.blocked?.();
@@ -101,7 +105,8 @@ export function createPredictionPrompt(
       const forbidden = forbiddenPrediction(state.players, cardsDealt);
       if (builtFor !== `${cardsDealt}:${forbidden}`) buildOptions(cardsDealt, forbidden);
       roundEl.textContent = `Round ${state.currentRound} of ${state.totalRounds} · ${cardsDealt} ${cardsDealt === 1 ? "card" : "cards"}`;
-      if (!sending) setButtonsEnabled(true);
+      if (sending) return;
+      setButtonsEnabled(true);
       modal.hidden = false;
     },
 
@@ -111,6 +116,7 @@ export function createPredictionPrompt(
       setButtonsEnabled(true);
       for (const button of optionsEl.querySelectorAll(".is-chosen")) button.classList.remove("is-chosen");
       errorEl.textContent = message;
+      modal.hidden = false;
     },
 
     dispose() {

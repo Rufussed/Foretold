@@ -1,7 +1,7 @@
 import type { Suit } from "../../backend/src/game/wizard/models/card";
 import { trumpColor } from "./card-textures";
 import { CARDS } from "./config";
-import { isLocalTurn, type GameConnection } from "./game-connection";
+import { canAct, isLocalTurn, type GameConnection } from "./game-connection";
 
 export interface TrumpPrompt {
   // Call after every game-state update; opens or closes the prompt.
@@ -81,7 +81,7 @@ export function createTrumpPrompt(
   return {
     applyState() {
       const state = game.state();
-      const open = state?.phase === "trump-selection" && isLocalTurn(game) && !options.blocked?.();
+      const open = state?.phase === "trump-selection" && canAct(game) && isLocalTurn(game) && !options.blocked?.();
 
       if (!state || !open) {
         modal.hidden = true;

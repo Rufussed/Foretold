@@ -9,6 +9,8 @@ import { createSelfRoundStats } from "./self-round-stats";
 export interface GameHud extends HudPart {
   // The server refused a move, with its reason.
   refused(error: string): void;
+  // Calls done once every announcement has had its time.
+  whenIdle(done: () => void): void;
 }
 
 // The in-game overlay: what's going on (top centre), the game status and
@@ -27,6 +29,7 @@ export function createGameHud(
   return {
     applyState: () => parts.forEach((part) => part.applyState()),
     dispose: () => parts.forEach((part) => part.dispose()),
+    whenIdle: (done) => announcer.whenIdle(done),
     refused(error) {
       const state = game.state();
       // The server's words for a card that doesn't follow suit.

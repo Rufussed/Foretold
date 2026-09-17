@@ -1167,27 +1167,30 @@ button:hover {
   white-space: pre-line; /* round results put the total on its own line */
 }
 
-/* Round results: a board of equal cards, three to a row. */
-/* At the top, only as wide as the cards need, centred in the space left of the
-   240px score panel so the totals it flashes stay in view. (Phones: below the
-   panel instead, see announcer.ts.) */
+/* Round results: a board of equal cards, three to a row, centred on screen at
+   the top. (Phones: below the score panel instead, see announcer.ts.) */
+/* The cards carry their own boxes, so the banner itself has none. */
 .visualizer-page .hud-announcer.has-results {
-  left: calc((100% - 256px) / 2);
+  left: 50%;
   right: auto;
   width: max-content;
-  max-width: calc(100% - 288px);
-  transform: translateX(-50%);
-  max-width: none;
+  max-width: calc(100% - 32px);
+  padding: 0;
   text-align: left;
+  background: none;
+  transform: translateX(-50%);
+  backdrop-filter: none;
 }
 
+/* Up to three equal cards to a row; a shorter last row is centred. */
 .hud-results {
-  display: grid;
-  /* Up to three equal columns, each as wide as the widest card needs
-     (--columns is set to the number of cards, at most 3). */
-  grid-template-columns: repeat(var(--columns, 3), minmax(0, 1fr));
-  grid-auto-rows: 1fr;
+  --card-width: 200px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: stretch;
   gap: 10px;
+  max-width: calc(3 * var(--card-width) + 2 * 10px);
 }
 
 /* Headshot and name on one line, the breakdown below it. */
@@ -1195,11 +1198,40 @@ button:hover {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: start;
+  box-sizing: border-box;
+  width: var(--card-width);
   gap: 10px;
   padding: 10px;
-  background: rgb(255 255 255 / 7%);
+  /* The same box as the HUD panels (.hud-panel). */
+  background: rgb(23 32 51 / 60%);
+  border: 2px solid transparent;
   border-radius: 10px;
+  backdrop-filter: blur(4px);
   animation: hud-result-in 0.3s ease-out;
+}
+
+/* The round's best score: yellow, with a crown on the headshot. */
+.hud-result.is-winner {
+  background: rgb(120 95 10 / 65%);
+  border-color: #ffd54f;
+}
+
+.hud-result.is-winner .hud-result-lines dd:last-of-type {
+  color: #ffd54f;
+}
+
+.hud-results .hud-result-face {
+  position: relative;
+}
+
+.hud-result.is-winner .hud-result-face::before {
+  content: "👑";
+  position: absolute;
+  top: -13px;
+  left: 18px;
+  font-size: 18px;
+  line-height: 1;
+  transform: translateX(-50%);
 }
 
 .hud-results .hud-result-face img {
@@ -1315,7 +1347,7 @@ button:hover {
   }
 
   .visualizer-page .hud-results {
-    grid-template-columns: minmax(0, 1fr);
+    --card-width: 100%;
   }
 
 
@@ -1362,4 +1394,54 @@ button:hover {
   padding: 2px 8px;
   font-size: 18px;
   background: transparent;
+}
+
+/* Game over: the winner's headshot, large, under the announcement, with a big
+   crown on top. A tie shows everyone on the top score, uncrowned. */
+.hud-game-winner {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.hud-game-winner-face {
+  position: relative;
+  margin: 0;
+  padding-top: 34px;
+}
+
+.hud-game-winner-face img {
+  display: block;
+  width: 128px;
+  height: 128px;
+  background: rgb(255 255 255 / 12%);
+  border: 3px solid #ffd54f;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.hud-game-winner:not(.is-tie) .hud-game-winner-face::before {
+  content: "👑";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  font-size: 52px;
+  line-height: 1;
+  transform: translateX(-50%);
+}
+
+.hud-game-winner.is-tie .hud-game-winner-face img {
+  border-color: rgb(255 255 255 / 40%);
+}
+
+@media (max-width: 640px) {
+  .hud-game-winner-face img {
+    width: 88px;
+    height: 88px;
+  }
+
+  .hud-game-winner:not(.is-tie) .hud-game-winner-face::before {
+    font-size: 36px;
+  }
 }

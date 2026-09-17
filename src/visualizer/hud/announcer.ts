@@ -3,6 +3,7 @@ import { ANNOUNCER } from "../config";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer, characterForUsername } from "../seat-mapping";
 import { eventMessages, roundResults, statusMessage } from "./announcements";
+import { createGameWinner } from "./game-winner";
 import { createResultsBoard, type ResultCard, type ResultsBoard } from "./round-results-board";
 import type { HudPart } from "./hud-part";
 
@@ -10,6 +11,9 @@ export interface Announcer extends HudPart {
   // Shows this straight away, ahead of anything queued, for
   // ANNOUNCER.noticeSeconds or until the next card is played.
   notice(text: string): void;
+  // Calls done once every one-off announcement (results included) has had
+  // its time and none is queued; straight away if none is.
+  whenIdle(done: () => void): void;
 }
 
 // How the announcer holds back the score table while round results are read out.
@@ -43,6 +47,9 @@ export interface AnnouncerOptions {
   // While true (cards being dealt), only last round's results show; everything
   // else waits until the deal has landed, trump card included.
   blocked?(): boolean;
+  // While true, the standing "whose move" line stays hidden (the table
+  // director shows it when the camera starts turning to that player).
+  statusBlocked?(): boolean;
 }
 
 export function createAnnouncer(
@@ -59,6 +66,8 @@ export function createAnnouncer(
   root.append(banner);
   const textEl = banner.querySelector<HTMLElement>(".hud-announcer-text")!;
   let board: ResultsBoard | null = null;
+  // Game over: the winner's portrait under the announcement.
+  let winner: { dispose(): void } | null = null;
 
   const queue: Announcement[] = [];
   let showing = false;
@@ -67,6 +76,14 @@ export function createAnnouncer(
   let shown: Announcement | null = null;
   // While a notice waits for the next play: the play it was shown at.
   let shownAtPlay: string | null = null;
+  let idleWaiters: Array<() => void> = [];
+
+  const flushIdleWaiters = () => {
+    if (showing || queue.length) return;
+    const waiters = idleWaiters;
+    idleWaiters = [];
+    waiters.forEach((done) => done());
+  };
 
   const show = (next: Announcement | null) => {
     if (!next?.text && !next?.results) return;
@@ -77,6 +94,8 @@ export function createAnnouncer(
 
     board?.dispose();
     board = null;
+    winner?.dispose();
+    winner = null;
     banner.classList.toggle("has-results", !!next.results);
     // On phones the score panel shares the top of the screen, so the results
     // board goes just below it; elsewhere CSS keeps it at the top, beside it.
@@ -93,6 +112,10 @@ export function createAnnouncer(
         scores.revealScore(card.username, card.points),
       );
     }
+    const state = game.state();
+    if (!next.results && state?.phase === "finished" && next.text === statusMessage(state, game.localUsername)) {
+      winner = createGameWinner(banner, state);
+    }
     // Restart the fade-in for each new line.
     banner.classList.remove("is-new");
     void banner.offsetWidth;
@@ -104,10 +127,12 @@ export function createAnnouncer(
     shown = null;
     board?.dispose();
     board = null;
+    winner?.dispose();
+    winner = null;
   };
 
   const showStatus = () => {
-    if (options.blocked?.()) {
+    if (options.blocked?.() || options.statusBlocked?.()) {
       hide();
       return;
     }
@@ -124,6 +149,7 @@ export function createAnnouncer(
     if (!next) {
       showing = false;
       showStatus();
+      flushIdleWaiters();
       return;
     }
     showing = true;
@@ -188,8 +214,14 @@ export function createAnnouncer(
       showNext();
     },
 
+    whenIdle(done) {
+      idleWaiters.push(done);
+      flushIdleWaiters();
+    },
+
     dispose() {
       window.clearTimeout(timer);
+      idleWaiters = [];
       banner.remove();
     },
   };
