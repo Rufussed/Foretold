@@ -148,12 +148,27 @@ export function registerWizardSocket(
 
 				try {
 					if (message.type === "submit_prediction") {
+						if (
+							typeof message.prediction !== "number" ||
+							!Number.isInteger(message.prediction) ||
+							message.prediction < 0
+						) {
+							throw new Error("Invalid prediction");
+						}
+
 						gameService.submitPrediction(
 							currentGame,
 							username,
-							Number(message.prediction),
+							message.prediction,
 						);
 					} else if (message.type === "play_card") {
+						if (
+							typeof message.cardIndex !== "number" ||
+							!Number.isInteger(message.cardIndex) ||
+							message.cardIndex < 0
+						) {
+							throw new Error("Invalid card index");
+						}
 
 						const currentPlayer =
 							currentGame.players[currentGame.currentPlayerIndex];
@@ -162,18 +177,17 @@ export function registerWizardSocket(
 							throw new Error("It is not your turn");
 						}
 
-						gameService.playCard(currentGame, Number(message.cardIndex));
-
+						gameService.playCard(currentGame, message.cardIndex);
 					} else if (message.type === "choose_trump") {
+						if (!isSuit(message.suit)) {
+							throw new Error("Invalid suit");
+						}
 
 						gameService.chooseTrumpSuit(
 							currentGame,
 							username,
-							message.suit as Suit,
+							message.suit,
 						);
-
-					} else {
-						throw new Error("Unknown action");
 					}
 
 					wizardSessionManager.saveGame(currentGame);

@@ -385,13 +385,7 @@ export default async function wizardRoutes(
         error: "roomId is required",
       });
     }
-    
-    if (wizardSessionManager.hasGame(body.roomId)) {
-      return reply.status(409).send({
-        error: "A game already exists for this room",
-      });
-    }
-    
+  
     const room = wizardLobbyManager.getRoomById(body.roomId);
     
     if (!room) {
@@ -453,11 +447,22 @@ export default async function wizardRoutes(
     const players = [...humans, ...botNames];
 
     try {
-      const game = wizardGameService.createGame(room.id, players, claims, maxRounds);
-      
-      wizardLobbyManager.setRoomStatus(room.id, "playing");
+      const game = wizardGameService.createGame(
+        room.id,
+        players,
+        claims,
+        maxRounds,
+      );
+
       game.status = "playing";
-      wizardSessionManager.saveGame(game);
+
+      if (!wizardSessionManager.saveGameIfAbsent(game)) {
+        return reply.status(409).send({
+          error: "A game already exists for this room",
+        });
+      }
+
+      wizardLobbyManager.setRoomStatus(room.id, "playing");
 
       void wizardGameRunner.run(room.id);
 
@@ -466,9 +471,10 @@ export default async function wizardRoutes(
       );
     } catch (error) {
       return reply.status(400).send({
-        error: error instanceof Error
-        ? error.message
-        : "Could not create game",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not create game",
       });
     }
   });

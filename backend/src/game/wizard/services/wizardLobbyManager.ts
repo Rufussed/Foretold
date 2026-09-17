@@ -111,15 +111,19 @@ class WizardLobbyManager {
     const room = this.getRoomById(roomId);
 
     if (!room) {
-      return null;
+        return null;
     }
 
     if (room.players.some((player) => player.username === username)) {
-      return room;
+        return room;
+    }
+
+    if (room.status !== "waiting") {
+        return null;
     }
 
     if (room.players.length >= room.maxPlayers) {
-      return null;
+        return null;
     }
 
     const userRow = db

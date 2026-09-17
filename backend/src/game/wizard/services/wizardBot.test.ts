@@ -1,50 +1,69 @@
 import assert from "node:assert/strict";
+import { describe, it } from "vitest";
+
 import { WizardGameService } from "./wizardGameService.js";
 import { WizardBotService } from "./wizardBotService.js";
-import { isJester } from "../models/card.js";
-import { WizardRules } from "./wizardRules.js";
 
-const gameService = new WizardGameService();
-const botService = new WizardBotService(gameService);
-const rules = new WizardRules();
+describe("WizardBotService", () => {
+  it("identifies bot players", () => {
+    const gameService = new WizardGameService();
+    const botService = new WizardBotService(gameService);
 
-const game = gameService.createGame(
-  1,
-  ["alice", "Merlin NPC", "Morgana NPC", "Esmeralda NPC"],
-);
+    assert.equal(botService.isBot("Merlin NPC"), true);
+    assert.equal(botService.isBot("alice"), false);
+  });
 
-game.status = "playing";
+  it("chooses a valid trump suit", () => {
+    const gameService = new WizardGameService();
+    const botService = new WizardBotService(gameService);
 
-gameService.submitPrediction(game, "alice", 0);
-// botService.playAvailableTurns(game);
+    const game = gameService.createGame(
+      1,
+      ["alice", "Merlin NPC", "Morgana NPC"],
+    );
 
-while (game.phase !== "finished") {
-  const player = game.players[game.currentPlayerIndex];
+    game.currentPlayerIndex = 1;
 
-  assert.ok(player);
+    const suit = botService.chooseTrumpSuit(game);
 
-  if (player.username === "alice") {
-    if (game.phase === "predictions") {
-      gameService.submitPrediction(game, "alice", 0);
-    } else {
-      	const leadSuit =
-		game.currentTrick.playedCards.find(
-			({ card }) => !isJester(card),
-		)?.card.suit ?? null;
+    assert.ok(
+      ["Blue", "Red", "Yellow", "Green"].includes(suit),
+    );
+  });
 
-		const cardIndex = player.hand.findIndex((card) =>
-		rules.isValidCardPlay(card, player.hand, leadSuit),
-		);
+  it("chooses a legal prediction", () => {
+    const gameService = new WizardGameService();
+    const botService = new WizardBotService(gameService);
 
-		assert.notEqual(cardIndex, -1);
-		gameService.playCard(game, cardIndex);
-    }
-  }
+    const game = gameService.createGame(
+      1,
+      ["alice", "Merlin NPC", "Morgana NPC"],
+    );
 
-  // botService.playAvailableTurns(game);
-}
+    game.currentPlayerIndex = 1;
 
-assert.equal(game.status, "finished");
-assert.equal(game.phase, "finished");
+    const prediction = botService.choosePrediction(game);
 
-console.log("Wizard bot behavior test passed");
+    assert.equal(Number.isInteger(prediction), true);
+    assert.ok(prediction >= 0);
+    assert.ok(prediction <= game.currentRound);
+  });
+
+  it("chooses a legal card", () => {
+    const gameService = new WizardGameService();
+    const botService = new WizardBotService(gameService);
+
+    const game = gameService.createGame(
+      1,
+      ["alice", "Merlin NPC", "Morgana NPC"],
+    );
+
+    game.currentPlayerIndex = 1;
+
+    const cardIndex = botService.chooseCardIndex(game);
+
+    assert.equal(Number.isInteger(cardIndex), true);
+    assert.ok(cardIndex >= 0);
+    assert.ok(cardIndex < game.players[1]!.hand.length);
+  });
+});
