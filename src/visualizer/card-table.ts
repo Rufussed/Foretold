@@ -15,7 +15,8 @@ import { createTableCards, type TableCards } from "./table-cards";
 import { centredSlots, type TableLayout } from "./table-layout";
 import type { SceneView } from "./three-scene";
 import { createTrickRewards, type RewardDestination, type TrickRewards } from "./trick-rewards";
-import { createTrumpCrown } from "./trump-crown";
+//I want to take the crown out of the trump card, commented out all the crown word in file
+// import { createTrumpCrown } from "./trump-crown";
 
 export interface CardTableOptions {
   environment: THREE.Object3D;
@@ -72,7 +73,7 @@ export function createCardTable({
   const opponents = createOpponentHands(factory, layout);
   const deal = createCardDeal(factory, layout);
   const rewards = createTrickRewards(environment);
-  const crown = createTrumpCrown(environment, view.camera, () => cards.trumpCardObject());
+  // const crown = createTrumpCrown(environment, view.camera, () => cards.trumpCardObject());
 
   // Only on your turn while cards are being played; the server has the final
   // say either way. Always allowed on the demo table.
@@ -382,11 +383,11 @@ export function createCardTable({
       deal.update(deltaSeconds);
       cards.update(deltaSeconds);
       rewards.update(deltaSeconds);
-      crown.update(deltaSeconds);
+      // crown.update(deltaSeconds);
     },
     dispose() {
       controls.dispose();
-      crown.dispose();
+      // crown.dispose();
       window.removeEventListener("keydown", onDealKey);
     },
   };
