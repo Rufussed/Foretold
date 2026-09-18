@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 
 import db from "../../../db/database.js";
 import { WizardSessionManager } from "./wizardSessionManager.js";
@@ -7,11 +7,30 @@ import type { WizardGameState } from "../models/wizardGame.js";
 describe("WizardSessionManager", () => {
   it("only saves the first game for a room", () => {
     const manager = new WizardSessionManager();
+    function createTestUser(): number {
+      const user = db.prepare(`
+        INSERT INTO users (
+          username,
+          password_hash,
+          display_name,
+          email
+        )
+        VALUES (?, ?, ?, ?)
+      `).run(
+        `session-test-${Date.now()}-${Math.random()}`,
+        "test-password",
+        "Session Test User",
+        `session-test-${Date.now()}-${Math.random()}@test.local`,
+      );
+
+      return Number(user.lastInsertRowid);
+    }
+    const userId = createTestUser();
 
     const room = db.prepare(`
       INSERT INTO rooms (name, created_by, max_players, status)
       VALUES (?, ?, ?, ?)
-    `).run("Session Test Room", 1, 3, "waiting");
+    `).run("Session Test Room", userId, 3, "waiting");
 
     const roomId = Number(room.lastInsertRowid);
 
@@ -38,11 +57,29 @@ describe("WizardSessionManager", () => {
 
   it("loads an active game from the repository when it is not in memory", () => {
     const manager = new WizardSessionManager();
+    function createTestUser(): number {
+      const user = db.prepare(`
+        INSERT INTO users (
+          username,
+          password_hash,
+          display_name,
+          email
+        )
+        VALUES (?, ?, ?, ?)
+      `).run(
+        `session-test-${Date.now()}-${Math.random()}`,
+        "test-password",
+        "Session Test User",
+        `session-test-${Date.now()}-${Math.random()}@test.local`,
+      );
 
+      return Number(user.lastInsertRowid);
+    }
+    const userId = createTestUser();
     const room = db.prepare(`
       INSERT INTO rooms (name, created_by, max_players, status)
       VALUES (?, ?, ?, ?)
-    `).run("Persistence Test Room", 1, 3, "waiting");
+    `).run("Persistence Test Room", userId, 3, "waiting");
 
     const roomId = Number(room.lastInsertRowid);
 
@@ -66,11 +103,29 @@ describe("WizardSessionManager", () => {
 
   it("does not reload a finished game into memory", () => {
     const manager = new WizardSessionManager();
+    function createTestUser(): number {
+      const user = db.prepare(`
+        INSERT INTO users (
+          username,
+          password_hash,
+          display_name,
+          email
+        )
+        VALUES (?, ?, ?, ?)
+      `).run(
+        `session-test-${Date.now()}-${Math.random()}`,
+        "test-password",
+        "Session Test User",
+        `session-test-${Date.now()}-${Math.random()}@test.local`,
+      );
 
+      return Number(user.lastInsertRowid);
+    }
+    const userId = createTestUser();
     const room = db.prepare(`
       INSERT INTO rooms (name, created_by, max_players, status)
       VALUES (?, ?, ?, ?)
-    `).run("Finished Game Test Room", 1, 3, "waiting");
+    `).run("Finished Game Test Room", userId, 3, "waiting");
 
     const roomId = Number(room.lastInsertRowid);
 

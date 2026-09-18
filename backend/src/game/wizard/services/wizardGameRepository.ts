@@ -38,7 +38,15 @@ class WizardGameRepository {
       return null;
     }
 
+
     return JSON.parse(row.state_json) as WizardGameState;
+  }
+
+  deleteGame(roomId: number): void {
+    db.prepare(`
+      DELETE FROM games
+      WHERE room_id = ?
+    `).run(roomId);
   }
 }
 
