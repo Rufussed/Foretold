@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "play": "node scripts/play.mjs",
     "start": "node server.js",
-    "postinstall": "npm --prefix backend install && vite build"
+    "postinstall": "npm --prefix backend install && npm --prefix backend run build && vite build"
   },
   "engines": {
     "node": ">=24"
