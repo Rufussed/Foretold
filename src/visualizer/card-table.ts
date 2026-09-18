@@ -4,7 +4,7 @@ import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import { createCardControls } from "./card-controls";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
-import { cardKey, cardTexture, trumpColor, trumpFaceTexture } from "./card-textures";
+import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
@@ -107,7 +107,7 @@ export function createCardTable({
 
   // Runs a planned deal: hides whatever is about to arrive, then reveals each
   // card as it lands.
-  const runDeal = (plan: readonly PlannedCard[], trumpSuit: Suit | null) => {
+  const runDeal = (plan: readonly PlannedCard[]) => {
     deal.reset();
 
     const localKeys = plan.flatMap((planned) =>
@@ -130,7 +130,7 @@ export function createCardTable({
       const { to, card, slot } = planned;
       if (to === "trump") {
         return layout.trump
-          ? [{ target: layout.trump, face: trumpFaceTexture(card, trumpSuit), onLanded: () => cards.holdTrump(false) }]
+          ? [{ target: layout.trump, face: cardTexture(card), onLanded: () => cards.holdTrump(false) }]
           : [];
       }
       if (to.kind === "local") {
@@ -299,10 +299,7 @@ export function createCardTable({
       .map((key) => byKey.get(key))
       .filter((card): card is Card => !!card);
 
-    runDeal(
-      planDeal({ recipients, cardsEach: state.currentRound, localHand, trump: state.trumpCard }),
-      state.trumpSuit,
-    );
+    runDeal(planDeal({ recipients, cardsEach: state.currentRound, localHand, trump: state.trumpCard }));
   };
 
   // On the demo table you deal: the first card goes to your left, and the deal
@@ -328,7 +325,7 @@ export function createCardTable({
     cards.setTrump(trumpCard, trumpSuit);
     demoTrumpSuit = trumpSuit;
     opponents.setCounts(new Map(layout.clockwiseSeats.map((seat) => [seat, DEMO_CARDS_EACH])));
-    runDeal(plan, trumpSuit);
+    runDeal(plan);
   };
 
   let demoTrumpSuit: Suit | null = null;

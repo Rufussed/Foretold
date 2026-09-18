@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
-import { cardKey, cardTexture, trumpColor, trumpFaceTexture } from "./card-textures";
+import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
@@ -145,7 +145,7 @@ export function createTableCards(
 
   let trump: {
     object: THREE.Object3D;
-    face: THREE.MeshStandardMaterial | null;
+    face: THREE.MeshBasicMaterial | null;
     card: string | null;
     color: string | null;
   } | null = null;
@@ -239,7 +239,7 @@ export function createTableCards(
         return;
       }
 
-      const texture = trumpFaceTexture(card, trumpSuit);
+      const texture = cardTexture(card);
       if (!trump) {
         const built = factory.build("trump-card-face", texture);
         applyPlacement(built.object, trumpSlot);
