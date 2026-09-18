@@ -124,8 +124,8 @@ export class WizardRules {
       return null;
     }
 
-    const leadSuit =
-      playedCards.find(({ card }) => !isJester(card))?.card.suit ?? null;
+    //Handles if Wizard is play first, there is no Suit
+    const leadSuit = this.getLeadSuit(playedCards);
 
     // Handle Wizards before ordinary card comparison because multiple
     // Wizards require a different ordering in the final round.
@@ -161,5 +161,20 @@ export class WizardRules {
     }
 
     return winningPlay.username;
+  }
+
+  //Added here to establish if First to Draw plays a Wizard, no LEad card, if plays Jester, it passes to the next player to lead.
+  getLeadSuit(
+    playedCards: Array<{ card: Card }>,
+  ): Suit | null {
+    const firstRelevantCard = playedCards.find(
+      ({ card }) => !isJester(card),
+    )?.card;
+
+    if (!firstRelevantCard || isWizard(firstRelevantCard)) {
+      return null;
+    }
+
+    return firstRelevantCard.suit;
   }
 }

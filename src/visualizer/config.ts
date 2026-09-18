@@ -574,9 +574,17 @@ export const BACKDROP = {
 // MUSIC  (the ambient track looping while the 3D view is open)
 // ══════════════════════════════════════════════════════════════════════════
 
+// export const MUSIC = {
+//   url: "/sound/deuslower-medieval-ambient-236809.mp3",
+//   // 0 silent to 1 full volume; kept low so it stays in the background.
+//   volume: 0.35,
+// };
+
 export const MUSIC = {
-  url: "/sound/deuslower-medieval-ambient-236809.mp3",
-  // 0 silent to 1 full volume; kept low so it stays in the background.
+  urls: [
+    "/sound/CM.04.ThoughtWave.mp3",
+    "/sound/CM.02.EndGame.mp3",
+  ],
   volume: 0.35,
 };
 

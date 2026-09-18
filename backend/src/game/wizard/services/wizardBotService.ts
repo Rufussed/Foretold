@@ -85,10 +85,16 @@ export class WizardBotService {
       throw new Error("Bot player does not exist");
     }
 
-    const leadSuit =
-      game.currentTrick.playedCards.find(
-        ({ card }) => !isJester(card),
-      )?.card.suit ?? null;
+
+    //Handles if Wizard is play first, there is no Suit
+    const leadSuit = this.rules.getLeadSuit(
+      game.currentTrick.playedCards,
+    );
+
+    // const leadSuit =
+    //   game.currentTrick.playedCards.find(
+    //     ({ card }) => !isJester(card),
+    //   )?.card.suit ?? null;
 
     const playableIndex = player.hand.findIndex((card: Card) =>
       this.rules.isValidCardPlay(card, player.hand, leadSuit),
