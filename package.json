@@ -11,6 +11,9 @@
     "start": "node server.js",
     "postinstall": "npm --prefix backend install && vite build"
   },
+  "engines": {
+    "node": ">=24"
+  },
   "devDependencies": {
     "@tailwindcss/cli": "^4.3.3",
     "tailwindcss": "^4.3.3",
