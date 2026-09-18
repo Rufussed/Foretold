@@ -21,9 +21,15 @@ let backdropWanted = false;
 async function showBackdrop(): Promise<void> {
   backdropWanted = true;
   if (backdrop) return;
-  backdropModule ??= await import("../visualizer/backdrop-scene");
-  // The route may have changed to the 3D view while the module loaded.
-  if (backdropWanted && !backdrop) backdrop = backdropModule.createBackdropScene(document.body);
+  // Decoration: a browser that refuses WebGL still gets every page, just on
+  // the plain background, so nothing here is allowed to reject.
+  try {
+    backdropModule ??= await import("../visualizer/backdrop-scene");
+    // The route may have changed to the 3D view while the module loaded.
+    if (backdropWanted && !backdrop) backdrop = backdropModule.createBackdropScene(document.body);
+  } catch (error) {
+    console.warn("[router] no 3D backdrop in this browser:", error);
+  }
 }
 
 function hideBackdrop(): void {
