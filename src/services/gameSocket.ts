@@ -1,11 +1,13 @@
 import { BACKEND_HOST } from "./api";
 
 export interface GameSocketMessage {
-	type: "connected" | "game_state" | "error";
+	type: "connected" | "game_state" | "error" | "player_emote";
 	roomId?: number;
+	// The player an event is about: who connected, or who emoted.
 	username?: string;
 	state?: unknown;
 	error?: string;
+	emote?: string;
 }
 
 // WebSocket is selected from the current page protocol so secure deployments
