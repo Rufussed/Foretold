@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { EMOTE_NAMES, type Emote } from "../../backend/src/game/wizard/models/emote";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { findBone, loadCharacterAsset, type CharacterId } from "./character-assets";
 import { createCharacterAnimator, type CharacterAnimator } from "./character-animator";
@@ -12,7 +13,9 @@ export { CHARACTER_IDS, type CharacterId } from "./character-assets";
 export type SeatId = 2 | 3 | 4 | 5 | 6;
 export const SEAT_IDS: readonly SeatId[] = [2, 3, 4, 5, 6];
 
-export type Emote = "laugh" | "disbelief" | "disapproval" | "thumbsUp";
+// The emote list lives with the game models, so the server can validate the
+// ones players send each other against exactly what is animated here.
+export type { Emote };
 export type IdleVariant = "idle" | "idleTwitchy";
 export type ClipName = IdleVariant | Emote;
 
@@ -41,7 +44,7 @@ export interface CharacterDebugState {
 }
 
 const IDLE_VARIANTS: readonly IdleVariant[] = ["idle", "idleTwitchy"];
-export const EMOTE_NAMES: readonly Emote[] = ["laugh", "disbelief", "disapproval", "thumbsUp"];
+export { EMOTE_NAMES };
 export const CLIP_NAMES: readonly ClipName[] = [...IDLE_VARIANTS, ...EMOTE_NAMES];
 
 interface SeatedCharacter {

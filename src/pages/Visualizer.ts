@@ -347,6 +347,16 @@ export async function renderVisualizerPage(
         applyLatestState();
       }
 
+      if (message.type === "player_emote" && message.username && message.emote) {
+        // Another player pressed an emote. Their character sits at the table,
+        // so it plays there rather than on the corner portrait, which is only
+        // ever your own.
+        const seat = seatSync?.seatOf(message.username) ?? null;
+        if (seat !== null && EMOTE_NAMES.includes(message.emote as Emote)) {
+          trigger?.request({ target: seat, emote: message.emote as Emote, source: "network" });
+        }
+      }
+
       if (message.type === "error") {
         // Most likely a refused play, e.g. not your turn or a suit you must
         // follow: the card returns to your hand.
@@ -370,5 +380,7 @@ export async function renderVisualizerPage(
 
     const emote = button.dataset.emote as Emote;
     trigger.request({ target: "self", emote, source: "local" });
+    // The other players see it on this player's character at the table.
+    gameConnection?.send({ type: "emote", emote });
   });
 }
