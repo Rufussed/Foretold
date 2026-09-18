@@ -159,8 +159,13 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 // maxHeight rows, and the browser scales the result up to fill the canvas.
 // Raise maxHeight for sharpness, lower it for framerate.
 export const RENDER = {
-  maxHeight: 1080, // tallest drawing buffer, in pixels
-  maxPixelRatio: 1, // never draw more than 1 buffer pixel per CSS pixel
+  maxHeight: 3240, // tallest drawing buffer, in pixels
+  maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
+  // Draw this much above the display's own pixel density and let the GPU
+  // shrink the result: the cheapest way to a sharper image once a panel is
+  // already at its native ratio. 1 draws at native, 2 is four times the
+  // pixels. Lower it first if the framerate drops.
+  supersample: 2,
   // Character textures are shrunk to at most this many pixels a side as they
   // load. Graphics memory goes with the square: 4096 needs 4x 2048.
   characterTextureSize: 2048,

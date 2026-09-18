@@ -139,9 +139,10 @@ export function createWizardScene(
     const h = canvas.clientHeight || window.innerHeight;
     // Cap the drawing buffer: a 4K panel otherwise costs 4x a 1080p one for
     // the same view. Below 1 this renders smaller than the canvas and the
-    // browser scales it up.
+    // browser scales it up; above the display's own ratio it supersamples,
+    // drawing large and shrinking, which is what sharpens the cards.
     renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, RENDER.maxPixelRatio, RENDER.maxHeight / h),
+      Math.min(window.devicePixelRatio * RENDER.supersample, RENDER.maxPixelRatio, RENDER.maxHeight / h),
     );
     renderer.setSize(w, h, false);
     // Vertical FOV stays as authored; horizontal widens or narrows with the
