@@ -126,6 +126,7 @@ export function registerWizardSocket(
 
 			sendJson(socket, { type: "connected", roomId, username });
 			broadcastGameState(roomId, gameService);
+			void runner.run(roomId);
 
 			socket.on("message", (rawMessage: { toString(): string }) => {
 				// Parse and validate each action against the current game state. The
