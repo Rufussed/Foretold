@@ -385,9 +385,17 @@ export async function renderRoomPage(
     return;
   }
 
-  picker = createAvatarPicker(element<HTMLDivElement>("#avatar-picker"), {
-    onSelect: claimAvatar,
-  });
+  // The portraits are 3D, and a browser can refuse WebGL: hardware
+  // acceleration turned off, or a privacy setting that blocks it. That must
+  // not take the rest of the room with it, so the picker's buttons keep
+  // working with their names alone and the players list still loads.
+  try {
+    picker = createAvatarPicker(element<HTMLDivElement>("#avatar-picker"), {
+      onSelect: claimAvatar,
+    });
+  } catch (error) {
+    console.warn("[room] no 3D avatar portraits in this browser:", error);
+  }
 
   await poll();
 }
