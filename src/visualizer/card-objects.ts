@@ -1,9 +1,10 @@
 import * as THREE from "three";
+import { cardBackTexture } from "./card-textures";
 import { CARD_HANDLING } from "./config";
 
 export interface CardObject {
   object: THREE.Object3D;
-  face: THREE.MeshStandardMaterial | null;
+  face: THREE.MeshBasicMaterial | null;
   outline: THREE.Mesh;
 }
 
@@ -16,8 +17,19 @@ export interface CardFactory {
 
 const TEMPLATE_NODE = "card01";
 const FACE_MATERIAL_NAME = "Card Front";
+const BACK_MATERIAL_NAME = "Card Back";
 // Sits just behind the card's back face, so only its rim shows past the edges.
 const OUTLINE_DEPTH = 0.004;
+
+// The card art shows as scanned, not as the room lights it: the faces are the
+// game, and the torches flicker too hard for a lit material to stay readable.
+// Unlit and untone-mapped, so the pixels reach the screen as they are. The
+// mesh still casts a shadow, which comes from its depth, not its material.
+function unlitCardMaterial(map: THREE.Texture, name: string): THREE.MeshBasicMaterial {
+  const material = new THREE.MeshBasicMaterial({ map, toneMapped: false });
+  material.name = name;
+  return material;
+}
 
 // Makes card objects from the card mesh in Wizard.glb (the one under card01),
 // each with its own face material and a hidden hover outline behind it. Every
@@ -35,6 +47,16 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
   });
   const front = templateFront as THREE.Mesh | null;
   if (!front) throw new Error(`Card mesh has no "${FACE_MATERIAL_NAME}" material`);
+
+  // Every card shows the same back, so it is set once here on the shared
+  // material rather than per card: clones keep the template's materials by
+  // reference, and only the face is cloned to carry its own art.
+  template.traverse((child) => {
+    const mesh = child as THREE.Mesh;
+    if (!mesh.isMesh || Array.isArray(mesh.material)) return;
+    if (mesh.material.name !== BACK_MATERIAL_NAME) return;
+    mesh.material = unlitCardMaterial(cardBackTexture(), mesh.material.name);
+  });
   front.geometry.computeBoundingBox();
   const size = front.geometry.boundingBox!.getSize(new THREE.Vector3());
 
@@ -55,13 +77,12 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
       object.visible = false;
 
       let faceMesh: THREE.Mesh | null = null;
-      let faceMaterial: THREE.MeshStandardMaterial | null = null;
+      let faceMaterial: THREE.MeshBasicMaterial | null = null;
       object.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh || Array.isArray(mesh.material)) return;
         if (mesh.material.name !== FACE_MATERIAL_NAME) return;
-        const material = (mesh.material as THREE.MeshStandardMaterial).clone();
-        material.map = texture;
+        const material = unlitCardMaterial(texture, mesh.material.name);
         mesh.material = material;
         faceMesh = mesh;
         faceMaterial = material;
@@ -78,7 +99,7 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
       (faceOf?.parent ?? object).add(outline);
 
       environment.add(object);
-      return { object, outline, face: faceMaterial as THREE.MeshStandardMaterial | null };
+      return { object, outline, face: faceMaterial as THREE.MeshBasicMaterial | null };
     },
   };
 }
