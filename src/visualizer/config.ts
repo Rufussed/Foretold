@@ -162,10 +162,31 @@ export const RENDER = {
   maxHeight: 3240, // tallest drawing buffer, in pixels
   maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
   // Draw this much above the display's own pixel density and let the GPU
-  // shrink the result: the cheapest way to a sharper image once a panel is
-  // already at its native ratio. 1 draws at native, 2 is four times the
-  // pixels. Lower it first if the framerate drops.
-  supersample: 2,
+  // shrink the result. 1 draws at native, 2 is four times the pixels.
+  //
+  // Measured 2026-09-19, for why this is 1.5 and not 2: a card fills about
+  // 18% of the window's height (0.72 scene units tall, seen from 9.6 units
+  // away through a 23.3 degree lens), so on a 1080-tall window it lands on
+  // ~196 CSS pixels. Its face is 350x490, so the art is being shrunk, not
+  // stretched - a higher-resolution scan would change nothing. What
+  // supersampling bought was cleaner minification of a texture read at a
+  // grazing angle, and `sharpen` below now does most of that for a fraction
+  // of the cost. Above 1.5 the gain is slight and the cost is the square.
+  supersample: 1.5,
+  // Contrast-adaptive sharpening as the scene is copied to the canvas: one
+  // pass over the screen, rather than drawing the whole scene larger. 0 turns
+  // it off, 0.35 is gentle, much above 0.8 starts to outline things.
+  sharpen: 0.45,
+  // Draw fewer pixels when the device cannot hold targetFps, and more again
+  // when it can. The multiplier rides on top of everything above, so a strong
+  // machine keeps the full image and a weak one stays smooth instead of
+  // everybody being held to what the weakest can manage.
+  adaptive: {
+    enabled: true,
+    targetFps: 50,
+    min: 0.5,
+    max: 1,
+  },
   // Character textures are shrunk to at most this many pixels a side as they
   // load. Graphics memory goes with the square: 4096 needs 4x 2048.
   characterTextureSize: 2048,
