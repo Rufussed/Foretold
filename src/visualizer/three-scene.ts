@@ -9,7 +9,7 @@ import {
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
-import { maxPixelRatio } from "./device-limits";
+import { maxPixelRatio, sharpenAmount } from "./device-limits";
 import { createRenderScale } from "./render-scale";
 import { createSharpenPass } from "./sharpen-pass";
 import {
@@ -91,7 +91,8 @@ export function createWizardScene(
 
   // Sharpening replaces most of what a higher supersample bought; see RENDER
   // in config.ts. It renders through a buffer, so it is skipped when off.
-  const sharpen = RENDER.sharpen > 0 ? createSharpenPass(renderer, RENDER.sharpen) : null;
+  const sharpenBy = sharpenAmount();
+  const sharpen = sharpenBy > 0 ? createSharpenPass(renderer, sharpenBy) : null;
   const draw = () => (sharpen ? sharpen.render(scene, camera) : renderer.render(scene, camera));
 
   // Set by resize(), read by the adaptive controller's re-size.

@@ -39,6 +39,35 @@ export function createBackdropProbe(canvas: HTMLCanvasElement): BackdropProbe {
   const notes: string[] = [];
   const started = performance.now();
 
+  // A phone has no console to read, so the console comes to the page: enough
+  // of it to screenshot and send on. Warnings and errors only; the trail is
+  // short so the readout stays a corner of the screen, not a wall of text.
+  const original = { warn: console.warn, error: console.error };
+  const capture = (level: string, args: unknown[]) => {
+    const text = args
+      .map((a) => (a instanceof Error ? `${a.name}: ${a.message}` : String(a)))
+      .join(" ");
+    notes.push(`${level} ${text}`.slice(0, 200));
+    paint();
+  };
+  console.warn = (...args: unknown[]) => {
+    capture("warn", args);
+    original.warn(...args);
+  };
+  console.error = (...args: unknown[]) => {
+    capture("error", args);
+    original.error(...args);
+  };
+  const onError = (event: ErrorEvent) => capture("error", [event.message]);
+  const onRejection = (event: PromiseRejectionEvent) => capture("reject", [event.reason]);
+  // Any canvas on the page, not only this one: the avatar portraits and the
+  // 3D view have their own contexts to lose.
+  const onAnyContextLost = (event: Event) =>
+    capture("gl", [`context lost on ${(event.target as HTMLElement).className || "canvas"}`]);
+  window.addEventListener("error", onError);
+  window.addEventListener("unhandledrejection", onRejection);
+  document.addEventListener("webglcontextlost", onAnyContextLost, true);
+
   const paint = () => {
     const seconds = (performance.now() - started) / 1000;
     const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl");
@@ -47,7 +76,7 @@ export function createBackdropProbe(canvas: HTMLCanvasElement): BackdropProbe {
       `canvas ${canvas.width}x${canvas.height} css ${canvas.clientWidth}x${canvas.clientHeight}`,
       `dpr ${window.devicePixelRatio}  visible ${getComputedStyle(canvas).display}`,
       `context ${gl ? (gl.isContextLost() ? "LOST" : "ok") : "none"}`,
-      ...notes.slice(-4),
+      ...notes.slice(-8),
     ].join("\n");
   };
 
@@ -64,6 +93,11 @@ export function createBackdropProbe(canvas: HTMLCanvasElement): BackdropProbe {
     },
     dispose() {
       window.clearInterval(timer);
+      window.removeEventListener("error", onError);
+      window.removeEventListener("unhandledrejection", onRejection);
+      document.removeEventListener("webglcontextlost", onAnyContextLost, true);
+      console.warn = original.warn;
+      console.error = original.error;
       box.remove();
     },
   };

@@ -196,6 +196,10 @@ export const RENDER = {
   // pass over the screen, rather than drawing the whole scene larger. 0 turns
   // it off, 0.35 is gentle, much above 0.8 starts to outline things.
   sharpen: 0.45,
+  // Off on touch: it renders through a half-float buffer, which is another
+  // ~20MB of graphics memory on a device that has already been seen to run
+  // out, and the cards are small enough on a phone that it buys little.
+  touchSharpen: 0,
   // Draw fewer pixels when the device cannot hold targetFps, and more again
   // when it can. The multiplier rides on top of everything above, so a strong
   // machine keeps the full image and a weak one stays smooth instead of
@@ -209,7 +213,12 @@ export const RENDER = {
   // Character textures are shrunk to at most this many pixels a side as they
   // load. Graphics memory goes with the square: 4096 needs 4x 2048.
   characterTextureSize: 2048,
-  touchCharacterTextureSize: 1024, // phones and tablets
+  // 512, not 1024, because the characters ship 1024px textures: a 1024 limit
+  // shrinks nothing at all, which is what it did until this was measured. Six
+  // seated characters were 100MB+ of texture on a phone, and the graphics
+  // context went with it 1.8 seconds after the table loaded. At the size a
+  // character is drawn on a 485px-wide screen, 512 is more than it can show.
+  touchCharacterTextureSize: 512,
   // The same for the table scene, which ships ten 1024px textures - about
   // 54MB once they are on the GPU with their mipmaps, and it is on screen
   // behind every page, not only the 3D view. Desktops keep them as exported.
