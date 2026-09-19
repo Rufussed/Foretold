@@ -24,6 +24,11 @@ export const sharpenAmount = (): number =>
 export const castsShadow = (isPointLight: boolean): boolean =>
   !(isPointLight && isTouchDevice() && !SHADOWS.touchPointCastShadows);
 
+// Whether cards should cast; on touch they do not, which is what lets the
+// shadow maps be drawn once and left alone.
+export const cardsCastShadows = (): boolean =>
+  isTouchDevice() ? SHADOWS.touchCardsCastShadows : true;
+
 // Shadow map side for one light, in pixels.
 //
 // A point light shadows in all six directions, and three allocates that as a
