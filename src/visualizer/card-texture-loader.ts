@@ -18,6 +18,9 @@ export function cardArtUrl(card: Card): string {
 
 const loader = new THREE.TextureLoader();
 const textures = new Map<string, THREE.Texture>();
+// The same entries, as promises, for callers that want to know when the image
+// has arrived rather than letting it appear a frame later.
+const arrivals = new Map<string, Promise<THREE.Texture>>();
 
 // three fills the texture in once the image arrives, so this can stay
 // synchronous: the card shows blank for a frame or two, then its face.
@@ -25,7 +28,22 @@ function load(url: string): THREE.Texture {
   const cached = textures.get(url);
   if (cached) return cached;
 
-  const texture = loader.load(url);
+  let settle: (texture: THREE.Texture) => void = () => {};
+  let fail: (error: unknown) => void = () => {};
+  arrivals.set(
+    url,
+    new Promise<THREE.Texture>((resolve, reject) => {
+      settle = resolve;
+      fail = reject;
+    }),
+  );
+
+  const texture = loader.load(
+    url,
+    () => settle(texture),
+    undefined,
+    (error) => fail(error),
+  );
   texture.colorSpace = THREE.SRGBColorSpace;
   // glTF UVs put v=0 at the top of the image; GLTFLoader's own textures are
   // unflipped for the same reason, so this lands the way the mesh expects.
@@ -38,3 +56,17 @@ function load(url: string): THREE.Texture {
 export const cardArtTexture = (card: Card): THREE.Texture => load(cardArtUrl(card));
 
 export const cardBackTexture = (): THREE.Texture => load(BACK_URL);
+
+// The same texture, but resolving once its image has actually arrived, so the
+// prefetch queue holds one card open at a time instead of starting the whole
+// deck at once. A failed download is forgotten, so a later card can retry it.
+export function preloadCardArt(card: Card): Promise<THREE.Texture> {
+  const url = cardArtUrl(card);
+  load(url);
+  const arrival = arrivals.get(url) ?? Promise.resolve(textures.get(url)!);
+  return arrival.catch((error) => {
+    textures.delete(url);
+    arrivals.delete(url);
+    throw error;
+  });
+}
