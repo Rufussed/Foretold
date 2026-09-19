@@ -1116,8 +1116,37 @@ button:hover {
   border-radius: 8px;
 }
 
-.visualizer-page .music-toggle:hover {
+.visualizer-page .fullscreen-toggle {
+  position: absolute;
+  top: 22px;
+  /* Left of the music note, which keeps the corner. */
+  right: 62px;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  color: white;
+  background: rgb(255 255 255 / 12%);
+  border: 0;
+  border-radius: 8px;
+}
+
+.visualizer-page .music-toggle:hover,
+.visualizer-page .fullscreen-toggle:hover {
   background: rgb(255 255 255 / 22%);
+}
+
+.visualizer-page .fullscreen-toggle svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Fullscreen has no browser chrome above it, so the buttons come back up. */
+.visualizer-page:fullscreen .music-toggle,
+.visualizer-page:fullscreen .fullscreen-toggle {
+  top: 22px;
 }
 
 .visualizer-page .music-toggle svg {
@@ -1127,7 +1156,8 @@ button:hover {
 
 @media (max-width: 640px) {
   /* The score panel sits below the nav on phones. */
-  .visualizer-page .music-toggle {
+  .visualizer-page .music-toggle,
+  .visualizer-page .fullscreen-toggle {
     top: 66px;
   }
 }

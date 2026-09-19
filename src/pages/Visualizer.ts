@@ -5,6 +5,7 @@ import type { PublicWizardGameState } from "../../backend/src/game/wizard/models
 import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
+import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
 import { createEmoteTrigger, type EmoteTrigger } from "../visualizer/emote-trigger";
 import type { GameConnection } from "../visualizer/game-connection";
@@ -61,10 +62,12 @@ export async function renderVisualizerPage(
   let diagnostics: Diagnostics | null = null;
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
+  let fullscreenToggle: FullscreenToggle | null = null;
 
   teardown = () => {
     destroyed = true;
     musicToggle?.dispose();
+    fullscreenToggle?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
     diagnostics?.dispose();
@@ -111,6 +114,10 @@ export async function renderVisualizerPage(
   if (pageEl) {
     music = createBackgroundMusic();
     musicToggle = createMusicToggle(pageEl, music);
+    // The page itself, not the canvas: the HUD, the prompts and the emotes
+    // have to come with it, or fullscreen would show a table and nothing to
+    // play it with. Null where the browser will not do fullscreen at all.
+    fullscreenToggle = createFullscreenToggle(pageEl, pageEl);
   }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
