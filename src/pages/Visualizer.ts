@@ -19,6 +19,7 @@ import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt"
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
+import { selfPortraitEnabled } from "../visualizer/device-limits";
 import { createTableLayout } from "../visualizer/table-layout";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
@@ -178,7 +179,7 @@ export async function renderVisualizerPage(
   const selfView = selfEl?.querySelector<HTMLElement>(".visualizer-self-view");
   const selfName = selfEl?.querySelector<HTMLElement>(".visualizer-self-name");
 
-  if (localUsername && selfEl && selfView && selfName) {
+  if (localUsername && selfEl && selfView && selfName && selfPortraitEnabled()) {
     selfName.textContent = localUsername;
     selfEl.hidden = false;
     // Its own WebGL context, and the first one this page asks for: a device

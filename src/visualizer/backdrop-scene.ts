@@ -7,7 +7,7 @@ import {
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
-import { isTouchDevice, maxPixelRatio } from "./device-limits";
+import { isTouchDevice, maxPixelRatio, shadowsEnabled } from "./device-limits";
 import { createBackdropProbe, probeWanted, type BackdropProbe } from "./backdrop-probe";
 
 export interface BackdropScene {
@@ -32,7 +32,8 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   const touch = isTouchDevice();
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: !touch });
   configureRenderer(renderer);
-  renderer.shadowMap.enabled = touch ? BACKDROP.touchShadows : BACKDROP.shadows;
+  renderer.shadowMap.enabled =
+    shadowsEnabled(renderer) && (touch ? BACKDROP.touchShadows : BACKDROP.shadows);
 
   const scene = new THREE.Scene();
   scene.add(createAmbientLight());
