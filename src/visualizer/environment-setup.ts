@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import wizardTableModel from "../assets/models/wizard/Wizard.glb?url";
 import {
   AMBIENT,
   DEFAULT_TORCH,
@@ -12,7 +13,10 @@ import {
 // scene behind the other pages: renderer settings, ambient light, and the
 // lights and shadows in Wizard.glb driven from config.ts.
 
-export const WIZARD_TABLE_MODEL_URL = "/models/wizard/Wizard.glb";
+// Imported rather than written as a path so Vite copies it into the build with
+// a hash of its contents in the name: a re-exported table reaches players as a
+// new URL, which their cache cannot confuse with the old one.
+export const WIZARD_TABLE_MODEL_URL = wizardTableModel;
 
 // three's GLTFLoader sanitises names: "torch.001" arrives as "torch001", and
 // duplicates gain a "_1" suffix. Compare on a canonical form so config keys

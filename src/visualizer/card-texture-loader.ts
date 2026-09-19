@@ -1,11 +1,30 @@
 import * as THREE from "three";
 import type { Card } from "../../backend/src/game/wizard/models/card";
 
-// Loads the scanned card art from public/cards. One file per card, plus the
+// Loads the scanned card art from src/assets/cards. One file per card, plus the
 // single back shown on every face-down card.
 
-const CARDS_URL = "/cards";
-const BACK_URL = `${CARDS_URL}/back/backCard.webp`;
+// Vite copies each file into the build with a hash of its contents in its name,
+// so re-scanned art reaches players as a new URL their cache cannot mistake for
+// the old one. The hash is only known at build time, so a card's path can no
+// longer be assembled from its suit and value: that naming still decides which
+// file is wanted, but the URL itself comes from this table. Keys are the glob
+// patterns exactly as written above.
+const CARD_FILES = import.meta.glob("../assets/cards/**/*.webp", {
+  query: "?url",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+function cardFile(path: string): string {
+  const url = CARD_FILES[`../assets/cards/${path}`];
+  // A missing file is a mistake in the naming below or a card that was never
+  // scanned; say so rather than handing three.js undefined and drawing a blank.
+  if (!url) throw new Error(`No card art at ${path}`);
+  return url;
+}
+
+const BACK_URL = cardFile("back/backCard.webp");
 
 // blue01.webp … blue13.webp, blueJester.webp, blueWizard.webp — Jesters are
 // value 0 and Wizards 14, matching the game rules.
@@ -13,7 +32,7 @@ export function cardArtUrl(card: Card): string {
   const suit = card.suit.toLowerCase();
   const name =
     card.value === 0 ? "Jester" : card.value === 14 ? "Wizard" : String(card.value).padStart(2, "0");
-  return `${CARDS_URL}/${suit}/${suit}${name}.webp`;
+  return cardFile(`${suit}/${suit}${name}.webp`);
 }
 
 const loader = new THREE.TextureLoader();

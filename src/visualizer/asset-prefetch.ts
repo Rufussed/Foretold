@@ -3,6 +3,7 @@ import { enqueuePrefetch } from "../services/prefetch-queue";
 import { cardBackTexture, preloadCardArt } from "./card-texture-loader";
 import { CHARACTER_IDS, loadCharacterAsset } from "./character-assets";
 import { loadTableScene } from "./table-scene-asset";
+import { loadTesseract } from "./tesseract";
 
 // What the game needs, fetched while the player is still signing in and
 // picking a room. Each loader here keeps its own session cache, so a prefetched
@@ -42,5 +43,8 @@ export function prefetchGameAssets(): void {
         for (const card of DECK) await preloadCardArt(card);
       },
     },
+    // Last, though it is only 16KB: it is not wanted until a trick has been
+    // won, by which time everything above it has long since arrived.
+    { name: "tesseract", run: () => loadTesseract() },
   );
 }
