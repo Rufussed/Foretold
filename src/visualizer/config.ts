@@ -587,6 +587,7 @@ export const BACKDROP = {
 
 export const MUSIC = {
   urls: [
+    "/sound/deuslower-medieval-ambient-236809.mp3",
     "/sound/CM.04.ThoughtWave.mp3",
     "/sound/CM.02.EndGame.mp3",
   ],
