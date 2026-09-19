@@ -9,6 +9,8 @@ import {
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
+import { createRenderScale } from "./render-scale";
+import { createSharpenPass } from "./sharpen-pass";
 import {
   createPlayerCharacters,
   CHARACTER_IDS,
@@ -77,9 +79,22 @@ export function createWizardScene(
   canvas: HTMLCanvasElement,
   options: WizardSceneOptions = {},
 ): WizardSceneHandle {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  // MSAA and supersampling smooth the same edges, and paying for both is
+  // waste: above 1.5x the scene is already drawn with enough samples that the
+  // hardware pass adds little. Decided once here, since a context cannot
+  // change it later.
+  const supersampling = RENDER.supersample * window.devicePixelRatio >= 1.5;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !supersampling });
   renderer.setPixelRatio(window.devicePixelRatio);
   configureRenderer(renderer);
+
+  // Sharpening replaces most of what a higher supersample bought; see RENDER
+  // in config.ts. It renders through a buffer, so it is skipped when off.
+  const sharpen = RENDER.sharpen > 0 ? createSharpenPass(renderer, RENDER.sharpen) : null;
+  const draw = () => (sharpen ? sharpen.render(scene, camera) : renderer.render(scene, camera));
+
+  // Set by resize(), read by the adaptive controller's re-size.
+  let renderScale = RENDER.adaptive.enabled ? RENDER.adaptive.max : 1;
 
   const scene = new THREE.Scene();
   scene.add(createAmbientLight());
@@ -141,10 +156,15 @@ export function createWizardScene(
     // the same view. Below 1 this renders smaller than the canvas and the
     // browser scales it up; above the display's own ratio it supersamples,
     // drawing large and shrinking, which is what sharpens the cards.
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio * RENDER.supersample, RENDER.maxPixelRatio, RENDER.maxHeight / h),
-    );
+    const ratio =
+      Math.min(
+        window.devicePixelRatio * RENDER.supersample,
+        RENDER.maxPixelRatio,
+        RENDER.maxHeight / h,
+      ) * renderScale;
+    renderer.setPixelRatio(ratio);
     renderer.setSize(w, h, false);
+    sharpen?.setSize(w, h, ratio);
     // Vertical FOV stays as authored; horizontal widens or narrows with the
     // window, and matching aspect to the canvas avoids any stretching.
     camera.aspect = w / h;
@@ -343,6 +363,20 @@ export function createWizardScene(
     })
     .catch((err) => options.onError?.(`Failed to load scene: ${err}`));
 
+  // Watches the framerate and moves renderScale between its bounds; resize()
+  // is what actually applies it to the buffers.
+  const scaler = RENDER.adaptive.enabled
+    ? createRenderScale({
+        min: RENDER.adaptive.min,
+        max: RENDER.adaptive.max,
+        targetFps: RENDER.adaptive.targetFps,
+        onChange: (next) => {
+          renderScale = next;
+          resize();
+        },
+      })
+    : null;
+
   let frame = 0;
   let last = performance.now();
   const tick = () => {
@@ -358,7 +392,8 @@ export function createWizardScene(
     // intro has played, it follows the turn.
     if (controls?.enabled) controls.update();
     else if (introDone) follow?.update(dt);
-    renderer.render(scene, camera);
+    scaler?.sample(dt);
+    draw();
   };
   resize();
   tick();
@@ -371,6 +406,7 @@ export function createWizardScene(
       window.removeEventListener("resize", resize);
       window.removeEventListener("keydown", onOrbitKey);
       if (onKeyDown) window.removeEventListener("keydown", onKeyDown);
+      sharpen?.dispose();
       controls?.dispose();
       players?.dispose();
       players = null;
