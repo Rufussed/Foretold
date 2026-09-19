@@ -2,6 +2,7 @@ import { SUITS, type Card, type CardValue } from "../../backend/src/game/wizard/
 import { enqueuePrefetch, type PrefetchTask } from "../services/prefetch-queue";
 import { cardArtUrl, cardBackTexture, preloadCardArt } from "./card-texture-loader";
 import { CHARACTER_IDS, characterModelUrl, loadCharacterAsset } from "./character-assets";
+import { isTouchDevice } from "./device-limits";
 import { WIZARD_TABLE_MODEL_URL } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
 import { loadTesseract, TESSERACT_URL } from "./tesseract";
@@ -42,7 +43,7 @@ function isConstrainedDevice(): boolean {
   // Respect the setting before guessing at the hardware.
   if (nav.connection?.saveData) return true;
   if (typeof nav.deviceMemory === "number" && nav.deviceMemory <= 4) return true;
-  return window.matchMedia?.("(pointer: coarse)").matches ?? false;
+  return isTouchDevice();
 }
 
 // Into the HTTP cache and no further: the body is read so the response

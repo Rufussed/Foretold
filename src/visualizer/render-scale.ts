@@ -1,11 +1,3 @@
-import { RENDER } from "./config";
-
-// The most buffer pixels per CSS pixel this device should be asked for.
-export function maxPixelRatio(): number {
-  const touch = window.matchMedia?.("(pointer: coarse)").matches ?? false;
-  return touch ? RENDER.touchMaxPixelRatio : RENDER.maxPixelRatio;
-}
-
 // Keeps the framerate up by drawing fewer pixels when a device cannot keep up,
 // and more again when it can.
 //

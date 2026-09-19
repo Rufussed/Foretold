@@ -9,7 +9,8 @@ import {
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
-import { createRenderScale, maxPixelRatio } from "./render-scale";
+import { maxPixelRatio } from "./device-limits";
+import { createRenderScale } from "./render-scale";
 import { createSharpenPass } from "./sharpen-pass";
 import {
   createPlayerCharacters,

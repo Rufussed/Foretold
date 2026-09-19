@@ -25,7 +25,21 @@ export const SHADOWS = {
 
   // Shadow map size in px per light; the biggest lever on sharpness, at the
   // cost of memory. three default: 512.
+  //
+  // This one is for lights that shadow in a single direction (the overhead
+  // spot): one map of resolution x resolution, so 2048 costs 16MB.
   resolution: 2048,
+  // Point lights - the torches - shadow in all six directions, and three
+  // allocates that as a 4x2 atlas of this size. So this number costs
+  // 32x its square in bytes: 2048 here was 128MB per torch, and with two
+  // torches the backdrop alone wanted more graphics memory than a phone has.
+  // Torch shadows are soft and close to their light, so they carry the drop
+  // well. Raise only while watching what it costs.
+  pointResolution: 512,
+  // The same two on phones and tablets, where the browser shares graphics
+  // memory with the whole device.
+  touchResolution: 1024,
+  touchPointResolution: 256,
 
   // How dark a shadowed area goes, 0 invisible to 1 fully occluded. three default: 1.
   intensity: 1,
@@ -196,6 +210,11 @@ export const RENDER = {
   // load. Graphics memory goes with the square: 4096 needs 4x 2048.
   characterTextureSize: 2048,
   touchCharacterTextureSize: 1024, // phones and tablets
+  // The same for the table scene, which ships ten 1024px textures - about
+  // 54MB once they are on the GPU with their mipmaps, and it is on screen
+  // behind every page, not only the 3D view. Desktops keep them as exported.
+  tableTextureSize: 1024,
+  touchTableTextureSize: 512,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

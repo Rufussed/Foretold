@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { tableTextureLimit } from "./device-limits";
 import { WIZARD_TABLE_MODEL_URL } from "./environment-setup";
+import { limitTextureSizes } from "./texture-limit";
 
 // One copy of the table scene as its user needs it: the node tree, its
 // cameras (found within that copy) and the clips that animate it.
@@ -18,10 +20,15 @@ let parsed: Promise<{ scene: THREE.Group; animations: THREE.AnimationClip[] }> |
 // since users change it (lights, hidden cards, the camera); geometry, materials
 // and textures are shared between copies, and clips bind by node name.
 export function loadTableScene(): Promise<TableSceneCopy> {
-  parsed ??= new GLTFLoader().loadAsync(WIZARD_TABLE_MODEL_URL).then((gltf) => ({
-    scene: gltf.scene,
-    animations: gltf.animations,
-  }));
+  parsed ??= new GLTFLoader().loadAsync(WIZARD_TABLE_MODEL_URL).then(async (gltf) => {
+    // Shrunk once, here, before anything clones the template: copies share
+    // these textures, so the backdrop and the 3D view pay for them once
+    // between them. On a phone the exported sizes are most of the graphics
+    // budget on their own, and a device that runs out loses the context and
+    // the canvas with it.
+    await limitTextureSizes(gltf.scene, tableTextureLimit());
+    return { scene: gltf.scene, animations: gltf.animations };
+  });
   // Allow a retry after a failed download.
   parsed.catch(() => {
     parsed = null;

@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { RENDER } from "./config";
+import { isTouchDevice } from "./device-limits";
 
 // The largest texture side characters keep: smaller on touch devices, where
 // the browser shares graphics memory with the rest of the phone or tablet.
 export function characterTextureLimit(): number {
-  const touch = window.matchMedia?.("(pointer: coarse)").matches ?? false;
-  return touch ? RENDER.touchCharacterTextureSize : RENDER.characterTextureSize;
+  return isTouchDevice() ? RENDER.touchCharacterTextureSize : RENDER.characterTextureSize;
 }
 
 // Shrinks any texture in the model wider or taller than maxSize, before it

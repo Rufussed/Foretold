@@ -7,7 +7,7 @@ import {
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
-import { maxPixelRatio } from "./render-scale";
+import { maxPixelRatio } from "./device-limits";
 
 export interface BackdropScene {
   dispose(): void;
