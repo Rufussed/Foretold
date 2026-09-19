@@ -16,6 +16,10 @@ export const maxPixelRatio = (): number =>
 export const tableTextureLimit = (): number =>
   isTouchDevice() ? RENDER.touchTableTextureSize : RENDER.tableTextureSize;
 
+// How hard the sharpen pass is applied, 0 for not at all.
+export const sharpenAmount = (): number =>
+  isTouchDevice() ? RENDER.touchSharpen : RENDER.sharpen;
+
 // Shadow map side for one light, in pixels.
 //
 // A point light shadows in all six directions, and three allocates that as a
