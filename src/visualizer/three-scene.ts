@@ -9,7 +9,7 @@ import {
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
-import { createRenderScale } from "./render-scale";
+import { createRenderScale, maxPixelRatio } from "./render-scale";
 import { createSharpenPass } from "./sharpen-pass";
 import {
   createPlayerCharacters,
@@ -159,7 +159,7 @@ export function createWizardScene(
     const ratio =
       Math.min(
         window.devicePixelRatio * RENDER.supersample,
-        RENDER.maxPixelRatio,
+        maxPixelRatio(),
         RENDER.maxHeight / h,
       ) * renderScale;
     renderer.setPixelRatio(ratio);

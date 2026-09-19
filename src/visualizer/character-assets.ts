@@ -39,6 +39,10 @@ const CHARACTER_URLS: Record<CharacterId, string> = {
 
 const characterUrl = (character: CharacterId): string => CHARACTER_URLS[character];
 
+// For the prefetch queue, which on a small device warms the browser cache with
+// the file rather than parsing it into a model.
+export const characterModelUrl = characterUrl;
+
 // Blender's NLA Tracks export keeps every strip at its absolute position on
 // the timeline, so "thumbsUp" arrives as keys from ~30s to ~34s. three sizes
 // a clip by its last key, which would play 30s of held pose before any motion.

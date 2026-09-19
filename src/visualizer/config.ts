@@ -161,6 +161,11 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 export const RENDER = {
   maxHeight: 3240, // tallest drawing buffer, in pixels
   maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
+  // The same cap on phones and tablets, where a 3x panel means drawing nine
+  // pixels for every one a laptop draws, on a GPU shared with the rest of the
+  // device. Running out of graphics memory does not slow a page down, it takes
+  // the context away and leaves a blank canvas.
+  touchMaxPixelRatio: 2,
   // Draw this much above the display's own pixel density and let the GPU
   // shrink the result. 1 draws at native, 2 is four times the pixels.
   //
