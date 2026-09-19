@@ -20,6 +20,10 @@ export const tableTextureLimit = (): number =>
 export const sharpenAmount = (): number =>
   isTouchDevice() ? RENDER.touchSharpen : RENDER.sharpen;
 
+// Whether this light should cast a shadow at all on this device.
+export const castsShadow = (isPointLight: boolean): boolean =>
+  !(isPointLight && isTouchDevice() && !SHADOWS.touchPointCastShadows);
+
 // Shadow map side for one light, in pixels.
 //
 // A point light shadows in all six directions, and three allocates that as a

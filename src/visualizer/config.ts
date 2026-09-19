@@ -40,6 +40,13 @@ export const SHADOWS = {
   // memory with the whole device.
   touchResolution: 1024,
   touchPointResolution: 256,
+  // Whether a point light casts at all on touch. This is not about memory: a
+  // point light shadows in six directions, so three draws the whole scene six
+  // times more for each one. Two torches turned one frame into fourteen
+  // passes and 821 draw calls, which an Android GPU answers by taking the
+  // context away - the phone's own diagnostics said so. The overhead spot
+  // still casts, and that is the shadow the table actually reads by.
+  touchPointCastShadows: false,
 
   // How dark a shadowed area goes, 0 invisible to 1 fully occluded. three default: 1.
   intensity: 1,

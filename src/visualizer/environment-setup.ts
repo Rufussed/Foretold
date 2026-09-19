@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { shadowResolution } from "./device-limits";
+import { castsShadow, shadowResolution } from "./device-limits";
 import wizardTableModel from "../assets/models/wizard/Wizard.glb?url";
 import {
   AMBIENT,
@@ -89,7 +89,8 @@ export function prepareEnvironment(root: THREE.Object3D): void {
           LIGHTING.scale *
           settings.brightnessMultiplier;
         if (settings.color) light.color = new THREE.Color(...settings.color);
-        light.castShadow = settings.castShadows;
+        light.castShadow =
+          settings.castShadows && castsShadow((light as THREE.PointLight).isPointLight === true);
         (light as THREE.PointLight).decay = LIGHTING.falloff;
       }
       if ((light as THREE.SpotLight).isSpotLight) {
@@ -98,7 +99,8 @@ export function prepareEnvironment(root: THREE.Object3D): void {
         if (OVERHEAD_LIGHT.color) {
           light.color = new THREE.Color(...OVERHEAD_LIGHT.color);
         }
-        light.castShadow = OVERHEAD_LIGHT.castShadows;
+        light.castShadow =
+        OVERHEAD_LIGHT.castShadows && castsShadow((light as THREE.PointLight).isPointLight === true);
       }
       // Only the shadow-casting light types carry a `shadow`.
       const caster = light as THREE.PointLight | THREE.SpotLight;
