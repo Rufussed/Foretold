@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { castsShadow, shadowResolution } from "./device-limits";
+import { cardsCastShadows, castsShadow, shadowResolution } from "./device-limits";
 import wizardTableModel from "../assets/models/wizard/Wizard.glb?url";
 import {
   AMBIENT,
@@ -124,7 +124,9 @@ export function prepareEnvironment(root: THREE.Object3D): void {
     const mesh = object as THREE.Mesh;
     if (mesh.isMesh) {
       if (SHADOW_CASTER_NAME_RE.test(mesh.name)) {
-        mesh.castShadow = true;
+        // Runtime cards are cloned from these meshes, so this flag reaches
+        // them too.
+        mesh.castShadow = !/card/i.test(mesh.name) || cardsCastShadows();
         mesh.receiveShadow = true;
       } else if (mesh.name === GROUND_PLANE_NAME) {
         mesh.receiveShadow = true;

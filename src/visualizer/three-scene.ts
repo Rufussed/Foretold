@@ -11,6 +11,7 @@ import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
 import { maxPixelRatio, sharpenAmount } from "./device-limits";
 import { createRenderScale } from "./render-scale";
+import { createShadowThrottle, type ShadowThrottle } from "./shadow-throttle";
 import { createSharpenPass } from "./sharpen-pass";
 import {
   createPlayerCharacters,
@@ -147,6 +148,7 @@ export function createWizardScene(
   let mixer: THREE.AnimationMixer | null = null;
   let sparks: TorchSparks | null = null;
   let players: PlayerCharacters | null = null;
+  let shadowThrottle: ShadowThrottle | null = null;
   let onKeyDown: ((event: KeyboardEvent) => void) | null = null;
   // The environment can finish loading after navigation has torn this down.
   let disposed = false;
@@ -207,6 +209,8 @@ export function createWizardScene(
       follow = createCameraFollow(camera);
 
       prepareEnvironment(gltf.scene);
+      // Staggers the torches' shadow refreshes on touch; null elsewhere.
+      shadowThrottle = createShadowThrottle(gltf.scene);
       sparks = createTorchSparks(gltf.scene);
 
       // Environment clips only (camera move, torch flicker): characters are
@@ -395,6 +399,7 @@ export function createWizardScene(
     if (controls?.enabled) controls.update();
     else if (introDone) follow?.update(dt);
     scaler?.sample(dt);
+    shadowThrottle?.update();
     draw();
   };
   resize();

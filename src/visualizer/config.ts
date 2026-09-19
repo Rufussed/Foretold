@@ -40,13 +40,24 @@ export const SHADOWS = {
   // memory with the whole device.
   touchResolution: 1024,
   touchPointResolution: 256,
-  // Whether a point light casts at all on touch. This is not about memory: a
-  // point light shadows in six directions, so three draws the whole scene six
-  // times more for each one. Two torches turned one frame into fourteen
-  // passes and 821 draw calls, which an Android GPU answers by taking the
-  // context away - the phone's own diagnostics said so. The overhead spot
-  // still casts, and that is the shadow the table actually reads by.
-  touchPointCastShadows: false,
+  // Whether a point light casts at all on touch. A point light shadows in six
+  // directions, so each one costs six more passes over the scene: two torches
+  // and the overhead spot made one frame into fourteen, and 821 draw calls,
+  // which an Android GPU answers by taking the context away. They are on
+  // again because `staticShadows` below now draws those passes once instead
+  // of sixty times a second. Turn this off first if a device still struggles.
+  touchPointCastShadows: true,
+  // Each torch's light hangs under an animated parent (flickerFlame moves,
+  // turns and scales it), so its shadow really does dance - that is the
+  // effect, and it must not be frozen. It can be redrawn less often instead.
+  // On touch each casting light refreshes its map every Nth frame, staggered
+  // so no two land on the same frame: at 3 the shadows still flicker, and a
+  // frame costs one light's six faces rather than every light's.
+  touchPointUpdateEvery: 3,
+  // The cards are the other moving caster, and there are a lot of them in the
+  // scene. Their shadows are the faintest thing on the table, and dropping
+  // them on touch takes most of the meshes out of every shadow pass.
+  touchCardsCastShadows: false,
 
   // How dark a shadowed area goes, 0 invisible to 1 fully occluded. three default: 1.
   intensity: 1,
