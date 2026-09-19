@@ -618,6 +618,9 @@ export const BACKDROP = {
   startDegrees: 180,
   // Shadows cost a lot for a slow background; switch off for weaker devices.
   shadows: true,
+  // Off on phones and tablets: shadow maps are the largest single thing the
+  // backdrop asks a device for, and it is decoration behind a sign-in form.
+  touchShadows: false,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

@@ -7,7 +7,8 @@ import {
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
-import { maxPixelRatio } from "./device-limits";
+import { isTouchDevice, maxPixelRatio } from "./device-limits";
+import { createBackdropProbe, probeWanted, type BackdropProbe } from "./backdrop-probe";
 
 export interface BackdropScene {
   dispose(): void;
@@ -26,9 +27,12 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   canvas.setAttribute("aria-hidden", "true");
   parent.prepend(canvas);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  // No MSAA on touch: it multiplies the cost of every pixel in the buffer, on
+  // the devices least able to afford it, for a background nobody studies.
+  const touch = isTouchDevice();
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !touch });
   configureRenderer(renderer);
-  renderer.shadowMap.enabled = BACKDROP.shadows;
+  renderer.shadowMap.enabled = touch ? BACKDROP.touchShadows : BACKDROP.shadows;
 
   const scene = new THREE.Scene();
   scene.add(createAmbientLight());
@@ -58,16 +62,22 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   // still there, and rebuilding immediately tends to lose the context again a
   // second later; the browser also restores nothing while the tab is hidden.
   // So the canvas is hidden on loss, and one restore is taken if it comes.
+  // ?gfx-debug=1 only; see backdrop-probe.ts.
+  const probe: BackdropProbe | null = probeWanted() ? createBackdropProbe(canvas) : null;
+  probe?.note(`touch ${touch} shadows ${renderer.shadowMap.enabled}`);
+
   let contextLost = false;
   const onContextLost = (event: Event) => {
     event.preventDefault();
     contextLost = true;
     canvas.style.display = "none";
+    probe?.note("context LOST");
     console.warn("[backdrop] the graphics context was lost; the pages carry on without it");
   };
   const onContextRestored = () => {
     contextLost = false;
     canvas.style.display = "";
+    probe?.note("context restored");
     // Everything on the GPU went with the context; three re-uploads what the
     // scene still references on the next frame.
     resize();
@@ -137,6 +147,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
     mixer?.update(deltaSeconds);
     sparks?.update(deltaSeconds);
     renderer.render(scene, camera);
+    probe?.frame();
   };
   tick();
 
@@ -151,6 +162,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
       canvas.removeEventListener("webglcontextrestored", onContextRestored);
       mixer?.stopAllAction();
       sparks?.dispose();
+      probe?.dispose();
       renderer.dispose();
       // Frees this context's GPU memory at once; the 3D view needs its own.
       renderer.forceContextLoss();
