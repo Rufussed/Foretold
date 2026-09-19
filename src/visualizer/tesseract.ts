@@ -4,7 +4,7 @@ import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js
 import tesseractModel from "../assets/models/wizard/tesseract.glb?url";
 import { ANIMATION, TESSERACT } from "./config";
 
-const TESSERACT_URL = tesseractModel;
+export const TESSERACT_URL = tesseractModel;
 
 export interface TesseractModel {
   template: THREE.Object3D;

@@ -7,6 +7,7 @@ import {
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
+import { maxPixelRatio } from "./render-scale";
 
 export interface BackdropScene {
   dispose(): void;
@@ -40,13 +41,40 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   const resize = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, RENDER.maxPixelRatio, RENDER.maxHeight / height));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio(), RENDER.maxHeight / height));
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
   };
   window.addEventListener("resize", resize);
   resize();
+
+  // A phone short of graphics memory takes the context away, and without this
+  // the canvas stays blank for the rest of the visit: a white page under the
+  // menus, with no error, since the backdrop is decoration and nothing watches
+  // it. Calling preventDefault is what lets the browser hand a context back.
+  //
+  // The scene is not rebuilt here. Whatever ran the device out of memory is
+  // still there, and rebuilding immediately tends to lose the context again a
+  // second later; the browser also restores nothing while the tab is hidden.
+  // So the canvas is hidden on loss, and one restore is taken if it comes.
+  let contextLost = false;
+  const onContextLost = (event: Event) => {
+    event.preventDefault();
+    contextLost = true;
+    canvas.style.display = "none";
+    console.warn("[backdrop] the graphics context was lost; the pages carry on without it");
+  };
+  const onContextRestored = () => {
+    contextLost = false;
+    canvas.style.display = "";
+    // Everything on the GPU went with the context; three re-uploads what the
+    // scene still references on the next frame.
+    resize();
+    console.info("[backdrop] the graphics context came back");
+  };
+  canvas.addEventListener("webglcontextlost", onContextLost);
+  canvas.addEventListener("webglcontextrestored", onContextRestored);
 
   loadTableScene()
     .then((gltf) => {
@@ -97,7 +125,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
     const elapsed = (now - last) / 1000;
     const deltaSeconds = elapsed > 1 ? 0 : elapsed;
     last = now;
-    if (document.hidden) return;
+    if (document.hidden || contextLost) return;
 
     angle += (deltaSeconds / BACKDROP.secondsPerTurn) * Math.PI * 2;
     camera.position.set(
@@ -119,6 +147,8 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
       disposed = true;
       cancelAnimationFrame(frame);
       window.removeEventListener("resize", resize);
+      canvas.removeEventListener("webglcontextlost", onContextLost);
+      canvas.removeEventListener("webglcontextrestored", onContextRestored);
       mixer?.stopAllAction();
       sparks?.dispose();
       renderer.dispose();
