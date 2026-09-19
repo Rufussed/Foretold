@@ -10,9 +10,9 @@ marked **rule change**.
 Players pick one of six avatars before a game starts, first come first served.
 
 - `db/schema.sql`: `room_players` has a new `avatar TEXT` column.
-- `db/database.ts`: after `db.exec(schema)`, adds that column to existing
-  databases if it's missing (`PRAGMA table_info` then `ALTER TABLE`), then
-  creates the unique index `room_players_avatar_unique ON room_players(room_id, avatar)`.
+- `db/migrations.ts` (new): migration 1 adds that column to existing databases
+  if it's missing (`PRAGMA table_info` then `ALTER TABLE`), then creates the
+  unique index `room_players_avatar_unique ON room_players(room_id, avatar)`.
   The index is what enforces one avatar per player in a room; SQLite treats
   NULLs as distinct, so any number of players can be unpicked. It lives here
   rather than in `schema.sql` because on an existing database the index would
@@ -120,3 +120,28 @@ that's unchanged.
 - The REST play and prediction routes don't broadcast the new state or run
   the bot runner; only the socket messages do. The visualiser uses the socket,
   so this only matters for other clients.
+
+## Keeping a live database across deployments
+
+The database file is not in git (`.gitignore` covers `data/` and `*.sqlite`), so
+a deployment never replaces it and its rows persist. Two pieces keep that true
+when the shape of a table has to change:
+
+- `db/migrations.ts`: a numbered list, applied once each against
+  `PRAGMA user_version`, which SQLite stores in the file itself. `schema.sql`
+  still creates whatever table is missing, which is all a new file needs, but it
+  cannot alter a table that already exists - `CREATE TABLE IF NOT EXISTS` skips
+  it whole. So a change to a live table means appending an entry here, never
+  editing or reordering the ones above it. An entry has to be safe on a database
+  already in the shape it wants, since the first ones describe changes that were
+  once applied by hand.
+- `db/snapshot.ts`: before any pending migration runs on an existing file,
+  `VACUUM INTO` writes a consistent copy beside it
+  (`wizard.before-v2.<timestamp>.sqlite`), keeping the newest five. A migration
+  that goes wrong is undone by putting the copy back. Nothing is copied for a
+  database that was just created, or on a start with nothing pending.
+
+`DB_PATH` decides where the file lives; unset, it is `backend/data/wizard.sqlite`,
+inside the deployed tree. On shared hosting point it somewhere a deployment
+cannot reach, e.g. `DB_PATH=/home/<user>/wizard-data/wizard.sqlite`, and move the
+existing file there once. The directory is created if it is missing.
