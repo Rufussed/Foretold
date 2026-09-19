@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { shadowResolution } from "./device-limits";
 import wizardTableModel from "../assets/models/wizard/Wizard.glb?url";
 import {
   AMBIENT,
@@ -102,7 +103,8 @@ export function prepareEnvironment(root: THREE.Object3D): void {
       // Only the shadow-casting light types carry a `shadow`.
       const caster = light as THREE.PointLight | THREE.SpotLight;
       if (caster.castShadow && caster.shadow) {
-        caster.shadow.mapSize.set(SHADOWS.resolution, SHADOWS.resolution);
+        const side = shadowResolution((caster as THREE.PointLight).isPointLight === true);
+        caster.shadow.mapSize.set(side, side);
         caster.shadow.bias = -SHADOWS.shadowBias;
         caster.shadow.normalBias = SHADOWS.normalOffsetBias;
         caster.shadow.intensity = SHADOWS.intensity;
