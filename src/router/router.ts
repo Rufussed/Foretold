@@ -38,6 +38,19 @@ function hideBackdrop(): void {
   backdrop = null;
 }
 
+// Once the page is up, everything the game will need is fetched in the
+// background, in the order the player meets it. Separate from the backdrop, so
+// a browser without WebGL still warms its caches for the waiting room.
+let prefetchStarted = false;
+
+function prefetchGameAssets(): void {
+  if (prefetchStarted) return;
+  prefetchStarted = true;
+  void import("../visualizer/asset-prefetch")
+    .then((module) => module.prefetchGameAssets())
+    .catch((error) => console.warn("[router] no asset prefetch:", error));
+}
+
 // The waiting room also pulls in three.js for its avatar portraits.
 let roomModule: typeof import("../pages/Room") | null = null;
 
@@ -62,6 +75,7 @@ function renderCurrentRoute(container: HTMLElement): void {
   if (!route.startsWith("#/game/") || !route.endsWith("/visualizer")) {
     destroyVisualizer();
     void showBackdrop();
+    prefetchGameAssets();
   } else {
     hideBackdrop();
   }

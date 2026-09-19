@@ -77,7 +77,26 @@ const frontendDist = path.resolve(
   "../../dist",
 );
 if (existsSync(frontendDist)) {
-  await server.register(fastifyStatic, { root: frontendDist });
+  await server.register(fastifyStatic, {
+    root: frontendDist,
+    // send writes its own Cache-Control (max-age=0) after setHeaders runs,
+    // so the per-file headers below only survive with its own switched off.
+    cacheControl: false,
+    // The frontend prefetches the character models and the card art while the
+    // player signs in (see src/visualizer/asset-prefetch.ts), which is only
+    // worth doing if the browser keeps them. Vite's own bundles carry a
+    // content hash, so they can be cached forever; the asset files keep their
+    // names across deployments, so they get a week and revalidate after that.
+    // index.html must never be cached, or a deployment would not be picked up.
+    setHeaders(response, filePath) {
+      const cacheControl = (() => {
+        if (filePath.endsWith(".html")) return "no-cache";
+        if (filePath.includes(`${path.sep}assets${path.sep}`)) return "public, max-age=31536000, immutable";
+        return "public, max-age=604800";
+      })();
+      response.header("Cache-Control", cacheControl);
+    },
+  });
 }
 
 wizardLobbyManager.resetPlayingRooms();
