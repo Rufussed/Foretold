@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { cardsCastShadows, castsShadow, shadowResolution } from "./device-limits";
+import { cardsCastShadows, castsShadow, maxTorchLights, shadowResolution, shadowsEnabled } from "./device-limits";
 import wizardTableModel from "../assets/models/wizard/Wizard.glb?url";
 import {
   AMBIENT,
@@ -57,7 +57,7 @@ export function torchFlames(root: THREE.Object3D): THREE.Object3D[] {
 }
 
 export function configureRenderer(renderer: THREE.WebGLRenderer): void {
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = shadowsEnabled(renderer);
   renderer.shadowMap.type = {
     hard: THREE.BasicShadowMap,
     pcf: THREE.PCFShadowMap,
@@ -73,7 +73,26 @@ export function createAmbientLight(): THREE.AmbientLight {
 
 // Lights from config, shadow casters by name, and any character left baked
 // into the export hidden.
+// How many torch point lights under `root` are set to cast (or not).
+function torchCount(root: THREE.Object3D, casting: boolean): number {
+  let total = 0;
+  root.traverse((object) => {
+    const light = object as THREE.PointLight;
+    if (!light.isPointLight) return;
+    const name = findTorchRootName(light);
+    const settings = {
+      ...DEFAULT_TORCH,
+      ...((name && TORCH_OVERRIDES_BY_CANONICAL.get(name)) || {}),
+    };
+    if (settings.castShadows === casting) total += 1;
+  });
+  return total;
+}
+
 export function prepareEnvironment(root: THREE.Object3D): void {
+  // Torch lights kept so far, counted across the whole walk.
+  let keptCasters = 0;
+  let keptOthers = 0;
   root.traverse((object) => {
     // Lights: the exported intensities don't match how they looked in
     // Blender, so drive them from config.ts instead.
@@ -89,6 +108,28 @@ export function prepareEnvironment(root: THREE.Object3D): void {
           LIGHTING.scale *
           settings.brightnessMultiplier;
         if (settings.color) light.color = new THREE.Color(...settings.color);
+        // Over the touch limit: switch it off entirely rather than pay for
+        // it in every shader and at every pixel. The torches meant to cast
+        // are kept whatever their place in the walk, since they carry the
+        // moving shadows; the rest fill whatever room is left. Blender names
+        // them torch.001 to torch.006 and the casters are .001 and .003, so
+        // first-come would have dropped one of the two that matter. Counted
+        // by what config asks of each torch, not by whether it is casting on
+        // this device, which is a separate question.
+        const cap = maxTorchLights();
+        if (cap >= 0) {
+          const roomForOthers = Math.max(cap - torchCount(root, true), 0);
+          const kept = settings.castShadows ? keptCasters : keptOthers;
+          const allowed = settings.castShadows ? cap : roomForOthers;
+          if (kept >= allowed) {
+            light.visible = false;
+            light.intensity = 0;
+            return;
+          }
+        }
+        if (settings.castShadows) keptCasters += 1;
+        else keptOthers += 1;
+
         light.castShadow =
           settings.castShadows && castsShadow((light as THREE.PointLight).isPointLight === true);
         (light as THREE.PointLight).decay = LIGHTING.falloff;

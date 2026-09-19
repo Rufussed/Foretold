@@ -46,7 +46,13 @@ export const SHADOWS = {
   // which an Android GPU answers by taking the context away. They are on
   // again because `staticShadows` below now draws those passes once instead
   // of sixty times a second. Turn this off first if a device still struggles.
-  touchPointCastShadows: true,
+  touchPointCastShadows: false,
+  // Shadows on touch generally. The device that could not have them is named
+  // in device-limits.ts (Imagination PowerVR, as in the Pixel 10's Tensor
+  // G5), because it is a driver fault rather than a question of power: an
+  // old iPad draws all three shadow maps happily. Set false to take them off
+  // every touch device if another one turns up.
+  touchShadowsAtAll: true,
   // Each torch's light hangs under an animated parent (flickerFlame moves,
   // turns and scales it), so its shadow really does dance - that is the
   // effect, and it must not be frozen. It can be redrawn less often instead.
@@ -197,7 +203,7 @@ export const RENDER = {
   // pixels for every one a laptop draws, on a GPU shared with the rest of the
   // device. Running out of graphics memory does not slow a page down, it takes
   // the context away and leaves a blank canvas.
-  touchMaxPixelRatio: 2,
+  touchMaxPixelRatio: 1.5,
   // Draw this much above the display's own pixel density and let the GPU
   // shrink the result. 1 draws at native, 2 is four times the pixels.
   //
@@ -269,6 +275,15 @@ export const LIGHTING = {
   // Candela for each torch point light, before `scale` and the per-torch
   // multiplier. Falls off as 1/d², so ~90 reads as a modest pool at 6-8 units.
   torchIntensity: 90,
+
+  // How many torch lights stay lit on touch. Every light is evaluated for
+  // every pixel and takes a slot in every shader, so six of them over a
+  // million pixels is millions of lighting calculations a frame - which is
+  // what was still killing an Android context after the draw calls (268) and
+  // the textures (37) had both been ruled out by the phone's own readout.
+  // The two that cast are kept, so the effect survives; the others are the
+  // same warm pool from further away. -1 keeps them all.
+  touchMaxTorchLights: -1,
 
   // Candela for the overhead spot, before `scale`; it sits higher up, so it
   // needs a larger figure than the torches to land with similar strength.
@@ -648,6 +663,10 @@ export const BACKDROP = {
   // Off on phones and tablets: shadow maps are the largest single thing the
   // backdrop asks a device for, and it is decoration behind a sign-in form.
   touchShadows: false,
+  // The self portrait opens a second WebGL context for a thumbnail. On a
+  // phone that is a whole extra renderer, with its own buffers and its own
+  // frame, for a picture the size of a stamp.
+  touchSelfPortrait: false,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

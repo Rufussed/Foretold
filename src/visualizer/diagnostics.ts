@@ -124,7 +124,10 @@ export function createDiagnostics(root: HTMLElement): Diagnostics {
     }
     const { memory, render } = renderer.info;
     note(`holding ${memory.textures} textures, ${memory.geometries} geometries; ${render.calls} draw calls`);
-  }, 5000);
+    // Every second, not every five: on a device that loses its context two
+    // seconds in, a five second interval reports nothing before the crash,
+    // which is exactly when the numbers are wanted.
+  }, 1000);
 
   return {
     note,
