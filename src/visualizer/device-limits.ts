@@ -16,6 +16,9 @@ import { BACKDROP, LIGHTING, RENDER, SHADOWS } from "./config";
 //   ?ratio=1.5        buffer pixels per CSS pixel
 //   ?portrait=0       the corner self portrait, which costs a second context
 //   ?sharpen=0.45     the sharpen pass
+//   ?shadowres=256    shadow map side, to test whether a driver that cannot
+//                     manage a 1024 map can manage a small one
+//   ?pointshadows=1   whether the torches cast, which costs six faces each
 //
 // They apply on any device, so a desktop can reproduce a phone's settings.
 
@@ -51,8 +54,12 @@ export const sharpenAmount = (): number =>
   numberParam("sharpen") ?? (isTouchDevice() ? RENDER.touchSharpen : RENDER.sharpen);
 
 // Whether this light should cast a shadow at all on this device.
-export const castsShadow = (isPointLight: boolean): boolean =>
-  !(isPointLight && isTouchDevice() && !SHADOWS.touchPointCastShadows);
+export const castsShadow = (isPointLight: boolean): boolean => {
+  if (!isPointLight) return true;
+  const override = boolParam("pointshadows");
+  if (override !== null) return override;
+  return !isTouchDevice() || SHADOWS.touchPointCastShadows;
+};
 
 // Imagination's PowerVR, as shipped in the Tensor G5 (Pixel 10). One shadow
 // map of any size is enough to lose the graphics context there about two
@@ -108,6 +115,8 @@ export const cardsCastShadows = (): boolean =>
 // cannot. Measured on the home page before this split: 272MB of shadow maps
 // for one slowly turning table, which is more than a phone's whole budget.
 export function shadowResolution(isPointLight: boolean): number {
+  const override = numberParam("shadowres");
+  if (override !== null) return override;
   if (isPointLight) {
     return isTouchDevice() ? SHADOWS.touchPointResolution : SHADOWS.pointResolution;
   }

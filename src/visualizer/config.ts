@@ -39,14 +39,14 @@ export const SHADOWS = {
   // The same two on phones and tablets, where the browser shares graphics
   // memory with the whole device.
   touchResolution: 1024,
-  touchPointResolution: 256,
+  touchPointResolution: 512,
   // Whether a point light casts at all on touch. A point light shadows in six
   // directions, so each one costs six more passes over the scene: two torches
   // and the overhead spot made one frame into fourteen, and 821 draw calls,
   // which an Android GPU answers by taking the context away. They are on
   // again because `staticShadows` below now draws those passes once instead
   // of sixty times a second. Turn this off first if a device still struggles.
-  touchPointCastShadows: false,
+  touchPointCastShadows: true,
   // Shadows on touch generally. The device that could not have them is named
   // in device-limits.ts (Imagination PowerVR, as in the Pixel 10's Tensor
   // G5), because it is a driver fault rather than a question of power: an
@@ -203,7 +203,7 @@ export const RENDER = {
   // pixels for every one a laptop draws, on a GPU shared with the rest of the
   // device. Running out of graphics memory does not slow a page down, it takes
   // the context away and leaves a blank canvas.
-  touchMaxPixelRatio: 1.5,
+  touchMaxPixelRatio: 2,
   // Draw this much above the display's own pixel density and let the GPU
   // shrink the result. 1 draws at native, 2 is four times the pixels.
   //
@@ -666,7 +666,7 @@ export const BACKDROP = {
   // The self portrait opens a second WebGL context for a thumbnail. On a
   // phone that is a whole extra renderer, with its own buffers and its own
   // frame, for a picture the size of a stamp.
-  touchSelfPortrait: false,
+  touchSelfPortrait: true,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
