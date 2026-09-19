@@ -579,18 +579,17 @@ export const BACKDROP = {
 // MUSIC  (the ambient track looping while the 3D view is open)
 // ══════════════════════════════════════════════════════════════════════════
 
-// export const MUSIC = {
-//   url: "/sound/deuslower-medieval-ambient-236809.mp3",
-//   // 0 silent to 1 full volume; kept low so it stays in the background.
-//   volume: 0.35,
-// };
+// Beside the tracks they name, rather than at the top of the file, so the
+// playlist reads as one block. The build fingerprints an imported file, the
+// same as the models and the card art.
+import endGame from "../assets/sound/CM.02.EndGame.mp3";
+import thoughtWave from "../assets/sound/CM.04.ThoughtWave.mp3";
+import medievalAmbient from "../assets/sound/deuslower-medieval-ambient-236809.mp3";
 
 export const MUSIC = {
-  urls: [
-    "/sound/deuslower-medieval-ambient-236809.mp3",
-    "/sound/CM.04.ThoughtWave.mp3",
-    "/sound/CM.02.EndGame.mp3",
-  ],
+  // Imported rather than named by path so the build fingerprints them, the same
+  // as the models and the card art; the order here is the playing order.
+  urls: [medievalAmbient, thoughtWave, endGame],
   volume: 0.35,
 };
 

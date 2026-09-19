@@ -1,5 +1,11 @@
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import blackWitchModel from "../assets/models/wizard/char-black-witch.glb?url";
+import blindWizardModel from "../assets/models/wizard/char-blind-wizard.glb?url";
+import demonModel from "../assets/models/wizard/char-demon.glb?url";
+import forestElfModel from "../assets/models/wizard/char-forest-elf.glb?url";
+import goatmanModel from "../assets/models/wizard/char-goatman.glb?url";
+import kungfuGirlModel from "../assets/models/wizard/char-kungfu-girl.glb?url";
 import { characterTextureLimit, limitTextureSizes } from "./texture-limit";
 import {
   AVATAR_IDS,
@@ -16,8 +22,22 @@ export interface CharacterAsset {
   clips: Map<string, THREE.AnimationClip>;
 }
 
-const characterUrl = (character: CharacterId): string =>
-  `/models/wizard/char-${character}.glb`;
+// Each model is imported rather than named by path, so Vite copies it into the
+// build with a hash of its contents in the filename: a re-exported character
+// arrives as a new URL, which a player's cache cannot serve the old bytes for.
+// Written out one by one rather than globbed because the Record's key type then
+// makes a new avatar id a build error here until its model is imported, rather
+// than an undefined URL at runtime.
+const CHARACTER_URLS: Record<CharacterId, string> = {
+  "forest-elf": forestElfModel,
+  "blind-wizard": blindWizardModel,
+  "black-witch": blackWitchModel,
+  "kungfu-girl": kungfuGirlModel,
+  goatman: goatmanModel,
+  demon: demonModel,
+};
+
+const characterUrl = (character: CharacterId): string => CHARACTER_URLS[character];
 
 // Blender's NLA Tracks export keeps every strip at its absolute position on
 // the timeline, so "thumbsUp" arrives as keys from ~30s to ~34s. three sizes

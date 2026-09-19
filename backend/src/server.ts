@@ -83,19 +83,18 @@ if (existsSync(frontendDist)) {
     // send writes its own Cache-Control (max-age=0) after setHeaders runs,
     // so the per-file headers below only survive with its own switched off.
     cacheControl: false,
-    // The frontend prefetches the character models and the card art while the
-    // player signs in (see src/visualizer/asset-prefetch.ts), which is only
-    // worth doing if the browser keeps them. Vite's own bundles carry a
-    // content hash, so they can be cached forever; the asset files keep their
-    // names across deployments, so they get a week and revalidate after that.
-    // index.html must never be cached, or a deployment would not be picked up.
+    // Everything the build emits into assets/ carries a hash of its contents in
+    // its filename - the bundles, and since the models, card art and music are
+    // imported rather than named by path, those too. A changed file is a changed
+    // name, so a cached copy can never be the wrong one and needs no expiry.
+    // index.html keeps the unhashed names of the moment, so it is never cached:
+    // it is what tells a browser which hashed files this deployment wants.
     setHeaders(response, filePath) {
-      const cacheControl = (() => {
-        if (filePath.endsWith(".html")) return "no-cache";
-        if (filePath.includes(`${path.sep}assets${path.sep}`)) return "public, max-age=31536000, immutable";
-        return "public, max-age=604800";
-      })();
-      response.header("Cache-Control", cacheControl);
+      const hashed = filePath.includes(`${path.sep}assets${path.sep}`);
+      response.header(
+        "Cache-Control",
+        hashed ? "public, max-age=31536000, immutable" : "no-cache",
+      );
     },
   });
 }
