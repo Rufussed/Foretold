@@ -259,7 +259,12 @@ export async function renderVisualizerPage(
     if (cardTable && latestState) director.push(latestState);
   };
 
-  scene = createWizardScene(canvas, {
+  // A device that will not give out a WebGL context throws here, and it is
+  // not rare: a phone whose graphics process has crashed a few times, or a
+  // browser with too many 3D pages already open, refuses new ones. Say so on
+  // the page rather than leaving "Loading scene..." up for good.
+  try {
+    scene = createWizardScene(canvas, {
     demo: !live,
     onLoading: (loading) => {
       loadingEl?.classList.toggle("hidden", !loading);
@@ -325,12 +330,22 @@ export async function renderVisualizerPage(
         aiEmotes = createAiEmotes(emoteTrigger, () => SEAT_IDS);
       }
     },
-    onUpdate: (deltaSeconds) => {
-      cardTable?.update(deltaSeconds);
-      aiEmotes?.update(deltaSeconds);
-      trigger?.update(deltaSeconds);
-    },
-  });
+      onUpdate: (deltaSeconds) => {
+        cardTable?.update(deltaSeconds);
+        aiEmotes?.update(deltaSeconds);
+        trigger?.update(deltaSeconds);
+      },
+    });
+  } catch (error) {
+    diagnostics?.note(`no 3D view: ${String(error)}`);
+    if (loadingEl) {
+      loadingEl.textContent =
+        "This device could not open a 3D view. Closing other tabs and reopening the browser usually frees one up; the Technical View still works.";
+      loadingEl.classList.remove("hidden");
+    }
+    console.error(error);
+    return;
+  }
 
   predictionPrompt?.applyState();
   gameHud?.applyState();
