@@ -174,7 +174,22 @@ export function createWizardScene(
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   };
+  // Watching the canvas rather than the window: a rotation, the address bar
+  // sliding away, or entering fullscreen all change the element's box, and
+  // some of them do it after the window's own resize event has been and
+  // gone - which left the buffer sized for the previous orientation. This
+  // only re-sizes the drawing buffer and re-aims the camera; the mixer, the
+  // clips and the table's state are untouched, so the scene carries on from
+  // where it is rather than playing in from the start.
+  const observer =
+    typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => resize());
+  observer?.observe(canvas);
+  // Still listened for: a device pixel ratio change (moving to another
+  // screen) resizes nothing, but does change how much buffer a pixel needs.
   window.addEventListener("resize", resize);
+  // iOS reports the viewport separately from the window while the keyboard
+  // or the toolbars move.
+  window.visualViewport?.addEventListener("resize", resize);
 
   // Hands the camera to the mouse without a jump: OrbitControls re-aims the
   // camera at its target on every update, so the target goes on the camera's
@@ -410,7 +425,9 @@ export function createWizardScene(
       disposed = true;
       introWaiters.length = 0;
       cancelAnimationFrame(frame);
+      observer?.disconnect();
       window.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("resize", resize);
       window.removeEventListener("keydown", onOrbitKey);
       if (onKeyDown) window.removeEventListener("keydown", onKeyDown);
       sharpen?.dispose();
