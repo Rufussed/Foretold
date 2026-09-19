@@ -181,9 +181,18 @@ export async function renderVisualizerPage(
   if (localUsername && selfEl && selfView && selfName) {
     selfName.textContent = localUsername;
     selfEl.hidden = false;
-    selfPortrait = createSelfPortrait(selfView);
-    diagnostics?.note("portrait view created");
-    updateSelfPortrait();
+    // Its own WebGL context, and the first one this page asks for: a device
+    // that has run out of them refuses here, before the table is even tried.
+    // The portrait is a garnish, so losing it must not cost the game.
+    try {
+      selfPortrait = createSelfPortrait(selfView);
+      diagnostics?.note("portrait view created");
+      updateSelfPortrait();
+    } catch (error) {
+      selfEl.hidden = true;
+      diagnostics?.note(`no portrait view: ${String(error)}`);
+      console.warn("[visualizer] no self portrait:", error);
+    }
 
     if (import.meta.env.DEV) {
       (window as unknown as Record<string, unknown>).__wizardSelf = selfPortrait;
