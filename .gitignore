@@ -43,3 +43,6 @@ blender/*.glb
 # Deployment diagnostics written at startup
 startup.log
 startup-error.log
+
+
+myNotes.txt
