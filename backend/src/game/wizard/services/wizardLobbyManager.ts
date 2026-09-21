@@ -39,11 +39,19 @@ class WizardLobbyManager {
     }));
   }
 
-  private mapRoom(row: RoomRow): Room {
+  private mapRoom(row: {
+    id: number;
+    name: string;
+    created_by: number;
+    created_by_username: string;
+    max_players: number;
+    status: string;
+  }): Room {
     return {
       id: row.id,
       name: row.name,
       createdBy: row.created_by,
+      createdByUsername: row.created_by_username,
       maxPlayers: row.max_players,
       players: this.getRoomPlayers(row.id),
       status: row.status as "waiting" | "playing",
@@ -54,12 +62,27 @@ class WizardLobbyManager {
     const rows = db
       .prepare(
         `
-          SELECT id, name, created_by, max_players, status
+          SELECT
+            rooms.id,
+            rooms.name,
+            rooms.created_by,
+            users.username AS created_by_username,
+            rooms.max_players,
+            rooms.status
           FROM rooms
-          ORDER BY created_at DESC
+          JOIN users
+            ON users.id = rooms.created_by
+          ORDER BY rooms.created_at DESC
         `,
       )
-      .all() as RoomRow[];
+      .all() as {
+        id: number;
+        name: string;
+        created_by: number;
+        created_by_username: string;
+        max_players: number;
+        status: string;
+      }[];
 
     return rows.map((row) => this.mapRoom(row));
   }
@@ -68,12 +91,27 @@ class WizardLobbyManager {
     const row = db
       .prepare(
         `
-          SELECT id, name, created_by, max_players, status
+          SELECT
+            rooms.id,
+            rooms.name,
+            rooms.created_by,
+            users.username AS created_by_username,
+            rooms.max_players,
+            rooms.status
           FROM rooms
-          WHERE id = ?
+          JOIN users
+            ON users.id = rooms.created_by
+          WHERE rooms.id = ?
         `,
       )
-      .get(roomId) as RoomRow | undefined;
+      .get(roomId) as {
+        id: number;
+        name: string;
+        created_by: number;
+        created_by_username: string;
+        max_players: number;
+        status: string;
+      } | undefined;
 
     if (!row) {
       return null;
@@ -163,45 +201,52 @@ class WizardLobbyManager {
     return join;
   }
 
-  deleteRoom(roomId: number, userId: number): boolean {
+  // DEVELOPMENT ONLY - REMOVE/RESTRICT BEFORE PRODUCTION
+  deleteRoom(roomId: number): boolean {
     const room = db
       .prepare(`
-        SELECT id, created_by, status
+        SELECT id
         FROM rooms
         WHERE id = ?
       `)
-      .get(roomId) as {
-        id: number;
-        created_by: number;
-        status: string;
-      } | undefined;
+      .get(roomId) as { id: number } | undefined;
 
     if (!room) {
       return false;
     }
 
-    if (room.created_by !== userId) {
-      return false;
-    }
+  /*
+   * DEVELOPMENT ONLY:
+   * Any authenticated user can currently delete any room.
+   *
+   * This is intentional while the game is being developed/tested,
+   * so abandoned or active rooms can be removed easily.
+   *
+   * BEFORE PRODUCTION:
+   * Restore authorization so that only the room creator
+   * (or another explicitly authorized role) can delete the room.
+   *
+   * See also the DELETE /lobby/:roomId route in wizardRoutes.ts.
+   */
+  transaction(() => {
+    db.prepare(`
+      DELETE FROM games
+      WHERE room_id = ?
+    `).run(roomId);
 
-    if (room.status !== "waiting") {
-      return false;
-    }
+    db.prepare(`
+      DELETE FROM room_players
+      WHERE room_id = ?
+    `).run(roomId);
 
-    transaction(() => {
-      db.prepare(`
-        DELETE FROM room_players
-        WHERE room_id = ?
-      `).run(roomId);
+    db.prepare(`
+      DELETE FROM rooms
+      WHERE id = ?
+    `).run(roomId);
+  });
 
-      db.prepare(`
-        DELETE FROM rooms
-        WHERE id = ?
-      `).run(roomId);
-    });
-
-    return true;
-  }
+  return true;
+}
 
   //most likely useless, but the idea is to restart games from where they left off
   resetStalePlayingRooms(activeRoomIds: Set<number>): void {

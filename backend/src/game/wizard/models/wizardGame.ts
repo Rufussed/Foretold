@@ -13,6 +13,7 @@ export interface Room {
   id: number;
   name: string;
   createdBy: number;
+  createdByUsername: string;
   maxPlayers: number;
   players: RoomPlayer[];
   status: "waiting" | "playing";

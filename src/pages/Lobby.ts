@@ -76,6 +76,7 @@ export async function renderLobbyPage(container: HTMLElement): Promise<void> {
           id: number;
           name: string;
           createdBy: number;
+          createdByUsername: string;
           players: { username: string; avatar: string | null }[];
           maxPlayers: number;
           status: "waiting" | "playing";
@@ -87,9 +88,9 @@ export async function renderLobbyPage(container: HTMLElement): Promise<void> {
           return `
             <div class="panel">
               <h3>${room.name}</h3>
-
+              
               <p>Room ID: ${room.id}</p>
-
+              <p>Created by: ${room.createdByUsername}</p>
               <p>
                 ${room.players.length}/${room.maxPlayers} players
               </p>
@@ -102,7 +103,9 @@ export async function renderLobbyPage(container: HTMLElement): Promise<void> {
               </button>
 
               ${
-                room.createdBy === currentUser.id && room.status === "waiting"
+                //to delete room only by creator
+                // room.createdBy === currentUser.id && room.status === "waiting"
+                true
                   ? `
                     <button
                       type="button"

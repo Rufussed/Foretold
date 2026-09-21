@@ -305,6 +305,16 @@ export default async function wizardRoutes(
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
 
+  /*
+ * DEVELOPMENT ONLY:
+ * Room deletion is intentionally available to any authenticated user.
+ *
+ * BEFORE PRODUCTION:
+ * Verify that request.user.sub is authorized to delete this room.
+ * At minimum, compare it with rooms.created_by.
+ *
+ * Do NOT leave this endpoint unrestricted in production.
+ */
   server.delete(
     "/lobby/:roomId",
     {
@@ -344,10 +354,14 @@ export default async function wizardRoutes(
       return reply.status(401).send({ error: "User identity missing" });
     }
 
-    const deleted = wizardLobbyManager.deleteRoom(
-      roomId,
-      Number(tokenUser.sub),
-    );
+    //we need so that only the created can delete the game
+    // const deleted = wizardLobbyManager.deleteRoom(
+    //   roomId,
+    //   Number(tokenUser.sub),
+    // );
+
+    // DEVELOPMENT ONLY - REMOVE/RESTRICT BEFORE PRODUCTION
+    const deleted = wizardLobbyManager.deleteRoom(roomId);
 
     if (!deleted) {
       return reply.status(403).send({
