@@ -165,5 +165,30 @@ export default async function authRoutes(
 		});
 		}
 	});
+
+	  server.get("/me/stats", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const tokenUser = request.user as {
+        sub: number;
+        username: string;
+      };
+
+      const stats = playerStatsRepository.getStats(tokenUser.sub);
+
+      if (!stats) {
+        return reply.status(404).send({
+          error: "Player stats not found",
+        });
+      }
+
+      return reply.send(stats);
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
 }
 

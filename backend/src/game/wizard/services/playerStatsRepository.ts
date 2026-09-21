@@ -21,6 +21,14 @@ class PlayerStatsRepository {
     `).run(userId);
   }
 
+  initializeForAllUsers(): void {
+    db.prepare(`
+      INSERT OR IGNORE INTO player_stats (user_id)
+      SELECT id
+      FROM users
+    `).run();
+  }
+
   incrementGamesPlayed(userId: number): void {
     db.prepare(`
       UPDATE player_stats
