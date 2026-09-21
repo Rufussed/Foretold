@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { UserService } from "../services/userService.js";
 import { isBotName } from "../game/wizard/models/bot.js";
 import { playerStatsRepository } from "../game/wizard/services/playerStatsRepository.js";
+import { playerOpponentRepository } from "../game/wizard/services/playerOpponentRepository.js";
 
 interface RegisterBody {
   username: string;
@@ -184,6 +185,25 @@ export default async function authRoutes(
       }
 
       return reply.send(stats);
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
+  server.get("/me/opponents", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const tokenUser = request.user as {
+        sub: number;
+        username: string;
+      };
+
+      const opponents = playerOpponentRepository.getOpponents(tokenUser.sub);
+
+      return reply.send(opponents);
     } catch {
       return reply.status(401).send({
         error: "Invalid or missing token",

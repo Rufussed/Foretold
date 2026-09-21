@@ -1,5 +1,6 @@
 import {
   getCurrentUser,
+  getCurrentUserOpponents,
   getCurrentUserStats,
   logout,
 } from "../services/auth";
@@ -14,6 +15,7 @@ export async function renderProfilePage(container: HTMLElement): Promise<void> {
 
   const user = await getCurrentUser();
   const stats = await getCurrentUserStats();
+  const opponents = await getCurrentUserOpponents();
 
   container.innerHTML = `
     <div class="page">
@@ -37,6 +39,23 @@ export async function renderProfilePage(container: HTMLElement): Promise<void> {
         <p><strong>Exact predictions:</strong> ${stats.exactPredictions}</p>
         <p><strong>Games created:</strong> ${stats.gamesCreated}</p>
         <p><strong>Games created and finished:</strong> ${stats.gamesCreatedFinished}</p>
+        <h2>Opponents</h2>
+
+        ${
+          opponents.length === 0
+            ? "<p>No games played yet.</p>"
+            : opponents
+                .map(
+                  (opponent) => `
+                    <p>
+                      <strong>${opponent.opponentName}</strong>
+                      — ${opponent.gamesPlayed}
+                      ${opponent.gamesPlayed === 1 ? "game" : "games"}
+                    </p>
+                  `,
+                )
+                .join("")
+        }
       </main>
     </div>
   `;

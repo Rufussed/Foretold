@@ -25,3 +25,11 @@ export interface PlayerStats {
   gamesCreated: number;
   gamesCreatedFinished: number;
 }
+
+export interface PlayerOpponent {
+  playerId: number;
+  opponentType: "user" | "bot";
+  opponentId: number | null;
+  opponentName: string;
+  gamesPlayed: number;
+}
