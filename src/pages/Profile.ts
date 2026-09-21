@@ -16,6 +16,14 @@ export async function renderProfilePage(container: HTMLElement): Promise<void> {
   const user = await getCurrentUser();
   const stats = await getCurrentUserStats();
   const opponents = await getCurrentUserOpponents();
+  const winRate =
+    stats.gamesFinished > 0
+      ? (stats.gamesWon / stats.gamesFinished) * 100
+      : 0;
+  const exactPredictionRate =
+    stats.predictionsMade > 0
+      ? (stats.exactPredictions / stats.predictionsMade) * 100
+      : 0;
 
   container.innerHTML = `
     <div class="page">
@@ -33,8 +41,10 @@ export async function renderProfilePage(container: HTMLElement): Promise<void> {
         <p><strong>Games played:</strong> ${stats.gamesPlayed}</p>
         <p><strong>Games finished:</strong> ${stats.gamesFinished}</p>
         <p><strong>Games won:</strong> ${stats.gamesWon}</p>
+        <p><strong>Win rate:</strong> ${winRate.toFixed(1)}%</p>
         <p><strong>Total points:</strong> ${stats.totalPoints}</p>
         <p><strong>Tricks won:</strong> ${stats.tricksWon}</p>
+        <p><strong>Exact prediction rate:</strong> ${exactPredictionRate.toFixed(1)}%</p>
         <p><strong>Predictions made:</strong> ${stats.predictionsMade}</p>
         <p><strong>Exact predictions:</strong> ${stats.exactPredictions}</p>
         <p><strong>Games created:</strong> ${stats.gamesCreated}</p>
