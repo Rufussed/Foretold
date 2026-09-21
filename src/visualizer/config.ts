@@ -25,7 +25,45 @@ export const SHADOWS = {
 
   // Shadow map size in px per light; the biggest lever on sharpness, at the
   // cost of memory. three default: 512.
+  //
+  // This one is for lights that shadow in a single direction (the overhead
+  // spot): one map of resolution x resolution, so 2048 costs 16MB.
   resolution: 2048,
+  // Point lights - the torches - shadow in all six directions, and three
+  // allocates that as a 4x2 atlas of this size. So this number costs
+  // 32x its square in bytes: 2048 here was 128MB per torch, and with two
+  // torches the backdrop alone wanted more graphics memory than a phone has.
+  // Torch shadows are soft and close to their light, so they carry the drop
+  // well. Raise only while watching what it costs.
+  pointResolution: 512,
+  // The same two on phones and tablets, where the browser shares graphics
+  // memory with the whole device.
+  touchResolution: 1024,
+  touchPointResolution: 512,
+  // Whether a point light casts at all on touch. A point light shadows in six
+  // directions, so each one costs six more passes over the scene: two torches
+  // and the overhead spot made one frame into fourteen, and 821 draw calls,
+  // which an Android GPU answers by taking the context away. They are on
+  // again because `staticShadows` below now draws those passes once instead
+  // of sixty times a second. Turn this off first if a device still struggles.
+  touchPointCastShadows: true,
+  // Shadows on touch generally. The device that could not have them is named
+  // in device-limits.ts (Imagination PowerVR, as in the Pixel 10's Tensor
+  // G5), because it is a driver fault rather than a question of power: an
+  // old iPad draws all three shadow maps happily. Set false to take them off
+  // every touch device if another one turns up.
+  touchShadowsAtAll: true,
+  // Each torch's light hangs under an animated parent (flickerFlame moves,
+  // turns and scales it), so its shadow really does dance - that is the
+  // effect, and it must not be frozen. It can be redrawn less often instead.
+  // On touch each casting light refreshes its map every Nth frame, staggered
+  // so no two land on the same frame: at 3 the shadows still flicker, and a
+  // frame costs one light's six faces rather than every light's.
+  touchPointUpdateEvery: 3,
+  // The cards are the other moving caster, and there are a lot of them in the
+  // scene. Their shadows are the faintest thing on the table, and dropping
+  // them on touch takes most of the meshes out of every shadow pass.
+  touchCardsCastShadows: false,
 
   // How dark a shadowed area goes, 0 invisible to 1 fully occluded. three default: 1.
   intensity: 1,
@@ -100,10 +138,9 @@ export const CAMERA_FOLLOW = {
   // How long a turn takes, in seconds, easing in and out.
   turnSeconds: 3,
 
-  // Pause after the turn changes before the camera starts turning, in seconds:
-  // long enough for another player's card to reach the play area
-  // (OPPONENT_PLAYS: 0.4s up out of the hand plus 0.6s across).
-  delaySeconds: 1,
+  // Pause before the camera starts turning, in seconds. The table director
+  // already waits for cards to land, so the turn starts with its announcement.
+  delaySeconds: 0,
 
   // Aim this far above the middle of the player's card set, in scene units:
   // raise it to centre on their face rather than their cards.
@@ -160,12 +197,57 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 // maxHeight rows, and the browser scales the result up to fill the canvas.
 // Raise maxHeight for sharpness, lower it for framerate.
 export const RENDER = {
-  maxHeight: 1080, // tallest drawing buffer, in pixels
-  maxPixelRatio: 1, // never draw more than 1 buffer pixel per CSS pixel
+  maxHeight: 3240, // tallest drawing buffer, in pixels
+  maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
+  // The same cap on phones and tablets, where a 3x panel means drawing nine
+  // pixels for every one a laptop draws, on a GPU shared with the rest of the
+  // device. Running out of graphics memory does not slow a page down, it takes
+  // the context away and leaves a blank canvas.
+  touchMaxPixelRatio: 2,
+  // Draw this much above the display's own pixel density and let the GPU
+  // shrink the result. 1 draws at native, 2 is four times the pixels.
+  //
+  // Measured 2026-09-19, for why this is 1.5 and not 2: a card fills about
+  // 18% of the window's height (0.72 scene units tall, seen from 9.6 units
+  // away through a 23.3 degree lens), so on a 1080-tall window it lands on
+  // ~196 CSS pixels. Its face is 350x490, so the art is being shrunk, not
+  // stretched - a higher-resolution scan would change nothing. What
+  // supersampling bought was cleaner minification of a texture read at a
+  // grazing angle, and `sharpen` below now does most of that for a fraction
+  // of the cost. Above 1.5 the gain is slight and the cost is the square.
+  supersample: 1.5,
+  // Contrast-adaptive sharpening as the scene is copied to the canvas: one
+  // pass over the screen, rather than drawing the whole scene larger. 0 turns
+  // it off, 0.35 is gentle, much above 0.8 starts to outline things.
+  sharpen: 0.45,
+  // Off on touch: it renders through a half-float buffer, which is another
+  // ~20MB of graphics memory on a device that has already been seen to run
+  // out, and the cards are small enough on a phone that it buys little.
+  touchSharpen: 0,
+  // Draw fewer pixels when the device cannot hold targetFps, and more again
+  // when it can. The multiplier rides on top of everything above, so a strong
+  // machine keeps the full image and a weak one stays smooth instead of
+  // everybody being held to what the weakest can manage.
+  adaptive: {
+    enabled: true,
+    targetFps: 50,
+    min: 0.5,
+    max: 1,
+  },
   // Character textures are shrunk to at most this many pixels a side as they
   // load. Graphics memory goes with the square: 4096 needs 4x 2048.
   characterTextureSize: 2048,
-  touchCharacterTextureSize: 1024, // phones and tablets
+  // 512, not 1024, because the characters ship 1024px textures: a 1024 limit
+  // shrinks nothing at all, which is what it did until this was measured. Six
+  // seated characters were 100MB+ of texture on a phone, and the graphics
+  // context went with it 1.8 seconds after the table loaded. At the size a
+  // character is drawn on a 485px-wide screen, 512 is more than it can show.
+  touchCharacterTextureSize: 512,
+  // The same for the table scene, which ships ten 1024px textures - about
+  // 54MB once they are on the GPU with their mipmaps, and it is on screen
+  // behind every page, not only the 3D view. Desktops keep them as exported.
+  tableTextureSize: 1024,
+  touchTableTextureSize: 512,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -193,6 +275,15 @@ export const LIGHTING = {
   // Candela for each torch point light, before `scale` and the per-torch
   // multiplier. Falls off as 1/d², so ~90 reads as a modest pool at 6-8 units.
   torchIntensity: 90,
+
+  // How many torch lights stay lit on touch. Every light is evaluated for
+  // every pixel and takes a slot in every shader, so six of them over a
+  // million pixels is millions of lighting calculations a frame - which is
+  // what was still killing an Android context after the draw calls (268) and
+  // the textures (37) had both been ruled out by the phone's own readout.
+  // The two that cast are kept, so the effect survives; the others are the
+  // same warm pool from further away. -1 keeps them all.
+  touchMaxTorchLights: -1,
 
   // Candela for the overhead spot, before `scale`; it sits higher up, so it
   // needs a larger figure than the torches to land with similar strength.
@@ -429,7 +520,7 @@ export const CARD_HANDLING = {
 
 export const DEALING = {
   // How far above the top of the stack a card travels, in scene units.
-  liftHeight: 0.35,
+  liftHeight: 0.9,
 
   // Rising straight up off the stack, staying flat.
   liftSeconds: 0.15,
@@ -437,8 +528,13 @@ export const DEALING = {
   // Travelling flat to above where it's going.
   travelSeconds: 0.35,
 
+  // How far past its place the card carries on, away from the table's middle,
+  // before it turns and settles back into the fan: without this it turns where
+  // it lands and clips through the cards beside it. In scene units.
+  approachDistance: 1,
+
   // Turning into place as it settles.
-  settleSeconds: 0.25,
+  settleSeconds: 0.5,
 
   // Time between one card leaving the stack and the next. Shorter than the
   // three phases above means several cards are in the air at once.
@@ -564,23 +660,30 @@ export const BACKDROP = {
   startDegrees: 180,
   // Shadows cost a lot for a slow background; switch off for weaker devices.
   shadows: true,
+  // Off on phones and tablets: shadow maps are the largest single thing the
+  // backdrop asks a device for, and it is decoration behind a sign-in form.
+  touchShadows: false,
+  // The self portrait opens a second WebGL context for a thumbnail. On a
+  // phone that is a whole extra renderer, with its own buffers and its own
+  // frame, for a picture the size of a stamp.
+  touchSelfPortrait: true,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
 // MUSIC  (the ambient track looping while the 3D view is open)
 // ══════════════════════════════════════════════════════════════════════════
 
-// export const MUSIC = {
-//   url: "/sound/deuslower-medieval-ambient-236809.mp3",
-//   // 0 silent to 1 full volume; kept low so it stays in the background.
-//   volume: 0.35,
-// };
+// Beside the tracks they name, rather than at the top of the file, so the
+// playlist reads as one block. The build fingerprints an imported file, the
+// same as the models and the card art.
+import endGame from "../assets/sound/CM.02.EndGame.mp3";
+import thoughtWave from "../assets/sound/CM.04.ThoughtWave.mp3";
+import medievalAmbient from "../assets/sound/deuslower-medieval-ambient-236809.mp3";
 
 export const MUSIC = {
-  urls: [
-    "/sound/CM.04.ThoughtWave.mp3",
-    "/sound/CM.02.EndGame.mp3",
-  ],
+  // Imported rather than named by path so the build fingerprints them, the same
+  // as the models and the card art; the order here is the playing order.
+  urls: [medievalAmbient, thoughtWave, endGame],
   volume: 0.35,
 };
 

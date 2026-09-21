@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
-import { cardKey, cardTexture, trumpColor, trumpFaceTexture } from "./card-textures";
+import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
@@ -21,7 +21,13 @@ export interface TableCards {
   // Cards played in the current trick, in play order. A newly played card
   // with an origin (the spot in another player's hand it came from) rises out
   // of it first, then turns into place on its played-card slot.
-  setTrick(cards: readonly Card[], origins?: ReadonlyMap<string, Placement>): void;
+  // flyFromHand: cards played from your own hand by the server (your NPC, when
+  // watching), which rise and fly from where they sit like other players' do.
+  setTrick(
+    cards: readonly Card[],
+    origins?: ReadonlyMap<string, Placement>,
+    flyFromHand?: ReadonlySet<string>,
+  ): void;
   // The turned-up trump card, painted in the trump suit's colour; null hides it.
   setTrump(card: Card | null, trumpSuit: Suit | null): void;
   update(deltaSeconds: number): void;
@@ -139,7 +145,7 @@ export function createTableCards(
 
   let trump: {
     object: THREE.Object3D;
-    face: THREE.MeshStandardMaterial | null;
+    face: THREE.MeshBasicMaterial | null;
     card: string | null;
     color: string | null;
   } | null = null;
@@ -172,6 +178,9 @@ export function createTableCards(
     applyPlacement(entry.object, slot);
     return false;
   };
+
+  // The trick as last set, so a card flies from the hand only once.
+  let trickOrderShown = new Set<string>();
 
   const visibleHand = () => handOrder.filter((key) => key !== pending?.key && !held.has(key));
 
@@ -230,7 +239,7 @@ export function createTableCards(
         return;
       }
 
-      const texture = trumpFaceTexture(card, trumpSuit);
+      const texture = cardTexture(card);
       if (!trump) {
         const built = factory.build("trump-card-face", texture);
         applyPlacement(built.object, trumpSlot);
@@ -243,21 +252,29 @@ export function createTableCards(
       trump.color = trumpColor(trumpSuit);
     },
 
-    setTrick(cardsPlayed, origins) {
+    setTrick(cardsPlayed, origins, flyFromHand) {
       trickOrder = cardsPlayed.map(cardKey);
       for (const key of [...suppressed]) {
         if (!trickOrder.includes(key)) suppressed.delete(key);
       }
       for (const card of cardsPlayed) {
         const entry = ensure(card);
-        const from = origins?.get(entry.key);
-        if (from && !entry.placed) {
+        const inHand = flyFromHand?.has(entry.key) && entry.placed && !entry.flight && !trickOrderShown.has(entry.key);
+        const from = inHand
+          ? {
+              position: entry.object.position.clone(),
+              quaternion: entry.object.quaternion.clone(),
+              scale: entry.object.scale.clone(),
+            }
+          : origins?.get(entry.key);
+        if (from && (!entry.placed || inHand)) {
           applyPlacement(entry.object, from);
           entry.flight = { from, startedAt: clock };
           entry.placed = true;
         }
       }
       if (pending && trickOrder.includes(pending.key)) pending = null;
+      trickOrderShown = new Set(trickOrder);
     },
 
     update(deltaSeconds) {

@@ -1,3 +1,4 @@
+import { gameWinners } from "./game-winner";
 import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { Card } from "../../../backend/src/game/wizard/models/card";
 
@@ -61,8 +62,14 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       }
       return current === local ? "Your Turn." : `${current}'s turn.`;
     case "finished": {
-      const winner = [...state.players].sort((a, b) => b.score - a.score)[0];
+      const winners = gameWinners(state);
+      const winner = winners[0];
       if (!winner) return "Game over.";
+      if (winners.length > 1) {
+        const names = winners.map((player) => nameOf(player.username, local));
+        const listed = `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
+        return `${listed} tie for the Game!`;
+      }
       return `${nameOf(winner.username, local)} ${winner.username === local ? "Win" : "Wins"} the Game!`;
     }
   }

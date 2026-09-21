@@ -2,9 +2,10 @@ import { API_BASE } from "../services/api";
 import { getCurrentUser, getToken } from "../services/auth";
 import { createGameSocket, type GameSocketMessage } from "../services/gameSocket";
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
-import { isBotName } from "../../backend/src/game/wizard/models/bot";
+import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
+import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
 import { createEmoteTrigger, type EmoteTrigger } from "../visualizer/emote-trigger";
 import type { GameConnection } from "../visualizer/game-connection";
@@ -13,13 +14,15 @@ import { useHeadshotRenderer } from "../visualizer/hud/headshots";
 import { createCardTable, type CardTable } from "../visualizer/card-table";
 import { createDiagnostics, type Diagnostics } from "../visualizer/diagnostics";
 import { EMOTE_NAMES, SEAT_IDS, type Emote } from "../visualizer/player-characters";
+import { createTableDirector, type TableDirector } from "../visualizer/table-director";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
+import { selfPortraitEnabled } from "../visualizer/device-limits";
 import { createTableLayout } from "../visualizer/table-layout";
-import { createTurnCamera } from "../visualizer/turn-camera";
+import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
 
 // Each emote button shows an emoji; the name is its tooltip and accessible label.
@@ -55,17 +58,21 @@ export async function renderVisualizerPage(
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
   let gameHud: GameHud | null = null;
+  let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
+  let fullscreenToggle: FullscreenToggle | null = null;
 
   teardown = () => {
     destroyed = true;
     musicToggle?.dispose();
+    fullscreenToggle?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
     diagnostics?.dispose();
     cardTable?.dispose();
+    tableDirector?.dispose();
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
     gameHud?.dispose();
@@ -107,6 +114,10 @@ export async function renderVisualizerPage(
   if (pageEl) {
     music = createBackgroundMusic();
     musicToggle = createMusicToggle(pageEl, music);
+    // The page itself, not the canvas: the HUD, the prompts and the emotes
+    // have to come with it, or fullscreen would show a table and nothing to
+    // play it with. Null where the browser will not do fullscreen at all.
+    fullscreenToggle = createFullscreenToggle(pageEl, pageEl);
   }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
@@ -141,6 +152,8 @@ export async function renderVisualizerPage(
       });
       if (response.ok) {
         latestState = (await response.json()) as PublicWizardGameState;
+        // An all-NPC game: you watch from your own NPC's seat.
+        localUsername = seatNameFor(localUsername, latestState.players) ?? localUsername;
       }
     } catch (error) {
       console.warn("[visualizer] no live game, showing the demo table:", error);
@@ -155,7 +168,7 @@ export async function renderVisualizerPage(
   let seatSync: SeatSync | null = null;
   let trigger: EmoteTrigger | null = null;
   let aiEmotes: { update(deltaSeconds: number): void } | null = null;
-  let turnCamera: { applyState(): void } | null = null;
+  let turnCamera: TurnCamera | null = null;
 
   // Your own character, bottom right: the avatar you claimed, or a stand-in
   // picked from your name when there's no game to read it from.
@@ -173,12 +186,21 @@ export async function renderVisualizerPage(
   const selfView = selfEl?.querySelector<HTMLElement>(".visualizer-self-view");
   const selfName = selfEl?.querySelector<HTMLElement>(".visualizer-self-name");
 
-  if (localUsername && selfEl && selfView && selfName) {
+  if (localUsername && selfEl && selfView && selfName && selfPortraitEnabled()) {
     selfName.textContent = localUsername;
     selfEl.hidden = false;
-    selfPortrait = createSelfPortrait(selfView);
-    diagnostics?.note("portrait view created");
-    updateSelfPortrait();
+    // Its own WebGL context, and the first one this page asks for: a device
+    // that has run out of them refuses here, before the table is even tried.
+    // The portrait is a garnish, so losing it must not cost the game.
+    try {
+      selfPortrait = createSelfPortrait(selfView);
+      diagnostics?.note("portrait view created");
+      updateSelfPortrait();
+    } catch (error) {
+      selfEl.hidden = true;
+      diagnostics?.note(`no portrait view: ${String(error)}`);
+      console.warn("[visualizer] no self portrait:", error);
+    }
 
     if (import.meta.env.DEV) {
       (window as unknown as Record<string, unknown>).__wizardSelf = selfPortrait;
@@ -199,19 +221,49 @@ export async function renderVisualizerPage(
       }
     : null;
 
+  // Plays each server snapshot out as a chain of steps (camera turns,
+  // announcements, the trick reward, the deal), each starting when the one
+  // before is done; see table-director.ts. The card table and the HUD follow
+  // what it has shown so far.
+  const director = createTableDirector({
+    initial: null,
+    localUsername: localUsername ?? "",
+    applyTable: () => cardTable?.applyState(),
+    applyHud: () => {
+      predictionPrompt?.applyState();
+      trumpPrompt?.applyState();
+      gameHud?.applyState();
+    },
+    dealing: () => cardTable?.dealing ?? false,
+    lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
+    whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
+    playTrickReward: (done) => (cardTable ? cardTable.playTrickReward(done) : done()),
+  });
+  tableDirector = director;
+  const tableConnection: GameConnection | null = gameConnection && {
+    ...gameConnection,
+    state: () => director.tableState(),
+  };
+  const hudConnection: GameConnection | null = gameConnection && {
+    ...gameConnection,
+    state: () => director.hudState(),
+  };
+
   const page = container.querySelector<HTMLElement>(".visualizer-page");
   if (gameConnection && page) {
     // Bidding waits until every card has been dealt.
-    predictionPrompt = createPredictionPrompt(page, gameConnection, {
-      blocked: () => !cardTable || cardTable.dealing,
+    // Prompts open once your turn has been announced.
+    predictionPrompt = createPredictionPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown(),
     });
     // A Wizard or Jester turned up for trump: the round's first player picks the suit.
-    trumpPrompt = createTrumpPrompt(page, gameConnection, {
-      blocked: () => !cardTable || cardTable.dealing,
+    trumpPrompt = createTrumpPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown(),
     });
     // The banner's gameplay lines wait until every card, trump included, has landed.
-    gameHud = createGameHud(page, gameConnection, {
+    gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
+      statusBlocked: () => !director.turnShown(),
     });
   }
 
@@ -220,14 +272,16 @@ export async function renderVisualizerPage(
       seatSync.applyPlayers(latestState.players, localUsername);
     }
     updateSelfPortrait();
-    cardTable?.applyState();
-    turnCamera?.applyState();
-    predictionPrompt?.applyState();
-    trumpPrompt?.applyState();
-    gameHud?.applyState();
+    // Before the table exists the newest snapshot waits; onReady applies it.
+    if (cardTable && latestState) director.push(latestState);
   };
 
-  scene = createWizardScene(canvas, {
+  // A device that will not give out a WebGL context throws here, and it is
+  // not rare: a phone whose graphics process has crashed a few times, or a
+  // browser with too many 3D pages already open, refuses new ones. Say so on
+  // the page rather than leaving "Loading scene..." up for good.
+  try {
+    scene = createWizardScene(canvas, {
     demo: !live,
     onLoading: (loading) => {
       loadingEl?.classList.toggle("hidden", !loading);
@@ -254,27 +308,23 @@ export async function renderVisualizerPage(
         environment,
         view,
         layout,
-        game: gameConnection,
+        game: tableConnection,
         seatOf: (username) => sync?.seatOf(username) ?? null,
         headOf: (seat) => players.headPosition(seat),
-        onDealDone: () => {
-          predictionPrompt?.applyState();
-          trumpPrompt?.applyState();
-          gameHud?.applyState();
-        },
+        onDealDone: () => director.dealt(),
       });
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizardCards = cardTable.cards;
         (window as unknown as Record<string, unknown>).__wizardTable = cardTable;
       }
 
-      // Live games: the camera turns toward whoever's turn it is.
+      // Live games: the camera turns toward players when the director says.
       if (sync && gameConnection) {
         turnCamera = createTurnCamera({
           view,
           environment,
           layout,
-          game: gameConnection,
+          localUsername: gameConnection.localUsername,
           seatOf: (username) => sync.seatOf(username),
         });
       }
@@ -297,12 +347,22 @@ export async function renderVisualizerPage(
         aiEmotes = createAiEmotes(emoteTrigger, () => SEAT_IDS);
       }
     },
-    onUpdate: (deltaSeconds) => {
-      cardTable?.update(deltaSeconds);
-      aiEmotes?.update(deltaSeconds);
-      trigger?.update(deltaSeconds);
-    },
-  });
+      onUpdate: (deltaSeconds) => {
+        cardTable?.update(deltaSeconds);
+        aiEmotes?.update(deltaSeconds);
+        trigger?.update(deltaSeconds);
+      },
+    });
+  } catch (error) {
+    diagnostics?.note(`no 3D view: ${String(error)}`);
+    if (loadingEl) {
+      loadingEl.textContent =
+        "This device could not open a 3D view. Closing other tabs and reopening the browser usually frees one up; the Technical View still works.";
+      loadingEl.classList.remove("hidden");
+    }
+    console.error(error);
+    return;
+  }
 
   predictionPrompt?.applyState();
   gameHud?.applyState();
@@ -317,6 +377,16 @@ export async function renderVisualizerPage(
       if (message.type === "game_state" && message.state) {
         latestState = message.state as PublicWizardGameState;
         applyLatestState();
+      }
+
+      if (message.type === "player_emote" && message.username && message.emote) {
+        // Another player pressed an emote. Their character sits at the table,
+        // so it plays there rather than on the corner portrait, which is only
+        // ever your own.
+        const seat = seatSync?.seatOf(message.username) ?? null;
+        if (seat !== null && EMOTE_NAMES.includes(message.emote as Emote)) {
+          trigger?.request({ target: seat, emote: message.emote as Emote, source: "network" });
+        }
       }
 
       if (message.type === "error") {
@@ -342,5 +412,7 @@ export async function renderVisualizerPage(
 
     const emote = button.dataset.emote as Emote;
     trigger.request({ target: "self", emote, source: "local" });
+    // The other players see it on this player's character at the table.
+    gameConnection?.send({ type: "emote", emote });
   });
 }

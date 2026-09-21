@@ -3,7 +3,13 @@ import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
+<<<<<<< HEAD
 import { SUITS, type Suit } from "../models/card.js";
+=======
+import type { Suit } from "../models/card.js";
+import { isBotName, seatNameFor } from "../models/bot.js";
+import { isEmote } from "../models/emote.js";
+>>>>>>> origin/master
 
 interface SocketQuery {
 	token?: string;
@@ -14,6 +20,7 @@ interface SocketMessage {
 	prediction?: number;
 	cardIndex?: number;
 	suit?: string;
+	emote?: string;
 }
 
 function isSuit(value: unknown): value is Suit {
@@ -55,6 +62,33 @@ export function broadcastGameState(
 		sendJson(connection.socket, {
 			type: "game_state",
 			state: gameService.getPublicGameState(game, connection.username),
+		});
+	}
+}
+
+// Passes an emote on to the rest of the room. Emotes carry no game state, so
+// nothing is saved and no turn is advanced: the sender has already played it
+// on their own screen, and everyone else is told who did it.
+function broadcastEmote(
+	roomId: number,
+	from: RoomConnection,
+	emote: string,
+): void {
+	const roomConnections = connections.get(roomId);
+
+	if (!roomConnections) {
+		return;
+	}
+
+	for (const connection of roomConnections) {
+		if (connection === from) {
+			continue;
+		}
+
+		sendJson(connection.socket, {
+			type: "player_emote",
+			username: from.username,
+			emote,
 		});
 	}
 }
@@ -114,11 +148,15 @@ export function registerWizardSocket(
 
 			const game = wizardSessionManager.getGame(roomId);
 
-			if (!game || !game.players.some((player) => player.username === username)) {
+			// Watching an all-NPC game: the host sits (and sees the table) as "<host> NPC".
+			const seatName = game && seatNameFor(username, game.players);
+
+			if (!game || !seatName) {
 				socket.close(1008, "You are not a player in this game");
 				return;
 			}
 
+			username = seatName;
 			const connection: RoomConnection = { socket, username };
 			const roomConnections = connections.get(roomId) ?? new Set();
 			roomConnections.add(connection);
@@ -137,6 +175,21 @@ export function registerWizardSocket(
 					message = JSON.parse(rawMessage.toString()) as SocketMessage;
 				} catch {
 					sendJson(socket, { type: "error", error: "Invalid message" });
+					return;
+				}
+
+				// The server plays a watched NPC's moves.
+				if (isBotName(username)) {
+					sendJson(socket, { type: "error", error: "You are watching this game" });
+					return;
+				}
+
+				// Not a move: it needs no game, no turn and no saving, so it is
+				// handled before anything that assumes a game is running.
+				if (message.type === "emote") {
+					if (isEmote(message.emote)) {
+						broadcastEmote(roomId, connection, message.emote);
+					}
 					return;
 				}
 

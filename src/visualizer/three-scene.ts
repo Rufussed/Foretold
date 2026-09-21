@@ -9,6 +9,10 @@ import {
 import { loadTableScene } from "./table-scene-asset";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
+import { maxPixelRatio, sharpenAmount } from "./device-limits";
+import { createRenderScale } from "./render-scale";
+import { createShadowThrottle, type ShadowThrottle } from "./shadow-throttle";
+import { createSharpenPass } from "./sharpen-pass";
 import {
   createPlayerCharacters,
   CHARACTER_IDS,
@@ -36,7 +40,8 @@ export interface SceneView {
   whenIntroDone(callback: () => void): void;
   // Turns the camera toward a point in the world, or back to its normal view
   // with null. A change of point switches orbit controls off.
-  lookToward(point: THREE.Vector3 | null): void;
+  // onArrive: called once the camera has finished turning there.
+  lookToward(point: THREE.Vector3 | null, onArrive?: () => void): void;
 }
 
 export interface WizardSceneOptions {
@@ -76,9 +81,23 @@ export function createWizardScene(
   canvas: HTMLCanvasElement,
   options: WizardSceneOptions = {},
 ): WizardSceneHandle {
-  const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+  // MSAA and supersampling smooth the same edges, and paying for both is
+  // waste: above 1.5x the scene is already drawn with enough samples that the
+  // hardware pass adds little. Decided once here, since a context cannot
+  // change it later.
+  const supersampling = RENDER.supersample * window.devicePixelRatio >= 1.5;
+  const renderer = new THREE.WebGLRenderer({ canvas, antialias: !supersampling });
   renderer.setPixelRatio(window.devicePixelRatio);
   configureRenderer(renderer);
+
+  // Sharpening replaces most of what a higher supersample bought; see RENDER
+  // in config.ts. It renders through a buffer, so it is skipped when off.
+  const sharpenBy = sharpenAmount();
+  const sharpen = sharpenBy > 0 ? createSharpenPass(renderer, sharpenBy) : null;
+  const draw = () => (sharpen ? sharpen.render(scene, camera) : renderer.render(scene, camera));
+
+  // Set by resize(), read by the adaptive controller's re-size.
+  let renderScale = RENDER.adaptive.enabled ? RENDER.adaptive.max : 1;
 
   const scene = new THREE.Scene();
   scene.add(createAmbientLight());
@@ -129,6 +148,7 @@ export function createWizardScene(
   let mixer: THREE.AnimationMixer | null = null;
   let sparks: TorchSparks | null = null;
   let players: PlayerCharacters | null = null;
+  let shadowThrottle: ShadowThrottle | null = null;
   let onKeyDown: ((event: KeyboardEvent) => void) | null = null;
   // The environment can finish loading after navigation has torn this down.
   let disposed = false;
@@ -138,17 +158,38 @@ export function createWizardScene(
     const h = canvas.clientHeight || window.innerHeight;
     // Cap the drawing buffer: a 4K panel otherwise costs 4x a 1080p one for
     // the same view. Below 1 this renders smaller than the canvas and the
-    // browser scales it up.
-    renderer.setPixelRatio(
-      Math.min(window.devicePixelRatio, RENDER.maxPixelRatio, RENDER.maxHeight / h),
-    );
+    // browser scales it up; above the display's own ratio it supersamples,
+    // drawing large and shrinking, which is what sharpens the cards.
+    const ratio =
+      Math.min(
+        window.devicePixelRatio * RENDER.supersample,
+        maxPixelRatio(),
+        RENDER.maxHeight / h,
+      ) * renderScale;
+    renderer.setPixelRatio(ratio);
     renderer.setSize(w, h, false);
+    sharpen?.setSize(w, h, ratio);
     // Vertical FOV stays as authored; horizontal widens or narrows with the
     // window, and matching aspect to the canvas avoids any stretching.
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
   };
+  // Watching the canvas rather than the window: a rotation, the address bar
+  // sliding away, or entering fullscreen all change the element's box, and
+  // some of them do it after the window's own resize event has been and
+  // gone - which left the buffer sized for the previous orientation. This
+  // only re-sizes the drawing buffer and re-aims the camera; the mixer, the
+  // clips and the table's state are untouched, so the scene carries on from
+  // where it is rather than playing in from the start.
+  const observer =
+    typeof ResizeObserver === "undefined" ? null : new ResizeObserver(() => resize());
+  observer?.observe(canvas);
+  // Still listened for: a device pixel ratio change (moving to another
+  // screen) resizes nothing, but does change how much buffer a pixel needs.
   window.addEventListener("resize", resize);
+  // iOS reports the viewport separately from the window while the keyboard
+  // or the toolbars move.
+  window.visualViewport?.addEventListener("resize", resize);
 
   // Hands the camera to the mouse without a jump: OrbitControls re-aims the
   // camera at its target on every update, so the target goes on the camera's
@@ -183,6 +224,8 @@ export function createWizardScene(
       follow = createCameraFollow(camera);
 
       prepareEnvironment(gltf.scene);
+      // Staggers the torches' shadow refreshes on touch; null elsewhere.
+      shadowThrottle = createShadowThrottle(gltf.scene);
       sparks = createTorchSparks(gltf.scene);
 
       // Environment clips only (camera move, torch flicker): characters are
@@ -311,7 +354,7 @@ export function createWizardScene(
           if (introDone) callback();
           else introWaiters.push(callback);
         },
-        lookToward: (point) => {
+        lookToward: (point, onArrive) => {
           const changed = point === null ? lookingAt !== null : !lookingAt?.equals(point);
           lookingAt = point ? point.clone() : null;
           // Orbit controls are for testing: when the turn moves the camera,
@@ -321,7 +364,8 @@ export function createWizardScene(
             applyOrbit();
             console.info("[camera] orbit controls off: following the turn");
           }
-          follow?.setTarget(point);
+          if (follow) follow.setTarget(point, onArrive);
+          else onArrive?.();
         },
       });
 
@@ -340,6 +384,20 @@ export function createWizardScene(
     })
     .catch((err) => options.onError?.(`Failed to load scene: ${err}`));
 
+  // Watches the framerate and moves renderScale between its bounds; resize()
+  // is what actually applies it to the buffers.
+  const scaler = RENDER.adaptive.enabled
+    ? createRenderScale({
+        min: RENDER.adaptive.min,
+        max: RENDER.adaptive.max,
+        targetFps: RENDER.adaptive.targetFps,
+        onChange: (next) => {
+          renderScale = next;
+          resize();
+        },
+      })
+    : null;
+
   let frame = 0;
   let last = performance.now();
   const tick = () => {
@@ -355,7 +413,9 @@ export function createWizardScene(
     // intro has played, it follows the turn.
     if (controls?.enabled) controls.update();
     else if (introDone) follow?.update(dt);
-    renderer.render(scene, camera);
+    scaler?.sample(dt);
+    shadowThrottle?.update();
+    draw();
   };
   resize();
   tick();
@@ -365,9 +425,12 @@ export function createWizardScene(
       disposed = true;
       introWaiters.length = 0;
       cancelAnimationFrame(frame);
+      observer?.disconnect();
       window.removeEventListener("resize", resize);
+      window.visualViewport?.removeEventListener("resize", resize);
       window.removeEventListener("keydown", onOrbitKey);
       if (onKeyDown) window.removeEventListener("keydown", onKeyDown);
+      sharpen?.dispose();
       controls?.dispose();
       players?.dispose();
       players = null;

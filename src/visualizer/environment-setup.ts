@@ -1,4 +1,6 @@
 import * as THREE from "three";
+import { cardsCastShadows, castsShadow, maxTorchLights, shadowResolution, shadowsEnabled } from "./device-limits";
+import wizardTableModel from "../assets/models/wizard/Wizard.glb?url";
 import {
   AMBIENT,
   DEFAULT_TORCH,
@@ -12,7 +14,10 @@ import {
 // scene behind the other pages: renderer settings, ambient light, and the
 // lights and shadows in Wizard.glb driven from config.ts.
 
-export const WIZARD_TABLE_MODEL_URL = "/models/wizard/Wizard.glb";
+// Imported rather than written as a path so Vite copies it into the build with
+// a hash of its contents in the name: a re-exported table reaches players as a
+// new URL, which their cache cannot confuse with the old one.
+export const WIZARD_TABLE_MODEL_URL = wizardTableModel;
 
 // three's GLTFLoader sanitises names: "torch.001" arrives as "torch001", and
 // duplicates gain a "_1" suffix. Compare on a canonical form so config keys
@@ -52,7 +57,7 @@ export function torchFlames(root: THREE.Object3D): THREE.Object3D[] {
 }
 
 export function configureRenderer(renderer: THREE.WebGLRenderer): void {
-  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.enabled = shadowsEnabled(renderer);
   renderer.shadowMap.type = {
     hard: THREE.BasicShadowMap,
     pcf: THREE.PCFShadowMap,
@@ -68,7 +73,26 @@ export function createAmbientLight(): THREE.AmbientLight {
 
 // Lights from config, shadow casters by name, and any character left baked
 // into the export hidden.
+// How many torch point lights under `root` are set to cast (or not).
+function torchCount(root: THREE.Object3D, casting: boolean): number {
+  let total = 0;
+  root.traverse((object) => {
+    const light = object as THREE.PointLight;
+    if (!light.isPointLight) return;
+    const name = findTorchRootName(light);
+    const settings = {
+      ...DEFAULT_TORCH,
+      ...((name && TORCH_OVERRIDES_BY_CANONICAL.get(name)) || {}),
+    };
+    if (settings.castShadows === casting) total += 1;
+  });
+  return total;
+}
+
 export function prepareEnvironment(root: THREE.Object3D): void {
+  // Torch lights kept so far, counted across the whole walk.
+  let keptCasters = 0;
+  let keptOthers = 0;
   root.traverse((object) => {
     // Lights: the exported intensities don't match how they looked in
     // Blender, so drive them from config.ts instead.
@@ -84,7 +108,30 @@ export function prepareEnvironment(root: THREE.Object3D): void {
           LIGHTING.scale *
           settings.brightnessMultiplier;
         if (settings.color) light.color = new THREE.Color(...settings.color);
-        light.castShadow = settings.castShadows;
+        // Over the touch limit: switch it off entirely rather than pay for
+        // it in every shader and at every pixel. The torches meant to cast
+        // are kept whatever their place in the walk, since they carry the
+        // moving shadows; the rest fill whatever room is left. Blender names
+        // them torch.001 to torch.006 and the casters are .001 and .003, so
+        // first-come would have dropped one of the two that matter. Counted
+        // by what config asks of each torch, not by whether it is casting on
+        // this device, which is a separate question.
+        const cap = maxTorchLights();
+        if (cap >= 0) {
+          const roomForOthers = Math.max(cap - torchCount(root, true), 0);
+          const kept = settings.castShadows ? keptCasters : keptOthers;
+          const allowed = settings.castShadows ? cap : roomForOthers;
+          if (kept >= allowed) {
+            light.visible = false;
+            light.intensity = 0;
+            return;
+          }
+        }
+        if (settings.castShadows) keptCasters += 1;
+        else keptOthers += 1;
+
+        light.castShadow =
+          settings.castShadows && castsShadow((light as THREE.PointLight).isPointLight === true);
         (light as THREE.PointLight).decay = LIGHTING.falloff;
       }
       if ((light as THREE.SpotLight).isSpotLight) {
@@ -93,12 +140,14 @@ export function prepareEnvironment(root: THREE.Object3D): void {
         if (OVERHEAD_LIGHT.color) {
           light.color = new THREE.Color(...OVERHEAD_LIGHT.color);
         }
-        light.castShadow = OVERHEAD_LIGHT.castShadows;
+        light.castShadow =
+        OVERHEAD_LIGHT.castShadows && castsShadow((light as THREE.PointLight).isPointLight === true);
       }
       // Only the shadow-casting light types carry a `shadow`.
       const caster = light as THREE.PointLight | THREE.SpotLight;
       if (caster.castShadow && caster.shadow) {
-        caster.shadow.mapSize.set(SHADOWS.resolution, SHADOWS.resolution);
+        const side = shadowResolution((caster as THREE.PointLight).isPointLight === true);
+        caster.shadow.mapSize.set(side, side);
         caster.shadow.bias = -SHADOWS.shadowBias;
         caster.shadow.normalBias = SHADOWS.normalOffsetBias;
         caster.shadow.intensity = SHADOWS.intensity;
@@ -116,7 +165,9 @@ export function prepareEnvironment(root: THREE.Object3D): void {
     const mesh = object as THREE.Mesh;
     if (mesh.isMesh) {
       if (SHADOW_CASTER_NAME_RE.test(mesh.name)) {
-        mesh.castShadow = true;
+        // Runtime cards are cloned from these meshes, so this flag reaches
+        // them too.
+        mesh.castShadow = !/card/i.test(mesh.name) || cardsCastShadows();
         mesh.receiveShadow = true;
       } else if (mesh.name === GROUND_PLANE_NAME) {
         mesh.receiveShadow = true;

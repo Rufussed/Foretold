@@ -1,4 +1,4 @@
-import db from "../../../db/database.js";
+import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
 
@@ -170,6 +170,7 @@ class WizardLobbyManager {
         FROM rooms
         WHERE id = ?
       `)
+<<<<<<< HEAD
       .get(roomId) as
         | { id: number; created_by: number; status: string }
         | undefined;
@@ -179,6 +180,27 @@ class WizardLobbyManager {
     if (room.status !== "waiting") return false;
 
     const deleteRoom = db.transaction(() => {
+=======
+      .get(roomId) as {
+        id: number;
+        created_by: number;
+        status: string;
+      } | undefined;
+  
+    if (!room) {
+      return false;
+    }
+  
+    if (room.created_by !== userId) {
+      return false;
+    }
+  
+    // if (room.status !== "waiting") {
+    //   return false;
+    // }
+  
+    transaction(() => {
+>>>>>>> origin/master
       db.prepare(`
         DELETE FROM room_players
         WHERE room_id = ?
@@ -189,9 +211,13 @@ class WizardLobbyManager {
         WHERE id = ?
       `).run(roomId);
     });
+<<<<<<< HEAD
 
     deleteRoom();
 
+=======
+  
+>>>>>>> origin/master
     return true;
   }
 
@@ -229,6 +255,36 @@ class WizardLobbyManager {
     `).run();
   }
 
+<<<<<<< HEAD
+=======
+  deleteFinishedRoom(roomId: number): boolean {
+    const room = db.prepare(`
+      SELECT id, status
+      FROM rooms
+      WHERE id = ?
+    `).get(roomId) as {
+      id: number;
+      status: string;
+    } | undefined;
+
+    if (!room) return false;
+    if (room.status !== "playing") return false;
+
+    transaction(() => {
+      db.prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+      `).run(roomId);
+
+      db.prepare(`
+        DELETE FROM rooms
+        WHERE id = ?
+      `).run(roomId);
+    });
+    return true;
+  }
+
+>>>>>>> origin/master
   // Returns false when someone else in the room already holds the avatar. The
   // unique index on (room_id, avatar) enforces this, so simultaneous claims
   // cannot both succeed. Passing null releases the player's current avatar.

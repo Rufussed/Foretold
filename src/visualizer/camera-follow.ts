@@ -5,8 +5,9 @@ export interface CameraFollow {
   // Takes the camera's current place and orientation as its normal view.
   captureRest(): void;
   // Turn toward a point in the world, or back to the normal view with null.
-  // The turn starts after CAMERA_FOLLOW.delaySeconds.
-  setTarget(point: THREE.Vector3 | null): void;
+  // The turn starts after CAMERA_FOLLOW.delaySeconds; onArrive is called once
+  // the camera is there (or if a newer target replaces this one).
+  setTarget(point: THREE.Vector3 | null, onArrive?: () => void): void;
   // Moves the camera along its current turn. If something else moved it, such
   // as orbiting, it turns back from wherever it is.
   update(deltaSeconds: number): void;
@@ -30,6 +31,13 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
   // A new target waiting out the delay before the camera moves.
   let upcoming: { point: THREE.Vector3 | null; wait: number } | null = null;
   let turn: Turn | null = null;
+  // Waiting for the camera to reach the current target.
+  let arrivals: Array<() => void> = [];
+  const arrived = () => {
+    const done = arrivals;
+    arrivals = [];
+    done.forEach((callback) => callback());
+  };
   // Where this last put the camera, to notice anything else moving it.
   const lastQuaternion = camera.quaternion.clone();
   const lastPosition = camera.position.clone();
@@ -74,8 +82,14 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       turn = null;
     },
 
-    setTarget(point) {
-      if (samePoint(upcoming ? upcoming.point : target, point)) return;
+    setTarget(point, onArrive) {
+      if (samePoint(upcoming ? upcoming.point : target, point)) {
+        if (onArrive) arrivals.push(onArrive);
+        return;
+      }
+      // Anyone waiting on the old target stops waiting.
+      arrived();
+      if (onArrive) arrivals.push(onArrive);
       // A further change during the pause restarts it, so only the latest
       // target is turned to.
       upcoming = { point: point ? point.clone() : null, wait: CAMERA_FOLLOW.delaySeconds };
@@ -99,7 +113,10 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
         const to = destination();
         const settled =
           camera.quaternion.angleTo(to.quaternion) < 1e-4 && camera.position.distanceTo(to.position) < 1e-4;
-        if (settled) return;
+        if (settled) {
+          arrived();
+          return;
+        }
         turn = startTurn();
       }
 
@@ -110,7 +127,10 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       camera.quaternion.slerpQuaternions(turn.fromQuaternion, turn.toQuaternion, eased);
       lastQuaternion.copy(camera.quaternion);
       lastPosition.copy(camera.position);
-      if (progress >= 1) turn = null;
+      if (progress >= 1) {
+        turn = null;
+        if (!upcoming) arrived();
+      }
     },
   };
 }

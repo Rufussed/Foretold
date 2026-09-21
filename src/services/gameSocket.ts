@@ -1,11 +1,13 @@
-import { BACKEND_PORT } from "./api";
+import { BACKEND_HOST } from "./api";
 
 export interface GameSocketMessage {
-	type: "connected" | "game_state" | "error";
+	type: "connected" | "game_state" | "error" | "player_emote";
 	roomId?: number;
+	// The player an event is about: who connected, or who emoted.
 	username?: string;
 	state?: unknown;
 	error?: string;
+	emote?: string;
 }
 
 // WebSocket is selected from the current page protocol so secure deployments
@@ -15,7 +17,7 @@ export function createGameSocket(
 	token: string,
 ): WebSocket {
 	const socketProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-	const socketUrl = `${socketProtocol}://${window.location.hostname}:${BACKEND_PORT}/wizard/games/${roomId}/socket?token=${encodeURIComponent(token)}`;
+	const socketUrl = `${socketProtocol}://${BACKEND_HOST}/wizard/games/${roomId}/socket?token=${encodeURIComponent(token)}`;
 
 	return new WebSocket(socketUrl);
 }
