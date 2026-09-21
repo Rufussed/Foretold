@@ -3,13 +3,9 @@ import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-<<<<<<< HEAD
 import { SUITS, type Suit } from "../models/card.js";
-=======
-import type { Suit } from "../models/card.js";
 import { isBotName, seatNameFor } from "../models/bot.js";
 import { isEmote } from "../models/emote.js";
->>>>>>> origin/master
 
 interface SocketQuery {
 	token?: string;

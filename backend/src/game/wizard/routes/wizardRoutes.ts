@@ -7,9 +7,9 @@ import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
-// import { AVATAR_IDS, isAvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
-
+import db from "../../../db/database.js";
+import { playerStatsRepository } from "../services/playerStatsRepository.js";
 
 interface CreateGameBody {
   roomId?: number;
@@ -489,6 +489,22 @@ export default async function wizardRoutes(
           error: "A game already exists for this room",
         });
       }
+
+      const humanPlayerIds = db
+        .prepare(`
+          SELECT user_id AS userId
+          FROM room_players
+          WHERE room_id = ?
+        `)
+        .all(room.id) as { userId: number }[];
+
+      for (const { userId } of humanPlayerIds) {
+        playerStatsRepository.initializeForUser(userId);
+        playerStatsRepository.incrementGamesPlayed(userId);
+      }
+
+      playerStatsRepository.initializeForUser(room.createdBy);
+      playerStatsRepository.incrementGamesCreated(room.createdBy);
 
       wizardLobbyManager.setRoomStatus(room.id, "playing");
 

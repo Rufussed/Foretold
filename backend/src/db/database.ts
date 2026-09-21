@@ -35,7 +35,7 @@ const isNewDatabase = !existsSync(databasePath);
 const db = new DatabaseSync(databasePath) as unknown as Db;
 
 //to enforce foregin-key constraints
-db.pragma("foreign_keys = ON");
+db.exec("PRAGMA foreign_keys = ON");
 
 const schemaPath = path.resolve(currentDirectory, "schema.sql");
 const schema = readFileSync(schemaPath, "utf8");
@@ -55,11 +55,13 @@ if (firstPending) {
 console.log(`SQLite database ready: ${databasePath}`);
 
 // Runs fn inside a transaction, rolling back if it throws.
-export function transaction(fn: () => void): void {
+export function transaction<T>(fn: () => T): T {
   db.exec("BEGIN");
+
   try {
-    fn();
+    const result = fn();
     db.exec("COMMIT");
+    return result;
   } catch (error) {
     db.exec("ROLLBACK");
     throw error;

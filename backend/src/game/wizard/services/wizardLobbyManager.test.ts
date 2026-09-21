@@ -168,19 +168,19 @@ describe("WizardLobbyManager", () => {
   
     const room = wizardLobbyManager.createRoom(
       `Full lobby test ${testSuffix}`,
-      userIds[0],
-      usernames[0],
+      userIds[0]!,
+      usernames[0]!,
       3,
     );
   
     const firstJoin = wizardLobbyManager.joinRoom(
       room.id,
-      usernames[1],
+      usernames[1]!,
     );
   
     const secondJoin = wizardLobbyManager.joinRoom(
       room.id,
-      usernames[2],
+      usernames[2]!,
     );
   
     expect(firstJoin.success).toBe(true);
@@ -188,7 +188,7 @@ describe("WizardLobbyManager", () => {
   
     const rejectedJoin = wizardLobbyManager.joinRoom(
       room.id,
-      usernames[3],
+      usernames[3]!,
     );
   
     expect(rejectedJoin.success).toBe(false);

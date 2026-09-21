@@ -1,4 +1,4 @@
-import db from "../../../db/database.js";
+import db, { transaction } from "../../../db/database.js";
 import { isBotName } from "../models/bot.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { playerOpponentRepository } from "./playerOpponentRepository.js";
@@ -46,7 +46,7 @@ class WizardGameCompletionService {
         )
       : null;
 
-    const complete = db.transaction(() => {
+    transaction(() => {
       for (const player of game.players) {
         if (isBotName(player.username)) {
           continue;
@@ -117,8 +117,6 @@ class WizardGameCompletionService {
         WHERE id = ?
       `).run(game.roomId);
     });
-
-    complete();
   }
 }
 
