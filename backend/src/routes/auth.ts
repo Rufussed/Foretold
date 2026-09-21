@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import type { FastifyInstance } from "fastify";
 import { UserService } from "../services/userService.js";
 import { isBotName } from "../game/wizard/models/bot.js";
+import { playerStatsRepository } from "../game/wizard/services/playerStatsRepository.js";
 
 interface RegisterBody {
   username: string;
@@ -64,6 +65,8 @@ export default async function authRoutes(
           displayName,
           email,
         );
+
+        playerStatsRepository.initializeForUser(user.id);
 
         return reply.status(201).send({
           id: user.id,

@@ -1,4 +1,8 @@
-import { getCurrentUser, logout } from "../services/auth";
+import {
+  getCurrentUser,
+  getCurrentUserStats,
+  logout,
+} from "../services/auth";
 
 export async function renderProfilePage(container: HTMLElement): Promise<void> {
   const token = localStorage.getItem("wizardToken");
@@ -9,6 +13,7 @@ export async function renderProfilePage(container: HTMLElement): Promise<void> {
   }
 
   const user = await getCurrentUser();
+  const stats = await getCurrentUserStats();
 
   container.innerHTML = `
     <div class="page">
@@ -22,6 +27,16 @@ export async function renderProfilePage(container: HTMLElement): Promise<void> {
         <p><strong>Username:</strong> ${user.username}</p>
         <p><strong>Display name:</strong> ${user.displayName}</p>
         <p><strong>Email:</strong> ${user.email}</p>
+        <h2>Statistics</h2>
+        <p><strong>Games played:</strong> ${stats.gamesPlayed}</p>
+        <p><strong>Games finished:</strong> ${stats.gamesFinished}</p>
+        <p><strong>Games won:</strong> ${stats.gamesWon}</p>
+        <p><strong>Total points:</strong> ${stats.totalPoints}</p>
+        <p><strong>Tricks won:</strong> ${stats.tricksWon}</p>
+        <p><strong>Predictions made:</strong> ${stats.predictionsMade}</p>
+        <p><strong>Exact predictions:</strong> ${stats.exactPredictions}</p>
+        <p><strong>Games created:</strong> ${stats.gamesCreated}</p>
+        <p><strong>Games created and finished:</strong> ${stats.gamesCreatedFinished}</p>
       </main>
     </div>
   `;

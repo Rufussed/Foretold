@@ -13,3 +13,15 @@ export interface RegistrationResponse {
   id: number;
   username: string;
 }
+
+export interface PlayerStats {
+  gamesPlayed: number;
+  gamesFinished: number;
+  gamesWon: number;
+  totalPoints: number;
+  tricksWon: number;
+  predictionsMade: number;
+  exactPredictions: number;
+  gamesCreated: number;
+  gamesCreatedFinished: number;
+}
