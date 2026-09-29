@@ -628,8 +628,12 @@ button:hover {
    WAITING ROOM
    --------------------------------------------------------- */
 
-.room-page [hidden] {
-  display: none !important;
+.room-page {
+  position: relative;
+  height: 100svh;
+  min-height: 600px;
+  overflow: hidden;
+  background: transparent;
 }
 
 .room-count {
@@ -684,10 +688,11 @@ button:hover {
   position: relative;
 }
 
-.avatar-grid {
+.room-avatar-picker .avatar-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, 175px);
   gap: 10px;
+  justify-content: center;
 }
 
 /* Prefixed to outrank the global button:hover and button:disabled styles. */
@@ -696,31 +701,31 @@ button:hover {
   gap: 4px;
   width: auto;
   padding: 8px;
-  color: #172033;
-  background: #f5f7fa;
-  border: 1px solid #d9e0ea;
-  border-radius: 6px;
+  color: #f4ebd9;
+  background: transparent;
+  border: 1px solid rgba(191, 125, 47, 0.25);
+  border-radius: 600px;
   font-weight: 600;
   text-align: center;
   cursor: pointer;
 }
 
 .avatar-picker .avatar-cell:hover:not(:disabled) {
-  background: #f5f7fa;
-  border-color: #2457a6;
+  background: rgba(191, 125, 47, 0.08);
+  border-color: rgba(191, 125, 47, 0.65);
 }
 
 /* Thicker outline; padding shrinks by the same amount so nothing shifts. */
 .avatar-picker .avatar-cell.is-selected,
 .avatar-picker .avatar-cell.is-selected:hover {
   padding: 6px;
-  background: #eef4ff;
-  border: 3px solid #2457a6;
+  background: rgba(191, 125, 47, 0.12);
+  border: 3px solid rgba(191, 125, 47, 0.75);
 }
 
 .avatar-picker .avatar-cell.is-taken {
-  color: #8391a7;
-  background: #eceff3;
+  color: rgba(244, 235, 217, 0.4);
+  background: rgba(0, 0, 0, 0.15);
   cursor: not-allowed;
 }
 
@@ -2352,10 +2357,8 @@ button:hover {
 .lobby-account {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 14px;
-
-  width: 120px;
+  gap: 12px;
+  white-space: nowrap;
 }
 
 .lobby-account a,
@@ -2382,6 +2385,8 @@ button:hover {
   color: #fff;
 }
 .lobby-username {
+  white-space: nowrap;
+  flex-shrink: 0;
   max-width: 120px;
 
   overflow: hidden;
@@ -2396,14 +2401,18 @@ button:hover {
 }
 
 .lobby-account-button {
-  display: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 
   color: #e0a14d;
-
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
   text-decoration: none;
+
+  padding: 6px 10px;
 }
 
 /* ---------------------------------------------------------
@@ -3384,5 +3393,670 @@ button:hover {
 
   .player-count-options {
     gap: 5px;
+  }
+}
+
+/* =========================================================
+   ROOM PAGE
+   ========================================================= */
+
+.room-page {
+  position: relative;
+  min-height: 100svh;
+  overflow-x: hidden;
+  background: transparent;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 15px clamp(24px, 5vw, 80px);
+  border-bottom: 1px solid rgba(191, 125, 47, 0.2);
+  background: rgba(8, 9, 7, 0.35);
+  backdrop-filter: blur(10px);
+}
+
+.room-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.room-logo {
+  display: block;
+  width: 90px;
+  height: 62px;
+  object-fit: cover;
+  mix-blend-mode: screen;
+}
+
+.room-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.room-nav a,
+.room-account a,
+.room-account button {
+  border: 0;
+  background: transparent;
+  color: rgba(244, 235, 217, 0.82);
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease;
+}
+
+.room-nav a:hover,
+.room-account a:hover,
+.room-account button:hover {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(191, 125, 47, 0.55);
+}
+
+.room-nav-rune {
+  color: rgba(191, 125, 47, 0.72);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.room-account {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.room-account button {
+  padding: 8px 14px;
+  border: 1px solid rgba(191, 125, 47, 0.28);
+  background: rgba(10, 10, 8, 0.42);
+}
+
+.room-account button:hover {
+  border-color: rgba(191, 125, 47, 0.65);
+  background: rgba(191, 125, 47, 0.12);
+}
+
+.room-content {
+  width: min(1100px, calc(100% - 48px));
+  height: calc(100svh - 145px);
+  min-height: 455px;
+  margin: 0 auto;
+  padding: 24px 0 10px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.room-title-row {
+  flex: 0 0 auto;
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.room-kicker,
+.room-section-kicker {
+  flex: 0 0 auto;
+  margin-bottom: 18px;
+  text-align: center;
+  color: rgba(191, 125, 47, 0.82);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.room-title-row h1 {
+  display: inline-block;
+  margin: 0;
+  color: rgba(248, 240, 224, 0.96);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  font-weight: 500;
+  letter-spacing: 0.025em;
+}
+
+.room-count {
+  display: inline-block;
+  margin: 0 0 0 18px;
+  color: rgba(244, 235, 217, 0.62);
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* Main glass table */
+
+.room-main-panel {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  border: 1px solid rgba(180, 119, 47, 0.27);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(201, 127, 40, 0.035),
+      transparent 36%
+    ),
+    rgba(12, 13, 11, 0.88);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+}
+
+/* Avatar section */
+
+.room-avatar-section {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 18px 30px 10px;
+  border-bottom: 1px solid rgba(191, 125, 47, 0.16);
+}
+
+.room-section-heading {
+  flex: 0 0 auto;
+  text-align: center;
+}
+
+.room-avatar-picker {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  margin-top: 8px;
+}
+
+.room-message {
+  min-height: 20px;
+  margin: 4px 0 0;
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.85rem;
+}
+
+/* Players */
+
+.room-players-section {
+  flex: 0 0 auto;
+  padding: 12px 30px;
+}
+
+.room-players {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(180px, 1fr)
+  );
+  gap: 10px;
+  margin-top: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.room-player {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 52px;
+  padding: 10px 13px;
+  border: 1px solid rgba(180, 119, 47, 0.16);
+  background: rgba(5, 6, 5, 0.46);
+  color: rgba(244, 235, 217, 0.84);
+}
+
+.room-player-avatar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  height: 30px;
+  border: 1px solid rgba(191, 125, 47, 0.3);
+  color: rgba(221, 177, 110, 0.88);
+  font-size: 0.7rem;
+}
+
+/* Host controls */
+
+.room-start {
+  flex: 0 0 auto;
+  padding: 12px 30px 14px;
+}
+
+.room-start-controls {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.room-start-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 130px;
+  color: rgba(244, 235, 217, 0.64);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.room-start-controls select {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(180, 119, 47, 0.3);
+  background: rgba(5, 6, 5, 0.72);
+  color: rgba(248, 240, 224, 0.9);
+  font: inherit;
+}
+
+.room-start-button {
+  min-height: 40px;
+  padding: 0 22px;
+  border: 1px solid rgba(191, 125, 47, 0.55);
+  background: rgba(145, 83, 23, 0.24);
+  color: rgba(248, 240, 224, 0.94);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.room-start-button:hover:not(:disabled) {
+  border-color: rgba(221, 177, 110, 0.8);
+  background: rgba(145, 83, 23, 0.42);
+}
+
+.room-start-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.room-waiting {
+  flex: 0 0 auto;
+  margin: 0;
+  padding: 14px 30px;
+  border-top: 1px solid rgba(191, 125, 47, 0.16);
+  color: rgba(244, 235, 217, 0.58);
+  font-size: 0.86rem;
+  text-align: center;
+}
+
+/* Footer */
+
+.room-footer {
+  width: min(1100px, calc(100% - 48px));
+  height: 38px;
+  margin: 0 auto;
+  padding: 8px 0 0;
+  text-align: center;
+}
+
+.room-footer a {
+  color: rgba(244, 235, 217, 0.58);
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.room-footer a:hover {
+  color: rgba(244, 235, 217, 0.92);
+}
+
+/* Responsive */
+
+@media (max-width: 720px) {
+  .room-header {
+    flex-wrap: wrap;
+    padding: 14px 20px;
+  }
+
+  .room-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .room-account {
+    margin-left: auto;
+  }
+
+  .room-content {
+    width: min(100% - 28px, 1180px);
+    padding-top: 35px;
+  }
+
+  .room-avatar-section,
+  .room-players-section,
+  .room-start {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .room-start-controls {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .room-start-controls label,
+  .room-start-button {
+    width: 100%;
+  }
+
+  .room-footer {
+    width: calc(100% - 28px);
+  }
+}
+
+@media (max-width: 420px) {
+  .room-logo {
+    width: 76px;
+    height: 52px;
+  }
+
+  .room-account {
+    gap: 8px;
+  }
+
+  .room-account a,
+  .room-account button {
+    font-size: 0.68rem;
+  }
+
+  .room-title-row h1 {
+    font-size: 2rem;
+  }
+}
+
+/* =========================
+   PROFILE
+   ========================= */
+
+.profile-page {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  color: #f4ebd9;
+}
+
+.profile-content {
+  width: min(1180px, calc(100% - 48px));
+  height: calc(100svh - 125px);
+  margin: 0 auto;
+  padding: clamp(30px, 5vh, 55px) 0 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-heading {
+  margin-bottom: 32px;
+  flex-shrink: 0;
+  text-align: center;
+}
+
+.profile-heading h1 {
+  margin: 2px 0 4px;
+  color: #f4ebd9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.profile-subtitle {
+  margin: 0;
+  color: rgba(244, 235, 217, 0.55);
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(500px, 1.7fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.profile-card {
+  border: 1px solid rgba(180, 119, 47, 0.27);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(201, 127, 40, 0.035),
+      transparent 36%
+    ),
+    rgba(12, 13, 11, 0.89);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  padding: 20px 24px;
+}
+
+.profile-card-kicker {
+  margin: 0 0 5px;
+  color: #b97a2d;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+}
+
+.profile-card h2 {
+  margin: 0 0 14px;
+  color: #f4ebd9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+}
+
+.profile-info-list {
+  display: grid;
+}
+
+.profile-info-row {
+  padding: 10px 0;
+}
+
+.profile-info-row:first-child {
+  padding-top: 0;
+}
+
+.profile-info-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.profile-info-row span {
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.76rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.profile-info-row strong {
+  color: rgba(244, 235, 217, 0.9);
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-align: right;
+}
+
+.profile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.profile-stat {
+  min-height: 58px;
+  padding: 9px 12px;
+}
+
+.profile-stat span {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.profile-stat strong {
+  color: #e0a14d;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.profile-opponents {
+  margin-bottom: 22px;
+}
+
+.profile-opponents {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+.profile-section-heading {
+  flex-shrink: 0;
+}
+
+.opponents-list {
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 8px;
+}
+
+.profile-opponent-count {
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.opponent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 15px 0;
+  border-top: 1px solid rgba(191, 125, 47, 0.12);
+}
+
+.opponent-row:first-child {
+  border-top: none;
+}
+
+.opponent-row > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.opponent-row strong {
+  color: #f4ebd9;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.opponent-row span {
+  padding: 3px 7px;
+  border: 1px solid rgba(191, 125, 47, 0.2);
+  color: rgba(244, 235, 217, 0.48);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.opponent-games {
+  color: #e0a14d !important;
+  white-space: nowrap;
+}
+
+.profile-empty {
+  margin: 0;
+  padding: 20px 0 5px;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.85rem;
+}
+
+.profile-footer {
+  display: flex;
+  justify-content: space-between;
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 0 0 28px;
+  color: rgba(244, 235, 217, 0.35);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 850px) {
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-content {
+    width: min(100% - 28px, 1180px);
+    padding-top: 40px;
+  }
+
+  .profile-heading h1 {
+    font-size: 2.3rem;
+  }
+
+  .profile-card {
+    padding: 20px;
+  }
+
+  .profile-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-info-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .profile-info-row strong {
+    text-align: left;
+  }
+
+  .profile-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .opponent-row > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .profile-footer {
+    width: min(100% - 28px, 1180px);
   }
 }

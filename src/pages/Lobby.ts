@@ -1,6 +1,6 @@
-import { getCurrentUser } from "../services/auth";
-import { logout } from "../services/auth";
 import { API_BASE } from "../services/api";
+import { renderNavbar } from "../components/Navbar";
+import { getCurrentUser } from "../services/auth";
 
 interface LobbyRoom {
   id: number;
@@ -32,38 +32,7 @@ export async function renderLobbyPage(
   const currentUser = await getCurrentUser();
 
   container.innerHTML = `
-    <main class="lobby">
-      <div class="lobby-shade"></div>
-
-      <header class="lobby-header">
-        <a class="lobby-brand" href="#/home">
-          <img
-            src="/wizardLogo.png"
-            alt="Wizard"
-          />
-        </a>
-
-        <nav class="lobby-nav" aria-label="Main navigation">
-          <a href="#/home">Home</a>
-          <span></span>
-          <a href="#/profile">Profile</a>
-          
-        </nav>
-
-        <div class="lobby-account">
-          <span class="lobby-username">
-            ${currentUser.displayName || currentUser.username}
-            <button type="button" id="lobby-logout-button">Log out</button>
-          </span>
-
-          <a
-            class="lobby-account-button"
-            href="#/profile"
-          >
-            Profile
-          </a>
-        </div>
-      </header>
+    <div id="navbar-container"></div>
 
       <section class="lobby-content">
         <div class="lobby-title-row">
@@ -223,14 +192,12 @@ export async function renderLobbyPage(
     </main>
   `;
 
-  const logoutButton =
-    document.querySelector<HTMLButtonElement>("#lobby-logout-button");
+   const navbarContainer =
+    container.querySelector<HTMLDivElement>("#navbar-container");
 
-  logoutButton?.addEventListener("click", () => {
-    logout();
-    window.location.hash = "#/home";
-    window.dispatchEvent(new HashChangeEvent("hashchange"));
-  });
+  if (navbarContainer) {
+    renderNavbar(navbarContainer, currentUser);
+  }
 
   const roomList =
     document.querySelector<HTMLDivElement>("#room-list");
