@@ -54,6 +54,23 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 2,
+    description: "track last opponent encounter for retention",
+    up(db) {
+      if (!hasColumn(db, "player_opponents", "last_played_at")) {
+        db.exec(`
+          ALTER TABLE player_opponents
+          ADD COLUMN last_played_at TEXT NOT NULL DEFAULT ''
+        `);
+        db.exec(`
+          UPDATE player_opponents
+          SET last_played_at = CURRENT_TIMESTAMP
+          WHERE last_played_at = ''
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

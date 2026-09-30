@@ -5,11 +5,12 @@ import {
   register,
 } from "../services/auth";
 
-type Panel = "login" | "signup" | "about" | "rules" | "contact" | "legal" | null;
+type Panel = "login" | "signup" | "about" | "rules" | "news" | "contact" | "legal" | null;
 
-export function renderHomePage(container: HTMLElement): void {
+export async function renderHomePage(container: HTMLElement): Promise<void> {
   const token = localStorage.getItem("wizardToken");
   const isLoggedIn = Boolean(token);
+  const currentUser = isLoggedIn ? await getCurrentUser() : null;
 
   let activePanel: Panel = null;
 
@@ -40,6 +41,12 @@ export function renderHomePage(container: HTMLElement): void {
               Rules
             </button>
 
+            <span></span>
+
+            <button type="button" data-panel="news">
+              News
+            </button>
+
           </nav>
 
           <div class="home-account-actions">
@@ -50,7 +57,7 @@ export function renderHomePage(container: HTMLElement): void {
                     class="home-account-button"
                     href="#/profile"
                   >
-                    Profile
+                    ${currentUser?.displayName || currentUser?.username}
                   </a>
 
                   <button
@@ -200,6 +207,20 @@ export function renderHomePage(container: HTMLElement): void {
               Score points by matching your prediction.
             </li>
           </ul>
+        `,
+      );
+      attachCloseEvent();
+      return;
+    }
+
+    if (activePanel === "news") {
+      panelContainer.innerHTML = renderInfoPanel(
+        "News",
+        "Wizard Platform updates.",
+        `
+          <p class="home-modal-copy">
+            News and game updates will appear here.
+          </p>
         `,
       );
       attachCloseEvent();

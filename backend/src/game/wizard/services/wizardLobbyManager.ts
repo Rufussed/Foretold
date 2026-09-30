@@ -42,6 +42,7 @@ class WizardLobbyManager {
   private mapRoom(row: {
     id: number;
     name: string;
+    created_at: string;
     created_by: number;
     created_by_username: string;
     max_players: number;
@@ -50,6 +51,7 @@ class WizardLobbyManager {
     return {
       id: row.id,
       name: row.name,
+      createdAt: row.created_at,
       createdBy: row.created_by,
       createdByUsername: row.created_by_username,
       maxPlayers: row.max_players,
@@ -65,6 +67,7 @@ class WizardLobbyManager {
           SELECT
             rooms.id,
             rooms.name,
+            rooms.created_at,
             rooms.created_by,
             users.username AS created_by_username,
             rooms.max_players,
@@ -78,6 +81,7 @@ class WizardLobbyManager {
       .all() as {
         id: number;
         name: string;
+        created_at: string;
         created_by: number;
         created_by_username: string;
         max_players: number;
@@ -94,6 +98,7 @@ class WizardLobbyManager {
           SELECT
             rooms.id,
             rooms.name,
+            rooms.created_at,
             rooms.created_by,
             users.username AS created_by_username,
             rooms.max_players,
@@ -107,6 +112,7 @@ class WizardLobbyManager {
       .get(roomId) as {
         id: number;
         name: string;
+        created_at: string;
         created_by: number;
         created_by_username: string;
         max_players: number;

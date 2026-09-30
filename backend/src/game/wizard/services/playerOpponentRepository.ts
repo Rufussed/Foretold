@@ -1,5 +1,7 @@
 import db from "../../../db/database.js";
 
+const MAX_REMEMBERED_OPPONENTS = 100;
+
 export interface PlayerOpponent {
   playerId: number;
   opponentType: "user" | "bot";
@@ -20,9 +22,10 @@ class PlayerOpponentRepository {
         opponent_type,
         opponent_id,
         opponent_name,
-        games_played
+        games_played,
+        last_played_at
       )
-      VALUES (?, 'user', ?, ?, 1)
+      VALUES (?, 'user', ?, ?, 1, ?)
       ON CONFLICT (
         player_id,
         opponent_type,
@@ -30,12 +33,10 @@ class PlayerOpponentRepository {
         opponent_name
       )
       DO UPDATE SET
-        games_played = games_played + 1
-    `).run(
-      playerId,
-      opponentId,
-      opponentName,
-    );
+        games_played = games_played + 1,
+        last_played_at = excluded.last_played_at
+    `).run(playerId, opponentId, opponentName, new Date().toISOString());
+    this.trimOpponents(playerId);
   }
 
   recordGameAgainstBot(
@@ -48,9 +49,10 @@ class PlayerOpponentRepository {
         opponent_type,
         opponent_id,
         opponent_name,
-        games_played
+        games_played,
+        last_played_at
       )
-      VALUES (?, 'bot', NULL, ?, 1)
+      VALUES (?, 'bot', NULL, ?, 1, ?)
       ON CONFLICT (
         player_id,
         opponent_type,
@@ -58,11 +60,24 @@ class PlayerOpponentRepository {
         opponent_name
       )
       DO UPDATE SET
-        games_played = games_played + 1
-    `).run(
-      playerId,
-      opponentName,
-    );
+        games_played = games_played + 1,
+        last_played_at = excluded.last_played_at
+    `).run(playerId, opponentName, new Date().toISOString());
+    this.trimOpponents(playerId);
+  }
+
+  private trimOpponents(playerId: number): void {
+    db.prepare(`
+      DELETE FROM player_opponents
+      WHERE player_id = ?
+        AND rowid NOT IN (
+          SELECT rowid
+          FROM player_opponents
+          WHERE player_id = ?
+          ORDER BY last_played_at DESC, rowid DESC
+          LIMIT ?
+        )
+    `).run(playerId, playerId, MAX_REMEMBERED_OPPONENTS);
   }
 
   getOpponents(playerId: number): PlayerOpponent[] {

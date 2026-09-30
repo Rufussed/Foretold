@@ -4,7 +4,6 @@ import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
 import {
-  CHARACTER_LABELS,
   createAvatarPicker,
   type AvatarPicker,
 } from "../visualizer/avatar-picker";
@@ -92,11 +91,6 @@ export async function renderRoomPage(
             ></p>
           </div>
 
-          <ul
-            id="room-players"
-            class="room-players"
-          ></ul>
-
           <div
             id="room-start"
             class="room-start"
@@ -160,7 +154,6 @@ export async function renderRoomPage(
   const nameEl = element<HTMLHeadingElement>("#room-name");
   const countEl = element<HTMLParagraphElement>("#room-count");
   const messageEl = element<HTMLParagraphElement>("#room-message");
-  const playersEl = element<HTMLUListElement>("#room-players");
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
@@ -219,26 +212,6 @@ export async function renderRoomPage(
     }
 
     picker.setClaims(claims, user.username);
-
-    playersEl.replaceChildren(
-      ...room.players.map((player) => {
-        const item = document.createElement("li");
-        item.className = "room-player";
-        item.textContent =
-          player.username === user.username
-            ? `${player.username} (you)`
-            : player.username;
-
-        const avatar = document.createElement("span");
-        avatar.className = "room-player-avatar";
-        avatar.textContent = player.avatar
-          ? CHARACTER_LABELS[player.avatar]
-          : "choosing…";
-        item.append(avatar);
-
-        return item;
-      }),
-    );
 
     const isHost = room.createdBy === user.id;
     startEl.hidden = !isHost;

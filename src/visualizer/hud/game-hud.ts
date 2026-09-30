@@ -3,8 +3,6 @@ import { createAnnouncer, type AnnouncerOptions } from "./announcer";
 import { followSuitMessage } from "./announcements";
 import { createGameStatusPanel } from "./game-status-panel";
 import type { HudPart } from "./hud-part";
-import { createOpponentGrid } from "./opponent-grid";
-import { createSelfRoundStats } from "./self-round-stats";
 
 export interface GameHud extends HudPart {
   // The server refused a move, with its reason.
@@ -24,7 +22,7 @@ export function createGameHud(
   const statusPanel = createGameStatusPanel(root, game);
   // After the panel, so a round's scores are held back before it redraws.
   const announcer = createAnnouncer(root, game, statusPanel, options);
-  const parts = [statusPanel, announcer, createSelfRoundStats(root, game), createOpponentGrid(root, game)];
+  const parts = [statusPanel, announcer];
 
   return {
     applyState: () => parts.forEach((part) => part.applyState()),

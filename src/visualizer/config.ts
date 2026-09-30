@@ -677,13 +677,16 @@ export const BACKDROP = {
 // playlist reads as one block. The build fingerprints an imported file, the
 // same as the models and the card art.
 import endGame from "../assets/sound/CM.02.EndGame.mp3";
+import track01 from "../assets/sound/CM.01.mp3";
+import counterMoves from "../assets/sound/CM.03.CounterMoves.mp3";
 import thoughtWave from "../assets/sound/CM.04.ThoughtWave.mp3";
+import ChessmasterII from "../assets/sound/CM.07.ChessmasterII.mp3";
 import medievalAmbient from "../assets/sound/deuslower-medieval-ambient-236809.mp3";
 
 export const MUSIC = {
   // Imported rather than named by path so the build fingerprints them, the same
   // as the models and the card art; the order here is the playing order.
-  urls: [medievalAmbient, thoughtWave, endGame],
+  urls: [medievalAmbient, thoughtWave, endGame, track01, counterMoves, ChessmasterII],
   volume: 0.35,
 };
 

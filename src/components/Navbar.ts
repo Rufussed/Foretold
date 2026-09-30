@@ -4,6 +4,8 @@ export function renderNavbar(
   container: HTMLElement,
   currentUser: User,
 ): void {
+  const isLobbyPage = window.location.hash.split("?")[0] === "#/lobby";
+
   container.innerHTML = `
     <header class="lobby-header">
       <a class="lobby-brand" href="#/home">
@@ -11,15 +13,13 @@ export function renderNavbar(
       </a>
 
       <nav class="lobby-nav" aria-label="Main navigation">
-        <a href="#/home">Home</a>
-        <span></span>
-        <a href="#/profile">Profile</a>
+        ${isLobbyPage ? "" : '<a href="#/lobby">Lobby</a>'}
       </nav>
 
       <div class="lobby-account">
-        <span class="lobby-username">
+        <a class="lobby-username" href="#/profile">
           ${currentUser.displayName || currentUser.username}
-        </span>
+        </a>
 
         <button
           type="button"

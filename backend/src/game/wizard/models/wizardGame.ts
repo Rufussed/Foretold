@@ -12,6 +12,7 @@ export interface RoomPlayer {
 export interface Room {
   id: number;
   name: string;
+  createdAt: string;
   createdBy: number;
   createdByUsername: string;
   maxPlayers: number;

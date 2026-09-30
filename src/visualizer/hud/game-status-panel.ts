@@ -14,6 +14,14 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
   panel.innerHTML = `
     <p class="hud-round"></p>
     <table class="hud-scores">
+      <thead>
+        <tr>
+          <th>Player</th>
+          <th>Prediction</th>
+          <th>Tricks</th>
+          <th>Score</th>
+        </tr>
+      </thead>
       <tbody></tbody>
     </table>
   `;
@@ -25,7 +33,16 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
   // Totals held back while round results are announced, and one row per player
   // kept across updates so a score's flash isn't cut short.
   const held = new Map<string, number>();
-  const rows = new Map<string, { row: HTMLTableRowElement; name: HTMLElement; score: HTMLElement }>();
+  const rows = new Map<
+    string,
+    {
+      row: HTMLTableRowElement;
+      name: HTMLElement;
+      prediction: HTMLElement;
+      tricks: HTMLElement;
+      score: HTMLElement;
+    }
+  >();
   let order = "";
 
   const nameOf = (username: string) => (username === game.localUsername ? "You" : username);
@@ -49,13 +66,18 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
       if (!entry) {
         const row = document.createElement("tr");
         const name = document.createElement("td");
+        const prediction = document.createElement("td");
+        const tricks = document.createElement("td");
         const score = document.createElement("td");
-        row.append(name, score);
-        entry = { row, name, score };
+        row.append(name, prediction, tricks, score);
+        entry = { row, name, prediction, tricks, score };
         rows.set(player.username, entry);
       }
       entry.row.classList.toggle("is-you", player.username === game.localUsername);
       entry.name.textContent = nameOf(player.username);
+      entry.prediction.textContent =
+        player.prediction === null ? "–" : String(player.prediction);
+      entry.tricks.textContent = String(player.tricksWon);
       entry.score.textContent = String(shown(player));
     }
     // Moving a row restarts its flash, so rows only move when the order changes.

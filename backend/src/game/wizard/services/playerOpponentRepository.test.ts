@@ -360,4 +360,66 @@ describe("PlayerOpponentRepository", () => {
       );
     }
   });
+
+  it("keeps only the 100 most recently encountered opponents", () => {
+    const player = db.prepare(`
+      INSERT INTO users (
+        username,
+        password_hash,
+        display_name,
+        email
+      )
+      VALUES (?, ?, ?, ?)
+    `).run(
+      "opponent-test-player-10",
+      "test",
+      "Opponent Test Player 10",
+      "opponent-test-10@example.com",
+    );
+
+    const playerId = Number(player.lastInsertRowid);
+    const opponentIds: number[] = [];
+
+    try {
+      for (let index = 0; index < 101; index += 1) {
+        const opponent = db.prepare(`
+          INSERT INTO users (
+            username,
+            password_hash,
+            display_name,
+            email
+          )
+          VALUES (?, ?, ?, ?)
+        `).run(
+          `opponent-test-player-${11 + index}`,
+          "test",
+          `Opponent Test Player ${11 + index}`,
+          `opponent-test-${11 + index}@example.com`,
+        );
+        const opponentId = Number(opponent.lastInsertRowid);
+        opponentIds.push(opponentId);
+        playerOpponentRepository.recordGameAgainstUser(
+          playerId,
+          opponentId,
+          `opponent-test-player-${11 + index}`,
+        );
+      }
+
+      const opponents = playerOpponentRepository.getOpponents(playerId);
+
+      expect(opponents).toHaveLength(100);
+      expect(opponents.some((opponent) => opponent.opponentId === opponentIds[0])).toBe(false);
+      expect(opponents.some((opponent) => opponent.opponentId === opponentIds[100])).toBe(true);
+    } finally {
+      db.prepare(`
+        DELETE FROM player_opponents
+        WHERE player_id = ?
+      `).run(playerId);
+
+      db.prepare(`
+        DELETE FROM users
+        WHERE id = ? OR id IN (${opponentIds.map(() => "?").join(", ")})
+      `).run(playerId, ...opponentIds);
+    }
+  });
 });

@@ -5,6 +5,7 @@ import { getCurrentUser } from "../services/auth";
 interface LobbyRoom {
   id: number;
   name: string;
+  createdAt: string;
   createdBy: number;
   createdByUsername: string;
   players: {
@@ -18,6 +19,17 @@ interface LobbyRoom {
 type LobbyData = {
   rooms: LobbyRoom[];
 };
+
+function formatRoomDate(createdAt: string): string {
+  const date = new Date(`${createdAt.replace(" ", "T")}Z`);
+  return Number.isNaN(date.getTime())
+    ? createdAt
+    : date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      });
+}
 
 export async function renderLobbyPage(
   container: HTMLElement,
@@ -55,6 +67,7 @@ export async function renderLobbyPage(
         <section class="rooms-panel">
           <div class="rooms-heading">
             <span>Room</span>
+            <span>Created</span>
             <span>Host</span>
             <span>Players</span>
             <span>Access</span>
@@ -364,6 +377,10 @@ export async function renderLobbyPage(
                 <span class="room-status">
                   ${statusLabel}
                 </span>
+              </div>
+
+              <div class="room-created">
+                ${formatRoomDate(room.createdAt)}
               </div>
 
               <div class="room-creator">
