@@ -315,24 +315,21 @@ export default async function wizardRoutes(
  *
  * Do NOT leave this endpoint unrestricted in production.
  */
-  server.delete(
-    "/lobby/:roomId",
-    {
-      schema: {
-        params: {
-          type: "object",
-          required: ["roomId"],
-          additionalProperties: false,
-          properties: {
-            roomId: {
-              type: "string",
-              pattern: "^[1-9][0-9]*$"
-            }
-          }
-        }
-      }
+  server.delete("/lobby/:roomId/leave", {
+    schema: {
+      params: {
+        type: "object",
+        required: ["roomId"],
+        additionalProperties: false,
+        properties: {
+          roomId: {
+            type: "string",
+            pattern: "^[1-9][0-9]*$",
+          },
+        },
+      },
     },
-    async (request, reply) => {
+  }, async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -341,10 +338,7 @@ export default async function wizardRoutes(
 
     const params = request.params as { roomId?: string };
     const roomId = Number(params.roomId);
-
-    const tokenUser = request.user as {
-      sub?: number;
-    };
+    const tokenUser = request.user as { sub?: number };
 
     if (!Number.isInteger(roomId)) {
       return reply.status(400).send({ error: "Invalid room ID" });
@@ -354,24 +348,19 @@ export default async function wizardRoutes(
       return reply.status(401).send({ error: "User identity missing" });
     }
 
-    //we need so that only the created can delete the game
-    // const deleted = wizardLobbyManager.deleteRoom(
-    //   roomId,
-    //   Number(tokenUser.sub),
-    // );
+    const left = wizardLobbyManager.leaveRoom(
+      roomId,
+      Number(tokenUser.sub),
+    );
 
-    // DEVELOPMENT ONLY - REMOVE/RESTRICT BEFORE PRODUCTION
-    const deleted = wizardLobbyManager.deleteRoom(roomId);
-
-    if (!deleted) {
+    if (!left) {
       return reply.status(403).send({
-        error: "Room cannot be deleted",
+        error: "You cannot leave this room",
       });
     }
 
     return reply.send({ success: true });
   });
-
   server.post(
     "/games",
     {

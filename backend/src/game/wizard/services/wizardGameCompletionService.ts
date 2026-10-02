@@ -118,6 +118,118 @@ class WizardGameCompletionService {
       `).run(game.roomId);
     });
   }
+
+  expireGame(game: WizardGameState): void {
+    const room = db
+      .prepare(`
+        SELECT created_by AS createdBy
+        FROM rooms
+        WHERE id = ?
+      `)
+      .get(game.roomId) as RoomInfo | undefined;
+
+    if (!room) {
+      throw new Error(`Room ${game.roomId} not found`);
+    }
+
+    const roomPlayers = db
+      .prepare(`
+        SELECT
+          user_id AS userId,
+          username
+        FROM room_players
+        WHERE room_id = ?
+      `)
+      .all(game.roomId) as RoomPlayerInfo[];
+
+    transaction(() => {
+      for (const player of game.players) {
+        if (isBotName(player.username)) {
+          continue;
+        }
+
+        const roomPlayer = roomPlayers.find(
+          (roomPlayer) => roomPlayer.username === player.username,
+        );
+
+        if (!roomPlayer) {
+          throw new Error(
+            `Human player ${player.username} not found in room`,
+          );
+        }
+
+        /*
+        * The game was played but not finished.
+        *
+        * We intentionally do NOT call recordFinishedGame()
+        * because that would increment games_finished.
+        */
+
+        for (const opponent of game.players) {
+          if (opponent.username === player.username) {
+            continue;
+          }
+
+          if (isBotName(opponent.username)) {
+            playerOpponentRepository.recordGameAgainstBot(
+              roomPlayer.userId,
+              opponent.username,
+            );
+            continue;
+          }
+
+          const opponentRoomPlayer = roomPlayers.find(
+            (roomPlayer) => roomPlayer.username === opponent.username,
+          );
+
+          if (!opponentRoomPlayer) {
+            throw new Error(
+              `Human opponent ${opponent.username} not found in room`,
+            );
+          }
+
+          playerOpponentRepository.recordGameAgainstUser(
+            roomPlayer.userId,
+            opponentRoomPlayer.userId,
+            opponentRoomPlayer.username,
+          );
+        }
+      }
+
+      /*
+      * Mark the game as expired before removing it.
+      * This represents the state transition:
+      *
+      * playing → expired
+      */
+      db.prepare(`
+        UPDATE games
+        SET status = 'expired'
+        WHERE room_id = ?
+      `).run(game.roomId);
+
+      /*
+      * The room is also finished before it is removed.
+      */
+      db.prepare(`
+        UPDATE rooms
+        SET status = 'finished'
+        WHERE id = ?
+      `).run(game.roomId);
+
+      wizardGameRepository.deleteGame(game.roomId);
+
+      db.prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+      `).run(game.roomId);
+
+      db.prepare(`
+        DELETE FROM rooms
+        WHERE id = ?
+      `).run(game.roomId);
+    });
+  }
 }
 
 export const wizardGameCompletionService =

@@ -143,6 +143,44 @@ export async function getCurrentUserOpponents(): Promise<PlayerOpponent[]> {
   return response.json() as Promise<PlayerOpponent[]>;
 }
 
+export async function getPlayerProfile(userId: number): Promise<{
+  id: number;
+  username: string;
+  displayName: string;
+  stats: PlayerStats;
+  opponents: PlayerOpponent[];
+}> {
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  if (!token) {
+    throw new Error("Not logged in");
+  }
+
+  const response = await fetch(
+    `${API_BASE}/users/player/${userId}/profile`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  );
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      logout();
+      throw new Error("Session expired or invalid");
+    }
+
+    if (response.status === 404) {
+      throw new Error("Player not found");
+    }
+
+    throw new Error("Could not load player profile");
+  }
+
+  return response.json();
+}
+
 export function logout(): void {
   localStorage.removeItem(TOKEN_KEY);
 }

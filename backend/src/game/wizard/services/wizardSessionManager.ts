@@ -1,5 +1,6 @@
 import type { WizardGameState } from "../models/wizardGame.js";
 import { wizardGameRepository } from "./wizardGameRepository.js";
+import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
 
 export class WizardSessionManager {
   private readonly games = new Map<number, WizardGameState>();
@@ -24,12 +25,23 @@ export class WizardSessionManager {
     const activeGame = this.games.get(roomId);
 
     if (activeGame) {
+      if (wizardGameRepository.isGameExpired(roomId)) {
+        this.games.delete(roomId);
+        wizardGameCompletionService.expireGame(activeGame);
+        return null;
+      }
+
       return activeGame;
     }
 
     const savedGame = wizardGameRepository.loadGame(roomId);
 
     if (!savedGame || savedGame.status === "finished") {
+      return null;
+    }
+
+    if (wizardGameRepository.isGameExpired(roomId)) {
+      wizardGameCompletionService.expireGame(savedGame);
       return null;
     }
 

@@ -2,11 +2,13 @@ import {
   getCurrentUser,
   getCurrentUserOpponents,
   getCurrentUserStats,
+  getPlayerProfile,
 } from "../services/auth";
 import { renderNavbar } from "../components/Navbar";
 
 export async function renderProfilePage(
   container: HTMLElement,
+  playerId?: number,
 ): Promise<void> {
   const token = localStorage.getItem("wizardToken");
 
@@ -15,9 +17,20 @@ export async function renderProfilePage(
     return;
   }
 
-  const user = await getCurrentUser();
-  const stats = await getCurrentUserStats();
-  const opponents = await getCurrentUserOpponents();
+  const currentUser = await getCurrentUser();
+
+  const profile = playerId
+    ? await getPlayerProfile(playerId)
+    : {
+        ...currentUser,
+        stats: await getCurrentUserStats(),
+        opponents: await getCurrentUserOpponents(),
+      };
+
+  const user = profile;
+  const stats = profile.stats;
+  const opponents = profile.opponents;
+  const email = "email" in profile ? profile.email : "";
 
   const winRate =
     stats.gamesFinished > 0
@@ -97,11 +110,16 @@ export async function renderProfilePage(
                 <span>Display name</span>
                 <strong>${user.displayName}</strong>
               </div>
-
-              <div class="profile-info-row">
-                <span>Email</span>
-                <strong>${user.email}</strong>
-              </div>
+              ${
+                !playerId
+                  ? `
+                    <div class="profile-info-row">
+                      <span>Email</span>
+                      <strong>${email}</strong>
+                    </div>
+                  `
+                  : ""
+              }
             </div>
           </article>
 
@@ -161,14 +179,12 @@ export async function renderProfilePage(
                       (opponent) => `
                         <div class="opponent-row">
                           <div>
-                            <strong>${opponent.opponentName}</strong>
-                            <span>
-                              ${
-                                opponent.opponentType === "bot"
-                                  ? "Bot"
-                                  : "Player"
-                              }
-                            </span>
+                            ${
+                              opponent.opponentType === "user" &&
+                              opponent.opponentId !== null
+                                ? `<a class="opponent-player-link" href="#/profile/${opponent.opponentId}">${opponent.opponentName}</a>`
+                                : `<strong>${opponent.opponentName}</strong>`
+                            }
                           </div>
 
                           <strong class="opponent-games">
@@ -202,6 +218,6 @@ export async function renderProfilePage(
     container.querySelector<HTMLDivElement>("#navbar-container");
 
   if (navbarContainer) {
-    renderNavbar(navbarContainer, user);
+    renderNavbar(navbarContainer, currentUser);
   }
 }

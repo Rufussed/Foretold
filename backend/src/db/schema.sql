@@ -78,3 +78,27 @@ CREATE TABLE IF NOT EXISTS player_opponents (
 
   CHECK (opponent_type IN ('user', 'bot'))
 );
+
+CREATE TABLE IF NOT EXISTS friend_requests (
+
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+  sender_id INTEGER NOT NULL,
+
+  receiver_id INTEGER NOT NULL,
+
+  status TEXT NOT NULL DEFAULT 'pending',
+
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  UNIQUE(sender_id, receiver_id),
+
+  FOREIGN KEY (sender_id) REFERENCES users(id),
+
+  FOREIGN KEY (receiver_id) REFERENCES users(id),
+
+  CHECK (sender_id != receiver_id),
+
+  CHECK (status IN ('pending', 'accepted', 'rejected'))
+
+);

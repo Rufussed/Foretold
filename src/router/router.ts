@@ -83,15 +83,30 @@ function renderCurrentRoute(container: HTMLElement): void {
   roomModule?.destroyRoomPage();
   destroyWizardGamePage();
 
-  if (route === "#/profile") {
+  if (route === "#/profile" || route.startsWith("#/profile/")) {
     const token = localStorage.getItem("wizardToken");
-
     if (!token) {
       window.location.hash = "#/home";
       return;
     }
 
-    void renderProfilePage(container);
+    const playerIdText = route.startsWith("#/profile/")
+      ? route.slice("#/profile/".length)
+      : "";
+
+    const playerId = playerIdText ? Number(playerIdText) : undefined;
+
+    if (
+      playerIdText &&
+      (playerId === undefined ||
+        !Number.isInteger(playerId) ||
+        playerId <= 0)
+    ) {
+      window.location.hash = "#/profile";
+      return;
+    }
+
+    void renderProfilePage(container, playerId);
     return;
   }
 

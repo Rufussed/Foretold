@@ -12,6 +12,9 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { wizardLobbyManager } from "./game/wizard/services/wizardLobbyManager.js";
 import { playerStatsRepository } from "./game/wizard/services/playerStatsRepository.js";
+import { wizardGameRepository } from "./game/wizard/services/wizardGameRepository.js";
+import { wizardGameCompletionService } from "./game/wizard/services/wizardGameCompletionService.js";
+import { wizardSessionManager } from "./game/wizard/services/wizardSessionManager.js";
 
 const server = Fastify({
     logger: true,
@@ -109,6 +112,25 @@ seedUsers();
 playerStatsRepository.initializeForAllUsers();
 
 wizardLobbyManager.resetPlayingRooms();
+
+setInterval(() => {
+  const expiredRoomIds = wizardLobbyManager.getExpiredRoomIds();
+
+  for (const roomId of expiredRoomIds) {
+    const room = wizardLobbyManager.getRoomById(roomId);
+
+    if (!room) {
+      continue;
+    }
+
+    if (room.status === "playing") {
+      wizardSessionManager.getGame(roomId);
+      continue;
+    }
+
+    wizardLobbyManager.deleteRoom(roomId);
+  }
+}, 5000);
 
 try {
   await server.listen({

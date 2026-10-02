@@ -2622,7 +2622,7 @@ button:hover {
   box-shadow:
     0 25px 70px rgba(0, 0, 0, 0.38);
 
-  backdrop-filter: blur(16px);
+  backdrop-filter: blur(1px);
 }
 
 .rooms-heading,
@@ -4180,6 +4180,15 @@ button:hover {
 .opponent-games {
   color: #e0a14d !important;
   white-space: nowrap;
+}
+
+.opponent-player-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.opponent-player-link:hover {
+  text-decoration: underline;
 }
 
 .profile-empty {

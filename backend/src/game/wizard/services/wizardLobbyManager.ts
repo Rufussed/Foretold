@@ -1,6 +1,7 @@
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
+import { GAME_EXPIRATION_MS } from "./wizardGameRepository.js";
 
 interface RoomRow {
   id: number;
@@ -207,7 +208,94 @@ class WizardLobbyManager {
     return join;
   }
 
-  // DEVELOPMENT ONLY - REMOVE/RESTRICT BEFORE PRODUCTION
+  leaveRoom(roomId: number, userId: number): boolean {
+    const room = db
+      .prepare(`
+        SELECT
+          id,
+          created_by AS createdBy,
+          status
+        FROM rooms
+        WHERE id = ?
+      `)
+      .get(roomId) as {
+        id: number;
+        createdBy: number;
+        status: string;
+      } | undefined;
+
+    if (!room) {
+      return false;
+    }
+
+    // The creator does not leave.
+    // They delete the waiting room instead.
+    if (room.createdBy === userId) {
+      return false;
+    }
+
+    // Players can only leave before the game starts.
+    if (room.status !== "waiting") {
+      return false;
+    }
+
+    const result = db
+      .prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+          AND user_id = ?
+      `)
+      .run(roomId, userId);
+
+    return result.changes > 0;
+  }
+  getExpiredRoomIds(): number[] {
+    const rows = db
+      .prepare(`
+        SELECT id
+        FROM rooms
+        WHERE created_at <= datetime('now', ?)
+      `)
+      .all(`-${GAME_EXPIRATION_MS / 1000} seconds`) as {
+        id: number;
+      }[];
+
+    return rows.map((row) => row.id);
+  }
+  
+  deleteWaitingRoom(roomId: number, userId: number): boolean {
+    const room = db
+      .prepare(`
+        SELECT
+          id,
+          created_by AS createdBy,
+          status
+        FROM rooms
+        WHERE id = ?
+      `)
+      .get(roomId) as {
+        id: number;
+        createdBy: number;
+        status: string;
+      } | undefined;
+
+    if (!room) {
+      return false;
+    }
+
+    // Only the creator can delete a room.
+    if (room.createdBy !== userId) {
+      return false;
+    }
+
+    // A room can only be deleted before the game starts.
+    if (room.status !== "waiting") {
+      return false;
+    }
+
+    return this.deleteRoom(roomId);
+  }
+
   deleteRoom(roomId: number): boolean {
     const room = db
       .prepare(`
@@ -221,38 +309,25 @@ class WizardLobbyManager {
       return false;
     }
 
-  /*
-   * DEVELOPMENT ONLY:
-   * Any authenticated user can currently delete any room.
-   *
-   * This is intentional while the game is being developed/tested,
-   * so abandoned or active rooms can be removed easily.
-   *
-   * BEFORE PRODUCTION:
-   * Restore authorization so that only the room creator
-   * (or another explicitly authorized role) can delete the room.
-   *
-   * See also the DELETE /lobby/:roomId route in wizardRoutes.ts.
-   */
-  transaction(() => {
-    db.prepare(`
-      DELETE FROM games
-      WHERE room_id = ?
-    `).run(roomId);
+    transaction(() => {
+      db.prepare(`
+        DELETE FROM games
+        WHERE room_id = ?
+      `).run(roomId);
 
-    db.prepare(`
-      DELETE FROM room_players
-      WHERE room_id = ?
-    `).run(roomId);
+      db.prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+      `).run(roomId);
 
-    db.prepare(`
-      DELETE FROM rooms
-      WHERE id = ?
-    `).run(roomId);
-  });
+      db.prepare(`
+        DELETE FROM rooms
+        WHERE id = ?
+      `).run(roomId);
+    });
 
-  return true;
-}
+    return true;
+  }
 
   //most likely useless, but the idea is to restart games from where they left off
   resetStalePlayingRooms(activeRoomIds: Set<number>): void {

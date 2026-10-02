@@ -52,7 +52,7 @@ export interface WizardGameState {
   trumpCard: Card | null;
   trumpSuit: Suit | null;
   currentTrick: TrickState;
-  status: "waiting" | "playing" | "finished";
+  status: "waiting" | "playing" | "finished" | "expired";
   deck: Card[];
   phase: "trump-selection" | "predictions" | "playing" | "finished";
 }

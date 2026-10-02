@@ -4,6 +4,7 @@ import { UserService } from "../services/userService.js";
 import { isBotName } from "../game/wizard/models/bot.js";
 import { playerStatsRepository } from "../game/wizard/services/playerStatsRepository.js";
 import { playerOpponentRepository } from "../game/wizard/services/playerOpponentRepository.js";
+import { friendService } from "../game/wizard/services/friendService.js";
 
 interface RegisterBody {
   username: string;
@@ -204,6 +205,300 @@ export default async function authRoutes(
       const opponents = playerOpponentRepository.getOpponents(tokenUser.sub);
 
       return reply.send(opponents);
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
+    server.get("/player/:userId/profile", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const params = request.params as {
+        userId?: string;
+      };
+
+      const userId = Number(params.userId);
+
+      if (!Number.isInteger(userId) || userId <= 0) {
+        return reply.status(400).send({
+          error: "Invalid user ID",
+        });
+      }
+
+      const user = UserService.getUserById(userId);
+
+      if (!user) {
+        return reply.status(404).send({
+          error: "Player not found",
+        });
+      }
+
+      const stats = playerStatsRepository.getStats(userId);
+
+      if (!stats) {
+        return reply.status(404).send({
+          error: "Player stats not found",
+        });
+      }
+
+      const opponents = playerOpponentRepository.getOpponents(userId);
+
+      return reply.send({
+        id: user.id,
+        username: user.username,
+        displayName: user.displayName,
+        stats,
+        opponents,
+      });
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
+  server.post("/friends/request/:userId", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const params = request.params as {
+        userId?: string;
+      };
+
+      const receiverId = Number(params.userId);
+
+      if (!Number.isInteger(receiverId) || receiverId <= 0) {
+        return reply.status(400).send({
+          error: "Invalid user ID",
+        });
+      }
+
+      const tokenUser = request.user as {
+        sub?: number;
+      };
+
+      if (tokenUser.sub === undefined) {
+        return reply.status(401).send({
+          error: "User identity missing",
+        });
+      }
+
+      const sent = friendService.sendRequest(
+        Number(tokenUser.sub),
+        receiverId,
+      );
+
+      if (!sent) {
+        return reply.status(400).send({
+          error: "Could not send friend request",
+        });
+      }
+
+      return reply.send({
+        success: true,
+      });
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
+  server.get("/friends/requests", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const tokenUser = request.user as {
+        sub?: number;
+      };
+
+      if (tokenUser.sub === undefined) {
+        return reply.status(401).send({
+          error: "User identity missing",
+        });
+      }
+
+      const requests = friendService.getPendingRequests(
+        Number(tokenUser.sub),
+      );
+
+      return reply.send(requests);
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+  
+  server.get("/friends", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const tokenUser = request.user as {
+        sub?: number;
+      };
+
+      if (tokenUser.sub === undefined) {
+        return reply.status(401).send({
+          error: "User identity missing",
+        });
+      }
+
+      const friends = friendService.getFriends(
+        Number(tokenUser.sub),
+      );
+
+      return reply.send(friends);
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
+  server.post(
+    "/friends/requests/:requestId/accept",
+    async (request, reply) => {
+      try {
+        await request.jwtVerify();
+
+        const params = request.params as {
+          requestId?: string;
+        };
+
+        const requestId = Number(params.requestId);
+
+        if (!Number.isInteger(requestId) || requestId <= 0) {
+          return reply.status(400).send({
+            error: "Invalid request ID",
+          });
+        }
+
+        const tokenUser = request.user as {
+          sub?: number;
+        };
+
+        if (tokenUser.sub === undefined) {
+          return reply.status(401).send({
+            error: "User identity missing",
+          });
+        }
+
+        const accepted = friendService.acceptRequest(
+          requestId,
+          Number(tokenUser.sub),
+        );
+
+        if (!accepted) {
+          return reply.status(400).send({
+            error: "Could not accept friend request",
+          });
+        }
+
+        return reply.send({
+          success: true,
+        });
+      } catch {
+        return reply.status(401).send({
+          error: "Invalid or missing token",
+        });
+      }
+    },
+  );
+
+  server.post(
+    "/friends/requests/:requestId/reject",
+    async (request, reply) => {
+      try {
+        await request.jwtVerify();
+
+        const params = request.params as {
+          requestId?: string;
+        };
+
+        const requestId = Number(params.requestId);
+
+        if (!Number.isInteger(requestId) || requestId <= 0) {
+          return reply.status(400).send({
+            error: "Invalid request ID",
+          });
+        }
+
+        const tokenUser = request.user as {
+          sub?: number;
+        };
+
+        if (tokenUser.sub === undefined) {
+          return reply.status(401).send({
+            error: "User identity missing",
+          });
+        }
+
+        const rejected = friendService.rejectRequest(
+          requestId,
+          Number(tokenUser.sub),
+        );
+
+        if (!rejected) {
+          return reply.status(400).send({
+            error: "Could not reject friend request",
+          });
+        }
+
+        return reply.send({
+          success: true,
+        });
+      } catch {
+        return reply.status(401).send({
+          error: "Invalid or missing token",
+        });
+      }
+    },
+  );
+
+  server.delete("/friends/:userId", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const params = request.params as {
+        userId?: string;
+      };
+
+      const friendId = Number(params.userId);
+
+      if (!Number.isInteger(friendId) || friendId <= 0) {
+        return reply.status(400).send({
+          error: "Invalid user ID",
+        });
+      }
+
+      const tokenUser = request.user as {
+        sub?: number;
+      };
+
+      if (tokenUser.sub === undefined) {
+        return reply.status(401).send({
+          error: "User identity missing",
+        });
+      }
+
+      const removed = friendService.removeFriend(
+        Number(tokenUser.sub),
+        friendId,
+      );
+
+      if (!removed) {
+        return reply.status(404).send({
+          error: "Friendship not found",
+        });
+      }
+
+      return reply.send({
+        success: true,
+      });
     } catch {
       return reply.status(401).send({
         error: "Invalid or missing token",

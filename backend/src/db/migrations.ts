@@ -71,6 +71,37 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 3,
+    description: "add friend requests",
+    up(db) {
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS friend_requests (
+
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+          sender_id INTEGER NOT NULL,
+
+          receiver_id INTEGER NOT NULL,
+
+          status TEXT NOT NULL DEFAULT 'pending',
+
+          created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+          UNIQUE(sender_id, receiver_id),
+
+          FOREIGN KEY (sender_id) REFERENCES users(id),
+
+          FOREIGN KEY (receiver_id) REFERENCES users(id),
+
+          CHECK (sender_id != receiver_id),
+
+          CHECK (status IN ('pending', 'accepted', 'rejected'))
+
+        )
+      `);
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>
@@ -104,3 +135,4 @@ export function runMigrations(db: MigratableDb): void {
     console.log(`Migrated database to version ${migration.version}: ${migration.description}`);
   }
 }
+

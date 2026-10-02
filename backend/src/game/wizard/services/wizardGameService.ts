@@ -427,7 +427,9 @@ export class WizardGameService {
       trumpCard: game.trumpCard,
       trumpSuit: game.trumpSuit,
       currentTrick: game.currentTrick,
-      status: game.status,
+      status: game.status === "expired"
+      ? "finished"
+      : game.status,
       phase: game.phase,
       deckCount: game.deck.length,
     };
