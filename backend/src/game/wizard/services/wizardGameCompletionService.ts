@@ -7,6 +7,7 @@ import { wizardGameRepository } from "./wizardGameRepository.js";
 
 interface RoomInfo {
   createdBy: number;
+  isGuest: number;
 }
 
 interface RoomPlayerInfo {
@@ -19,8 +20,10 @@ class WizardGameCompletionService {
     const room = db
       .prepare(`
         SELECT created_by AS createdBy
+          , users.is_guest AS isGuest
         FROM rooms
-        WHERE id = ?
+          JOIN users ON users.id = rooms.created_by
+        WHERE rooms.id = ?
       `)
       .get(game.roomId) as RoomInfo | undefined;
 
@@ -47,7 +50,7 @@ class WizardGameCompletionService {
       : null;
 
     transaction(() => {
-      for (const player of game.players) {
+      for (const player of room.isGuest ? [] : game.players) {
         if (isBotName(player.username)) {
           continue;
         }
@@ -114,8 +117,25 @@ class WizardGameCompletionService {
 
       db.prepare(`
         DELETE FROM rooms
-        WHERE id = ?
+        WHERE rooms.id = ?
       `).run(game.roomId);
+
+      if (room.isGuest === 1) {
+        db.prepare(`
+          DELETE FROM player_opponents
+          WHERE player_id = ?
+        `).run(room.createdBy);
+
+        db.prepare(`
+          DELETE FROM player_stats
+          WHERE user_id = ?
+        `).run(room.createdBy);
+
+        db.prepare(`
+          DELETE FROM users
+          WHERE id = ? AND is_guest = 1
+        `).run(room.createdBy);
+      }
     });
   }
 
@@ -123,7 +143,9 @@ class WizardGameCompletionService {
     const room = db
       .prepare(`
         SELECT created_by AS createdBy
+          , users.is_guest AS isGuest
         FROM rooms
+          JOIN users ON users.id = rooms.created_by
         WHERE id = ?
       `)
       .get(game.roomId) as RoomInfo | undefined;
@@ -143,7 +165,7 @@ class WizardGameCompletionService {
       .all(game.roomId) as RoomPlayerInfo[];
 
     transaction(() => {
-      for (const player of game.players) {
+      for (const player of room.isGuest ? [] : game.players) {
         if (isBotName(player.username)) {
           continue;
         }
@@ -228,6 +250,23 @@ class WizardGameCompletionService {
         DELETE FROM rooms
         WHERE id = ?
       `).run(game.roomId);
+
+      if (room.isGuest === 1) {
+        db.prepare(`
+          DELETE FROM player_opponents
+          WHERE player_id = ?
+        `).run(room.createdBy);
+
+        db.prepare(`
+          DELETE FROM player_stats
+          WHERE user_id = ?
+        `).run(room.createdBy);
+
+        db.prepare(`
+          DELETE FROM users
+          WHERE id = ? AND is_guest = 1
+        `).run(room.createdBy);
+      }
     });
   }
 }

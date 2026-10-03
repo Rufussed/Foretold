@@ -102,6 +102,18 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 4,
+    description: "mark temporary guest users",
+    up(db) {
+      if (!hasColumn(db, "users", "is_guest")) {
+        db.exec(`
+          ALTER TABLE users
+          ADD COLUMN is_guest INTEGER NOT NULL DEFAULT 0
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

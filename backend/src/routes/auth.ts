@@ -168,6 +168,34 @@ export default async function authRoutes(
 		}
 	});
 
+  server.get("/search", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const query = request.query as { query?: string };
+      const tokenUser = request.user as { sub?: number };
+      const searchQuery = query.query?.trim() ?? "";
+
+      if (tokenUser.sub === undefined) {
+        return reply.status(401).send({
+          error: "User identity missing",
+        });
+      }
+
+      if (searchQuery.length < 2) {
+        return reply.send([]);
+      }
+
+      return reply.send(
+        UserService.searchUsers(searchQuery, Number(tokenUser.sub)),
+      );
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
 	  server.get("/me/stats", async (request, reply) => {
     try {
       await request.jwtVerify();
@@ -499,6 +527,37 @@ export default async function authRoutes(
       return reply.send({
         success: true,
       });
+    } catch {
+      return reply.status(401).send({
+        error: "Invalid or missing token",
+      });
+    }
+  });
+
+  server.get("/friends/status/:userId", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+
+      const params = request.params as { userId?: string };
+      const otherUserId = Number(params.userId);
+      const tokenUser = request.user as { sub?: number };
+
+      if (
+        !Number.isInteger(otherUserId) ||
+        otherUserId <= 0 ||
+        tokenUser.sub === undefined
+      ) {
+        return reply.status(400).send({
+          error: "Invalid user ID",
+        });
+      }
+
+      return reply.send(
+        friendService.getRelationshipStatus(
+          Number(tokenUser.sub),
+          otherUserId,
+        ),
+      );
     } catch {
       return reply.status(401).send({
         error: "Invalid or missing token",

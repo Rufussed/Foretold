@@ -2,6 +2,7 @@ import { renderHomePage } from "../pages/Home";
 import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
 import { destroyWizardGamePage, renderWizardGamePage } from "../pages/WizardGame";
+import { getActiveGameToken } from "../services/auth";
 
 // three.js is large; only pull the visualizer bundle in when it's actually
 // needed instead of paying for it on every route.
@@ -124,7 +125,7 @@ function renderCurrentRoute(container: HTMLElement): void {
   }
 
   if (route.startsWith("#/room/")) {
-    const token = localStorage.getItem("wizardToken");
+    const token = getActiveGameToken();
 
     if (!token) {
       window.location.hash = "#/home";
@@ -143,7 +144,7 @@ function renderCurrentRoute(container: HTMLElement): void {
   }
 
   if (route.startsWith("#/game/")) {
-    const token = localStorage.getItem("wizardToken");
+    const token = getActiveGameToken();
 
     if (!token) {
       window.location.hash = "#/home";

@@ -76,6 +76,7 @@ class WizardLobbyManager {
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
+          WHERE users.is_guest = 0
           ORDER BY rooms.created_at DESC
         `,
       )

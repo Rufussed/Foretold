@@ -9,7 +9,8 @@ import {
 } from "../visualizer/avatar-picker";
 import {
   getCurrentUser,
-  getToken,
+  getActiveGameToken,
+  getGuestUsername,
 } from "../services/auth";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
@@ -30,7 +31,7 @@ export async function renderRoomPage(
 ): Promise<void> {
   destroyRoomPage();
 
-  const token = getToken();
+  const token = getActiveGameToken();
 
   if (!token) {
     window.location.hash = "#/home";
@@ -51,7 +52,17 @@ export async function renderRoomPage(
   };
   activeRoom = handle;
 
-  const user = await getCurrentUser();
+  const guestUsername = getGuestUsername();
+  const user = localStorage.getItem("wizardToken")
+    ? await getCurrentUser()
+    : guestUsername
+      ? {
+          id: 0,
+          username: guestUsername,
+          displayName: guestUsername,
+          email: "",
+        }
+      : await getCurrentUser();
 
   if (destroyed) {
     return;
@@ -213,7 +224,7 @@ export async function renderRoomPage(
 
     picker.setClaims(claims, user.username);
 
-    const isHost = room.createdBy === user.id;
+    const isHost = guestUsername !== null || room.createdBy === user.id;
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
 

@@ -51,6 +51,13 @@ class FriendService {
       friendId,
     );
   }
+
+  getRelationshipStatus(userId: number, otherUserId: number) {
+    return friendRequestRepository.getRelationshipStatus(
+      userId,
+      otherUserId,
+    );
+  }
 }
 
 export const friendService = new FriendService();

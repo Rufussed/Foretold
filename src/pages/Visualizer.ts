@@ -1,5 +1,9 @@
 import { API_BASE } from "../services/api";
-import { getCurrentUser, getToken } from "../services/auth";
+import {
+  getCurrentUser,
+  getActiveGameToken,
+  getGuestUsername,
+} from "../services/auth";
 import { createGameSocket, type GameSocketMessage } from "../services/gameSocket";
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
@@ -63,6 +67,8 @@ export async function renderVisualizerPage(
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
   let fullscreenToggle: FullscreenToggle | null = null;
+  const isGuestGame =
+    !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
 
   teardown = () => {
     destroyed = true;
@@ -90,7 +96,7 @@ export async function renderVisualizerPage(
 
       <nav class="visualizer-nav">
         <a href="#/home">Home</a>
-        <a href="#/lobby">Lobby</a>
+        ${isGuestGame ? "" : '<a href="#/lobby">Lobby</a>'}
         <a href="#/game/${roomId}">Technical View</a>
       </nav>
 
@@ -140,13 +146,19 @@ export async function renderVisualizerPage(
 
   // A live game seats its real players. Without one (not started, or not
   // signed in) the demo table is shown, so the scene can still be worked on.
-  const token = getToken();
+  const token = getActiveGameToken();
   let localUsername: string | null = null;
   let latestState: PublicWizardGameState | null = null;
 
   if (token) {
     try {
-      localUsername = (await getCurrentUser()).username;
+      localUsername = localStorage.getItem("wizardToken")
+        ? (await getCurrentUser()).username
+        : getGuestUsername();
+
+      if (!localUsername) {
+        throw new Error("Guest identity missing");
+      }
       const response = await fetch(`${API_BASE}/wizard/games/${roomId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });

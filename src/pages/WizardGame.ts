@@ -1,4 +1,8 @@
-import { getCurrentUser } from "../services/auth";
+import {
+  getCurrentUser,
+  getActiveGameToken,
+  getGuestUsername,
+} from "../services/auth";
 import { API_BASE } from "../services/api";
 import type { Suit } from "../../backend/src/game/wizard/models/card";
 import {
@@ -216,7 +220,7 @@ export async function renderWizardGamePage(
 ): Promise<void> {
   destroyWizardGamePage();
   const mount = mountCount;
-  const token = localStorage.getItem("wizardToken");
+  const token = getActiveGameToken();
 
   if (!token) {
     window.location.hash = "#/home";
@@ -224,7 +228,12 @@ export async function renderWizardGamePage(
   }
 
   try {
-    const user = await getCurrentUser();
+    const guestUsername = getGuestUsername();
+    const user = localStorage.getItem("wizardToken")
+      ? await getCurrentUser()
+      : guestUsername
+        ? { username: guestUsername }
+        : await getCurrentUser();
     const game = await loadGame(roomId, token);
     
     recordDebugEvent(

@@ -1,4 +1,5 @@
 import type { FastifyInstance } from "fastify";
+import { randomUUID } from "node:crypto";
 import { BOT_NAME_SUFFIX, seatNameFor } from "../models/bot.js";
 import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
@@ -305,16 +306,53 @@ export default async function wizardRoutes(
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
 
-  /*
- * DEVELOPMENT ONLY:
- * Room deletion is intentionally available to any authenticated user.
- *
- * BEFORE PRODUCTION:
- * Verify that request.user.sub is authorized to delete this room.
- * At minimum, compare it with rooms.created_by.
- *
- * Do NOT leave this endpoint unrestricted in production.
- */
+  server.delete("/lobby/:roomId", {
+    schema: {
+      params: {
+        type: "object",
+        required: ["roomId"],
+        additionalProperties: false,
+        properties: {
+          roomId: {
+            type: "string",
+            pattern: "^[1-9][0-9]*$",
+          },
+        },
+      },
+    },
+  }, async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const params = request.params as { roomId?: string };
+    const roomId = Number(params.roomId);
+    const tokenUser = request.user as { sub?: number };
+
+    if (!Number.isInteger(roomId)) {
+      return reply.status(400).send({ error: "Invalid room ID" });
+    }
+
+    if (tokenUser.sub === undefined) {
+      return reply.status(401).send({ error: "User identity missing" });
+    }
+
+    const deleted = wizardLobbyManager.deleteWaitingRoom(
+      roomId,
+      Number(tokenUser.sub),
+    );
+
+    if (!deleted) {
+      return reply.status(403).send({
+        error: "Only the room creator can delete a waiting room",
+      });
+    }
+
+    return reply.send({ success: true });
+  });
+
   server.delete("/lobby/:roomId/leave", {
     schema: {
       params: {
@@ -361,6 +399,63 @@ export default async function wizardRoutes(
 
     return reply.send({ success: true });
   });
+
+  server.post("/guest-games", async (_request, reply) => {
+    const guestUsername = `Guest-${randomUUID().slice(0, 8)}`;
+    const guestEmail = `${guestUsername.toLowerCase()}@guest.invalid`;
+    const guestPassword = randomUUID();
+
+    try {
+      const userResult = db
+        .prepare(`
+          INSERT INTO users (
+            username,
+            password_hash,
+            display_name,
+            email,
+            is_guest
+          )
+          VALUES (?, ?, ?, ?, 1)
+        `)
+        .run(
+          guestUsername,
+          guestPassword,
+          guestUsername,
+          guestEmail,
+        );
+
+      const guestUserId = Number(userResult.lastInsertRowid);
+      const room = wizardLobbyManager.createRoom(
+        `${guestUsername}'s Table`,
+        guestUserId,
+        guestUsername,
+        4,
+      );
+
+      const token = server.jwt.sign(
+        {
+          sub: guestUserId,
+          username: guestUsername,
+          guest: true,
+        },
+        { expiresIn: "2h" },
+      );
+
+      return reply.status(201).send({
+        token,
+        roomId: room.id,
+        username: guestUsername,
+      });
+    } catch (error) {
+      return reply.status(500).send({
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not create guest game",
+      });
+    }
+  });
+
   server.post(
     "/games",
     {

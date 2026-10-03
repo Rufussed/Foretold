@@ -9,6 +9,12 @@ export interface User {
   createdAt: string;
 }
 
+export interface PublicUser {
+  id: number;
+  username: string;
+  displayName: string;
+}
+
 interface UserRow {
   id: number;
   username: string;
@@ -96,5 +102,25 @@ export class UserService {
     const row = statement.get(id) as UserRow | undefined;
 
     return row ? mapUser(row) : null;
+  }
+
+  static searchUsers(query: string, excludedUserId: number): PublicUser[] {
+    const normalizedQuery = `%${query.trim().toLowerCase()}%`;
+
+    return db.prepare(`
+      SELECT id, username, display_name AS displayName
+      FROM users
+      WHERE id != ?
+        AND (
+          LOWER(username) LIKE ?
+          OR LOWER(display_name) LIKE ?
+        )
+      ORDER BY display_name COLLATE NOCASE ASC
+      LIMIT 20
+    `).all(
+      excludedUserId,
+      normalizedQuery,
+      normalizedQuery,
+    ) as PublicUser[];
   }
 }

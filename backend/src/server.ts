@@ -128,7 +128,21 @@ setInterval(() => {
       continue;
     }
 
+    const creator = db
+      .prepare(`
+        SELECT created_by AS createdBy, is_guest AS isGuest
+        FROM rooms
+        JOIN users ON users.id = rooms.created_by
+        WHERE rooms.id = ?
+      `)
+      .get(roomId) as { createdBy: number; isGuest: number } | undefined;
+
     wizardLobbyManager.deleteRoom(roomId);
+
+    if (creator?.isGuest === 1) {
+      db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(creator.createdBy);
+      db.prepare("DELETE FROM users WHERE id = ? AND is_guest = 1").run(creator.createdBy);
+    }
   }
 }, 5000);
 

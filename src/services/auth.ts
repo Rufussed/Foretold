@@ -8,6 +8,14 @@ import type {
 } from "../types/auth";
 
 const TOKEN_KEY = "wizardToken";
+const GUEST_TOKEN_KEY = "wizardGuestToken";
+const GUEST_USERNAME_KEY = "wizardGuestUsername";
+
+export interface GuestGameResponse {
+  token: string;
+  roomId: number;
+  username: string;
+}
 
 // Authentication owns network calls and token persistence; pages only submit
 // user input and react to success or failure.
@@ -68,6 +76,37 @@ export async function register(
 
 export function getToken(): string | null {
   return localStorage.getItem(TOKEN_KEY);
+}
+
+export function getGuestToken(): string | null {
+  return sessionStorage.getItem(GUEST_TOKEN_KEY);
+}
+
+export function getGuestUsername(): string | null {
+  return sessionStorage.getItem(GUEST_USERNAME_KEY);
+}
+
+export function getActiveGameToken(): string | null {
+  return getToken() ?? getGuestToken();
+}
+
+export async function createGuestGame(): Promise<GuestGameResponse> {
+  const response = await fetch(`${API_BASE}/wizard/guest-games`, {
+    method: "POST",
+  });
+
+  const data = (await response.json()) as GuestGameResponse & {
+    error?: string;
+  };
+
+  if (!response.ok || !data.token || !data.roomId || !data.username) {
+    throw new Error(data.error ?? "Could not start guest game");
+  }
+
+  sessionStorage.setItem(GUEST_TOKEN_KEY, data.token);
+  sessionStorage.setItem(GUEST_USERNAME_KEY, data.username);
+
+  return data;
 }
 
 export async function getCurrentUser(): Promise<User> {

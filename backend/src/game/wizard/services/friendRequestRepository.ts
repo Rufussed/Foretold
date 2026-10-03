@@ -9,9 +9,13 @@ export interface FriendRequest {
   id: number;
   senderId: number;
   receiverId: number;
+    senderUsername: string;
+    senderDisplayName: string;
   status: "pending" | "accepted" | "rejected";
   createdAt: string;
 }
+
+export type FriendRelationshipStatus = "friend" | "pending" | "none";
 
 class FriendRequestRepository {
     sendRequest(senderId: number, receiverId: number): boolean {
@@ -39,11 +43,11 @@ class FriendRequestRepository {
     } | undefined;
 
     if (existing?.status === "pending") {
-        return false;
+      return true;
     }
 
     if (existing?.status === "accepted") {
-        return false;
+      return true;
     }
 
     if (existing?.status === "rejected") {
@@ -81,9 +85,12 @@ class FriendRequestRepository {
         fr.id,
         fr.sender_id AS senderId,
         fr.receiver_id AS receiverId,
+                sender.username AS senderUsername,
+                sender.display_name AS senderDisplayName,
         fr.status,
         fr.created_at AS createdAt
       FROM friend_requests fr
+            JOIN users sender ON sender.id = fr.sender_id
       WHERE fr.receiver_id = ?
         AND fr.status = 'pending'
       ORDER BY fr.created_at DESC
@@ -168,6 +175,37 @@ class FriendRequestRepository {
 
     return result.changes > 0;
     }
+
+  getRelationshipStatus(
+    userId: number,
+    otherUserId: number,
+  ): FriendRelationshipStatus {
+    const relationship = db.prepare(`
+      SELECT status
+      FROM friend_requests
+      WHERE
+        (sender_id = ? AND receiver_id = ?)
+        OR
+        (sender_id = ? AND receiver_id = ?)
+      ORDER BY id DESC
+      LIMIT 1
+    `).get(
+      userId,
+      otherUserId,
+      otherUserId,
+      userId,
+    ) as { status: "pending" | "accepted" | "rejected" } | undefined;
+
+    if (relationship?.status === "accepted") {
+      return "friend";
+    }
+
+    if (relationship?.status === "pending") {
+      return "pending";
+    }
+
+    return "none";
+  }
 }
 
 
