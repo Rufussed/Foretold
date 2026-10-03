@@ -2006,6 +2006,17 @@ button:hover {
   line-height: 1.8;
 }
 
+.home-modal-link {
+  color: #e0a14d;
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 161, 77, 0.45);
+  text-underline-offset: 3px;
+}
+
+.home-modal-link:hover {
+  color: #ffbd62;
+}
+
 /* ---------------------------------------------------------
    Modal close button
    --------------------------------------------------------- */
@@ -2190,6 +2201,74 @@ button:hover {
   color: #b36e27;
 
   font-size: 9px;
+}
+
+.home-rules-content {
+  max-height: min(62vh, 560px);
+  margin-top: 25px;
+  padding-right: 10px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.home-rules-section {
+  border-top: 1px solid #2d2b24;
+  padding: 16px 0 2px;
+}
+
+.home-rules-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.home-rules-section h3 {
+  margin: 0 0 7px;
+
+  color: #e0a14d;
+
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-rules-section p,
+.home-rules-section li {
+  color: #c9bca8;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.home-rules-section p {
+  margin: 0 0 9px;
+}
+
+.home-rules-section ol {
+  margin: 8px 0 9px;
+  padding-left: 21px;
+}
+
+.home-rules-section li::marker {
+  color: #b36e27;
+}
+
+.home-scoring-example {
+  border-left: 2px solid #b36e27;
+  margin: 12px 0 3px;
+  padding-left: 12px;
+}
+
+.home-scoring-example strong {
+  color: #e0a14d;
+  font-family: "Cinzel", serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-scoring-example p {
+  margin-top: 4px;
 }
 
 /* ---------------------------------------------------------

@@ -170,10 +170,19 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "about") {
       panelContainer.innerHTML = renderInfoPanel(
         "About",
-        "The Wizard card game platform.",
+        "Built by players, for players.",
         `
           <p class="home-modal-copy">
-            Passionate for the card game Wizard. Two students software developers decided to create a Wizard game platform.
+            We are two software development students, game lovers, and longtime
+            fans of Wizard. We created this platform because we wanted a better
+            way to play the game online with friends.
+          </p>
+
+          <p class="home-modal-copy">
+            Wizard is a brilliant game of prediction, risk, and surprises, but
+            the online experience we found did not live up to the tabletop one.
+            So we decided to build the game we wanted to play: a welcoming
+            place to gather, compete, and enjoy Wizard together.
           </p>
         `,
       );
@@ -186,28 +195,124 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         "Rules",
         "The basics of Wizard.",
         `
-          <ul class="home-rule-list">
-            <li>
-              <span>01</span>
-              Predict how many tricks you will win.
-            </li>
-            <li>
-              <span>02</span>
-              Play one card during each trick.
-            </li>
-            <li>
-              <span>03</span>
-              Follow the lead suit whenever possible.
-            </li>
-            <li>
-              <span>04</span>
-              The highest card of the trump suit wins.
-            </li>
-            <li>
-              <span>05</span>
-              Score points by matching your prediction.
-            </li>
-          </ul>
+          <div class="home-rules-content">
+            <section class="home-rules-section">
+              <h3>Materials</h3>
+              <p>
+                A 60-card deck with four colours numbered 1 through 13,
+                four Wizards (Z), and four Jesters (N). Jesters are lowest
+                in value, followed by the numbered cards, with Wizards highest.
+                A score pad is also included.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Object of the Game</h3>
+              <p>
+                Predict the number of tricks you will take in each round.
+                Correct predictions score points, and the player with the most
+                points wins.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>The Deal</h3>
+              <p>
+                Deal one card to each player to determine the dealer. The high
+                card deals. On the first deal each player receives one card;
+                two cards are dealt on the second deal, three on the third,
+                and so on. The deal passes left after each round, and the new
+                dealer shuffles all 60 cards.
+              </p>
+              <p>
+                Turn up the next card to determine trump. A Jester means there
+                is no trump. If it is a Wizard, the dealer chooses a suit. On
+                the last round, all cards are dealt and there is no trump.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Bidding</h3>
+              <p>
+                Beginning to the left of the dealer, each player states the
+                number of tricks they will take and the scorer records it. The
+                total bid may be greater than, less than, or equal to the
+                number of tricks available.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>The Play</h3>
+              <p>
+                Play begins to the left of the dealer and continues clockwise.
+                Any card may be led, but players must follow suit when possible.
+                If unable to follow suit, a player may play any card, including
+                trump. Wizards and Jesters may be played at any time.
+              </p>
+              <ol>
+                <li>The first Wizard played wins the trick.</li>
+                <li>If no Wizard is played, the highest trump wins.</li>
+                <li>If no trump is played, the highest card of the led suit wins.</li>
+              </ol>
+              <p>The winner of each trick leads the next one.</p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Leading Wizards or Jesters</h3>
+              <p>
+                A Wizard led first wins the trick, and players may play any
+                card. A Jester is a null card; the suit is determined by the
+                next card played, and Jesters always lose. If only Jesters are
+                played, the first Jester wins.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Scoring</h3>
+              <p>
+                A correct prediction scores 20 points plus 10 points for each
+                trick taken. An incorrect prediction loses 10 points for each
+                trick over or under the prediction.
+              </p>
+              <div class="home-scoring-example">
+                <strong>Example</strong>
+                <p>
+                  Calling 0 and taking 0 scores 20. Calling 1 and taking 1
+                  scores 30. Calling 2 and taking 1 loses 10.
+                </p>
+              </div>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Length of Game</h3>
+              <p>
+                Play continues until all 60 cards are dealt. Three players play
+                20 rounds, four play 15, five play 12, and six play 10 rounds.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Keeping Track of Tricks</h3>
+              <p>
+                Before play begins, announce each player&apos;s bid. Keep tricks
+                won visible to everyone. Coins or poker chips can mark each
+                bid so players can see how many tricks they still need.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Bidding Variations</h3>
+              <ol>
+                <li><strong>Hidden Bid:</strong> Reveal all bids simultaneously.</li>
+                <li><strong>Delayed Reveal:</strong> Record bids and reveal them after the hand.</li>
+                <li>
+                  <strong>Optional Rule:</strong> If the last bidder has the highest
+                  score, they cannot make the bids even. This rule does not apply
+                  when there is a tie for the lead.
+                </li>
+              </ol>
+            </section>
+          </div>
         `,
       );
       attachCloseEvent();
@@ -231,14 +336,20 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "contact") {
       panelContainer.innerHTML = renderInfoPanel(
         "Contact",
-        "Wizard Platform",
+        "Reach the team",
         `
           <p class="home-modal-copy">
-            Questions, feedback, or suggestions?
+            Questions, feedback, suggestions, or copyright concerns?
           </p>
 
           <p class="home-modal-copy">
-            Contact information will be added here.
+            Email us at
+            <a
+              class="home-modal-link"
+              href="mailto:wizard.platform@gmail.com"
+            >
+              wizard.platform@gmail.com
+            </a>
           </p>
         `,
       );
@@ -249,14 +360,48 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "legal") {
       panelContainer.innerHTML = renderInfoPanel(
         "Copyright & Legal",
-        "Wizard Platform",
+        "Third-party content notice",
         `
           <p class="home-modal-copy">
-            Wizard Platform is an educational project created by student developers.
+            Wizard Platform is a public, non-commercial educational project
+            created by Carlos Denegri and Rufus Lane.
           </p>
 
           <p class="home-modal-copy">
-            All game content and visual assets are used for this project.
+            Wizard is an existing tabletop card game created by Ken Fisher,
+            with art by Franz Vohwinkel and published by AMIGO. Wizard existed
+            before this website and builds on familiar playing-card traditions.
+            Wizard Platform is an independent student-made digital project and
+            is not affiliated with or endorsed by AMIGO or the original game
+            creators.
+          </p>
+
+          <p class="home-modal-copy">
+            The card images and related game artwork are from or based on the
+            original Wizard game. We do not claim ownership of those images,
+            names, or related game materials.
+          </p>
+
+          <p class="home-modal-copy">
+            The soundtrack includes original music from Chessmaster II,
+            including music associated with the PlayStation release and Joseph
+            Kolkovich. Copyright and publishing rights belong to the relevant
+            original developers and publishers, including Mindscape and
+            Starsphere Interactive. We do not claim ownership of that music or
+            its recording.
+          </p>
+
+          <p class="home-modal-copy">
+            This project is made for educational and demonstration purposes.
+            Rights holders who have questions about the materials used here
+            should email
+            <a
+              class="home-modal-link"
+              href="mailto:wizard.platform@gmail.com"
+            >
+              wizard.platform@gmail.com
+            </a>
+            so the relevant content can be reviewed or removed.
           </p>
         `,
       );
