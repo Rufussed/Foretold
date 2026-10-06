@@ -319,6 +319,11 @@ export function createTableCards(
 
         entry.object.position.lerp(destination, follow);
         entry.object.quaternion.slerp(target.slot.quaternion, follow);
+        // Scale eases with the rest. Your own card moves through here rather
+        // than flyFromHand, so without this it keeps the hand slot's size all
+        // the way to the played slot - invisible while the two matched, plain
+        // as soon as they differ.
+        entry.object.scale.lerp(target.slot.scale, follow);
         entry.object.visible = true;
         entry.outline.visible =
           hovered === entry.key || entry.drag !== null || (leading === entry.key && trickOrder.includes(entry.key));
