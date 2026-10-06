@@ -1,6 +1,7 @@
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
+import { wizardSessionManager } from "./wizardSessionManager.js";
 
 interface RoomRow {
   id: number;
@@ -244,6 +245,13 @@ class WizardLobbyManager {
       WHERE id = ?
     `).run(roomId);
   });
+
+  // The rows are gone, but a game already in memory is not, and the bot runner
+  // may be mid-wait on a turn. Left in place it wakes, plays a move and saves a
+  // game whose room no longer exists, which foreign keys refuse - and that
+  // throw reaches no caller, so it takes the server down. Dropping it here is
+  // what makes the runner's own "has this game gone?" check see the truth.
+  wizardSessionManager.deleteGame(roomId);
 
   return true;
 }

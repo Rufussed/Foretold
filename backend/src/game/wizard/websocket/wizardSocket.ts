@@ -160,7 +160,12 @@ export function registerWizardSocket(
 
 			sendJson(socket, { type: "connected", roomId, username });
 			broadcastGameState(roomId, gameService);
-			void runner.run(roomId);
+			runner.run(roomId).catch((error) => {
+				// Not awaited, so a throw in here would otherwise be an unhandled
+				// rejection, and Node ends the process for those: one room's failure
+				// would end every other game on the server too.
+				console.error(`[wizard] runner failed for room ${roomId}:`, error);
+			});
 
 			socket.on("message", (rawMessage: { toString(): string }) => {
 				// Parse and validate each action against the current game state. The
@@ -243,7 +248,9 @@ export function registerWizardSocket(
 					wizardSessionManager.saveGame(currentGame);
 					broadcastGameState(roomId, gameService);
 
-					void runner.run(roomId);
+					runner.run(roomId).catch((error) => {
+						console.error(`[wizard] runner failed for room ${roomId}:`, error);
+					});
 
 				} catch (error) {
 					sendJson(socket, {
