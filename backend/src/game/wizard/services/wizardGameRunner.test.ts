@@ -91,6 +91,7 @@ describe("WizardGameRunner", () => {
       status: "finished",
       deck: [],
       phase: "finished",
+      pace: 1,
     } as WizardGameState;
 
     wizardSessionManager.saveGame(game);

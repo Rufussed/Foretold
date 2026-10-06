@@ -3,6 +3,7 @@ import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
+import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
 
@@ -155,8 +156,8 @@ export function createTableCards(
   const flyFromHand = (entry: TableCard, slot: Placement): boolean => {
     const flight = entry.flight;
     if (!flight) return false;
-    const lift = Math.max(OPPONENT_PLAYS.liftSeconds, 1e-6);
-    const travel = Math.max(OPPONENT_PLAYS.travelSeconds, 1e-6);
+    const lift = Math.max(paced(OPPONENT_PLAYS.liftSeconds), 1e-6);
+    const travel = Math.max(paced(OPPONENT_PLAYS.travelSeconds), 1e-6);
     const t = clock - flight.startedAt;
     const raised = flight.from.position
       .clone()

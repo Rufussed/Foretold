@@ -54,6 +54,10 @@ export interface WizardGameState {
   status: "waiting" | "playing" | "finished";
   deck: Card[];
   phase: "trump-selection" | "predictions" | "playing" | "finished";
+  // How fast this game plays out; chosen in room setup. See gameplayPace.ts.
+  // Games saved before the pace existed have none, so read it through
+  // clampPace rather than trusting it.
+  pace: number;
 }
 
 // This is the client-safe projection of WizardGameState. Other players' cards
@@ -82,6 +86,8 @@ export interface PublicWizardGameState {
   status: "waiting" | "playing" | "finished";
   phase: "trump-selection" | "predictions" | "playing" | "finished";
   deckCount: number;
+  // The game's pace, so the visualiser scales its beats to match the server's.
+  pace: number;
 }
 
 export interface RoundScore {

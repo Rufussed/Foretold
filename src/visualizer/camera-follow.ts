@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CAMERA_FOLLOW } from "./config";
+import { paced } from "./pace";
 
 export interface CameraFollow {
   // Takes the camera's current place and orientation as its normal view.
@@ -92,7 +93,7 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       if (onArrive) arrivals.push(onArrive);
       // A further change during the pause restarts it, so only the latest
       // target is turned to.
-      upcoming = { point: point ? point.clone() : null, wait: CAMERA_FOLLOW.delaySeconds };
+      upcoming = { point: point ? point.clone() : null, wait: paced(CAMERA_FOLLOW.delaySeconds) };
     },
 
     update(deltaSeconds) {
@@ -121,7 +122,9 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       }
 
       turn.elapsed += deltaSeconds;
-      const progress = Math.min(1, turn.elapsed / Math.max(CAMERA_FOLLOW.turnSeconds, 1e-6));
+      // The head turn, at the game's pace. Read per frame, so a pace that
+      // changes mid-turn just finishes the turn faster.
+      const progress = Math.min(1, turn.elapsed / Math.max(paced(CAMERA_FOLLOW.turnSeconds), 1e-6));
       const eased = easeInOut(progress);
       camera.position.lerpVectors(turn.fromPosition, turn.toPosition, eased);
       camera.quaternion.slerpQuaternions(turn.fromQuaternion, turn.toQuaternion, eased);

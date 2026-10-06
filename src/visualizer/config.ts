@@ -12,6 +12,26 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════════════════════════
+// GAMEPLAY PACE
+// ══════════════════════════════════════════════════════════════════════════
+
+// Every duration below ending in Seconds that is a gameplay beat - the camera
+// turning to the active player, announcements holding, cards dealt and flown,
+// the trick's tesseract - is written at a pace of 1 and divided by the game's
+// pace at the moment it is used. 2 plays twice as fast, 0.5 half as fast.
+//
+// The pace is not set here, because the server's pauses must scale by the same
+// number: it is chosen per game in room setup (Room.ts, "Game Speed") and
+// travels with every snapshot. The default and the allowed range live in
+// backend/src/game/wizard/gameplayPace.ts, the one module both sides import;
+// the bot waits it scales are in wizardTiming.ts beside it.
+//
+// ?speed=2 overrides it for the session, to feel out pacing without restarting
+// a game. Scenery (the crown's bob, sparks, the backdrop's rotation), emotes
+// and the two network timeouts are deliberately left out.
+export { GAMEPLAY_PACE } from "../../backend/src/game/wizard/gameplayPace";
+
+// ══════════════════════════════════════════════════════════════════════════
 // SHADOWS
 // ══════════════════════════════════════════════════════════════════════════
 

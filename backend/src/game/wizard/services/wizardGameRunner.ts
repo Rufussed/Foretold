@@ -2,6 +2,7 @@ import { WizardBotService } from "./wizardBotService.js";
 import { WizardGameService } from "./wizardGameService.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
 import { WIZARD_TIMING } from "../wizardTiming.js";
+import { clampPace, paced } from "../gameplayPace.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
 
 export type GameStateBroadcaster = (
@@ -37,12 +38,15 @@ export class WizardGameRunner {
           return;
         }
 
+        // Every pause below is written at the default pace; this divides them.
+        const pace = clampPace(game.pace);
+
         if (game.phase === "finished") {
           // Send the final game state before cleanup.
           this.broadcast(roomId);
 
           // Give the frontend time to receive/display the final state.
-          await this.wait(2500);
+          await this.wait(WIZARD_TIMING.finishedHoldMs, pace);
 
           // Record statistics and remove the temporary game/room data.
           wizardGameCompletionService.completeGame(game);
@@ -64,7 +68,7 @@ export class WizardGameRunner {
         ) {
           // Keep the completed trick visible briefly before clearing it and
           // moving the winner into the lead position.
-          await this.wait(2500);
+          await this.wait(WIZARD_TIMING.trickHoldMs, pace);
 
           const currentGame =
             wizardSessionManager.getGame(roomId);
@@ -78,7 +82,7 @@ export class WizardGameRunner {
           wizardSessionManager.saveGame(currentGame);
           this.broadcast(roomId);
 
-          await this.wait(700);
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
           continue;
         }
 
@@ -102,7 +106,7 @@ export class WizardGameRunner {
         if (game.phase === "trump-selection") {
           // Pause first, so every player sees who is choosing, then make sure
           // nothing changed meanwhile.
-          await this.wait(WIZARD_TIMING.botTrumpDelayMs);
+          await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
           const stillChoosing = wizardSessionManager.getGame(roomId);
           if (
             !stillChoosing ||
@@ -123,7 +127,7 @@ export class WizardGameRunner {
           wizardSessionManager.saveGame(stillChoosing);
           this.broadcast(roomId);
 
-          await this.wait(700);
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
           continue;
         }
 
@@ -134,7 +138,7 @@ export class WizardGameRunner {
         if (game.phase === "predictions") {
           // The same pause as before a bot plays, then make sure it's still
           // this bot's prediction to make.
-          await this.wait(WIZARD_TIMING.botPlayDelayMs);
+          await this.wait(WIZARD_TIMING.botPlayDelayMs, pace);
           const stillPredicting = wizardSessionManager.getGame(roomId);
           if (
             !stillPredicting ||
@@ -156,7 +160,7 @@ export class WizardGameRunner {
           wizardSessionManager.saveGame(stillPredicting);
           this.broadcast(roomId);
 
-          await this.wait(700);
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
           continue;
         }
 
@@ -166,7 +170,7 @@ export class WizardGameRunner {
 
         if (game.phase === "playing") {
           // Give the table a moment to follow along before a bot plays.
-          await this.wait(WIZARD_TIMING.botPlayDelayMs);
+          await this.wait(WIZARD_TIMING.botPlayDelayMs, pace);
 
           const currentGame =
             wizardSessionManager.getGame(roomId);
@@ -195,7 +199,7 @@ export class WizardGameRunner {
           wizardSessionManager.saveGame(currentGame);
           this.broadcast(roomId);
 
-          await this.wait(700);
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
           continue;
         }
 
@@ -206,9 +210,12 @@ export class WizardGameRunner {
     }
 }
 
-  private wait(milliseconds: number): Promise<void> {
+  // Waits a duration written at the default pace, scaled to this game's pace.
+  // Scaling here rather than at each call site means every pause the runner
+  // takes is paced, including any added later.
+  private wait(milliseconds: number, pace: number): Promise<void> {
     return new Promise((resolve) => {
-      setTimeout(resolve, milliseconds);
+      setTimeout(resolve, paced(milliseconds, pace));
     });
   }
 }

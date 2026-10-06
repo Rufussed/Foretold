@@ -1,5 +1,6 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import { ANNOUNCER } from "../config";
+import { paced } from "../pace";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer, characterForUsername } from "../seat-mapping";
 import { eventMessages, roundResults, statusMessage } from "./announcements";
@@ -108,7 +109,7 @@ export function createAnnouncer(
     textEl.hidden = !!next.results;
     textEl.textContent = next.results ? "" : next.text;
     if (next.results) {
-      board = createResultsBoard(banner, next.results, ANNOUNCER.resultRevealSeconds, (card) =>
+      board = createResultsBoard(banner, next.results, paced(ANNOUNCER.resultRevealSeconds), (card) =>
         scores.revealScore(card.username, card.points),
       );
     }
@@ -157,7 +158,9 @@ export function createAnnouncer(
     next.onShow?.();
     const state = game.state();
     shownAtPlay = next.untilNextPlay && state ? playKey(state) : null;
-    timer = window.setTimeout(showNext, (next.seconds ?? ANNOUNCER.messageSeconds) * 1000);
+    // Every queued duration is written at the default pace, so scaling here
+    // covers messages, notices and the round's results board together.
+    timer = window.setTimeout(showNext, paced(next.seconds ?? ANNOUNCER.messageSeconds) * 1000);
   };
 
   return {

@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { TRICK_REWARD } from "./config";
+import { paced } from "./pace";
 import { createTesseract, loadTesseract, type Tesseract, type TesseractModel } from "./tesseract";
 
 export type RewardDestination =
@@ -103,11 +104,13 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
     },
 
     update(deltaSeconds) {
-      const gather = TRICK_REWARD.gatherSeconds;
-      const grow = TRICK_REWARD.growSeconds;
-      const float = TRICK_REWARD.floatSeconds;
-      const swell = TRICK_REWARD.swellSeconds;
-      const dive = TRICK_REWARD.diveSeconds;
+      // The gather-and-fly sequence, at the game's pace: the director waits on
+      // the same durations, so the two must scale together.
+      const gather = paced(TRICK_REWARD.gatherSeconds);
+      const grow = paced(TRICK_REWARD.growSeconds);
+      const float = paced(TRICK_REWARD.floatSeconds);
+      const swell = paced(TRICK_REWARD.swellSeconds);
+      const dive = paced(TRICK_REWARD.diveSeconds);
       const startScale = TRICK_REWARD.startScale;
       const peakScale = TRICK_REWARD.peakScale;
 

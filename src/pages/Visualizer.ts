@@ -15,6 +15,7 @@ import { createCardTable, type CardTable } from "../visualizer/card-table";
 import { createDiagnostics, type Diagnostics } from "../visualizer/diagnostics";
 import { EMOTE_NAMES, SEAT_IDS, type Emote } from "../visualizer/player-characters";
 import { createTableDirector, type TableDirector } from "../visualizer/table-director";
+import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
@@ -268,6 +269,10 @@ export async function renderVisualizerPage(
   }
 
   const applyLatestState = () => {
+    // The server chose the pace in room setup and sends it with every snapshot;
+    // the visualiser's beats scale to match, so the director never waits on an
+    // animation the server has already moved past.
+    if (latestState) setPace(latestState.pace);
     if (seatSync && latestState && localUsername) {
       seatSync.applyPlayers(latestState.players, localUsername);
     }

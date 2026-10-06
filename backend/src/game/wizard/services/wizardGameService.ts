@@ -1,6 +1,7 @@
 import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
 import { forbiddenPrediction } from "../gameplayRules.js";
+import { GAMEPLAY_PACE, clampPace } from "../gameplayPace.js";
 import { isJester, isWizard } from "../models/card.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 
@@ -67,6 +68,8 @@ export class WizardGameService {
     claimedAvatars: ReadonlyMap<string, AvatarId | null> = new Map(),
     // Cap on rounds, for a shorter game; at most a full game.
     maxRounds?: number,
+    // How fast the game plays out, from room setup; 1 is the tuned default.
+    pace: number = GAMEPLAY_PACE.default,
   ): WizardGameState {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
@@ -118,6 +121,7 @@ export class WizardGameService {
       status: "waiting",
       deck: deck.getCards(),
       phase: "predictions",
+      pace: clampPace(pace),
     };
 
     this.dealRound(game);
@@ -430,6 +434,9 @@ export class WizardGameService {
       status: game.status,
       phase: game.phase,
       deckCount: game.deck.length,
+      // Through clampPace, so a game saved before the pace existed still
+      // reports a usable one.
+      pace: clampPace(game.pace),
     };
   }
 

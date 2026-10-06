@@ -1,6 +1,7 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
 import { OPPONENT_PLAYS, TRICK_REWARD } from "./config";
+import { paced } from "./pace";
 
 export interface TableDirector {
   // What the card table shows now.
@@ -75,7 +76,10 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       }, STEP_TIMEOUT_MS);
       start(done);
     });
-  const wait = (seconds: number) => step((done) => window.setTimeout(done, seconds * 1000));
+  // Durations here are written at the default pace; paced() scales them. The
+  // step timeout above is not scaled: it is a guard against a step that never
+  // reports back, not a beat.
+  const wait = (seconds: number) => step((done) => window.setTimeout(done, paced(seconds) * 1000));
   const camera = (username: string | null) => step((done) => options.lookAt(username, done));
   const announcer = () => step((done) => options.whenAnnouncerIdle(done));
 

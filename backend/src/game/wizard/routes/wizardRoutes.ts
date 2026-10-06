@@ -8,6 +8,7 @@ import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
+import { clampPace } from "../gameplayPace.js";
 import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
 
@@ -16,6 +17,9 @@ interface CreateGameBody {
   botCount?: number;
   // Optional cap for a shorter game, 1 up to a full game's rounds.
   maxRounds?: number;
+  // How fast the game plays out, chosen in room setup. Out-of-range values are
+  // clamped rather than refused, so a stale client cannot fail to start a game.
+  pace?: number;
 }
 
 interface PredictionBody {
@@ -392,6 +396,10 @@ export default async function wizardRoutes(
             maxRounds: {
               type: "integer",
               minimum: 1
+            },
+            pace: {
+              type: "number",
+              exclusiveMinimum: 0
             }
           }
         }
@@ -494,6 +502,7 @@ export default async function wizardRoutes(
         players,
         claims,
         maxRounds,
+        clampPace(body.pace),
       );
 
       game.status = "playing";

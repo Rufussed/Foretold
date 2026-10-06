@@ -114,6 +114,17 @@ export async function renderRoomPage(
                 <select id="room-rounds"></select>
               </label>
 
+              <label>
+                <span>Game Speed</span>
+                <select id="room-pace">
+                  <option value="0.5">Slow (half speed)</option>
+                  <option value="1" selected>Normal</option>
+                  <option value="1.5">Brisk</option>
+                  <option value="2">Fast (twice as fast)</option>
+                  <option value="3">Very fast</option>
+                </select>
+              </label>
+
               <button
                 type="button"
                 id="room-start-button"
@@ -164,6 +175,9 @@ export async function renderRoomPage(
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
+  // How fast the game plays out, for everyone in it: the server's pauses and
+  // the table's animations both scale by it. See gameplayPace.ts.
+  const paceEl = element<HTMLSelectElement>("#room-pace");
   let humanCount = 0;
   let maxPlayers = 0;
 
@@ -388,7 +402,12 @@ export async function renderRoomPage(
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ roomId, botCount: Number(botsEl.value), maxRounds: Number(roundsEl.value) }),
+        body: JSON.stringify({
+          roomId,
+          botCount: Number(botsEl.value),
+          maxRounds: Number(roundsEl.value),
+          pace: Number(paceEl.value),
+        }),
       });
 
       const data = (await response.json()) as { error?: string };

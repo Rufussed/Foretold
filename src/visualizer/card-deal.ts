@@ -2,6 +2,7 @@ import * as THREE from "three";
 import type { CardFactory, CardObject } from "./card-objects";
 import { blankCardTexture } from "./card-textures";
 import { DEALING } from "./config";
+import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import type { TableLayout } from "./table-layout";
 
@@ -79,9 +80,9 @@ export function createCardDeal(factory: CardFactory, layout: TableLayout): CardD
 
   const animate = (flight: Flight): boolean => {
     const { card, from, step } = flight;
-    const lift = Math.max(DEALING.liftSeconds, 1e-6);
-    const travel = Math.max(DEALING.travelSeconds, 1e-6);
-    const settle = Math.max(DEALING.settleSeconds, 1e-6);
+    const lift = Math.max(paced(DEALING.liftSeconds), 1e-6);
+    const travel = Math.max(paced(DEALING.travelSeconds), 1e-6);
+    const settle = Math.max(paced(DEALING.settleSeconds), 1e-6);
     const t = clock - flight.startAt;
 
     if (t >= lift + travel + settle) {
@@ -141,7 +142,7 @@ export function createCardDeal(factory: CardFactory, layout: TableLayout): CardD
         top -= 1;
         if (card.face) card.face.map = step.face ?? blankCardTexture();
         flights.push({ card, from, step, startAt: nextLaunch });
-        nextLaunch += DEALING.intervalSeconds;
+        nextLaunch += paced(DEALING.intervalSeconds);
       }
 
       flights = flights.filter(animate);
