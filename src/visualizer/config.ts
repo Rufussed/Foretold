@@ -511,6 +511,12 @@ export const CARD_HANDLING = {
   // Outline thickness on each side, as a fraction of the card width.
   outlineWidth: 0.015,
 
+  // The turned-up trump card's outline, when a Wizard or Jester was turned up
+  // and the card's own face cannot say what the trump is. It carries the trump
+  // colour, and is this many times the hand outline's thickness so it reads as
+  // a different thing from the hover highlight rather than a brighter one.
+  trumpOutlineWidthMultiplier: 2,
+
   // How far a clicked card rises, in card lengths.
   raiseLengths: 0.5,
 

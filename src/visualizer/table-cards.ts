@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
+import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
@@ -182,6 +182,9 @@ export function createTableCards(
   let trump: {
     object: THREE.Object3D;
     face: THREE.MeshBasicMaterial | null;
+    // Shown only when the turned-up card is a Wizard or a Jester, carrying the
+    // trump colour its own face cannot.
+    outline: THREE.Mesh;
     card: string | null;
     color: string | null;
   } | null = null;
@@ -285,15 +288,36 @@ export function createTableCards(
 
       const texture = cardTexture(card);
       if (!trump) {
-        const built = factory.build("trump-card-face", texture);
+        const built = factory.build("trump-card-face", texture, {
+          widthMultiplier: CARD_HANDLING.trumpOutlineWidthMultiplier,
+          ownMaterial: true,
+        });
         applyPlacement(built.object, trumpSlot);
-        trump = { object: built.object, face: built.face, card: null, color: null };
+        trump = {
+          object: built.object,
+          face: built.face,
+          outline: built.outline,
+          card: null,
+          color: null,
+        };
       }
       if (trump.face) trump.face.map = texture;
       if (trump.card !== cardKey(card)) trumpSuppressed = false;
       trump.object.visible = !trumpHeld && !trumpSuppressed;
       trump.card = cardKey(card);
       trump.color = trumpColor(trumpSuit);
+
+      // A Wizard or Jester turned up for trump shows no suit of its own: a
+      // Wizard means the round's first player picks one, a Jester means there
+      // is none. Either way the card alone cannot say what the trump is, so it
+      // is ringed in the trump colour - the chosen suit's, or the no-trump
+      // grey while a Wizard is still being decided. An ordinary trump card
+      // already shows its suit on its face and needs no ring.
+      const needsRing = isWizard(card) || isJester(card);
+      trump.outline.visible = needsRing;
+      if (needsRing) {
+        (trump.outline.material as THREE.MeshBasicMaterial).color.set(trump.color);
+      }
     },
 
     setTrick(cardsPlayed, origins, flyFromHand) {

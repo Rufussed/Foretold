@@ -8,11 +8,21 @@ export interface CardObject {
   outline: THREE.Mesh;
 }
 
+// How one card's outline differs from the shared hover outline every other
+// card uses. Only the turned-up trump needs either of these.
+export interface CardOutlineOptions {
+  // Multiplies CARD_HANDLING.outlineWidth for this card alone.
+  widthMultiplier?: number;
+  // Its own material rather than the one shared by every card, so this
+  // outline's colour can be set without changing all the others.
+  ownMaterial?: boolean;
+}
+
 export interface CardFactory {
   readonly width: number; // card face width, in card-mesh units
   readonly length: number; // card face length, in card-mesh units
   // A new card, added to the environment and hidden until something places it.
-  build(name: string, texture: THREE.Texture): CardObject;
+  build(name: string, texture: THREE.Texture, outline?: CardOutlineOptions): CardObject;
 }
 
 const TEMPLATE_NODE = "card01";
@@ -71,7 +81,7 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
     width: size.x,
     length: size.z,
 
-    build(name, texture) {
+    build(name, texture, outlineOptions) {
       const object = template.clone(true);
       object.name = name;
       object.visible = false;
@@ -89,12 +99,16 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
       });
       const faceOf = faceMesh as THREE.Mesh | null;
 
-      const outline = new THREE.Mesh(front.geometry, outlineMaterial);
+      const grow = outlineGrow * (outlineOptions?.widthMultiplier ?? 1);
+      const outline = new THREE.Mesh(
+        front.geometry,
+        outlineOptions?.ownMaterial ? outlineMaterial.clone() : outlineMaterial,
+      );
       outline.name = "card-outline";
       outline.visible = false;
       outline.castShadow = false;
       outline.raycast = () => {};
-      outline.scale.set(1 + outlineGrow / size.x, 1, 1 + outlineGrow / size.z);
+      outline.scale.set(1 + grow / size.x, 1, 1 + grow / size.z);
       outline.position.set(0, -OUTLINE_DEPTH, 0);
       (faceOf?.parent ?? object).add(outline);
 
