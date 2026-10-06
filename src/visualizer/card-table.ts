@@ -222,6 +222,8 @@ export function createCardTable({
 
     const hand = localPlayer(game)?.hand ?? [];
     cards.setHand(hand);
+    // Which played-card slots the trick uses: centred for fewer than six.
+    cards.setPlayerCount(state.players.length);
     // A card another player has just played rises out of their hand on its
     // way to the table: from the last card showing in their fan, before the
     // hand counts below take it away.
@@ -320,6 +322,8 @@ export function createCardTable({
     const trumpSuit = trumpCard && trumpCard.value !== 0 && trumpCard.value !== 14 ? trumpCard.suit : null;
 
     cards.cancelPlay();
+    // The demo seats every character in the scene, plus you.
+    cards.setPlayerCount(layout.clockwiseSeats.length + 1);
     cards.setTrick([]);
     cards.setHand([]);
     cards.setHand(localCards);

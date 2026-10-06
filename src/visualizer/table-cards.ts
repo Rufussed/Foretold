@@ -29,6 +29,12 @@ export interface TableCards {
     origins?: ReadonlyMap<string, Placement>,
     flyFromHand?: ReadonlySet<string>,
   ): void;
+  // How many players are at the table, which decides how many of the six
+  // played-card slots the trick uses: they are taken from the middle, so a
+  // three player game sits centred rather than bunched to one side. It is the
+  // player count rather than the cards played so far on purpose - keyed to the
+  // latter, every new card would re-centre the ones already down.
+  setPlayerCount(count: number): void;
   // The turned-up trump card, painted in the trump suit's colour; null hides it.
   setTrump(card: Card | null, trumpSuit: Suit | null): void;
   update(deltaSeconds: number): void;
@@ -107,6 +113,35 @@ export function createTableCards(
 ): TableCards {
   const handSlots = layout.localHand;
   const playedSlots = layout.played;
+  // Until a game says otherwise, every slot is in play: the demo table and a
+  // table opened before any state arrives then look as they always did.
+  let playerCount = playedSlots.length;
+
+  const centroid = (slots: readonly Placement[]) =>
+    slots
+      .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
+      .divideScalar(Math.max(slots.length, 1));
+
+  // The played-card slots this round uses: the middle `playerCount` of the six,
+  // shifted so the group sits on the centre of the full set.
+  //
+  // centredSlots alone is not enough here. It puts an odd spare slot on one
+  // side, which is nothing across the twenty slot hand fan but is half a card
+  // gap among six played slots: three players would sit visibly to one side.
+  // Translating the group onto the full set's centre fixes the odd counts and
+  // changes nothing for the even ones, and it keeps each slot's authored
+  // spacing, rotation and scale rather than inventing new placements.
+  const centredPlayedSlots = (count: number): readonly Placement[] => {
+    const used = centredSlots(playedSlots, count);
+    const offset = centroid(playedSlots).sub(centroid(used));
+    if (offset.lengthSq() < 1e-12) return used;
+    return used.map((slot) => ({ ...slot, position: slot.position.clone().add(offset) }));
+  };
+
+  // Recomputed only when the player count changes, since update() asks per card
+  // per frame.
+  let inUse = centredPlayedSlots(playerCount);
+  const playedSlotsInUse = () => inUse;
   const trumpSlot = layout.trump;
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
   const liftFor = (slot: Placement) => CARD_HANDLING.raiseLengths * factory.length * slot.scale.z;
@@ -197,11 +232,12 @@ export function createTableCards(
       const slot = handSlotFor(entry.key);
       return slot ? { slot, lift: entry.raised ? liftFor(slot) : 0 } : null;
     }
+    const inPlay = playedSlotsInUse();
     if (pending?.key === entry.key) {
-      const slot = playedSlots[trickOrder.length];
+      const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
     }
-    const slot = playedSlots[trickOrder.indexOf(entry.key)];
+    const slot = inPlay[trickOrder.indexOf(entry.key)];
     return slot ? { slot, lift: 0 } : null;
   };
 
@@ -226,6 +262,13 @@ export function createTableCards(
       // A card that has left the hand has been played.
       if (pending && !byKey.has(pending.key)) pending = null;
       if (hovered && !byKey.has(hovered)) hovered = null;
+    },
+
+    setPlayerCount(count) {
+      const wanted = Math.max(1, Math.min(Math.round(count), playedSlots.length));
+      if (wanted === playerCount) return;
+      playerCount = wanted;
+      inUse = centredPlayedSlots(playerCount);
     },
 
     setTrump(card, trumpSuit) {
@@ -466,7 +509,7 @@ export function createTableCards(
     play(key) {
       const entry = cards.get(key);
       if (!entry || pending || !visibleHand().includes(key)) return false;
-      if (trickOrder.length >= playedSlots.length) return false;
+      if (trickOrder.length >= playedSlotsInUse().length) return false;
       entry.drag = null;
       entry.raised = false;
       if (hovered === key) hovered = null;
