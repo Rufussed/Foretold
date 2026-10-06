@@ -2130,6 +2130,13 @@ button:hover {
 }
 
 .home-rule-list li {
+  /* The number is its own column so a rule long enough to wrap keeps its
+     second line aligned with the first, instead of running back underneath
+     the number. Baseline alignment keeps the smaller number sitting on the
+     first line as it did while it was inline. */
+  display: flex;
+  align-items: baseline;
+
   border-bottom: 1px solid #2d2b24;
 
   padding: 9px 0;
@@ -2145,6 +2152,7 @@ button:hover {
 .home-rule-list span {
   display: inline-block;
 
+  flex: 0 0 28px;
   width: 28px;
 
   color: #b36e27;

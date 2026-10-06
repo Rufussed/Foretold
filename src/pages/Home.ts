@@ -199,6 +199,19 @@ export function renderHomePage(container: HTMLElement): void {
               <span>05</span>
               Score points by matching your prediction.
             </li>
+            <li>
+              <span>06</span>
+              Miss it and you lose ten points for every trick out.
+            </li>
+            <li>
+              <span>07</span>
+              A Wizard can be played at any time, whatever the lead suit, and
+              the first one played wins the trick.
+            </li>
+            <li>
+              <span>08</span>
+              A Jester can be played at any time, and always loses.
+            </li>
           </ul>
         `,
       );
