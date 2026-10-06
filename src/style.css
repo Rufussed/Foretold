@@ -705,7 +705,11 @@ button:hover {
   width: auto;
   padding: 8px;
   color: #f4ebd9;
-  background: transparent;
+  /* The blurred panel the chooser used to sit inside, worn by each portrait
+     instead: the shared canvas draws the characters over the top, so each one
+     stands on its own frosted disc rather than on one shared box. */
+  background: rgba(12, 13, 11, 0.55);
+  backdrop-filter: blur(16px);
   border: 1px solid rgba(191, 125, 47, 0.25);
   border-radius: 600px;
   font-weight: 600;
@@ -714,7 +718,7 @@ button:hover {
 }
 
 .avatar-picker .avatar-cell:hover:not(:disabled) {
-  background: rgba(191, 125, 47, 0.08);
+  background: rgba(191, 125, 47, 0.14);
   border-color: rgba(191, 125, 47, 0.65);
 }
 
@@ -722,7 +726,7 @@ button:hover {
 .avatar-picker .avatar-cell.is-selected,
 .avatar-picker .avatar-cell.is-selected:hover {
   padding: 6px;
-  background: rgba(191, 125, 47, 0.12);
+  background: rgba(191, 125, 47, 0.2);
   border: 3px solid rgba(191, 125, 47, 0.75);
 }
 
@@ -3605,11 +3609,16 @@ button:hover {
   margin-top: 8px;
 }
 
+/* No reserved height: empty, this takes no room under the portraits, and it
+   only appears when there is an error to report. */
 .room-message {
-  min-height: 20px;
   margin: 4px 0 0;
   color: rgba(221, 177, 110, 0.9);
   font-size: 0.85rem;
+}
+
+.room-message:empty {
+  display: none;
 }
 
 /* Players */
@@ -3657,12 +3666,32 @@ button:hover {
 
 .room-start {
   flex: 0 0 auto;
-  padding: 12px 30px 14px;
+  margin: 4px 0 0;
+  padding: 16px 30px 18px;
+
+  /* The framed panel the whole room used to sit in, kept for the game setup
+     alone now that the chooser above stands free of it. */
+  border: 1px solid rgba(180, 119, 47, 0.27);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(201, 127, 40, 0.035),
+      transparent 36%
+    ),
+    rgba(12, 13, 11, 0.88);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
 }
 
 .room-start-controls {
+  /* Full width of the box: an earlier .room-start rule makes the box a flex
+     row, which otherwise shrinks this to its minimum and leaves the controls
+     stacked in a narrow column at one edge rather than centred across it. */
+  width: 100%;
+
   display: flex;
   align-items: end;
+  justify-content: center;
   gap: 12px;
   flex-wrap: wrap;
 }

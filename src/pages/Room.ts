@@ -77,7 +77,10 @@ export async function renderRoomPage(
 
           <div class="room-avatar-section">
             <div class="room-section-heading">
-              <p class="room-section-kicker">CHOOSE YOUR PLAYER</p>
+              <p
+                id="room-choose-kicker"
+                class="room-section-kicker"
+              >CHOOSE YOUR WIZARD</p>
             </div>
 
             <div
@@ -170,6 +173,9 @@ export async function renderRoomPage(
   const nameEl = element<HTMLHeadingElement>("#room-name");
   const countEl = element<HTMLParagraphElement>("#room-count");
   const messageEl = element<HTMLParagraphElement>("#room-message");
+  // "Rufus, choose your Wizard": the heading addresses the player by name.
+  const chooseKickerEl = element<HTMLParagraphElement>("#room-choose-kicker");
+  chooseKickerEl.textContent = `${user.username}, choose your Wizard`;
   const playersEl = element<HTMLUListElement>("#room-players");
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
