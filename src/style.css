@@ -1235,6 +1235,25 @@ button:hover {
   max-width: calc(3 * var(--card-width) + 2 * 10px);
 }
 
+/* A result card waiting its turn. visibility, not display: it must keep its
+   place in the centred, wrapping row so the cards already revealed do not move
+   when this one appears. The fade is on opacity, which visibility cannot
+   animate on its own. */
+.hud-result.is-unrevealed {
+  visibility: hidden;
+  opacity: 0;
+}
+
+.hud-result {
+  transition: opacity 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-result {
+    transition: none;
+  }
+}
+
 /* Headshot and name on one line, the breakdown below it. */
 .hud-result {
   display: grid;
