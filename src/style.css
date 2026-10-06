@@ -689,8 +689,11 @@ button:hover {
 }
 
 .room-avatar-picker .avatar-grid {
+  /* All six on one row. Flexible columns rather than a fixed width, so six
+     across fit whatever the panel is given instead of spilling over the player
+     list below; the views are square, so they shrink with the column. */
   display: grid;
-  grid-template-columns: repeat(3, 175px);
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: 10px;
   justify-content: center;
 }
@@ -3431,6 +3434,9 @@ button:hover {
   position: relative;
   min-height: 100svh;
   overflow-x: hidden;
+  /* The earlier .room-page rule hides overflow on both axes; the waiting room
+     must still be able to scroll down to the start controls on a short window. */
+  overflow-y: auto;
   background: transparent;
 }
 
@@ -3514,8 +3520,10 @@ button:hover {
 
 .room-content {
   width: min(1100px, calc(100% - 48px));
-  height: calc(100svh - 145px);
-  min-height: 455px;
+  /* min-height, not height: the sections size to their contents now, and a
+     short window would otherwise clip the start controls with no way to
+     scroll to them. Taller windows are unaffected. */
+  min-height: max(455px, calc(100svh - 145px));
   margin: 0 auto;
   padding: 24px 0 10px;
 
@@ -3568,24 +3576,15 @@ button:hover {
 
   display: flex;
   flex-direction: column;
-
-  border: 1px solid rgba(180, 119, 47, 0.27);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(201, 127, 40, 0.035),
-      transparent 36%
-    ),
-    rgba(12, 13, 11, 0.88);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(16px);
 }
 
 /* Avatar section */
 
 .room-avatar-section {
-  flex: 1;
-  min-height: 0;
+  /* Sized by its contents, not by a share of the panel. As a flex child it was
+     given less height than the portrait row needs and the cells spilled out
+     over the player list and the start controls below. */
+  flex: 0 0 auto;
 
   display: flex;
   flex-direction: column;
@@ -3601,9 +3600,8 @@ button:hover {
 }
 
 .room-avatar-picker {
-  flex: 1;
+  flex: 0 0 auto;
   width: 100%;
-  min-height: 0;
   margin-top: 8px;
 }
 
