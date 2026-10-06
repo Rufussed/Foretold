@@ -32,6 +32,19 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
   grid.hidden = true;
   root.append(grid);
 
+  // One set of column headings for the whole panel; the rows below carry only
+  // their numbers.
+  const headings = document.createElement("div");
+  headings.className = "hud-opponent hud-opponent-headings";
+  headings.setAttribute("aria-hidden", "true");
+  const headingFor = (text: string) => {
+    const cell = document.createElement("span");
+    cell.className = "hud-stat-label";
+    cell.textContent = text;
+    return cell;
+  };
+  headings.append(document.createElement("span"), headingFor("Prediction"), headingFor("Tricks"));
+
   const rows = new Map<string, Row>();
   let order = "";
 
@@ -49,8 +62,10 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
     name.title = username;
     face.append(image, name);
 
-    const prediction = createRoundStat("Prediction");
-    const won = createRoundStat("Tricks");
+    // Labels hidden: the headings above say it once, but each row keeps its
+    // own for anyone listening rather than looking.
+    const prediction = createRoundStat("Prediction", { labelHidden: true });
+    const won = createRoundStat("Tricks", { labelHidden: true });
     element.append(face, prediction.element, won.element);
     return { element, image, prediction, won, character: null };
   };
@@ -79,6 +94,7 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
           if (!others.some((player) => player.username === username)) rows.delete(username);
         }
         grid.replaceChildren(
+          headings,
           ...others.map((player) => {
             let row = rows.get(player.username);
             if (!row) {

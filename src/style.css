@@ -1126,6 +1126,27 @@ button:hover {
   font-size: 10px;
 }
 
+/* Out of sight, still spoken: each row keeps its own label so a screen reader
+   says which number it is reading, while only the headings are shown. */
+.hud-stat-label.is-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The one heading row: the column words, over the players' numbers. */
+.hud-opponent-headings {
+  margin-bottom: 2px;
+}
+
+.hud-opponent-headings .hud-stat-label {
+  display: block;
+  text-align: center;
+}
+
 .hud-opponent .hud-stat-value {
   font-size: 16px;
 }
