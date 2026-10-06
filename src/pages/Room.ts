@@ -1,13 +1,17 @@
 import { API_BASE } from "../services/api";
 import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
-import { getCurrentUser, getToken } from "../services/auth";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
+import { renderNavbar } from "../components/Navbar";
 import {
   CHARACTER_LABELS,
   createAvatarPicker,
   type AvatarPicker,
 } from "../visualizer/avatar-picker";
+import {
+  getCurrentUser,
+  getToken,
+} from "../services/auth";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -55,38 +59,97 @@ export async function renderRoomPage(
   }
 
   container.innerHTML = `
-    <div class="page room-page">
-      <nav class="navbar">
-        <a href="#/lobby">Back to Lobby</a>
-      </nav>
+    <main class="room-page">
 
-      <main class="panel">
-        <h1 id="room-name">Waiting room</h1>
-        <p id="room-count" class="room-count"></p>
+      <div id="navbar-container"></div>
 
-        <h2>Choose your avatar</h2>
-        <div id="avatar-picker"></div>
-        <p id="room-message" class="room-message" role="status"></p>
+      <main class="room-content">
 
-        <h2>Players</h2>
-        <ul id="room-players" class="room-players"></ul>
+        <section class="room-title-row">
+          <div>
+            <p class="room-kicker">GAME TABLE</p>
+            <h1 id="room-name">Waiting room</h1>
+            <p id="room-count" class="room-count"></p>
+          </div>
+        </section>
 
-        <div id="room-start" class="room-start" hidden>
-          <label>
-            NPCs
-            <select id="room-bots"></select>
-          </label>
-          <label>
-            Rounds
-            <select id="room-rounds"></select>
-          </label>
-          <button type="button" id="room-start-button">Start game</button>
-        </div>
+        <section class="room-main-panel">
 
-        <p id="room-waiting" hidden>Waiting for the host to start the game…</p>
+          <div class="room-avatar-section">
+            <div class="room-section-heading">
+              <p class="room-section-kicker">CHOOSE YOUR PLAYER</p>
+            </div>
+
+            <div
+              id="avatar-picker"
+              class="room-avatar-picker"
+            ></div>
+
+            <p
+              id="room-message"
+              class="room-message"
+              role="status"
+            ></p>
+          </div>
+
+          <ul
+            id="room-players"
+            class="room-players"
+          ></ul>
+
+          <div
+            id="room-start"
+            class="room-start"
+            hidden
+          >
+            <div class="room-start-controls">
+
+              <label>
+                <span>Number of NPCs</span>
+                <select id="room-bots"></select>
+              </label>
+
+              <label>
+                <span>Number Rounds</span>
+                <select id="room-rounds"></select>
+              </label>
+
+              <button
+                type="button"
+                id="room-start-button"
+                class="room-start-button"
+              >
+                Start game
+              </button>
+
+            </div>
+          </div>
+
+          <p
+            id="room-waiting"
+            class="room-waiting"
+            hidden
+          >
+            Waiting for the host to start the game…
+          </p>
+
+        </section>
+
       </main>
-    </div>
+
+      <footer class="room-footer">
+        <a href="#/lobby">Back to Lobby</a>
+      </footer>
+
+    </main>
   `;
+
+  const navbarContainer =
+    container.querySelector<HTMLDivElement>("#navbar-container");
+
+  if (navbarContainer) {
+    renderNavbar(navbarContainer, user);
+  }
 
   const element = <T extends HTMLElement>(selector: string): T => {
     const found = container.querySelector<T>(selector);
@@ -120,6 +183,7 @@ export async function renderRoomPage(
   };
   botsEl.addEventListener("change", updateRoundOptions);
   const startButton = element<HTMLButtonElement>("#room-start-button");
+
   const waitingEl = element<HTMLParagraphElement>("#room-waiting");
 
   let room: Room | null = null;

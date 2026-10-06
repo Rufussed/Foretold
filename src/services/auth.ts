@@ -1,6 +1,8 @@
 import { API_BASE } from "./api";
 import type {
   LoginResponse,
+  PlayerOpponent,
+  PlayerStats,
   RegistrationResponse,
   User,
 } from "../types/auth";
@@ -89,6 +91,56 @@ export async function getCurrentUser(): Promise<User> {
   }
 
   return response.json() as Promise<User>;
+}
+
+export async function getCurrentUserStats(): Promise<PlayerStats> {
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  if (!token) {
+    throw new Error("Not logged in");
+  }
+
+  const response = await fetch(`${API_BASE}/users/me/stats`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      logout();
+      throw new Error("Session expired or invalid");
+    }
+
+    throw new Error("Could not load player stats");
+  }
+
+  return response.json() as Promise<PlayerStats>;
+}
+
+export async function getCurrentUserOpponents(): Promise<PlayerOpponent[]> {
+  const token = localStorage.getItem(TOKEN_KEY);
+
+  if (!token) {
+    throw new Error("Not logged in");
+  }
+
+  const response = await fetch(`${API_BASE}/users/me/opponents`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) {
+      logout();
+      throw new Error("Session expired or invalid");
+    }
+
+    throw new Error("Could not load opponents");
+  }
+
+  return response.json() as Promise<PlayerOpponent[]>;
 }
 
 export function logout(): void {

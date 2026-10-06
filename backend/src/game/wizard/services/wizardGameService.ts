@@ -167,7 +167,13 @@ export class WizardGameService {
 
     game.trumpCard = trumpCard;
 
-    if (isJester(trumpCard) || isWizard(trumpCard)) {
+    if (isJester(trumpCard)) {
+      game.trumpSuit = null;
+      game.phase = "predictions";
+      return;
+    }
+
+    if (isWizard(trumpCard)) {
       game.trumpSuit = null;
       game.phase = "trump-selection";
       return;
@@ -214,11 +220,6 @@ export class WizardGameService {
     if (!card) {
       throw new Error("Card does not exist");
     }
-
-    // const leadSuit =
-    //   game.currentTrick.playedCards.find(
-    //     ({ card: playedCard }) => !isJester(playedCard),
-    //   )?.card.suit ?? null;
 
     //Handles if Wizard is play first, there is no Suit
     const leadSuit = this.rules.getLeadSuit(

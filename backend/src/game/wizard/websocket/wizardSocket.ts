@@ -3,7 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-import type { Suit } from "../models/card.js";
+import { SUITS, type Suit } from "../models/card.js";
 import { isBotName, seatNameFor } from "../models/bot.js";
 import { isEmote } from "../models/emote.js";
 
@@ -17,6 +17,13 @@ interface SocketMessage {
 	cardIndex?: number;
 	suit?: string;
 	emote?: string;
+}
+
+function isSuit(value: unknown): value is Suit {
+  return (
+    typeof value === "string" &&
+    (SUITS as readonly string[]).includes(value)
+  );
 }
 
 interface RoomConnection {
@@ -153,6 +160,7 @@ export function registerWizardSocket(
 
 			sendJson(socket, { type: "connected", roomId, username });
 			broadcastGameState(roomId, gameService);
+			void runner.run(roomId);
 
 			socket.on("message", (rawMessage: { toString(): string }) => {
 				// Parse and validate each action against the current game state. The
@@ -190,12 +198,27 @@ export function registerWizardSocket(
 
 				try {
 					if (message.type === "submit_prediction") {
+						if (
+							typeof message.prediction !== "number" ||
+							!Number.isInteger(message.prediction) ||
+							message.prediction < 0
+						) {
+							throw new Error("Invalid prediction");
+						}
+
 						gameService.submitPrediction(
 							currentGame,
 							username,
-							Number(message.prediction),
+							message.prediction,
 						);
 					} else if (message.type === "play_card") {
+						if (
+							typeof message.cardIndex !== "number" ||
+							!Number.isInteger(message.cardIndex) ||
+							message.cardIndex < 0
+						) {
+							throw new Error("Invalid card index");
+						}
 
 						const currentPlayer =
 							currentGame.players[currentGame.currentPlayerIndex];
@@ -204,18 +227,17 @@ export function registerWizardSocket(
 							throw new Error("It is not your turn");
 						}
 
-						gameService.playCard(currentGame, Number(message.cardIndex));
-
+						gameService.playCard(currentGame, message.cardIndex);
 					} else if (message.type === "choose_trump") {
+						if (!isSuit(message.suit)) {
+							throw new Error("Invalid suit");
+						}
 
 						gameService.chooseTrumpSuit(
 							currentGame,
 							username,
-							message.suit as Suit,
+							message.suit,
 						);
-
-					} else {
-						throw new Error("Unknown action");
 					}
 
 					wizardSessionManager.saveGame(currentGame);

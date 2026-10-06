@@ -6,9 +6,10 @@ import { assignAvatars, WizardGameService } from "../services/wizardGameService.
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-import { isAvatarId, type AvatarId } from "../models/avatar.js";
+import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
-
+import db from "../../../db/database.js";
+import { playerStatsRepository } from "../services/playerStatsRepository.js";
 
 interface CreateGameBody {
   roomId?: number;
@@ -48,7 +49,24 @@ export default async function wizardRoutes(
   });
 
   // A single room, so the waiting room can poll without refetching the list.
-  server.get("/lobby/:roomId", async (request, reply) => {
+    server.get(
+      "/lobby/:roomId",
+      {
+        schema: {
+          params: {
+            type: "object",
+            required: ["roomId"],
+            additionalProperties: false,
+            properties: {
+              roomId: {
+                type: "string",
+                pattern: "^[1-9][0-9]*$"
+              }
+            }
+          }
+        }
+      },
+      async (request, reply) => {
     const params = request.params as { roomId?: string };
     const roomId = Number(params.roomId);
 
@@ -65,7 +83,30 @@ export default async function wizardRoutes(
     return reply.send(room);
   });
 
-  server.post("/lobby/create", async (request, reply) => {
+  //add schema to no create games, false typeofs
+  server.post(
+      "/lobby/create",
+      {
+          schema: {
+              body: {
+                  type: "object",
+                  required: ["name"],
+                  additionalProperties: false,
+                  properties: {
+                      name: {
+                          type: "string",
+                          minLength: 1
+                      },
+                      maxPlayers: {
+                          type: "integer",
+                          minimum: 3,
+                          maximum: 6
+                      }
+                  }
+              }
+          }
+      },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -103,7 +144,25 @@ export default async function wizardRoutes(
     return reply.send(room);
   });
 
-  server.post("/lobby/join", async (request, reply) => {
+  //added schema to not join false typeofs
+  server.post(
+    "/lobby/join",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "integer",
+              minimum: 1
+            }
+          }
+        }
+      }
+    },
+  async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -125,20 +184,73 @@ export default async function wizardRoutes(
       });
     }
 
-    const room = wizardLobbyManager.joinRoom(body.roomId, username);
+    const result = wizardLobbyManager.joinRoom(body.roomId, username);
 
-    if (!room) {
-      return reply.status(400).send({
-        error: "Could not join room",
+    if (!result.success) {
+      if (result.reason === "not-found") {
+        return reply.status(404).send({
+          error: "Room not found",
+        });
+      }
+
+      if (result.reason === "playing") {
+        return reply.status(409).send({
+          error: "Game already started",
+        });
+      }
+
+      if (result.reason === "full") {
+        return reply.status(409).send({
+          error: "Room is full",
+        });
+      }
+
+      return reply.status(401).send({
+        error: "User not found",
       });
     }
 
-    return reply.send(room);
+    return reply.send(result.room);
   });
 
   // First come, first served: a second claim of the same avatar in a room is
   // rejected. Sending { avatar: null } releases the caller's current avatar.
-  server.post("/lobby/:roomId/avatar", async (request, reply) => {
+  server.post(
+    "/lobby/:roomId/avatar",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["avatar"],
+          additionalProperties: false,
+          properties: {
+            avatar: {
+              anyOf: [
+                {
+                  type: "string",
+                  enum: [...AVATAR_IDS]
+                },
+                {
+                  type: "null"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+  async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -193,7 +305,34 @@ export default async function wizardRoutes(
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
 
-  server.delete("/lobby/:roomId", async (request, reply) => {
+  /*
+ * DEVELOPMENT ONLY:
+ * Room deletion is intentionally available to any authenticated user.
+ *
+ * BEFORE PRODUCTION:
+ * Verify that request.user.sub is authorized to delete this room.
+ * At minimum, compare it with rooms.created_by.
+ *
+ * Do NOT leave this endpoint unrestricted in production.
+ */
+  server.delete(
+    "/lobby/:roomId",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -211,14 +350,18 @@ export default async function wizardRoutes(
       return reply.status(400).send({ error: "Invalid room ID" });
     }
 
-    if (!tokenUser.sub) {
+    if (tokenUser.sub === undefined) {
       return reply.status(401).send({ error: "User identity missing" });
     }
 
-    const deleted = wizardLobbyManager.deleteRoom(
-      roomId,
-      Number(tokenUser.sub),
-    );
+    //we need so that only the created can delete the game
+    // const deleted = wizardLobbyManager.deleteRoom(
+    //   roomId,
+    //   Number(tokenUser.sub),
+    // );
+
+    // DEVELOPMENT ONLY - REMOVE/RESTRICT BEFORE PRODUCTION
+    const deleted = wizardLobbyManager.deleteRoom(roomId);
 
     if (!deleted) {
       return reply.status(403).send({
@@ -229,7 +372,32 @@ export default async function wizardRoutes(
     return reply.send({ success: true });
   });
 
-  server.post("/games", async (request, reply) => {
+  server.post(
+    "/games",
+    {
+      schema: {
+        body: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "integer",
+              minimum: 1
+            },
+            botCount: {
+              type: "integer",
+              minimum: 0
+            },
+            maxRounds: {
+              type: "integer",
+              minimum: 1
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -250,13 +418,7 @@ export default async function wizardRoutes(
         error: "roomId is required",
       });
     }
-    
-    if (wizardSessionManager.hasGame(body.roomId)) {
-      return reply.status(409).send({
-        error: "A game already exists for this room",
-      });
-    }
-    
+  
     const room = wizardLobbyManager.getRoomById(body.roomId);
     
     if (!room) {
@@ -327,11 +489,38 @@ export default async function wizardRoutes(
     const players = [...humans, ...botNames];
 
     try {
-      const game = wizardGameService.createGame(room.id, players, claims, maxRounds);
-      
-      wizardLobbyManager.setRoomStatus(room.id, "playing");
+      const game = wizardGameService.createGame(
+        room.id,
+        players,
+        claims,
+        maxRounds,
+      );
+
       game.status = "playing";
-      wizardSessionManager.saveGame(game);
+
+      if (!wizardSessionManager.saveGameIfAbsent(game)) {
+        return reply.status(409).send({
+          error: "A game already exists for this room",
+        });
+      }
+
+      const humanPlayerIds = db
+        .prepare(`
+          SELECT user_id AS userId
+          FROM room_players
+          WHERE room_id = ?
+        `)
+        .all(room.id) as { userId: number }[];
+
+      for (const { userId } of humanPlayerIds) {
+        playerStatsRepository.initializeForUser(userId);
+        playerStatsRepository.incrementGamesPlayed(userId);
+      }
+
+      playerStatsRepository.initializeForUser(room.createdBy);
+      playerStatsRepository.incrementGamesCreated(room.createdBy);
+
+      wizardLobbyManager.setRoomStatus(room.id, "playing");
 
       void wizardGameRunner.run(room.id);
 
@@ -340,14 +529,32 @@ export default async function wizardRoutes(
       );
     } catch (error) {
       return reply.status(400).send({
-        error: error instanceof Error
-        ? error.message
-        : "Could not create game",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Could not create game",
       });
     }
   });
   
-  server.get("/games/:roomId", async (request, reply) => {
+  server.get(
+    "/games/:roomId",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -393,7 +600,35 @@ export default async function wizardRoutes(
     );
   });
   
-  server.post("/games/:roomId/predictions", async (request, reply) => {
+  server.post(
+    "/games/:roomId/predictions",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["prediction"],
+          additionalProperties: false,
+          properties: {
+            prediction: {
+              type: "integer",
+              minimum: 0
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {
@@ -446,7 +681,35 @@ export default async function wizardRoutes(
     }
   });
   
-  server.post("/games/:roomId/cards", async (request, reply) => {
+  server.post(
+    "/games/:roomId/cards",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["cardIndex"],
+          additionalProperties: false,
+          properties: {
+            cardIndex: {
+              type: "integer",
+              minimum: 0
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
     try {
       await request.jwtVerify();
     } catch {

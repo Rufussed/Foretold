@@ -15,6 +15,11 @@ interface PlayerRow {
   avatar: string | null;
 }
 
+type JoinRoomResult =
+  | { success: true; room: Room; alreadyMember: boolean }
+  | { success: false; reason: "not-found" | "playing" | "full" | "user-not-found" };
+
+
 class WizardLobbyManager {
   private getRoomPlayers(roomId: number): RoomPlayer[] {
     const rows = db
@@ -34,11 +39,19 @@ class WizardLobbyManager {
     }));
   }
 
-  private mapRoom(row: RoomRow): Room {
+  private mapRoom(row: {
+    id: number;
+    name: string;
+    created_by: number;
+    created_by_username: string;
+    max_players: number;
+    status: string;
+  }): Room {
     return {
       id: row.id,
       name: row.name,
       createdBy: row.created_by,
+      createdByUsername: row.created_by_username,
       maxPlayers: row.max_players,
       players: this.getRoomPlayers(row.id),
       status: row.status as "waiting" | "playing",
@@ -49,12 +62,27 @@ class WizardLobbyManager {
     const rows = db
       .prepare(
         `
-          SELECT id, name, created_by, max_players, status
+          SELECT
+            rooms.id,
+            rooms.name,
+            rooms.created_by,
+            users.username AS created_by_username,
+            rooms.max_players,
+            rooms.status
           FROM rooms
-          ORDER BY created_at DESC
+          JOIN users
+            ON users.id = rooms.created_by
+          ORDER BY rooms.created_at DESC
         `,
       )
-      .all() as RoomRow[];
+      .all() as {
+        id: number;
+        name: string;
+        created_by: number;
+        created_by_username: string;
+        max_players: number;
+        status: string;
+      }[];
 
     return rows.map((row) => this.mapRoom(row));
   }
@@ -63,12 +91,27 @@ class WizardLobbyManager {
     const row = db
       .prepare(
         `
-          SELECT id, name, created_by, max_players, status
+          SELECT
+            rooms.id,
+            rooms.name,
+            rooms.created_by,
+            users.username AS created_by_username,
+            rooms.max_players,
+            rooms.status
           FROM rooms
-          WHERE id = ?
+          JOIN users
+            ON users.id = rooms.created_by
+          WHERE rooms.id = ?
         `,
       )
-      .get(roomId) as RoomRow | undefined;
+      .get(roomId) as {
+        id: number;
+        name: string;
+        created_by: number;
+        created_by_username: string;
+        max_players: number;
+        status: string;
+      } | undefined;
 
     if (!row) {
       return null;
@@ -107,88 +150,105 @@ class WizardLobbyManager {
     return this.getRoomById(roomId) as Room;
   }
 
-  joinRoom(roomId: number, username: string): Room | null {
-    const room = this.getRoomById(roomId);
+  joinRoom(roomId: number, username: string): JoinRoomResult {
+    const join = transaction((): JoinRoomResult => {
+      const room = this.getRoomById(roomId);
 
-    if (!room) {
-      return null;
-    }
+      if (!room) {
+        return { success: false, reason: "not-found" };
+      }
 
-    if (room.players.some((player) => player.username === username)) {
-      return room;
-    }
+      if (room.players.some((player) => player.username === username)) {
+        return {
+          success: true,
+          room,
+          alreadyMember: true,
+        };
+      }
 
-    if (room.players.length >= room.maxPlayers) {
-      return null;
-    }
+      if (room.status !== "waiting") {
+        return { success: false, reason: "playing" };
+      }
 
-    const userRow = db
-      .prepare(
-        `
+      if (room.players.length >= room.maxPlayers) {
+        return { success: false, reason: "full" };
+      }
+
+      const userRow = db
+        .prepare(`
           SELECT id
           FROM users
           WHERE username = ?
-        `,
-      )
-      .get(username) as { id: number } | undefined;
+        `)
+        .get(username) as { id: number } | undefined;
 
-    if (!userRow) {
-      return null;
-    }
+      if (!userRow) {
+        return { success: false, reason: "user-not-found" };
+      }
 
-    db.prepare(
-      `
-        INSERT OR IGNORE INTO room_players (room_id, user_id, username)
+      db.prepare(`
+        INSERT INTO room_players (room_id, user_id, username)
         VALUES (?, ?, ?)
-      `,
-    ).run(roomId, userRow.id, username);
+      `).run(roomId, userRow.id, username);
 
-    return this.getRoomById(roomId);
+      return {
+        success: true,
+        room: this.getRoomById(roomId) as Room,
+        alreadyMember: false,
+      };
+    });
+
+    return join;
   }
 
-  deleteRoom(
-    roomId: number,
-    userId: number,
-  ): boolean {
+  // DEVELOPMENT ONLY - REMOVE/RESTRICT BEFORE PRODUCTION
+  deleteRoom(roomId: number): boolean {
     const room = db
       .prepare(`
-        SELECT id, created_by, status
+        SELECT id
         FROM rooms
         WHERE id = ?
       `)
-      .get(roomId) as {
-        id: number;
-        created_by: number;
-        status: string;
-      } | undefined;
-  
+      .get(roomId) as { id: number } | undefined;
+
     if (!room) {
       return false;
     }
-  
-    if (room.created_by !== userId) {
-      return false;
-    }
-  
-    // if (room.status !== "waiting") {
-    //   return false;
-    // }
-  
-    transaction(() => {
-      db.prepare(`
-        DELETE FROM room_players
-        WHERE room_id = ?
-      `).run(roomId);
-  
-      db.prepare(`
-        DELETE FROM rooms
-        WHERE id = ?
-      `).run(roomId);
-    });
-  
-    return true;
-  }
 
+  /*
+   * DEVELOPMENT ONLY:
+   * Any authenticated user can currently delete any room.
+   *
+   * This is intentional while the game is being developed/tested,
+   * so abandoned or active rooms can be removed easily.
+   *
+   * BEFORE PRODUCTION:
+   * Restore authorization so that only the room creator
+   * (or another explicitly authorized role) can delete the room.
+   *
+   * See also the DELETE /lobby/:roomId route in wizardRoutes.ts.
+   */
+  transaction(() => {
+    db.prepare(`
+      DELETE FROM games
+      WHERE room_id = ?
+    `).run(roomId);
+
+    db.prepare(`
+      DELETE FROM room_players
+      WHERE room_id = ?
+    `).run(roomId);
+
+    db.prepare(`
+      DELETE FROM rooms
+      WHERE id = ?
+    `).run(roomId);
+  });
+
+  return true;
+}
+
+  //most likely useless, but the idea is to restart games from where they left off
   resetStalePlayingRooms(activeRoomIds: Set<number>): void {
     const rooms = db.prepare(`
       SELECT id
@@ -214,6 +274,11 @@ class WizardLobbyManager {
       UPDATE rooms
       SET status = 'waiting'
       WHERE status = 'playing'
+        AND id NOT IN (
+          SELECT room_id
+          FROM games
+          WHERE status != 'finished'
+        )
     `).run();
   }
 
@@ -241,6 +306,7 @@ class WizardLobbyManager {
         WHERE id = ?
       `).run(roomId);
     });
+
     return true;
   }
 

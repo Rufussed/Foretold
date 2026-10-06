@@ -11,10 +11,16 @@ import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { wizardLobbyManager } from "./game/wizard/services/wizardLobbyManager.js";
-
+import { playerStatsRepository } from "./game/wizard/services/playerStatsRepository.js";
 
 const server = Fastify({
-  logger: true,
+    logger: true,
+    ajv: {
+        customOptions: {
+            removeAdditional: false,
+            coerceTypes: false,
+        },
+    },
 });
 
 
@@ -100,6 +106,7 @@ if (existsSync(frontendDist)) {
 }
 
 seedUsers();
+playerStatsRepository.initializeForAllUsers();
 
 wizardLobbyManager.resetPlayingRooms();
 
