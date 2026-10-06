@@ -117,10 +117,9 @@ export async function renderRoomPage(
               <label>
                 <span>Game Speed</span>
                 <select id="room-pace">
-                  <option value="0.5">Slow (half speed)</option>
-                  <option value="1" selected>Normal</option>
-                  <option value="1.5">Brisk</option>
-                  <option value="2">Fast (twice as fast)</option>
+                  <option value="1">Slow</option>
+                  <option value="1.5" selected>Normal</option>
+                  <option value="2">Fast</option>
                   <option value="3">Very fast</option>
                 </select>
               </label>
