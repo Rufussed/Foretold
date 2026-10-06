@@ -1,5 +1,7 @@
 :root {
-  font-family: system-ui, sans-serif;
+  /* One family for the whole interface. Headings ask for "Cinzel" and fall
+     back to this same serif, since no webfont is loaded. */
+  font-family: Georgia, "Times New Roman", serif;
   color: #172033;
   background: #eef2f7;
 }
@@ -57,6 +59,16 @@ input {
   padding: 10px;
   border: 1px solid #aab6c6;
   border-radius: 4px;
+  font: inherit;
+}
+
+/* Browsers give form controls their own UI font rather than the page's, so
+   every one of them has to be told to inherit, or the interface goes back to
+   sans-serif wherever someone can type or choose. */
+select,
+textarea,
+option,
+optgroup {
   font: inherit;
 }
 
@@ -2024,7 +2036,6 @@ button:hover {
 
   color: #eee2cc;
 
-  font-family: "Inter", sans-serif;
   font-size: 13px;
 
   transition:
@@ -3596,6 +3607,7 @@ button:hover {
 }
 
 /* Players */
+
 
 /* Host controls */
 
