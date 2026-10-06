@@ -1048,19 +1048,24 @@ button:hover {
   gap: 8px;
 }
 
-/* Bottom left: the other players. */
-.hud-opponents {
+/* Bottom left: the other players, one compact line each. Tighter than the
+   default panel padding, since it carries a row per player and has to stay
+   clear of the table. */
+.visualizer-page .hud-opponents {
   bottom: 16px;
   left: 16px;
   display: grid;
-  gap: 8px;
+  gap: 4px;
+  padding: 8px 10px;
 }
 
+/* Name column, then a column each for prediction and tricks. Fixed widths so
+   every row's columns line up under one another whatever the names are. */
 .hud-opponent {
   display: grid;
-  grid-template-columns: 96px auto auto;
+  grid-template-columns: 112px 58px 48px;
   align-items: center;
-  gap: 14px;
+  gap: 10px;
 }
 
 .hud-opponent-face {
@@ -1073,6 +1078,7 @@ button:hover {
 .hud-opponent-face img {
   width: 48px;
   height: 48px;
+  flex: none;
   background: rgb(255 255 255 / 12%);
   border-radius: 50%;
   object-fit: cover;
@@ -1086,6 +1092,42 @@ button:hover {
   line-height: 1.2;
   text-align: center;
   overflow-wrap: anywhere;
+}
+
+/* In the bottom-left panel only, the headshot sits on the same line as the
+   name rather than above it. Scoped to .hud-opponent because the round's
+   results board reuses .hud-opponent-face and wants the stacked version. */
+.hud-opponent .hud-opponent-face {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hud-opponent .hud-opponent-face img {
+  width: 26px;
+  height: 26px;
+}
+
+/* One line, cut by opponent-grid.ts to ten characters and a full stop; the
+   ellipsis is a backstop for ten wide characters. */
+.hud-opponent .hud-opponent-face figcaption {
+  max-width: none;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+.hud-opponent .hud-stat-label {
+  font-size: 10px;
+}
+
+.hud-opponent .hud-stat-value {
+  font-size: 16px;
 }
 
 /* Narrow screens: status below the nav, emotes to its left, clear of the

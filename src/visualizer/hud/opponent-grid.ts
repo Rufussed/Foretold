@@ -13,9 +13,18 @@ interface Row {
   character: CharacterId | null;
 }
 
-// Bottom left: every other player in turn order, starting after you. Each has
-// a still headshot of their avatar with their name underneath, and this
-// round's prediction and tricks won beside it.
+// At most this many characters of a name, the rest replaced by a full stop.
+// The panel gives each player one short line, and a longer name would push the
+// prediction and tricks columns out of line with the rows above and below.
+const NAME_LIMIT = 10;
+
+// trimEnd so a name cut mid-space reads "Balthazar." rather than "Balthazar .".
+const shortName = (username: string) =>
+  username.length > NAME_LIMIT ? `${username.slice(0, NAME_LIMIT).trimEnd()}.` : username;
+
+// Bottom left: every other player in turn order, starting after you. Each is
+// one line - a small headshot beside their name, then this round's prediction
+// and tricks won, a labelled column each.
 export function createOpponentGrid(root: HTMLElement, game: GameConnection): HudPart {
   const grid = document.createElement("section");
   grid.className = "hud-panel hud-opponents";
@@ -35,7 +44,9 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
     const image = document.createElement("img");
     image.alt = "";
     const name = document.createElement("figcaption");
-    name.textContent = username;
+    name.textContent = shortName(username);
+    // The full name is still available to a pointer and a screen reader.
+    name.title = username;
     face.append(image, name);
 
     const prediction = createRoundStat("Prediction");
