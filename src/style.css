@@ -647,32 +647,6 @@ button:hover {
   font-weight: 600;
 }
 
-.room-players {
-  display: grid;
-  gap: 8px;
-  margin: 0 0 16px;
-  padding: 0;
-  list-style: none;
-}
-
-.room-player {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  background: #f5f7fa;
-  border: 1px solid #d9e0ea;
-  border-radius: 6px;
-  font-weight: 600;
-}
-
-.room-player-avatar {
-  margin-left: auto;
-  color: #5b6b82;
-  font-size: 14px;
-  font-weight: 400;
-}
-
 .room-start {
   display: flex;
   flex-wrap: wrap;
@@ -3623,45 +3597,6 @@ button:hover {
 
 /* Players */
 
-.room-players-section {
-  flex: 0 0 auto;
-  padding: 12px 30px;
-}
-
-.room-players {
-  display: grid;
-  grid-template-columns: repeat(
-    auto-fit,
-    minmax(180px, 1fr)
-  );
-  gap: 10px;
-  margin-top: 8px;
-  padding: 0;
-  list-style: none;
-}
-
-.room-player {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  min-height: 52px;
-  padding: 10px 13px;
-  border: 1px solid rgba(180, 119, 47, 0.16);
-  background: rgba(5, 6, 5, 0.46);
-  color: rgba(244, 235, 217, 0.84);
-}
-
-.room-player-avatar {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 30px;
-  height: 30px;
-  border: 1px solid rgba(191, 125, 47, 0.3);
-  color: rgba(221, 177, 110, 0.88);
-  font-size: 0.7rem;
-}
-
 /* Host controls */
 
 .room-start {
@@ -3799,7 +3734,6 @@ button:hover {
   }
 
   .room-avatar-section,
-  .room-players-section,
   .room-start {
     padding-left: 20px;
     padding-right: 20px;
