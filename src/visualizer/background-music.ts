@@ -57,7 +57,8 @@ export function createBackgroundMusic(): BackgroundMusic {
     audio.volume = 0;
     const startedAt = performance.now();
     const step = (now: number): void => {
-      const progress = Math.min((now - startedAt) / (seconds * 1000), 1);
+      // The frame's timestamp can come just before the moment the fade started.
+      const progress = Math.min(Math.max((now - startedAt) / (seconds * 1000), 0), 1);
       audio.volume = MUSIC.volume * progress;
       fadeFrame = progress < 1 ? requestAnimationFrame(step) : 0;
     };
