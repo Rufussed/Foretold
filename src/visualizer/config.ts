@@ -608,10 +608,11 @@ export const TESSERACT = {
   // Its size at scale 1, in scene units across; the model itself is ~5 units.
   size: 0.5,
 
-  // When tinted to the trump colour. The model's own glow strength is 10 and
-  // it's half see-through, which bleaches a colour toward white; a gentler
-  // glow and a more solid body keep the trump colour dominant.
-  tintGlow: 1.5,
+  // When tinted to the reward colour (green, gold or red, by the winner's tricks
+  // against their prediction). The model's own glow strength is 10 and it's
+  // half see-through, which bleaches a colour toward white; a gentler glow and
+  // a more solid body keep the colour dominant.
+  tintGlow: 1.1,
   tintOpacity: 0.9,
 };
 
@@ -739,6 +740,43 @@ export const CARD_SOUND = {
   volume: 1,
   // Playback speed (and so pitch) varies by up to this fraction either way.
   rateVariation: 0.1,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// REWARD BURST  (golden rays as the tesseract dives into the winner)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Distances are scene units, times seconds. Each ray flies straight out from
+// the point in a random direction, easing to a stop, trailing a streak.
+export const BURST = {
+  enabled: true,
+  rays: 36, // rays in each burst
+  maxRays: 360, // most alive at once, across bursts
+  radius: 1.35, // how far the rays fly, at most
+  cameraDistance: 2.5, // for your own wins: how far in front of the camera it bursts, centred
+  radiusRandomness: 0.4, // fraction each ray's reach may fall short
+  lengthFraction: 0.35, // a ray's streak, as a fraction of how far it has flown
+  lifeSeconds: 0.9, // each ray's flight
+  lifeRandomness: 0.3,
+  tipSize: 0.07, // the glowing dot at each ray's head
+  // The colour follows the winner's tricks against their prediction: green,
+  // deeper the nearer they get, gold on it exactly, red once they're over.
+  color: [1, 0.78, 0.28] as [number, number, number], // gold: the prediction met
+  overColor: [1, 0, 0] as [number, number, number], // red: over it
+  underColor: [0, 1, 0.05] as [number, number, number], // green: reached as they near it
+  underStartColor: [0.2, 1, 0.2] as [number, number, number], // the lighter green of a first win towards it
+  brightness: 2.2,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// SCORE SOUND  (the tesseract appearing as a trick is won)
+// ══════════════════════════════════════════════════════════════════════════
+
+import scoreSound from "../assets/sound/score.opus";
+
+export const SCORE_SOUND = {
+  url: scoreSound,
+  volume: 1,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

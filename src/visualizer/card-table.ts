@@ -1,11 +1,11 @@
 import * as THREE from "three";
 import { WizardRules } from "../../backend/src/game/wizard/services/wizardRules";
-import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
+import type { Card } from "../../backend/src/game/wizard/models/card";
 import { createCardControls } from "./card-controls";
 import { createCardSound } from "./card-sound";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
-import { cardKey, cardTexture, trumpColor } from "./card-textures";
+import { cardKey, cardTexture } from "./card-textures";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
@@ -14,6 +14,8 @@ import type { SeatId } from "./player-characters";
 import { createTableCards, type TableCards } from "./table-cards";
 import { centredSlots, type TableLayout } from "./table-layout";
 import type { SceneView } from "./three-scene";
+import { burstColorFor, burstCss, createRewardBurst, type BurstColor } from "./reward-burst";
+import { createScoreSound } from "./score-sound";
 import { createTrickRewards, type RewardDestination, type TrickRewards } from "./trick-rewards";
 //I want to take the crown out of the trump card, commented out all the crown word in file
 // import { createTrumpCrown } from "./trump-crown";
@@ -76,7 +78,9 @@ export function createCardTable({
   const opponents = createOpponentHands(factory, layout);
   const sound = createCardSound();
   const deal = createCardDeal(factory, layout, sound);
-  const rewards = createTrickRewards(environment);
+  const scoreSound = createScoreSound();
+  const burst = createRewardBurst(environment);
+  const rewards = createTrickRewards(environment, { sound: scoreSound, burst });
   // const crown = createTrumpCrown(environment, view.camera, () => cards.trumpCardObject());
 
   // Only on your turn while cards are being played; the server has the final
@@ -181,7 +185,7 @@ export function createCardTable({
   const startReward = (
     destination: RewardDestination | null,
     roundOver: boolean,
-    color: string | null,
+    burstColor: BurstColor,
     done?: () => void,
   ) => {
     const trick = cards.trickCardObjects();
@@ -202,7 +206,9 @@ export function createCardTable({
       cards: [...trick.map((card) => card.object), ...(trumpObject ? [trumpObject] : [])],
       point,
       destination,
-      color: roundOver ? color : null,
+      // The tesseract and the burst share one colour, from the winner's tricks against their prediction.
+      color: burstCss(burstColor),
+      burstColor,
     }, done);
     cards.suppressTrick(trick.map((card) => card.key));
     if (trumpObject) cards.suppressTrump();
@@ -330,19 +336,17 @@ export function createCardTable({
     cards.setHand([]);
     cards.setHand(localCards);
     cards.setTrump(trumpCard, trumpSuit);
-    demoTrumpSuit = trumpSuit;
     opponents.setCounts(new Map(layout.clockwiseSeats.map((seat) => [seat, DEMO_CARDS_EACH])));
     runDeal(plan);
   };
-
-  let demoTrumpSuit: Suit | null = null;
 
   const playTestReward = (roundOver: boolean) => {
     const pick = Math.floor(Math.random() * (layout.clockwiseSeats.length + 1));
     const seat = layout.clockwiseSeats[pick];
     const destination: RewardDestination =
       seat === undefined ? { kind: "camera", camera: view.camera } : { kind: "head", head: () => headOf(seat) };
-    startReward(destination, roundOver, trumpColor(demoTrumpSuit));
+    // The demo table has no predictions, so the test reward acts out a prediction of 3 with 1 to 4 tricks won: green, deeper green, gold, red.
+    startReward(destination, roundOver, burstColorFor(1 + Math.floor(Math.random() * 4), 3));
   };
 
   const onDealKey = (event: KeyboardEvent) => {
@@ -374,7 +378,9 @@ export function createCardTable({
         return;
       }
       const roundOver = state.players.every((player) => player.handCount === 0);
-      startReward(destinationFor(winner), roundOver, trumpColor(state.trumpSuit), done);
+      const won = state.players.find((player) => player.username === winner);
+      const burstColor = won ? burstColorFor(won.tricksWon, won.prediction) : burstColorFor(0, null);
+      startReward(destinationFor(winner), roundOver, burstColor, done);
     },
     refused: () => cards.cancelPlay(),
     redealDemo,
@@ -383,11 +389,14 @@ export function createCardTable({
       deal.update(deltaSeconds);
       cards.update(deltaSeconds);
       rewards.update(deltaSeconds);
+      burst.update(deltaSeconds);
       // crown.update(deltaSeconds);
     },
     dispose() {
       controls.dispose();
       sound.dispose();
+      scoreSound.dispose();
+      burst.dispose();
       // crown.dispose();
       window.removeEventListener("keydown", onDealKey);
     },
