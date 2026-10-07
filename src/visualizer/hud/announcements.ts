@@ -37,6 +37,13 @@ export function followSuitMessage(state: PublicWizardGameState): string {
     : "Follow the suit led if you can; Wizards and Jesters can be played any time.";
 }
 
+// The player the standing line is about, whose colour its border takes: whoever's
+// move it is. Null when it isn't about one player.
+export function statusSubject(state: PublicWizardGameState): string | null {
+  if (state.phase === "finished") return null;
+  return state.players[state.currentPlayerIndex]?.username ?? null;
+}
+
 // The standing line for the current moment: whose move it is.
 export function statusMessage(state: PublicWizardGameState, local: string): string | null {
   const current = state.players[state.currentPlayerIndex]?.username;
@@ -75,10 +82,16 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
   }
 }
 
+// A one-off announcement, and the player it's about.
+export interface EventMessage {
+  text: string;
+  username: string;
+}
+
 // One-off events between two snapshots, in the order they happened: new
 // predictions, then a trick being won.
-export function eventMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): string[] {
-  const messages: string[] = [];
+export function eventMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
+  const messages: EventMessage[] = [];
 
   if (previous.currentRound === next.currentRound) {
     for (const player of next.players) {
@@ -86,7 +99,10 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
       if (before?.prediction === null && player.prediction !== null) {
         const tricks = player.prediction === 1 ? "Trick" : "Tricks";
         const predicts = player.username === local ? "Predict" : "Predicts";
-        messages.push(`${nameOf(player.username, local)} ${predicts} ${player.prediction} ${tricks}`);
+        messages.push({
+          text: `${nameOf(player.username, local)} ${predicts} ${player.prediction} ${tricks}`,
+          username: player.username,
+        });
       }
     }
   }
@@ -98,14 +114,17 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   if (special && next.trumpSuit && newlyChosen) {
     // The round's first player chooses.
     const chooser = next.players[next.startingPlayerIndex]?.username;
-    if (chooser) messages.push(`${nameOf(chooser, local)} chose ${next.trumpSuit} as trumps.`);
+    if (chooser) messages.push({ text: `${nameOf(chooser, local)} chose ${next.trumpSuit} as trumps.`, username: chooser });
   }
 
   const winner = next.currentTrick.winnerUsername;
   if (winner && previous.currentTrick.winnerUsername !== winner) {
     const played = next.currentTrick.playedCards.find((entry) => entry.username === winner);
     const wins = winner === local ? "Win" : "Wins";
-    messages.push(`${nameOf(winner, local)} ${wins} the Trick${played ? ` with ${cardName(played.card)}` : ""}`);
+    messages.push({
+      text: `${nameOf(winner, local)} ${wins} the Trick${played ? ` with ${cardName(played.card)}` : ""}`,
+      username: winner,
+    });
   }
 
   return messages;

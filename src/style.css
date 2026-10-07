@@ -1278,6 +1278,101 @@ button:hover {
   white-space: pre-line; /* round results put the total on its own line */
 }
 
+/* In a round (who predicts, whose turn): a border with a bright glint running
+   round it, and a soft glow, in the colour of the character the announcement is
+   about (set as data-character by announcer.ts); gold for goatman, and when it's
+   about no one. The angle is a registered property so the gradient's start can
+   be animated. */
+@property --gold-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.visualizer-page .hud-announcer {
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-character="forest-elf"] {
+  --border-dark: #14501f;
+  --border-mid: #4ade5a;
+  --border-glint: #d6ffd0;
+  --border-glow: rgb(74 222 90 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-character="kungfu-girl"] {
+  --border-dark: #8a3a08;
+  --border-mid: #ff9a2e;
+  --border-glint: #ffe0b0;
+  --border-glow: rgb(255 154 46 / 35%);
+}
+
+/* Dark metal: a grey border with a silver glint. */
+.visualizer-page .hud-announcer[data-character="black-witch"] {
+  --border-dark: #2a2d33;
+  --border-mid: #8c939e;
+  --border-glint: #f2f6fc;
+  --border-glow: rgb(140 147 158 / 30%);
+}
+
+.visualizer-page .hud-announcer[data-character="demon"] {
+  --border-dark: #0b5e5a;
+  --border-mid: #1ee3d2;
+  --border-glint: #c8fffa;
+  --border-glow: rgb(30 227 210 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-character="blind-wizard"] {
+  --border-dark: #3d1a73;
+  --border-mid: #a56bff;
+  --border-glint: #eadbff;
+  --border-glow: rgb(165 107 255 / 35%);
+}
+
+.visualizer-page .hud-announcer.is-ingame {
+  box-shadow: 0 0 14px var(--border-glow);
+}
+
+.visualizer-page .hud-announcer.is-ingame::before {
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  pointer-events: none;
+  content: "";
+  background: conic-gradient(
+    from var(--gold-angle),
+    var(--border-dark),
+    var(--border-mid) 15%,
+    var(--border-glint) 25%,
+    var(--border-mid) 35%,
+    var(--border-dark) 50%,
+    var(--border-mid) 75%,
+    var(--border-dark)
+  );
+  border-radius: inherit;
+  /* Only the 2px ring shows: the gradient clipped to the border box, minus the content box. */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: hud-gold-border 4s linear infinite;
+}
+
+@keyframes hud-gold-border {
+  to {
+    --gold-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .hud-announcer.is-ingame::before {
+    animation: none;
+  }
+}
+
 /* Round results: a board of equal cards, three to a row, centred on screen at
    the top. (Phones: below the score panel instead, see announcer.ts.) */
 /* The cards carry their own boxes, so the banner itself has none. */
