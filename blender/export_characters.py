@@ -13,7 +13,7 @@ def run():
     source = Path(bpy.data.filepath)
     if source.name != 'characters.blend':
         raise RuntimeError('Open characters.blend before exporting.')
-    output = source.parent.parent / 'public/models/wizard'
+    output = source.parent.parent / 'src/assets/models/wizard'
     output.mkdir(parents=True, exist_ok=True)
     backup = source.parent / 'export-backups' / datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f')
     backup.mkdir(parents=True)

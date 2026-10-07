@@ -1,6 +1,6 @@
 // The six playable characters, in the order unclaimed avatars are handed out.
 // The frontend imports this list as well, so every id must match a character
-// GLB in public/models/wizard/.
+// GLB in src/assets/models/wizard/.
 export const AVATAR_IDS = [
   "forest-elf",
   "blind-wizard",

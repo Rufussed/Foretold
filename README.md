@@ -17,7 +17,7 @@ src/              Vite + TypeScript frontend, hash-routed.
   services/       REST + game WebSocket clients
   visualizer/     three.js scene — see below
 blender/          Blender sources for the 3D scene, plus a small add-on
-public/models/    Exported .glb the visualiser loads (gitignored, see below)
+src/assets/models/ Exported .glb the visualiser loads (gitignored, see below)
 ```
 
 ## Running it
@@ -46,7 +46,7 @@ or via the **3D View** link on the game page.
   Each value notes three.js's own default so it's clear what's been changed.
 
 Scene content — table, characters, torches, camera move — is authored in Blender
-and exported to `public/models/wizard/Wizard.glb`. Nothing about the game is
+and exported to `src/assets/models/wizard/Wizard.glb`. Nothing about the game is
 hard-coded in the scene; the visualiser reads what's in the file.
 
 ### Blender pipeline
