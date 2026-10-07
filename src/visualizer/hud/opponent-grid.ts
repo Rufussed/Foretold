@@ -13,14 +13,19 @@ interface Row {
   character: CharacterId | null;
 }
 
-// At most this many characters of a name, the rest replaced by a full stop.
-// The panel gives each player one short line, and a longer name would push the
-// prediction and tricks columns out of line with the rows above and below.
+// At most this many characters of a name. The panel gives each player one
+// short line, and a longer name would push the prediction and tricks columns
+// out of line with the rows above and below.
 const NAME_LIMIT = 10;
 
-// trimEnd so a name cut mid-space reads "Balthazar." rather than "Balthazar .".
-const shortName = (username: string) =>
-  username.length > NAME_LIMIT ? `${username.slice(0, NAME_LIMIT).trimEnd()}.` : username;
+// The first word, which for an NPC drops the " NPC" the server appends and
+// leaves the character's own name. A single word longer than the limit is cut
+// and ends in a full stop to show it was; a name shortened at a space is a
+// whole word already, so it needs no mark.
+const shortName = (username: string) => {
+  const firstWord = username.split(" ")[0] ?? username;
+  return firstWord.length > NAME_LIMIT ? `${firstWord.slice(0, NAME_LIMIT)}.` : firstWord;
+};
 
 // Bottom left: every other player in turn order, starting after you. Each is
 // one line - a small headshot beside their name, then this round's prediction

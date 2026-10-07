@@ -1060,12 +1060,13 @@ button:hover {
 }
 
 /* Name column, then a column each for prediction and tricks. Fixed widths so
-   every row's columns line up under one another whatever the names are. */
+   every row's columns line up under one another whatever the names are, and
+   narrow, since a name is now one word. */
 .hud-opponent {
   display: grid;
-  grid-template-columns: 112px 58px 48px;
+  grid-template-columns: 104px 52px 40px;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .hud-opponent-face {
@@ -1100,7 +1101,7 @@ button:hover {
 .hud-opponent .hud-opponent-face {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   min-width: 0;
 }
 
