@@ -743,21 +743,22 @@ button:hover {
   pointer-events: none;
 }
 
-/* Emotes: a 2x2 grid of emoji left of your portrait, above your prediction and
-   tricks box (.hud-self, about 100px tall at bottom 16px). */
+/* Emotes: a row of four in the bottom right corner, under your portrait,
+   as wide as it is (196px). */
 .visualizer-emotes {
   position: absolute;
-  right: 224px;
-  bottom: 124px;
+  right: 16px;
+  bottom: 16px;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(2, 44px);
+  grid-template-columns: repeat(4, 1fr);
+  width: 196px;
   gap: 8px;
 }
 
 /* Prefixed to outrank the global button:hover style. */
 .visualizer-page .visualizer-emotes button {
-  width: 44px;
+  width: 100%;
   height: 44px;
   padding: 0;
   font-size: 24px;
@@ -772,21 +773,22 @@ button:hover {
   background: rgb(23 32 51 / 70%);
 }
 
-/* Your own character, bottom right of the table view. The canvas fills the
-   whole box and the name sits over its lower edge. */
+/* Your own character, bottom right of the table view, above the emotes (a 44px
+   row at the bottom, 8px clear of this). The box is the circle the character
+   stands in, with the name inside it at the bottom. */
 .visualizer-self {
   position: absolute;
   right: 16px;
-  bottom: 16px;
+  bottom: 68px;
   z-index: 1;
   width: 196px;
-  height: 220px;
+  height: 196px;
   margin: 0;
   overflow: hidden;
 }
 
 /* A circle behind the character, as for the smaller portraits, filling the
-   box's width at the top; the name sits in the space below it. */
+   box. */
 .visualizer-self::before {
   position: absolute;
   top: 0;
@@ -804,10 +806,10 @@ button:hover {
 }
 
 /* The character's view: the circle's square, so the character sits on the
-   circle and clear of the name below. */
+   circle, its head above the box's top edge. */
 .visualizer-self-view {
   position: absolute;
-  top: -20px;
+  top: -30px;
   left: 0;
   width: 100%;
   aspect-ratio: 1;
@@ -819,35 +821,53 @@ button:hover {
   height: 100%;
 }
 
+/* Inset from the sides, since the circle narrows towards its bottom. */
 .visualizer-self-name {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  padding: 4px 8px 6px;
+  right: 40px;
+  bottom: 8px;
+  left: 40px;
+  padding: 0;
   overflow: hidden;
   color: white;
   text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
   font-size: 14px;
   font-weight: 600;
-  line-height: 1.2;
+  line-height: 20px;
   text-align: center;
-  overflow-wrap: anywhere; /* long names wrap rather than being cut off */
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-/* Narrow screens: a smaller portrait, and emotes kept clear of it on the left. */
+/* Narrow screens: a smaller portrait, with a smaller emote row under it. */
 @media (max-width: 640px) {
   .visualizer-self {
+    bottom: 52px;
     width: 126px;
-    height: 172px; /* room under the circle for a name on two lines */
+    height: 126px;
+  }
+
+  .visualizer-self-view {
+    top: -18px;
   }
 
   .visualizer-self-name {
+    right: 25px;
+    bottom: 5px;
+    left: 25px;
     font-size: 12px;
+    line-height: 16px;
   }
 
   .visualizer-emotes {
-    right: 154px;
+    width: 126px;
+    gap: 4px;
+  }
+
+  .visualizer-page .visualizer-emotes button {
+    height: 28px;
+    font-size: 16px;
+    border-radius: 8px;
   }
 }
 
@@ -1040,15 +1060,7 @@ button:hover {
   font-weight: 700;
 }
 
-/* Bottom right, beside your 196px portrait box. */
-.hud-self {
-  right: 224px;
-  bottom: 16px;
-  display: grid;
-  gap: 8px;
-}
-
-/* Bottom left: the other players, one compact line each. Tighter than the
+/* Bottom left: every player, you included, one compact line each. Tighter than the
    default panel padding, since it carries a row per player and has to stay
    clear of the table. */
 .visualizer-page .hud-opponents {
@@ -1064,7 +1076,7 @@ button:hover {
    narrow, since a name is now one word. */
 .hud-opponent {
   display: grid;
-  grid-template-columns: 104px 52px 40px;
+  grid-template-columns: 96px 68px 40px;
   align-items: center;
   gap: 6px;
 }
@@ -1146,25 +1158,25 @@ button:hover {
 .hud-opponent-headings .hud-stat-label {
   display: block;
   text-align: center;
+  white-space: nowrap;
+}
+
+/* Your own line in the list. */
+.hud-opponent.is-you .hud-opponent-face figcaption {
+  color: #ffd54f;
+  font-weight: 700;
 }
 
 .hud-opponent .hud-stat-value {
   font-size: 16px;
 }
 
-/* Narrow screens: status below the nav, emotes to its left, clear of the
-   corner panels. */
+/* Narrow screens: status below the nav. */
 @media (max-width: 640px) {
   .hud-status {
     top: 60px;
     width: 190px;
   }
-
-  .hud-self {
-    right: 154px;
-  }
-
-
 }
 
 /* Mute button for the music, over the top-right corner of the score panel

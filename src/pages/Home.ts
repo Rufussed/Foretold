@@ -189,11 +189,11 @@ export function renderHomePage(container: HTMLElement): void {
             </li>
             <li>
               <span>03</span>
-              Follow the lead suit whenever possible.
+              Follow the lead suit/trumps whenever possible.
             </li>
             <li>
               <span>04</span>
-              The highest card of the trump suit wins.
+              The highest trump wins.
             </li>
             <li>
               <span>05</span>
@@ -205,7 +205,7 @@ export function renderHomePage(container: HTMLElement): void {
             </li>
             <li>
               <span>07</span>
-              A Wizard can be played at any time, whatever the lead suit, and
+              A Wizard can be played at any time, whatever is led, and
               the first one played wins the trick.
             </li>
             <li>

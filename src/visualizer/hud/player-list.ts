@@ -27,13 +27,15 @@ const shortName = (username: string) => {
   return firstWord.length > NAME_LIMIT ? `${firstWord.slice(0, NAME_LIMIT)}.` : firstWord;
 };
 
-// Bottom left: every other player in turn order, starting after you. Each is
-// one line - a small headshot beside their name, then this round's prediction
-// and tricks won, a labelled column each.
-export function createOpponentGrid(root: HTMLElement, game: GameConnection): HudPart {
+// Bottom left: every player, you included, in the order they predict this
+// round: the first to predict first, the second second, and so on. The first
+// player moves on each deal, so the list reorders with it. Each is one line - a
+// small headshot beside their name, then this round's prediction and tricks
+// won, a labelled column each. Your own line is picked out.
+export function createPlayerList(root: HTMLElement, game: GameConnection): HudPart {
   const grid = document.createElement("section");
   grid.className = "hud-panel hud-opponents";
-  grid.setAttribute("aria-label", "Other players");
+  grid.setAttribute("aria-label", "Players");
   grid.hidden = true;
   root.append(grid);
 
@@ -83,24 +85,22 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
         return;
       }
 
-      const local = state.players.findIndex((player) => player.username === game.localUsername);
-      const others =
-        local === -1
-          ? state.players
-          : Array.from(
-              { length: state.players.length - 1 },
-              (_, step) => state.players[(local + 1 + step) % state.players.length],
-            );
+      // Predictions go round in dealing order, from the round's first player.
+      const count = state.players.length;
+      const players = Array.from(
+        { length: count },
+        (_, step) => state.players[(state.startingPlayerIndex + step) % count],
+      );
 
-      const nextOrder = others.map((player) => player.username).join("\n");
+      const nextOrder = players.map((player) => player.username).join("\n");
       if (nextOrder !== order) {
         order = nextOrder;
         for (const username of rows.keys()) {
-          if (!others.some((player) => player.username === username)) rows.delete(username);
+          if (!players.some((player) => player.username === username)) rows.delete(username);
         }
         grid.replaceChildren(
           headings,
-          ...others.map((player) => {
+          ...players.map((player) => {
             let row = rows.get(player.username);
             if (!row) {
               row = buildRow(player.username);
@@ -111,8 +111,9 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
         );
       }
 
-      for (const player of others) {
+      for (const player of players) {
         const row = rows.get(player.username)!;
+        row.element.classList.toggle("is-you", player.username === game.localUsername);
         row.prediction.set(player.prediction);
         row.won.set(player.tricksWon);
 
@@ -128,7 +129,7 @@ export function createOpponentGrid(root: HTMLElement, game: GameConnection): Hud
         }
       }
 
-      grid.hidden = others.length === 0;
+      grid.hidden = players.length === 0;
     },
 
     dispose() {
