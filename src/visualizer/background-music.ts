@@ -29,10 +29,40 @@ export function createBackgroundMusic(): BackgroundMusic {
   let disposed = false;
   let muted = readMuted();
 
-  const audio = new Audio(MUSIC.urls[currentIndex]);
+  // Plays the live stream while it works, trying each mirror, then the tracks.
+  let streamIndex = 0;
+  let streaming = MUSIC.streams.length > 0;
+
+  const audio = new Audio(streaming ? MUSIC.streams[streamIndex] : MUSIC.urls[currentIndex]);
   audio.loop = false;
-  audio.volume = MUSIC.volume;
+  audio.volume = 0;
   audio.preload = "auto";
+
+  // Rises from silence to full volume once the music actually starts playing: the
+  // first time, when the stream connects or the tracks begin, and again after
+  // being unmuted. The next track in a playlist carries on at full volume.
+  let needsFade = true;
+  let fadeFrame = 0;
+  const stopFade = (): void => {
+    cancelAnimationFrame(fadeFrame);
+    fadeFrame = 0;
+  };
+  const fadeIn = (): void => {
+    stopFade();
+    const seconds = MUSIC.fadeInSeconds;
+    if (seconds <= 0) {
+      audio.volume = MUSIC.volume;
+      return;
+    }
+    audio.volume = 0;
+    const startedAt = performance.now();
+    const step = (now: number): void => {
+      const progress = Math.min((now - startedAt) / (seconds * 1000), 1);
+      audio.volume = MUSIC.volume * progress;
+      fadeFrame = progress < 1 ? requestAnimationFrame(step) : 0;
+    };
+    fadeFrame = requestAnimationFrame(step);
+  };
 
   const unlockEvents = ["pointerdown", "keydown"] as const;
 
@@ -76,7 +106,38 @@ export function createBackgroundMusic(): BackgroundMusic {
     start();
   };
 
-  audio.addEventListener("ended", playNext);
+  const fallBackToTracks = (): void => {
+    if (!streaming || disposed) {
+      return;
+    }
+
+    needsFade = true;
+    streamIndex += 1;
+    if (streamIndex < MUSIC.streams.length) {
+      console.warn(`[music] a stream failed; trying ${MUSIC.streams[streamIndex]}`);
+      audio.src = MUSIC.streams[streamIndex];
+    } else {
+      console.warn("[music] the streams failed; playing the tracks");
+      streaming = false;
+      audio.src = MUSIC.urls[currentIndex];
+    }
+    start();
+  };
+
+  audio.addEventListener("playing", () => {
+    console.info(`[music] playing ${audio.currentSrc}`);
+    if (needsFade) {
+      needsFade = false;
+      fadeIn();
+    }
+  });
+  audio.addEventListener("error", () =>
+    console.warn(`[music] could not play ${audio.currentSrc} (media error ${audio.error?.code ?? "?"})`),
+  );
+
+  // A stream only "ends" if the connection drops.
+  audio.addEventListener("ended", () => (streaming ? fallBackToTracks() : playNext()));
+  audio.addEventListener("error", fallBackToTracks);
   start();
 
   return {
@@ -89,14 +150,25 @@ export function createBackgroundMusic(): BackgroundMusic {
       saveMuted(next);
 
       if (next) {
+        stopFade();
         audio.pause();
+        if (streaming) {
+          // Stop downloading the stream; it comes back live, not from where it paused.
+          audio.removeAttribute("src");
+          audio.load();
+        }
       } else {
+        needsFade = true;
+        if (streaming) {
+          audio.src = MUSIC.streams[streamIndex];
+        }
         start();
       }
     },
 
     dispose(): void {
       disposed = true;
+      stopFade();
       audio.removeEventListener("ended", playNext);
 
       for (const type of unlockEvents) {

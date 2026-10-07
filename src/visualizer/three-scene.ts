@@ -7,6 +7,7 @@ import {
   prepareEnvironment,
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
+import { createMoonClouds, type MoonClouds } from "./moon-clouds";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
 import { maxPixelRatio, sharpenAmount } from "./device-limits";
@@ -147,6 +148,7 @@ export function createWizardScene(
   window.addEventListener("keydown", onOrbitKey);
   let mixer: THREE.AnimationMixer | null = null;
   let sparks: TorchSparks | null = null;
+  let clouds: MoonClouds | null = null;
   let players: PlayerCharacters | null = null;
   let shadowThrottle: ShadowThrottle | null = null;
   let onKeyDown: ((event: KeyboardEvent) => void) | null = null;
@@ -227,6 +229,7 @@ export function createWizardScene(
       // Staggers the torches' shadow refreshes on touch; null elsewhere.
       shadowThrottle = createShadowThrottle(gltf.scene);
       sparks = createTorchSparks(gltf.scene);
+      clouds = createMoonClouds(gltf.scene, () => camera);
 
       // Environment clips only (camera move, torch flicker): characters are
       // separate assets with their own mixers. Every clip here plays at once
@@ -407,6 +410,7 @@ export function createWizardScene(
     last = now;
     mixer?.update(dt);
     sparks?.update(dt);
+    clouds?.update(dt);
     options.onUpdate?.(dt);
     players?.update(dt);
     // Orbit controls drive the camera while they're on; otherwise, once the
@@ -435,6 +439,7 @@ export function createWizardScene(
       players?.dispose();
       players = null;
       sparks?.dispose();
+      clouds?.dispose();
       renderer.dispose();
       // Releases every GPU resource of this context at once; browsers cap
       // live WebGL contexts, so repeated navigation would otherwise run out.

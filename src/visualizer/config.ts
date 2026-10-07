@@ -707,10 +707,22 @@ import thoughtWave from "../assets/sound/CM.04.ThoughtWave.mp3";
 import medievalAmbient from "../assets/sound/deuslower-medieval-ambient-236809.mp3";
 
 export const MUSIC = {
+  // A live radio stream to play instead of the tracks below: its mirrors, tried
+  // in turn if one fails. Empty plays the tracks. Under trial while the game is
+  // unreleased: SomaFM has not given permission for it in a public game, so ask
+  // them before launch. The addresses are from SomaFM's own playlist for the
+  // channel (somafm.com/synphaera130.pls); it refuses other address forms.
+  streams: [
+    "https://ice2.somafm.com/synphaera-128-aac",
+    "https://ice6.somafm.com/synphaera-128-aac",
+    "https://ice5.somafm.com/synphaera-128-aac",
+  ] as string[],
+  streamCredit: "Music: Synphaera Radio on SomaFM (somafm.com)",
   // Imported rather than named by path so the build fingerprints them, the same
   // as the models and the card art; the order here is the playing order.
   urls: [medievalAmbient, thoughtWave, endGame],
   volume: 0.35,
+  fadeInSeconds: 10, // the music rises from silence over this long, each time it starts
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -727,6 +739,41 @@ export const CARD_SOUND = {
   volume: 1,
   // Playback speed (and so pitch) varies by up to this fraction either way.
   rateVariation: 0.1,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// MOON CLOUDS  (fuzzy black clouds drifting across the moon)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Clouds cross the moon from left to right as the camera sees it, between the
+// moon and the camera, and vanish once they've cleared its disc. Each is a
+// cluster of soft puffs, with its own size, speed and height. Sizes are in moon
+// radii as they appear on the cloud lane, a plane across the line from the moon
+// to the camera; times are seconds.
+export const CLOUDS = {
+  enabled: true,
+  moonObject: "moon_Moon_0", // the moon's node in Wizard.glb
+  maxClouds: 10, // most on screen at once
+  spawnMinSeconds: 4, // wait a random time between these before the next cloud
+  spawnMaxSeconds: 12,
+
+  laneFraction: 0.2, // how far from the moon towards the camera the clouds sit (0 to 1)
+  heightSpread: 1.0, // how far above or below the moon's centre a cloud may pass, in moon radii
+
+  widthMin: 1.2, // each cloud's width, in moon radii: random between these
+  widthMax: 6.0,
+  aspect: 0.22, // a cloud's height as a fraction of its width: low, so they stretch sideways
+  crossMinSeconds: 25, // each cloud takes a random time between these to cross
+  crossMaxSeconds: 70, // from one side of the moon to the other
+
+  puffs: 24, // soft blobs making up each cloud
+  puffSizeMin: 0.16, // each puff's size as a fraction of its cloud's width
+  puffSizeMax: 0.3,
+  puffOpacity: 0.6, // each puff's opacity at its cloud's centre; they build up where they overlap
+  edgeOpacity: 0.35, // the share of that a puff at the cloud's edge keeps
+  fadeFraction: 0.2, // share of the crossing spent fading in, and again fading out
+  coreSoftness: 0.35, // how much of each puff is solid before it fades (0 fades from the middle, 1 is hard-edged)
+  color: [0, 0, 0] as [number, number, number],
 };
 
 // ══════════════════════════════════════════════════════════════════════════
