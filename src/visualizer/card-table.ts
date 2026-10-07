@@ -2,6 +2,7 @@ import * as THREE from "three";
 import { WizardRules } from "../../backend/src/game/wizard/services/wizardRules";
 import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import { createCardControls } from "./card-controls";
+import { createCardSound } from "./card-sound";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
@@ -73,7 +74,8 @@ export function createCardTable({
   const factory = createCardFactory(environment);
   const cards = createTableCards(environment, factory, layout);
   const opponents = createOpponentHands(factory, layout);
-  const deal = createCardDeal(factory, layout);
+  const sound = createCardSound();
+  const deal = createCardDeal(factory, layout, sound);
   const rewards = createTrickRewards(environment);
   // const crown = createTrumpCrown(environment, view.camera, () => cards.trumpCardObject());
 
@@ -385,6 +387,7 @@ export function createCardTable({
     },
     dispose() {
       controls.dispose();
+      sound.dispose();
       // crown.dispose();
       window.removeEventListener("keydown", onDealKey);
     },

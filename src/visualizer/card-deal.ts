@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import type { CardFactory, CardObject } from "./card-objects";
+import type { CardSound } from "./card-sound";
 import { blankCardTexture } from "./card-textures";
 import { DEALING } from "./config";
 import { paced } from "./pace";
@@ -44,7 +45,11 @@ const smooth = (x: number) => {
 // going (DEALING.approachDistance further from the middle, so it turns clear
 // of the cards already there), then turns and settles back into place. The
 // next card leaves the stack DEALING.intervalSeconds after the one before.
-export function createCardDeal(factory: CardFactory, layout: TableLayout): CardDeal {
+export function createCardDeal(
+  factory: CardFactory,
+  layout: TableLayout,
+  sound: CardSound,
+): CardDeal {
   // The stack targets hold their cards face up; turn each over about its long
   // axis so the stack lies face down.
   const faceDown = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI);
@@ -142,6 +147,7 @@ export function createCardDeal(factory: CardFactory, layout: TableLayout): CardD
         top -= 1;
         if (card.face) card.face.map = step.face ?? blankCardTexture();
         flights.push({ card, from, step, startAt: nextLaunch });
+        sound.play();
         nextLaunch += paced(DEALING.intervalSeconds);
       }
 

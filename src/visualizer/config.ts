@@ -714,6 +714,22 @@ export const MUSIC = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// CARD SOUND  (a card leaving the stack as it's dealt)
+// ══════════════════════════════════════════════════════════════════════════
+
+import cardSound1 from "../assets/sound/card-sound--01.opus";
+import cardSound2 from "../assets/sound/card-sound--02.opus";
+import cardSound3 from "../assets/sound/card-sound--03.opus";
+
+export const CARD_SOUND = {
+  // One is picked at random for each card.
+  urls: [cardSound1, cardSound2, cardSound3],
+  volume: 1,
+  // Playback speed (and so pitch) varies by up to this fraction either way.
+  rateVariation: 0.1,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // SPARKS  (embers rising from the torches)
 // ══════════════════════════════════════════════════════════════════════════
 
