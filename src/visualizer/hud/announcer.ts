@@ -129,10 +129,6 @@ export function createAnnouncer(
     if (!next.results && state?.phase === "finished" && next.text === statusMessage(state, game.localUsername)) {
       winner = createGameWinner(banner, state);
     }
-    // Restart the fade-in for each new line.
-    banner.classList.remove("is-new");
-    void banner.offsetWidth;
-    banner.classList.add("is-new");
   };
 
   const hide = () => {

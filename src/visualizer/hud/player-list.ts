@@ -65,7 +65,10 @@ export function createPlayerList(
     cell.textContent = text;
     return cell;
   };
-  headings.append(document.createElement("span"), headingFor("Predicts"), headingFor("Tricks"));
+  // The first cell, over the names, holds the wizard from the home page.
+  const logo = document.createElement("span");
+  logo.className = "hud-logo";
+  headings.append(logo, headingFor("Predicts"), headingFor("Tricks"));
 
   const rows = new Map<string, Row>();
   let order = "";

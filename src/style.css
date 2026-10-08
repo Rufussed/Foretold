@@ -607,6 +607,8 @@ button:hover {
   top: 16px;
   left: 16px;
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
   gap: 8px;
   z-index: 1;
 }
@@ -1181,9 +1183,19 @@ button:hover {
 }
 
 /* Each heading is stacked, one upright letter above the next, over its own
-   column and ending just above the numbers, so the columns can stay narrow. The empty first cell is dropped. */
-.hud-opponent-headings > :first-child {
-  display: none;
+   column and ending just above the numbers, so the columns can stay narrow. */
+
+/* The home page's wizard, cropped to the figure (the picture is 1541 x 1020
+   with the art in x 380-1170, y 60-900), in the corner over the names. */
+.hud-opponent-headings .hud-logo {
+  grid-column: 1;
+  grid-row: 1;
+  align-self: center;
+  justify-self: start;
+  width: 56px;
+  height: 60px;
+  margin-left: 6px;
+  background: url("/wizardLogo.png") -27px -4px / 109px 72px no-repeat;
 }
 
 .hud-opponent-headings .hud-stat-label {
@@ -1230,10 +1242,9 @@ button:hover {
   color: rgb(255 0 0);
 }
 
-/* Narrow screens: status below the nav. */
+/* Narrow screens: a narrower panel. */
 @media (max-width: 640px) {
   .visualizer-page .hud-status {
-    top: 60px;
     width: 130px;
   }
 }
@@ -1277,22 +1288,18 @@ button:hover {
   height: 20px;
 }
 
-@media (max-width: 640px) {
-  /* The score panel sits below the nav on phones. */
-  .visualizer-page .hud-toolbar {
-    top: 68px;
-  }
-}
-
 /* What's going on, top centre (see hud/announcer.ts). */
 .visualizer-page .hud-announcer {
   position: absolute;
   top: 16px;
-  left: 50%;
+  /* Centred in the page by auto margins between its two edges, with no
+     transform to disagree with the entrance animation. */
+  right: 0;
+  left: 0;
   z-index: 2;
   width: max-content;
   max-width: min(560px, calc(100% - 560px));
-  margin: 0;
+  margin: 0 auto;
   padding: 13px 19px;
   color: white;
   font-size: 17px;
@@ -1302,16 +1309,11 @@ button:hover {
   /* The same box as the HUD panels (.hud-panel). */
   background: var(--ui-bg);
   border-radius: 12px;
-  transform: translateX(-50%);
   backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .hud-announcer[hidden] {
   display: none;
-}
-
-.hud-announcer.is-new {
-  animation: hud-announce 0.3s ease-out;
 }
 
 .hud-announcer-text {
@@ -1418,14 +1420,11 @@ button:hover {
    the top. (Phones: below the score panel instead, see announcer.ts.) */
 /* The cards carry their own boxes, so the banner itself has none. */
 .visualizer-page .hud-announcer.has-results {
-  left: 50%;
-  right: auto;
   width: max-content;
   max-width: calc(100% - 32px);
   padding: 0;
   text-align: left;
   background: none;
-  transform: translateX(-50%);
   backdrop-filter: none;
 }
 
@@ -1558,17 +1557,6 @@ button:hover {
   to { opacity: 1; transform: scale(1); }
 }
 
-@keyframes hud-announce {
-  from { opacity: 0; transform: translate(-50%, -6px); }
-  to { opacity: 1; transform: translate(-50%, 0); }
-}
-
-/* The same fade for a banner that is placed by its left edge, not centred. */
-@keyframes hud-announce-flat {
-  from { opacity: 0; transform: translateY(-6px); }
-  to { opacity: 1; transform: none; }
-}
-
 /* A total just added to: flashes three times, green for points won, red for lost. */
 .hud-scores td.is-gain {
   animation: hud-flash-gain 0.4s steps(1, end) 3;
@@ -1588,52 +1576,31 @@ button:hover {
   50% { color: inherit; }
 }
 
-/* Mid-width screens: the banner sits at the top edge like the other corner
-   UI, centred in the gap between the nav and the status panel; the results
-   board goes below the nav, full width. */
+/* Mid-width screens: the banner stays centred and at the top edge, narrowed
+   so it clears the nav column on the left and the score panel on the right
+   (room kept on both sides, so it stays centred); the results board goes
+   full width. */
 @media (max-width: 1100px) {
   .visualizer-page .hud-announcer {
-    top: 16px;
-    left: 320px;
-    max-width: calc(100% - 502px);
+    max-width: calc(100% - 380px);
     font-size: 15px;
-    transform: none;
-    animation-name: hud-announce-flat;
   }
 
   .visualizer-page .hud-announcer.has-results {
-    top: 16px;
-    left: 50%;
     max-width: calc(100% - 32px);
-    transform: translateX(-50%);
-    animation-name: hud-announce;
   }
 }
 
-/* Too narrow to fit beside the nav and status panel: back below the nav. */
-@media (max-width: 860px) {
-  .visualizer-page .hud-announcer:not(.has-results) {
-    top: 64px;
-    left: 50%;
-    max-width: calc(100% - 300px);
-    transform: translateX(-50%);
-    animation-name: hud-announce;
-  }
-}
-
-/* Narrow screens: below the nav, left of the status panel. */
+/* Narrow screens: below the nav column, left of the status panel. */
 @media (max-width: 640px) {
   .visualizer-page .hud-announcer {
-    top: 60px;
+    top: 132px;
+    right: auto;
     left: 16px;
     max-width: calc(100% - 178px);
+    margin: 0;
     font-size: 13px;
     text-align: left;
-    transform: none;
-  }
-
-  .hud-announcer.is-new {
-    animation: none;
   }
 
   /* Phones: one full-width card to a row, so no line has to wrap. */
@@ -1642,7 +1609,6 @@ button:hover {
     right: 16px;
     width: auto;
     max-width: none;
-    transform: none;
   }
 
   .visualizer-page .hud-results {
