@@ -50,6 +50,7 @@ export function connectGameSocket(
 		socket = current;
 
 		current.addEventListener("open", () => {
+			if (retry > 0) console.info(`[socket] reconnected after ${retry} ${retry === 1 ? "try" : "tries"}`);
 			retry = 0;
 			handlers.onStatus(true);
 		});
@@ -59,6 +60,9 @@ export function connectGameSocket(
 		current.addEventListener("close", (event) => {
 			if (closed || socket !== current) return;
 			handlers.onStatus(false);
+			console.warn(
+				`[socket] closed (code ${event.code}${event.reason ? `, ${event.reason}` : ""}, clean ${event.wasClean}); retry ${retry + 1}`,
+			);
 			// 1008 means the server refused us (bad token, not in the game).
 			if (event.code === 1008) return;
 			const delay = RETRY_DELAYS_MS[Math.min(retry, RETRY_DELAYS_MS.length - 1)];
