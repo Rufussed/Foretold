@@ -50,7 +50,7 @@ export function createPlayerList(root: HTMLElement, game: GameConnection): HudPa
     cell.textContent = text;
     return cell;
   };
-  headings.append(document.createElement("span"), headingFor("Prediction"), headingFor("Tricks"));
+  headings.append(document.createElement("span"), headingFor("Predicts"), headingFor("Tricks"));
 
   const rows = new Map<string, Row>();
   let order = "";

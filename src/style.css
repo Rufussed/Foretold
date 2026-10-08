@@ -576,6 +576,12 @@ button:hover {
 }
 
 .visualizer-page {
+  /* The one box the game's UI wears: the character chooser's brown frosted
+     glass with its fine edge, lightly blurred. */
+  --ui-bg: rgba(12, 13, 11, 0.55);
+  --ui-bg-hover: rgba(12, 13, 11, 0.7);
+  --ui-edge: 1px solid rgba(191, 125, 47, 0.25);
+  --ui-blur: blur(4px);
   position: fixed;
   inset: 0;
   width: 100%;
@@ -608,16 +614,17 @@ button:hover {
 .visualizer-nav a {
   padding: 8px 14px;
   color: white;
-  background: rgb(23 32 51 / 50%);
+  background: var(--ui-bg);
   border-radius: 999px;
   text-decoration: none;
   font-weight: 600;
   font-size: 14px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--ui-blur);
+  border: var(--ui-edge);
 }
 
 .visualizer-nav a:hover {
-  background: rgb(23 32 51 / 70%);
+  background: var(--ui-bg-hover);
 }
 
 #wizard-visualizer-loading {
@@ -744,7 +751,7 @@ button:hover {
 }
 
 /* Emotes: a row of four in the bottom right corner, under your portrait,
-   as wide as it is (196px). */
+   as wide as it is (156px). */
 .visualizer-emotes {
   position: absolute;
   right: 16px;
@@ -752,25 +759,25 @@ button:hover {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  width: 196px;
-  gap: 8px;
+  width: 156px;
+  gap: 4px;
 }
 
 /* Prefixed to outrank the global button:hover style. */
 .visualizer-page .visualizer-emotes button {
   width: 100%;
-  height: 44px;
+  height: 40px;
   padding: 0;
-  font-size: 24px;
+  font-size: 22px;
   line-height: 1;
-  background: rgb(23 32 51 / 60%);
-  border: 0;
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 12px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .visualizer-emotes button:hover {
-  background: rgb(23 32 51 / 70%);
+  background: var(--ui-bg-hover);
 }
 
 /* Your own character, bottom right of the table view, above the emotes (a 44px
@@ -779,26 +786,25 @@ button:hover {
 .visualizer-self {
   position: absolute;
   right: 16px;
-  bottom: 68px;
+  bottom: 64px;
   z-index: 1;
-  width: 196px;
+  width: 156px;
   height: 196px;
   margin: 0;
   overflow: hidden;
+  border-radius: 600px;
 }
 
-/* A circle behind the character, as for the smaller portraits, filling the
-   box. */
+/* A rounded rectangle behind the character, filling the box: the frosted
+   card the character chooser gives each portrait. */
 .visualizer-self::before {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  aspect-ratio: 1;
+  inset: 0;
   content: "";
-  background: rgb(23 32 51 / 50%);
-  border-radius: 50%;
-  backdrop-filter: blur(4px);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 600px;
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-self[hidden] {
@@ -812,7 +818,7 @@ button:hover {
   top: -30px;
   left: 0;
   width: 100%;
-  aspect-ratio: 1;
+  height: 196px;
 }
 
 .visualizer-self-view canvas {
@@ -821,12 +827,11 @@ button:hover {
   height: 100%;
 }
 
-/* Inset from the sides, since the circle narrows towards its bottom. */
 .visualizer-self-name {
   position: absolute;
-  right: 40px;
-  bottom: 8px;
-  left: 40px;
+  right: 22px;
+  bottom: 10px;
+  left: 22px;
   padding: 0;
   overflow: hidden;
   color: white;
@@ -844,17 +849,18 @@ button:hover {
   .visualizer-self {
     bottom: 52px;
     width: 126px;
-    height: 126px;
+    height: 160px;
   }
 
   .visualizer-self-view {
+    height: 126px;
     top: -18px;
   }
 
   .visualizer-self-name {
-    right: 25px;
-    bottom: 5px;
-    left: 25px;
+    right: 18px;
+    bottom: 7px;
+    left: 18px;
     font-size: 12px;
     line-height: 16px;
   }
@@ -887,10 +893,11 @@ button:hover {
   color: white;
   text-align: center;
   /* The same box as the HUD panels (.hud-panel). */
-  background: rgb(23 32 51 / 60%);
+  background: var(--ui-bg);
   border-radius: 12px;
   transform: translateX(-50%);
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--ui-blur);
+  border: var(--ui-edge);
 }
 
 .visualizer-page .prediction-modal[hidden] {
@@ -1000,9 +1007,10 @@ button:hover {
   padding: 10px 12px;
   color: white;
   font-size: 13px;
-  background: rgb(23 32 51 / 60%);
+  background: var(--ui-bg);
   border-radius: 12px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--ui-blur);
+  border: var(--ui-edge);
 }
 
 .visualizer-page .hud-panel[hidden] {
@@ -1010,21 +1018,25 @@ button:hover {
 }
 
 /* Top right: the whole game. */
-.hud-status {
+.visualizer-page .hud-status {
   top: 16px;
   right: 16px;
-  width: 240px;
+  width: 150px;
+  /* The top 32px is the row of buttons (fullscreen and mute), which sit over it. */
+  padding: 44px 10px 8px;
 }
 
 .hud-round {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .hud-scores {
   width: 100%;
-  margin-top: 1.2em; /* a line's gap below the round, where the column titles were */
+  margin-top: 0.6em;
+  table-layout: fixed;
   border-collapse: collapse;
 }
 
@@ -1032,7 +1044,14 @@ button:hover {
   padding: 2px 0;
 }
 
+.hud-scores td:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .hud-scores td:last-child {
+  width: 34px;
   text-align: right;
 }
 
@@ -1068,7 +1087,7 @@ button:hover {
   left: 16px;
   display: grid;
   gap: 4px;
-  padding: 8px 10px;
+  padding: 8px 6px;
 }
 
 /* Name column, then a column each for prediction and tricks. Fixed widths so
@@ -1076,9 +1095,9 @@ button:hover {
    narrow, since a name is now one word. */
 .hud-opponent {
   display: grid;
-  grid-template-columns: 96px 68px 40px;
+  grid-template-columns: 78px 32px 28px;
   align-items: center;
-  gap: 6px;
+  gap: 0;
 }
 
 .hud-opponent-face {
@@ -1152,13 +1171,39 @@ button:hover {
 
 /* The one heading row: the column words, over the players' numbers. */
 .hud-opponent-headings {
-  margin-bottom: 2px;
+  margin-bottom: 4px;
 }
 
 .hud-opponent-headings .hud-stat-label {
   display: block;
   text-align: center;
   white-space: nowrap;
+}
+
+/* Each heading is stacked, one upright letter above the next, over its own
+   column and ending just above the numbers, so the columns can stay narrow. The empty first cell is dropped. */
+.hud-opponent-headings > :first-child {
+  display: none;
+}
+
+.hud-opponent-headings .hud-stat-label {
+  grid-row: 1;
+  align-self: end;
+  justify-self: center;
+  font-size: 9px;
+  font-weight: 700;
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  /* Upright letters sit about 4px apart on their own; -2px leaves a 2px gap. */
+  letter-spacing: -2px;
+}
+
+.hud-opponent-headings .hud-stat-label:nth-child(2) {
+  grid-column: 2;
+}
+
+.hud-opponent-headings .hud-stat-label:nth-child(3) {
+  grid-column: 3;
 }
 
 /* Your own line in the list. */
@@ -1173,18 +1218,18 @@ button:hover {
 
 /* Narrow screens: status below the nav. */
 @media (max-width: 640px) {
-  .hud-status {
+  .visualizer-page .hud-status {
     top: 60px;
-    width: 190px;
+    width: 130px;
   }
 }
 
-/* Mute button for the music, over the top-right corner of the score panel
-   (.hud-status: top 16px, right 16px). */
+/* Mute button for the music, in the row of buttons at the top of the score
+   panel (.hud-status: top 16px, right 16px, 10px padding). */
 .visualizer-page .music-toggle {
   position: absolute;
-  top: 22px;
-  right: 22px;
+  top: 24px;
+  right: 26px;
   z-index: 3;
   display: grid;
   place-items: center;
@@ -1199,9 +1244,9 @@ button:hover {
 
 .visualizer-page .fullscreen-toggle {
   position: absolute;
-  top: 22px;
+  top: 24px;
   /* Left of the music note, which keeps the corner. */
-  right: 62px;
+  right: 66px;
   z-index: 3;
   display: grid;
   place-items: center;
@@ -1227,7 +1272,7 @@ button:hover {
 /* Fullscreen has no browser chrome above it, so the buttons come back up. */
 .visualizer-page:fullscreen .music-toggle,
 .visualizer-page:fullscreen .fullscreen-toggle {
-  top: 22px;
+  top: 24px;
 }
 
 .visualizer-page .music-toggle svg {
@@ -1239,7 +1284,7 @@ button:hover {
   /* The score panel sits below the nav on phones. */
   .visualizer-page .music-toggle,
   .visualizer-page .fullscreen-toggle {
-    top: 66px;
+    top: 68px;
   }
 }
 
@@ -1259,10 +1304,10 @@ button:hover {
   line-height: 1.35;
   text-align: center;
   /* The same box as the HUD panels (.hud-panel). */
-  background: rgb(23 32 51 / 60%);
+  background: var(--ui-bg);
   border-radius: 12px;
   transform: translateX(-50%);
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .hud-announcer[hidden] {
@@ -1428,10 +1473,10 @@ button:hover {
   gap: 10px;
   padding: 10px;
   /* The same box as the HUD panels (.hud-panel). */
-  background: rgb(23 32 51 / 60%);
-  border: 2px solid transparent;
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 10px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: var(--ui-blur);
   animation: hud-result-in 0.3s ease-out;
 }
 
@@ -1546,7 +1591,7 @@ button:hover {
   .visualizer-page .hud-announcer {
     top: 16px;
     left: 320px;
-    max-width: calc(100% - 592px);
+    max-width: calc(100% - 502px);
     font-size: 15px;
     transform: none;
     animation-name: hud-announce-flat;
@@ -1577,7 +1622,7 @@ button:hover {
   .visualizer-page .hud-announcer {
     top: 60px;
     left: 16px;
-    max-width: calc(100% - 238px);
+    max-width: calc(100% - 178px);
     font-size: 13px;
     text-align: left;
     transform: none;
