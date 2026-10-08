@@ -1,6 +1,6 @@
 import { API_BASE } from "../services/api";
 import { getCurrentUser, getToken } from "../services/auth";
-import { createGameSocket, type GameSocketMessage } from "../services/gameSocket";
+import { connectGameSocket, type GameConnectionHandle } from "../services/gameSocket";
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
@@ -55,7 +55,7 @@ export async function renderVisualizerPage(
 
   let destroyed = false;
   let scene: WizardSceneHandle | null = null;
-  let socket: WebSocket | null = null;
+  let socket: GameConnectionHandle | null = null;
   let selfPortrait: SelfPortrait | null = null;
   let cardTable: CardTable | null = null;
   let predictionPrompt: PredictionPrompt | null = null;
@@ -223,9 +223,7 @@ export async function renderVisualizerPage(
         localUsername: localUsername ?? "",
         state: () => latestState,
         send: (message) => {
-          if (socket?.readyState !== WebSocket.OPEN) return false;
-          socket.send(JSON.stringify(message));
-          return true;
+          return socket?.send(message) ?? false;
         },
       }
     : null;
@@ -399,9 +397,17 @@ export async function renderVisualizerPage(
   if (live && token) {
     // Snapshots can arrive before the scene is ready; the newest is kept and
     // applied once the characters exist.
-    socket = createGameSocket(roomId, token);
-    socket.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data as string) as GameSocketMessage;
+    const offline = document.createElement("div");
+    offline.className = "visualizer-offline";
+    offline.textContent = "Connection lost. Reconnecting…";
+    offline.hidden = true;
+    container.appendChild(offline);
+
+    socket = connectGameSocket(roomId, token, {
+      onStatus: (online) => {
+        offline.hidden = online;
+      },
+      onMessage: (message) => {
 
       if (message.type === "game_state" && message.state) {
         latestState = message.state as PublicWizardGameState;
@@ -427,6 +433,7 @@ export async function renderVisualizerPage(
         trumpPrompt?.refused(message.error ?? "The server refused that.");
         gameHud?.refused(message.error ?? "");
       }
+      },
     });
   }
 

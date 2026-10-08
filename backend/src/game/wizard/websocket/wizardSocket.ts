@@ -31,6 +31,8 @@ interface RoomConnection {
 	username: string;
 }
 
+const HEARTBEAT_MS = 25_000;
+
 const connections = new Map<number, Set<RoomConnection>>();
 
 // Keep WebSocket payload formatting in one place so every event uses the same
@@ -260,7 +262,28 @@ export function registerWizardSocket(
 				}
 			});
 
+			// A browser that stalls or loses its network never sends a close, so
+			// the connection would linger. Pinging also keeps proxies from idling
+			// the socket out; browsers answer pings on their own.
+			let alive = true;
+			socket.on("pong", () => {
+				alive = true;
+			});
+			const heartbeat = setInterval(() => {
+				if (!alive) {
+					socket.terminate();
+					return;
+				}
+				alive = false;
+				socket.ping();
+			}, HEARTBEAT_MS);
+
+			socket.on("error", () => {
+				socket.terminate();
+			});
+
 			socket.on("close", () => {
+				clearInterval(heartbeat);
 				removeConnection(roomId, connection);
 			});
 		},

@@ -4271,3 +4271,18 @@ button:hover {
     width: min(100% - 28px, 1180px);
   }
 }
+
+.visualizer-offline {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(20, 10, 30, 0.85);
+  color: #ffd27a;
+  font-size: 0.9rem;
+  pointer-events: none;
+}
+.visualizer-offline[hidden] { display: none; }
