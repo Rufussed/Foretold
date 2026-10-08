@@ -1533,17 +1533,30 @@ button:hover {
   50% { color: inherit; }
 }
 
-/* Mid-width screens: the banner fits between the nav and the status panel;
-   the results board goes below the nav, full width. */
+/* Mid-width screens: the banner sits at the top edge like the other corner
+   UI, centred in the gap between the nav and the status panel; the results
+   board goes below the nav, full width. */
 @media (max-width: 1100px) {
   .visualizer-page .hud-announcer {
-    top: 64px;
-    max-width: calc(100% - 300px);
+    top: 16px;
+    left: 320px;
+    max-width: calc(100% - 592px);
     font-size: 15px;
+    transform: none;
   }
 
   .visualizer-page .hud-announcer.has-results {
     top: 16px;
+  }
+}
+
+/* Too narrow to fit beside the nav and status panel: back below the nav. */
+@media (max-width: 860px) {
+  .visualizer-page .hud-announcer:not(.has-results) {
+    top: 64px;
+    left: 50%;
+    max-width: calc(100% - 300px);
+    transform: translateX(-50%);
   }
 }
 

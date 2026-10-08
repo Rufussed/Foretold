@@ -730,9 +730,9 @@ export const MUSIC = {
 // CARD SOUND  (a card leaving the stack as it's dealt)
 // ══════════════════════════════════════════════════════════════════════════
 
-import cardSound1 from "../assets/sound/card-sound--01.opus";
-import cardSound2 from "../assets/sound/card-sound--02.opus";
-import cardSound3 from "../assets/sound/card-sound--03.opus";
+import cardSound1 from "../assets/sound/card-sound--01.mp3";
+import cardSound2 from "../assets/sound/card-sound--02.mp3";
+import cardSound3 from "../assets/sound/card-sound--03.mp3";
 
 export const CARD_SOUND = {
   // One is picked at random for each card.
@@ -772,7 +772,7 @@ export const BURST = {
 // SCORE SOUND  (the tesseract appearing as a trick is won)
 // ══════════════════════════════════════════════════════════════════════════
 
-import scoreSound from "../assets/sound/score.opus";
+import scoreSound from "../assets/sound/score.mp3";
 
 export const SCORE_SOUND = {
   url: scoreSound,
