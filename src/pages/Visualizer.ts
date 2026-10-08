@@ -404,7 +404,10 @@ export async function renderVisualizerPage(
     container.appendChild(offline);
 
     socket = connectGameSocket(roomId, token, {
-      onStatus: (online) => {
+      onStatus: (online, refused) => {
+        offline.textContent = refused
+          ? "The server would not let you back into this game. Reload the page."
+          : "Connection lost. Reconnecting…";
         offline.hidden = online;
       },
       onMessage: (message) => {
