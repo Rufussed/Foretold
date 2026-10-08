@@ -1,3 +1,4 @@
+import { unlockOnGesture } from "./audio-unlock";
 import { CARD_SOUND } from "./config";
 
 export interface CardSound {
@@ -16,6 +17,7 @@ export function createCardSound(): CardSound {
   try {
     context = new AudioContext();
     const ctx = context;
+    unlockOnGesture(ctx);
     Promise.all(
       CARD_SOUND.urls.map(async (url) => {
         const response = await fetch(url);

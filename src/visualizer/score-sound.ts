@@ -1,3 +1,4 @@
+import { unlockOnGesture } from "./audio-unlock";
 import { SCORE_SOUND } from "./config";
 
 export interface ScoreSound {
@@ -15,6 +16,7 @@ export function createScoreSound(): ScoreSound {
   try {
     context = new AudioContext();
     const ctx = context;
+    unlockOnGesture(ctx);
     fetch(SCORE_SOUND.url)
       .then((response) => response.arrayBuffer())
       .then((data) => ctx.decodeAudioData(data))
