@@ -27,12 +27,27 @@ const shortName = (username: string) => {
   return firstWord.length > NAME_LIMIT ? `${firstWord.slice(0, NAME_LIMIT)}.` : firstWord;
 };
 
+// Where tricks won stand against the prediction, in the tesseract burst's
+// colours: green while short of it, gold on it, red over it.
+const standing = (won: number, prediction: number | null) =>
+  prediction === null ? "none" : won < prediction ? "under" : won === prediction ? "met" : "over";
+
+export interface PlayerListOptions {
+  // The round the card table is showing, undefined before it has one. The list
+  // runs ahead of the table once a round is scored, until the next deal starts.
+  tableRound?(): number | undefined;
+}
+
 // Bottom left: every player, you included, in the order they predict this
 // round: the first to predict first, the second second, and so on. The first
 // player moves on each deal, so the list reorders with it. Each is one line - a
 // small headshot beside their name, then this round's prediction and tricks
 // won, a labelled column each. Your own line is picked out.
-export function createPlayerList(root: HTMLElement, game: GameConnection): HudPart {
+export function createPlayerList(
+  root: HTMLElement,
+  game: GameConnection,
+  options: PlayerListOptions = {},
+): HudPart {
   const grid = document.createElement("section");
   grid.className = "hud-panel hud-opponents";
   grid.setAttribute("aria-label", "Players");
@@ -92,8 +107,14 @@ export function createPlayerList(root: HTMLElement, game: GameConnection): HudPa
         (_, step) => state.players[(state.startingPlayerIndex + step) % count],
       );
 
+      // Between a round's end and the next deal, the list keeps showing the
+      // round just played - its order, predictions and tricks - while its
+      // scores are read out; the new round's blanks come with the deal.
+      const tableRound = options.tableRound?.();
+      const holding = tableRound !== undefined && tableRound < state.currentRound && order !== "";
+
       const nextOrder = players.map((player) => player.username).join("\n");
-      if (nextOrder !== order) {
+      if (!holding && nextOrder !== order) {
         order = nextOrder;
         for (const username of rows.keys()) {
           if (!players.some((player) => player.username === username)) rows.delete(username);
@@ -114,8 +135,12 @@ export function createPlayerList(root: HTMLElement, game: GameConnection): HudPa
       for (const player of players) {
         const row = rows.get(player.username)!;
         row.element.classList.toggle("is-you", player.username === game.localUsername);
-        row.prediction.set(player.prediction);
-        row.won.set(player.tricksWon);
+        const played = holding ? player.roundScores.at(-1) : undefined;
+        const prediction = played ? played.prediction : player.prediction;
+        const tricksWon = played ? played.tricksWon : player.tricksWon;
+        row.prediction.set(prediction);
+        row.won.set(tricksWon);
+        row.won.element.dataset.standing = standing(tricksWon, prediction);
 
         const character = characterForPlayer(player);
         if (row.character !== character) {

@@ -15,6 +15,7 @@ import { createTableCards, type TableCards } from "./table-cards";
 import { centredSlots, type TableLayout } from "./table-layout";
 import type { SceneView } from "./three-scene";
 import { burstColorFor, burstCss, createRewardBurst, type BurstColor } from "./reward-burst";
+import { createChimeSound } from "./chime-sound";
 import { createScoreSound } from "./score-sound";
 import { createTrickRewards, type RewardDestination, type TrickRewards } from "./trick-rewards";
 //I want to take the crown out of the trump card, commented out all the crown word in file
@@ -80,7 +81,8 @@ export function createCardTable({
   const deal = createCardDeal(factory, layout, sound);
   const scoreSound = createScoreSound();
   const burst = createRewardBurst(environment);
-  const rewards = createTrickRewards(environment, { sound: scoreSound, burst });
+  const chime = createChimeSound();
+  const rewards = createTrickRewards(environment, { sound: scoreSound, burst, chime });
   // const crown = createTrumpCrown(environment, view.camera, () => cards.trumpCardObject());
 
   // Only on your turn while cards are being played; the server has the final
@@ -396,6 +398,7 @@ export function createCardTable({
       controls.dispose();
       sound.dispose();
       scoreSound.dispose();
+      chime.dispose();
       burst.dispose();
       // crown.dispose();
       window.removeEventListener("keydown", onDealKey);

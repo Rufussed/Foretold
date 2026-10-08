@@ -61,6 +61,8 @@ export function createResultsBoard(
       label.textContent = line.label;
       const value = document.createElement("dd");
       value.textContent = line.value;
+      // Signed values: a gain in green, a loss in red, "+0" as it is.
+      value.dataset.sign = line.value.startsWith("-") ? "negative" : line.value === "+0" ? "zero" : "positive";
       lines.append(label, value);
     }
 

@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { BURST, TRICK_REWARD } from "./config";
 import { paced } from "./pace";
+import type { ChimeSound } from "./chime-sound";
 import type { BurstColor, RewardBurst } from "./reward-burst";
 import { createTesseract, loadTesseract, type Tesseract, type TesseractModel } from "./tesseract";
 
@@ -59,10 +60,10 @@ const easeIn = (t: number) => clamp01(t) ** 3;
 // winner's head, swells to peakScale, then dives down into their head as it
 // shrinks away. For your own wins it hovers in front of the camera and dives
 // into it. The sound plays as the tesseract appears, and the burst of rays
-// flies out from where it dives in.
+// flies out from where it dives in, with a chime.
 export function createTrickRewards(
   environment: THREE.Object3D,
-  effects: { sound?: { play(): void }; burst?: RewardBurst } = {},
+  effects: { sound?: { play(): void }; burst?: RewardBurst; chime?: ChimeSound } = {},
 ): TrickRewards {
   const rewards: Reward[] = [];
   let model: TesseractModel | null = null;
@@ -185,7 +186,10 @@ export function createTrickRewards(
           scale = peakScale * (1 - k);
         } else {
           tesseract.dispose();
-          effects.burst?.spawn(burstAt, reward.plan.burstColor ?? BURST.color);
+          const burstColor = reward.plan.burstColor ?? BURST.color;
+          effects.burst?.spawn(burstAt, burstColor);
+          // Red means over the prediction: the falling chime; anything else the bright one.
+          effects.chime?.play(burstColor === BURST.overColor ? "lose" : "win");
           finish(index);
           continue;
         }

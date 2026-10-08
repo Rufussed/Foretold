@@ -7,6 +7,7 @@ import { createAiEmotes } from "../visualizer/ai-emotes";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
+import { createEffectsToggle, type EffectsToggle } from "../visualizer/effects-toggle";
 import { createEmoteTrigger, type EmoteTrigger } from "../visualizer/emote-trigger";
 import type { GameConnection } from "../visualizer/game-connection";
 import { createGameHud, type GameHud } from "../visualizer/hud/game-hud";
@@ -63,11 +64,13 @@ export async function renderVisualizerPage(
   let diagnostics: Diagnostics | null = null;
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
+  let effectsToggle: EffectsToggle | null = null;
   let fullscreenToggle: FullscreenToggle | null = null;
 
   teardown = () => {
     destroyed = true;
     musicToggle?.dispose();
+    effectsToggle?.dispose();
     fullscreenToggle?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
@@ -114,11 +117,15 @@ export async function renderVisualizerPage(
   const pageEl = container.querySelector<HTMLElement>(".visualizer-page");
   if (pageEl) {
     music = createBackgroundMusic();
-    musicToggle = createMusicToggle(pageEl, music);
+    const toolbar = document.createElement("div");
+    toolbar.className = "hud-toolbar";
+    pageEl.append(toolbar);
+    musicToggle = createMusicToggle(toolbar, music);
+    effectsToggle = createEffectsToggle(toolbar);
     // The page itself, not the canvas: the HUD, the prompts and the emotes
     // have to come with it, or fullscreen would show a table and nothing to
     // play it with. Null where the browser will not do fullscreen at all.
-    fullscreenToggle = createFullscreenToggle(pageEl, pageEl);
+    fullscreenToggle = createFullscreenToggle(toolbar, pageEl);
   }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
@@ -229,7 +236,11 @@ export async function renderVisualizerPage(
   const director = createTableDirector({
     initial: null,
     localUsername: localUsername ?? "",
-    applyTable: () => cardTable?.applyState(),
+    applyTable: () => {
+      cardTable?.applyState();
+      // The player list lets go of last round's numbers as the deal starts.
+      gameHud?.refreshPlayers();
+    },
     applyHud: () => {
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
@@ -265,6 +276,7 @@ export async function renderVisualizerPage(
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
+      tableRound: () => director.tableState()?.currentRound,
     });
   }
 

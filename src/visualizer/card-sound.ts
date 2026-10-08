@@ -1,3 +1,4 @@
+import { isEffectsMuted } from "./effects-mute";
 import { unlockOnGesture } from "./audio-unlock";
 import { CARD_SOUND } from "./config";
 
@@ -37,7 +38,7 @@ export function createCardSound(): CardSound {
   return {
     play() {
       const ctx = context;
-      if (disposed || !ctx || !buffers.length) return;
+      if (disposed || isEffectsMuted() || !ctx || !buffers.length) return;
       // Browsers start a context suspended until the page has been interacted with.
       if (ctx.state === "suspended") void ctx.resume();
 

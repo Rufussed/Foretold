@@ -1022,8 +1022,8 @@ button:hover {
   top: 16px;
   right: 16px;
   width: 150px;
-  /* The top 32px is the row of buttons (fullscreen and mute), which sit over it. */
-  padding: 44px 10px 8px;
+  /* The top 32px is the row of buttons, which sit over it, and a little room under it. */
+  padding: 50px 10px 8px;
 }
 
 .hud-round {
@@ -1216,6 +1216,20 @@ button:hover {
   font-size: 16px;
 }
 
+/* Tricks won against the prediction, in the colours of the tesseract's burst
+   (BURST in config.ts): green short of it, gold on it, red over it. */
+.hud-stat[data-standing="under"] .hud-stat-value {
+  color: rgb(0 255 13);
+}
+
+.hud-stat[data-standing="met"] .hud-stat-value {
+  color: rgb(255 199 71);
+}
+
+.hud-stat[data-standing="over"] .hud-stat-value {
+  color: rgb(255 0 0);
+}
+
 /* Narrow screens: status below the nav. */
 @media (max-width: 640px) {
   .visualizer-page .hud-status {
@@ -1224,30 +1238,21 @@ button:hover {
   }
 }
 
-/* Mute button for the music, in the row of buttons at the top of the score
-   panel (.hud-status: top 16px, right 16px, 10px padding). */
-.visualizer-page .music-toggle {
+/* The row of buttons at the top of the score panel (.hud-status: top 16px,
+   right 16px, 10px padding): music, all sound, then fullscreen at the corner.
+   A row of their own, so a button a browser cannot offer leaves no gap. */
+.visualizer-page .hud-toolbar {
   position: absolute;
   top: 24px;
   right: 26px;
   z-index: 3;
-  display: grid;
-  place-items: center;
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  color: white;
-  background: rgb(255 255 255 / 12%);
-  border: 0;
-  border-radius: 8px;
+  display: flex;
+  gap: 6px;
 }
 
+.visualizer-page .music-toggle,
+.visualizer-page .effects-toggle,
 .visualizer-page .fullscreen-toggle {
-  position: absolute;
-  top: 24px;
-  /* Left of the music note, which keeps the corner. */
-  right: 66px;
-  z-index: 3;
   display: grid;
   place-items: center;
   width: 32px;
@@ -1260,30 +1265,21 @@ button:hover {
 }
 
 .visualizer-page .music-toggle:hover,
+.visualizer-page .effects-toggle:hover,
 .visualizer-page .fullscreen-toggle:hover {
   background: rgb(255 255 255 / 22%);
 }
 
+.visualizer-page .music-toggle svg,
+.visualizer-page .effects-toggle svg,
 .visualizer-page .fullscreen-toggle svg {
-  width: 20px;
-  height: 20px;
-}
-
-/* Fullscreen has no browser chrome above it, so the buttons come back up. */
-.visualizer-page:fullscreen .music-toggle,
-.visualizer-page:fullscreen .fullscreen-toggle {
-  top: 24px;
-}
-
-.visualizer-page .music-toggle svg {
   width: 20px;
   height: 20px;
 }
 
 @media (max-width: 640px) {
   /* The score panel sits below the nav on phones. */
-  .visualizer-page .music-toggle,
-  .visualizer-page .fullscreen-toggle {
+  .visualizer-page .hud-toolbar {
     top: 68px;
   }
 }
@@ -1547,6 +1543,14 @@ button:hover {
   font-variant-numeric: tabular-nums;
   text-align: left;
   white-space: nowrap;
+}
+
+.hud-result-lines dd[data-sign="positive"] {
+  color: #4caf50;
+}
+
+.hud-result-lines dd[data-sign="negative"] {
+  color: #ef5350;
 }
 
 @keyframes hud-result-in {

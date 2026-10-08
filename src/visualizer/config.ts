@@ -779,6 +779,17 @@ export const SCORE_SOUND = {
   volume: 1,
 };
 
+import chimeWin from "../assets/sound/chime-win.mp3";
+import chimeLose from "../assets/sound/chimes-lose.mp3";
+
+// Played with each trick's burst of rays: the lose chime when the winner has
+// won more tricks than they predicted (the red burst), the win chime otherwise.
+export const CHIME_SOUND = {
+  winUrl: chimeWin,
+  loseUrl: chimeLose,
+  volume: 1,
+};
+
 // ══════════════════════════════════════════════════════════════════════════
 // MOON CLOUDS  (fuzzy black clouds drifting across the moon)
 // ══════════════════════════════════════════════════════════════════════════

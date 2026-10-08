@@ -1,3 +1,4 @@
+import { isEffectsMuted } from "./effects-mute";
 import { unlockOnGesture } from "./audio-unlock";
 import { SCORE_SOUND } from "./config";
 
@@ -33,7 +34,7 @@ export function createScoreSound(): ScoreSound {
   return {
     play() {
       const ctx = context;
-      if (disposed || !ctx || !buffer) return;
+      if (disposed || isEffectsMuted() || !ctx || !buffer) return;
       // Browsers start a context suspended until the page has been interacted with.
       if (ctx.state === "suspended") void ctx.resume();
 

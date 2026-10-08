@@ -5,7 +5,14 @@ import { createGameStatusPanel } from "./game-status-panel";
 import type { HudPart } from "./hud-part";
 import { createPlayerList } from "./player-list";
 
+export interface GameHudOptions extends AnnouncerOptions {
+  // The round the card table is showing; see player-list.ts.
+  tableRound?(): number | undefined;
+}
+
 export interface GameHud extends HudPart {
+  // Redraw the player list alone, as the table starts a round's deal.
+  refreshPlayers(): void;
   // The server refused a move, with its reason.
   refused(error: string): void;
   // Calls done once every announcement has had its time.
@@ -17,16 +24,18 @@ export interface GameHud extends HudPart {
 export function createGameHud(
   root: HTMLElement,
   game: GameConnection,
-  options: AnnouncerOptions = {},
+  options: GameHudOptions = {},
 ): GameHud {
   const statusPanel = createGameStatusPanel(root, game);
   // After the panel, so a round's scores are held back before it redraws.
   const announcer = createAnnouncer(root, game, statusPanel, options);
-  const parts = [statusPanel, announcer, createPlayerList(root, game)];
+  const playerList = createPlayerList(root, game, options);
+  const parts = [statusPanel, announcer, playerList];
 
   return {
     applyState: () => parts.forEach((part) => part.applyState()),
     dispose: () => parts.forEach((part) => part.dispose()),
+    refreshPlayers: () => playerList.applyState(),
     whenIdle: (done) => announcer.whenIdle(done),
     refused(error) {
       const state = game.state();
