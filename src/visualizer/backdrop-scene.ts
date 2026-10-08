@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { playClip } from "./moon-animation";
 import { ANIMATION, BACKDROP, RENDER } from "./config";
 import {
   configureRenderer,
@@ -118,7 +119,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
       if (clips.length) {
         mixer = new THREE.AnimationMixer(gltf.scene);
         mixer.timeScale = ANIMATION.timeScale;
-        for (const clip of clips) mixer.clipAction(clip).play();
+        for (const clip of clips) playClip(mixer, clip);
       }
     })
     .catch((error) => console.warn("[backdrop] could not load the table scene:", error));

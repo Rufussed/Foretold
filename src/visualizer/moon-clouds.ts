@@ -63,7 +63,10 @@ export function createMoonClouds(environment: THREE.Object3D, getCamera: () => T
   }
   environment.updateWorldMatrix(true, true);
   const box = new THREE.Box3().setFromObject(moon);
+  // The moon is animated (it rides moon_parent), so its centre is kept in the
+  // moon node's local space and re-read in world space every frame.
   const moonCenter = box.getCenter(new THREE.Vector3());
+  const moonLocalCenter = moon.worldToLocal(moonCenter.clone());
   const size = box.getSize(new THREE.Vector3());
   const moonRadius = Math.max(size.x, size.y, size.z) / 2;
 
@@ -157,6 +160,10 @@ export function createMoonClouds(environment: THREE.Object3D, getCamera: () => T
         if (free) spawn(free);
         untilNext = between(CLOUDS.spawnMinSeconds, CLOUDS.spawnMaxSeconds);
       }
+
+      moon.updateWorldMatrix(true, false);
+      moonCenter.copy(moonLocalCenter);
+      moon.localToWorld(moonCenter);
 
       // The lane faces the camera: across it is the camera's right, up its up.
       const view = getCamera();

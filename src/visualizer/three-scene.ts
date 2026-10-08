@@ -7,6 +7,7 @@ import {
   prepareEnvironment,
 } from "./environment-setup";
 import { loadTableScene } from "./table-scene-asset";
+import { playClip } from "./moon-animation";
 import { createMoonClouds, type MoonClouds } from "./moon-clouds";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
@@ -239,7 +240,7 @@ export function createWizardScene(
         mixer = new THREE.AnimationMixer(gltf.scene);
         mixer.timeScale = ANIMATION.timeScale;
         for (const clip of gltf.animations) {
-          const action = mixer.clipAction(clip);
+          const action = playClip(mixer, clip);
           const target = gltf.scene.getObjectByName(
             clip.tracks[0]?.name.split(".")[0] ?? "",
           );
@@ -251,7 +252,6 @@ export function createWizardScene(
               if (o === target) introCamera = action;
             }
           }
-          action.play();
         }
       }
 

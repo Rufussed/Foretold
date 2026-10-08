@@ -285,6 +285,18 @@ export const ANIMATION = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// MOON
+// ══════════════════════════════════════════════════════════════════════════
+
+// The moon's arc across the sky is one long clip (2000 frames, ~83s as
+// authored). It is stretched to take durationSeconds instead; every other clip
+// keeps its authored speed. ANIMATION.timeScale still applies on top.
+export const MOON = {
+  clipName: "moonPath", // the moon's animation clip in Wizard.glb
+  durationSeconds: 5 * 60, // one full arc, start to end. 0 = as authored
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // LIGHT INTENSITY
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -810,7 +822,7 @@ export const CHIME_SOUND = {
 // to the camera; times are seconds.
 export const CLOUDS = {
   enabled: true,
-  moonObject: "moon_Moon_0", // the moon's node in Wizard.glb
+  moonObject: "moon", // the moon's node in Wizard.glb (a child of moon_parent, which carries the animation)
   maxClouds: 10, // most on screen at once
   spawnMinSeconds: 4, // wait a random time between these before the next cloud
   spawnMaxSeconds: 12,
