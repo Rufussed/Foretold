@@ -4,6 +4,7 @@ import { createGameSocket, type GameSocketMessage } from "../services/gameSocket
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
+import { reactionPending, reactToTrick } from "../visualizer/trick-reactions";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -14,7 +15,7 @@ import { createGameHud, type GameHud } from "../visualizer/hud/game-hud";
 import { useHeadshotRenderer } from "../visualizer/hud/headshots";
 import { createCardTable, type CardTable } from "../visualizer/card-table";
 import { createDiagnostics, type Diagnostics } from "../visualizer/diagnostics";
-import { EMOTE_NAMES, SEAT_IDS, type Emote } from "../visualizer/player-characters";
+import { EMOTE_NAMES, SEAT_IDS, type Emote, type SeatId } from "../visualizer/player-characters";
 import { createTableDirector, type TableDirector } from "../visualizer/table-director";
 import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
@@ -249,7 +250,15 @@ export async function renderVisualizerPage(
     dealing: () => cardTable?.dealing ?? false,
     lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
-    playTrickReward: (done) => (cardTable ? cardTable.playTrickReward(done) : done()),
+    playTrickReward: (done) => {
+      // The NPCs react as the trick is won.
+      const state = director.tableState();
+      if (state && trigger && seatSync) {
+        reactToTrick(state, trigger, (username) => seatSync?.seatOf(username) ?? null);
+      }
+      if (cardTable) cardTable.playTrickReward(done);
+      else done();
+    },
   });
   tableDirector = director;
   const tableConnection: GameConnection | null = gameConnection && {
@@ -350,6 +359,8 @@ export async function renderVisualizerPage(
         selfPortrait?.emote(emote),
       );
       trigger = emoteTrigger;
+      // A seat mid-emote, or about to react to a trick, is left alone by the random emoting.
+      const busy = (seat: SeatId) => reactionPending(seat) || !!players.debug(seat)?.emote;
 
       if (sync) {
         // Seats first, so the card table knows where each player sits.
@@ -359,9 +370,10 @@ export async function renderVisualizerPage(
             .seated()
             .filter(([, username]) => isBotName(username))
             .map(([seat]) => seat),
+          busy,
         );
       } else {
-        aiEmotes = createAiEmotes(emoteTrigger, () => SEAT_IDS);
+        aiEmotes = createAiEmotes(emoteTrigger, () => SEAT_IDS, busy);
       }
     },
       onUpdate: (deltaSeconds) => {

@@ -415,6 +415,11 @@ export const EMOTES = {
 
   // Stand-in for AI players deciding to emote: bots in a live game, or every
   // seat on the demo table, emote at random within this many seconds.
+  // NPCs reacting to a won trick each wait a random time between these, so
+  // they do not all move at once.
+  reactionMinSeconds: 0.5,
+  reactionMaxSeconds: 2.5,
+
   aiEnabled: true,
   aiMinSeconds: 6,
   aiMaxSeconds: 15,

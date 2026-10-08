@@ -8,6 +8,8 @@ import { EMOTE_NAMES, type SeatId } from "./player-characters";
 export function createAiEmotes(
   trigger: EmoteTrigger,
   candidates: () => readonly SeatId[],
+  // Seats that must not start a random emote now, such as one already emoting.
+  isBusy: (seat: SeatId) => boolean = () => false,
 ): { update(deltaSeconds: number): void } {
   const nextWait = () =>
     EMOTES.aiMinSeconds + Math.random() * (EMOTES.aiMaxSeconds - EMOTES.aiMinSeconds);
@@ -20,7 +22,7 @@ export function createAiEmotes(
       if (wait > 0) return;
       wait = nextWait();
 
-      const seats = candidates();
+      const seats = candidates().filter((seat) => !isBusy(seat));
       if (!seats.length) return;
       const seat = seats[Math.floor(Math.random() * seats.length)];
       const emote = EMOTE_NAMES[Math.floor(Math.random() * EMOTE_NAMES.length)];
