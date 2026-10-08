@@ -217,6 +217,10 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 // maxHeight rows, and the browser scales the result up to fill the canvas.
 // Raise maxHeight for sharpness, lower it for framerate.
 export const RENDER = {
+  // Most frames drawn per second; 0 draws on every screen refresh. Halving a
+  // 60Hz display's 60 roughly halves the work, which is what a modest or
+  // software-rendered machine needs to stop running hot and stuttering.
+  maxFps: 30,
   maxHeight: 3240, // tallest drawing buffer, in pixels
   maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
   // The same cap on phones and tablets, where a 3x panel means drawing nine

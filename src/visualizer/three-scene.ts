@@ -393,7 +393,12 @@ export function createWizardScene(
     ? createRenderScale({
         min: RENDER.adaptive.min,
         max: RENDER.adaptive.max,
-        targetFps: RENDER.adaptive.targetFps,
+        // The scaler must not ask for more than the cap allows, or it would
+        // shrink the picture for a shortfall that is deliberate.
+        targetFps:
+          RENDER.maxFps > 0
+            ? Math.min(RENDER.adaptive.targetFps, RENDER.maxFps * 0.9)
+            : RENDER.adaptive.targetFps,
         onChange: (next) => {
           renderScale = next;
           resize();
@@ -403,9 +408,13 @@ export function createWizardScene(
 
   let frame = 0;
   let last = performance.now();
+  // A little under the interval, so a 60Hz display lands on every second
+  // refresh instead of every third when a frame arrives a hair early.
+  const minFrameMs = RENDER.maxFps > 0 ? 1000 / RENDER.maxFps - 4 : 0;
   const tick = () => {
     frame = requestAnimationFrame(tick);
     const now = performance.now();
+    if (now - last < minFrameMs) return;
     const dt = (now - last) / 1000;
     last = now;
     mixer?.update(dt);
