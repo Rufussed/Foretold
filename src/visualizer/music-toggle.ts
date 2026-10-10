@@ -16,7 +16,7 @@ export function createMusicToggle(root: HTMLElement, music: BackgroundMusic): Mu
   source.setAttribute("aria-label", "Music source");
   source.innerHTML = `
     <option value="stream">Live stream</option>
-    <option value="tracks">Stored tracks</option>
+    <option value="tracks">Wizardy vibe</option>
   `;
   source.value = music.source;
   source.disabled = MUSIC.streams.length === 0;
