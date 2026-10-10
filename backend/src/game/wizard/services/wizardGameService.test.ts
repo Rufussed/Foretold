@@ -65,6 +65,14 @@ describe("WizardGameService", () => {
     service.advanceAfterTrick(game);
     
     assert.equal(game.currentRound, 2);
+
+    // A Wizard trump card requires the starting player to choose a suit.
+    if (game.phase === "trump-selection") {
+      const currentPlayer = game.players[game.currentPlayerIndex];
+      if (!currentPlayer) throw new Error("Current player is missing");
+      service.chooseTrumpSuit(game, currentPlayer.username, "Red");
+    }
+
     assert.equal(game.phase, "predictions");
     assert.equal(game.currentTrick.playedCards.length, 0);
     assert.equal(game.currentTrick.winnerUsername, null);
