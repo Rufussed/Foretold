@@ -98,6 +98,7 @@ export async function renderVisualizerPage(
     scene?.destroy();
   };
 
+  // add this in visualizer-nav to have tech view       /* <a href="#/game/${roomId}">Technical View</a>*/
   container.innerHTML = `
     <main class="visualizer-page">
       <div class="visualizer-canvas-wrap">
@@ -106,9 +107,8 @@ export async function renderVisualizerPage(
       </div>
 
       <nav class="visualizer-nav">
-        <a href="#/home">Home</a>
-        ${isGuestGame ? "" : '<a href="#/lobby">Lobby</a>'}
-        <a href="#/game/${roomId}">Technical View</a>
+        <a href="${isGuestGame ? "#/home" : "#/lobby"}">Leave Table</a>
+
       </nav>
 
       <div class="visualizer-emotes" id="visualizer-emotes">

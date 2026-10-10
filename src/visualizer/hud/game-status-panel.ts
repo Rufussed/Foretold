@@ -45,8 +45,8 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
   >();
   let order = "";
 
-  const nameOf = (username: string) => (username === game.localUsername ? "You" : username);
-
+  // const nameOf = (username: string) => (username === game.localUsername ? "You" : username);
+  const nameOf = (username: string) => username;
   const applyState = () => {
     const state = game.state();
     if (!state) {
@@ -73,7 +73,10 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
         entry = { row, name, prediction, tricks, score };
         rows.set(player.username, entry);
       }
-      entry.row.classList.toggle("is-you", player.username === game.localUsername);
+      entry.row.classList.toggle(
+        "is-you",
+        player.username === state.players[state.currentPlayerIndex]?.username,
+      );
       entry.name.textContent = nameOf(player.username);
       entry.prediction.textContent =
         player.prediction === null ? "–" : String(player.prediction);

@@ -763,67 +763,7 @@ button:hover {
 /* Emotes: a row of four in the bottom right corner, under your portrait,
    as wide as it is (156px). */
 /* Emotes: a row of four below your portrait. */
-.visualizer-emotes {
-  position: absolute;
-  right: 16px;
-  bottom: 124px;
-  z-index: 1;
-  display: flex;
-  gap: 8px;
-}
-
-/* Your dark and gold visual style. */
-.visualizer-page .visualizer-emotes button {
-  width: 32px;
-  height: 32px;
-  padding: 0;
-  font-size: 20px;
-  line-height: 1;
-  color: rgba(244, 235, 217, 0.92);
-  background: rgba(8, 9, 7, 0.6);
-  border: 1px solid rgba(191, 125, 47, 0.28);
-  border-radius: 4px;
-  backdrop-filter: blur(1px);
-}
-
-.visualizer-page .visualizer-emotes button:hover {
-  background: rgba(191, 125, 47, 0.12);
-  border-color: rgba(191, 125, 47, 0.65);
-}
-
-/* Your own character, bottom right of the table view. The canvas fills the
-   whole box and the name sits over its lower edge. */
-.visualizer-self {
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 1;
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  width: 156px;
-  gap: 4px;
-}
-
-/* Prefixed to outrank the global button:hover style. */
-.visualizer-page .visualizer-emotes button {
-  width: 100%;
-  height: 40px;
-  padding: 0;
-  font-size: 22px;
-  line-height: 1;
-  background: var(--ui-bg);
-  border: var(--ui-edge);
-  border-radius: 12px;
-  backdrop-filter: var(--ui-blur);
-}
-
-.visualizer-page .visualizer-emotes button:hover {
-  background: var(--ui-bg-hover);
-}
-
-/* Your own character, bottom right of the table view, above the emotes (a 44px
-   row at the bottom, 8px clear of this). The box is the circle the character
-   stands in, with the name inside it at the bottom. */
+/* Your own character, bottom right of the table view. */
 .visualizer-self {
   position: absolute;
   right: 16px;
@@ -836,8 +776,7 @@ button:hover {
   border-radius: 600px;
 }
 
-/* A rounded rectangle behind the character, filling the box: the frosted
-   card the character chooser gives each portrait. */
+/* Background behind the character portrait. */
 .visualizer-self::before {
   position: absolute;
   inset: 0;
@@ -852,14 +791,13 @@ button:hover {
   display: none;
 }
 
-/* The character's view: the circle's square, so the character sits on the
-   circle, its head above the box's top edge. */
+/* Character portrait. */
 .visualizer-self-view {
   position: absolute;
   top: -30px;
   left: 0;
   width: 100%;
-  height: 196px;
+  height: 226px;
 }
 
 .visualizer-self-view canvas {
@@ -868,45 +806,56 @@ button:hover {
   height: 100%;
 }
 
+/* Hide the name beneath the avatar. */
 .visualizer-self-name {
-  position: absolute;
-  right: 22px;
-  bottom: 10px;
-  left: 22px;
-  padding: 0;
-  overflow: hidden;
-  color: white;
-  text-shadow: 0 1px 3px rgb(0 0 0 / 80%);
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 20px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  display: none;
 }
 
-/* Narrow screens: a smaller portrait, with a smaller emote row under it. */
+/* Four clickable emotes below the portrait. */
+.visualizer-emotes {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  display: flex;
+  width: 156px;
+  gap: 4px;
+}
+
+.visualizer-page .visualizer-emotes button {
+  flex: 1;
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 8px;
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .visualizer-emotes button:hover {
+  background: var(--ui-bg-hover);
+}
+
+/* Smaller portrait and emotes on narrow screens. */
 @media (max-width: 640px) {
   .visualizer-self {
+    right: 16px;
     bottom: 52px;
     width: 126px;
     height: 160px;
   }
 
   .visualizer-self-view {
-    height: 126px;
     top: -18px;
-  }
-
-  .visualizer-self-name {
-    right: 18px;
-    bottom: 7px;
-    left: 18px;
-    font-size: 12px;
-    line-height: 16px;
+    height: 126px;
   }
 
   .visualizer-emotes {
+    right: 16px;
+    bottom: 16px;
     width: 126px;
     gap: 4px;
   }
@@ -1035,14 +984,14 @@ button:hover {
   font-size: 13px;
   font-weight: 700;
   background: transparent;
-  border: 2px solid transparent;
-  border-radius: 10px;
+  border: 1px solid rgba(191, 125, 47, 0.32);
+  border-radius: 4px;
 }
 
 .trump-swatch {
   width: 56px;
   aspect-ratio: 5 / 7;
-  border: 2px solid rgb(255 255 255 / 60%);
+  border: 2px solid rgba(191, 125, 47, 0.55);
   border-radius: 6px;
 }
 
@@ -1083,7 +1032,6 @@ button:hover {
   top: 16px;
   right: 16px;
   width: 300px;
-  width: 150px;
   /* The top 32px is the row of buttons, which sit over it, and a little room under it. */
   padding: 50px 10px 8px;
 }
@@ -1111,7 +1059,7 @@ button:hover {
 }
 
 .hud-scores th {
-  padding: 2px 6px;
+  padding: 2px 1px;
   color: rgba(221, 177, 110, 0.78);
   font-size: 10px;
   font-weight: 600;
@@ -1130,7 +1078,7 @@ button:hover {
 }
 
 .hud-scores td {
-  padding: 3px 6px;
+  padding: 3px 1px;
 }
 
 .hud-scores tr.is-you td {
@@ -1398,7 +1346,7 @@ button:hover {
   border: 1px solid rgba(191, 125, 47, 0.28);
   border-radius: 4px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
-  transform: translateX(-50%);
+  transform: none;
   backdrop-filter: blur(1px);
 }
 
@@ -3901,9 +3849,24 @@ button:hover {
 }
 
 .room-title-row {
+  position: relative;
   flex: 0 0 auto;
   margin-bottom: 18px;
   text-align: center;
+}
+
+.room-back-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+  color: rgba(221, 177, 110, 0.8);
+  font-size: 1rem;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.room-back-button:hover {
+  color: #ffd54f;
 }
 
 .room-kicker,
@@ -4009,6 +3972,10 @@ button:hover {
 
 /* Players */
 
+.room-start[hidden],
+.room-waiting[hidden] {
+  display: none !important;
+}
 
 /* Host controls */
 
@@ -4035,6 +4002,11 @@ button:hover {
   align-items: end;
   justify-content: center;
   gap: 12px;
+}
+
+.room-start-button {
+  grid-column: 1 / -1;
+  justify-self: center;
 }
 
 .room-start-controls label {

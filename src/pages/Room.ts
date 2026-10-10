@@ -76,6 +76,8 @@ export async function renderRoomPage(
       <main class="room-content">
 
         <section class="room-title-row">
+          <a href="#/lobby" class="room-back-button">Back</a>
+
           <div>
             <p class="room-kicker">GAME TABLE</p>
             <h1 id="room-name">Waiting room</h1>
@@ -154,10 +156,6 @@ export async function renderRoomPage(
         </section>
 
       </main>
-
-      <footer class="room-footer">
-        <a href="#/lobby">Back to Lobby</a>
-      </footer>
 
     </main>
   `;
@@ -243,9 +241,21 @@ export async function renderRoomPage(
 
     picker.setClaims(claims, user.username);
 
-    const isHost = guestUsername !== null || room.createdBy === user.id;
+    const isHost =
+      guestUsername !== null || room.createdBy === user.id;
+      console.log("[room debug]", {
+        guestUsername,
+        userId: user.id,
+        createdBy: room.createdBy,
+        isHost: guestUsername !== null || room.createdBy === user.id,
+      });
+
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
+
+    if (!isHost) {
+      waitingEl.textContent = "Waiting for the game creator to start the game…";
+    }
 
     if (isHost) {
       // A game needs 3 to 6 players; bots make up the difference. Alone, the
