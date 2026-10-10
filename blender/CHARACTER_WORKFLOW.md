@@ -22,7 +22,7 @@ importlib.reload(export_characters)
 export_characters.run()
 ```
 
-Exports to the six existing `public/models/wizard/char-<character>.glb` paths.
+Exports to the six existing `src/assets/models/wizard/char-<character>.glb` paths.
 Backups and a verification report go under `blender/export-backups/<timestamp>/`.
 Each GLB is validated for six clip names, one skin, the intended character root,
 absence of other character roots, and the current nonmetal material baseline.

@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { playClip } from "./moon-animation";
 import { ANIMATION, BACKDROP, RENDER } from "./config";
 import {
   configureRenderer,
@@ -118,7 +119,7 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
       if (clips.length) {
         mixer = new THREE.AnimationMixer(gltf.scene);
         mixer.timeScale = ANIMATION.timeScale;
-        for (const clip of clips) mixer.clipAction(clip).play();
+        for (const clip of clips) playClip(mixer, clip);
       }
     })
     .catch((error) => console.warn("[backdrop] could not load the table scene:", error));
@@ -128,9 +129,12 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   let angle = THREE.MathUtils.degToRad(BACKDROP.startDegrees);
   let frame = 0;
   let last = performance.now();
+  // Same cap as the game scene; see RENDER.maxFps.
+  const minFrameMs = RENDER.maxFps > 0 ? 1000 / RENDER.maxFps - 4 : 0;
   const tick = () => {
     frame = requestAnimationFrame(tick);
     const now = performance.now();
+    if (now - last < minFrameMs) return;
     // Real time, so a slow device still circles once per secondsPerTurn; only
     // long gaps (a hidden tab, a stall) are skipped rather than jumped over.
     const elapsed = (now - last) / 1000;

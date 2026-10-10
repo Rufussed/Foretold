@@ -4,6 +4,7 @@ import { createCharacterAnimator } from "../character-animator";
 import { loadCharacterAsset, type CharacterId } from "../character-assets";
 import { HEADSHOTS } from "../config";
 import { frameCharacter } from "../portrait";
+import { isTouchDevice } from "../device-limits";
 import { toDisplayPixels } from "./headshot-pixels";
 
 const cache = new Map<CharacterId, Promise<string>>();
@@ -60,7 +61,9 @@ async function renderHeadshot(character: CharacterId): Promise<string> {
   frameCharacter(camera, key, model, HEADSHOTS);
 
   // Float pixels where the device can read them back, so dark areas don't band.
-  const float = target.extensions.has("EXT_color_buffer_float");
+  // Touch devices read bytes: Safari on iOS reports the float extension yet
+  // can hand back blank pixels from a float read.
+  const float = !isTouchDevice() && target.extensions.has("EXT_color_buffer_float");
   const renderTarget = new THREE.WebGLRenderTarget(size, size, {
     type: float ? THREE.FloatType : THREE.UnsignedByteType,
     samples: 4,

@@ -100,6 +100,7 @@ function createTestGame(
     status: "finished",
     deck: [],
     phase: "finished",
+    pace: 1,
   };
 }
 

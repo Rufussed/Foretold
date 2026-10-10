@@ -3,6 +3,7 @@
 Run inside Blender's Python Console:
     import optimize_character_textures as opt
     opt.run(max_size=1024, quality=82)
+    opt.run(max_size=512, character='goatman')   # one character only
 
 The script edits image datablocks in place, so all material node links remain
 intact. It only processes images used by material image-texture nodes, packs the
@@ -18,9 +19,16 @@ from pathlib import Path
 from PIL import Image
 
 
-def _used_images():
+def _used_images(character=None):
+    """Images used by material image-texture nodes; with a character, only
+    those on the materials of its collection's meshes."""
+    materials = bpy.data.materials
+    if character:
+        collection = bpy.data.collections[character]
+        materials = [slot.material for obj in collection.all_objects if obj.type == 'MESH'
+                     for slot in obj.material_slots if slot.material]
     result = []
-    for material in bpy.data.materials:
+    for material in materials:
         if material.users == 0 or not material.use_nodes:
             continue
         for node in material.node_tree.nodes:
@@ -35,7 +43,7 @@ def _is_data_texture(image):
     return any(word in needle for word in ('normal', 'rough', 'gloss', 'specular', 'metallic', 'orm'))
 
 
-def run(max_size=1024, quality=82, backup=True, normal_quality=90):
+def run(max_size=1024, quality=82, backup=True, normal_quality=90, character=None):
     source = Path(bpy.data.filepath)
     if source.name != 'characters.blend':
         raise RuntimeError('Open characters.blend before optimizing textures.')
@@ -44,7 +52,7 @@ def run(max_size=1024, quality=82, backup=True, normal_quality=90):
     if not 1 <= quality <= 100 or not 1 <= normal_quality <= 100:
         raise ValueError('quality must be between 1 and 100.')
 
-    used = _used_images()
+    used = _used_images(character)
     if backup:
         backup_path = source.with_name(
             'characters.before-texture-optimization-' +
@@ -123,7 +131,8 @@ def run(max_size=1024, quality=82, backup=True, normal_quality=90):
     bpy.ops.wm.save_as_mainfile(filepath=str(source))
     output = {'file': str(source), 'max_size': max_size, 'quality': quality,
               'backup': str(backup_path) if backup_path else None, 'images': report}
-    report_path = source.with_name('texture-optimization-report.json')
+    report_path = source.with_name(
+        'texture-optimization-report-' + character + '.json' if character else 'texture-optimization-report.json')
     report_path.write_text(json.dumps(output, indent=2))
     print(json.dumps(output, indent=2))
     return output

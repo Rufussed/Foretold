@@ -19,6 +19,11 @@ export interface ResultsBoard {
 // highlighted with a crown; a tie for best highlights no one. Cards appear in
 // the order given (best round first), one every revealSeconds; onReveal fires
 // as each shows.
+//
+// Every card is built and placed at the start, then each is made visible in
+// turn. The row is centred and wraps, so appending them one at a time moved the
+// cards already up: each new arrival re-centred the row under the reader. They
+// hold their final places from the first reveal instead.
 export function createResultsBoard(
   container: HTMLElement,
   cards: readonly ResultCard[],
@@ -56,6 +61,8 @@ export function createResultsBoard(
       label.textContent = line.label;
       const value = document.createElement("dd");
       value.textContent = line.value;
+      // Signed values: a gain in green, a loss in red, "+0" as it is.
+      value.dataset.sign = line.value.startsWith("-") ? "negative" : line.value === "+0" ? "zero" : "positive";
       lines.append(label, value);
     }
 
@@ -68,11 +75,19 @@ export function createResultsBoard(
     return element;
   };
 
+  // Built and in place up front, holding their space while still hidden.
+  const elements = cards.map((card) => {
+    const element = build(card);
+    element.classList.add("is-unrevealed");
+    grid.append(element);
+    return element;
+  });
+
   cards.forEach((card, index) => {
     timers.push(
       window.setTimeout(() => {
         if (disposed) return;
-        grid.append(build(card));
+        elements[index]?.classList.remove("is-unrevealed");
         onReveal(card);
       }, index * revealSeconds * 1000),
     );

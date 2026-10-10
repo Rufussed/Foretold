@@ -1,4 +1,5 @@
 import type { BackgroundMusic } from "./background-music";
+import { MUSIC } from "./config";
 
 const NOTE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/></svg>`;
 const NOTE_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`;
@@ -18,7 +19,8 @@ export function createMusicToggle(root: HTMLElement, music: BackgroundMusic): Mu
   const render = () => {
     button.innerHTML = music.muted ? NOTE_OFF : NOTE;
     const label = music.muted ? "Play music" : "Mute music";
-    button.title = label;
+    // The stream's credit, as the tooltip, while it is the music playing.
+    button.title = MUSIC.streams.length ? `${label}. ${MUSIC.streamCredit}` : label;
     button.setAttribute("aria-label", label);
     button.setAttribute("aria-pressed", String(music.muted));
   };

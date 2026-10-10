@@ -1,8 +1,9 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import { ANNOUNCER } from "../config";
+import { paced } from "../pace";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer, characterForUsername } from "../seat-mapping";
-import { eventMessages, roundResults, statusMessage } from "./announcements";
+import { eventMessages, roundResults, statusMessage, statusSubject } from "./announcements";
 import { createGameWinner } from "./game-winner";
 import { createResultsBoard, type ResultCard, type ResultsBoard } from "./round-results-board";
 import type { HudPart } from "./hud-part";
@@ -28,6 +29,8 @@ interface Announcement {
   text: string;
   // A round's results, shown as a board of cards instead of the text.
   results?: ResultCard[];
+  // The player it's about: the border takes their character's colour.
+  username?: string;
   seconds?: number; // defaults to ANNOUNCER.messageSeconds
   // May show while cards are being dealt (last round's results).
   duringDeal?: boolean;
@@ -85,11 +88,19 @@ export function createAnnouncer(
     waiters.forEach((done) => done());
   };
 
+  // The border's colour follows the character of the player an announcement is about.
+  const setBorderCharacter = (username: string | undefined) => {
+    const player = username ? game.state()?.players.find((candidate) => candidate.username === username) : undefined;
+    if (username) banner.dataset.character = player ? characterForPlayer(player) : characterForUsername(username);
+    else delete banner.dataset.character;
+  };
+
   const show = (next: Announcement | null) => {
     if (!next?.text && !next?.results) return;
     const same = !next.results && !shown?.results && shown?.text === next.text;
     shown = next;
     banner.hidden = false;
+    setBorderCharacter(next.username);
     if (same) return;
 
     board?.dispose();
@@ -108,18 +119,16 @@ export function createAnnouncer(
     textEl.hidden = !!next.results;
     textEl.textContent = next.results ? "" : next.text;
     if (next.results) {
-      board = createResultsBoard(banner, next.results, ANNOUNCER.resultRevealSeconds, (card) =>
+      board = createResultsBoard(banner, next.results, paced(ANNOUNCER.resultRevealSeconds), (card) =>
         scores.revealScore(card.username, card.points),
       );
     }
     const state = game.state();
+    // A gold border for what's going on in a round, not for results or the end of the game.
+    banner.classList.toggle("is-ingame", !next.results && state?.phase !== "finished");
     if (!next.results && state?.phase === "finished" && next.text === statusMessage(state, game.localUsername)) {
       winner = createGameWinner(banner, state);
     }
-    // Restart the fade-in for each new line.
-    banner.classList.remove("is-new");
-    void banner.offsetWidth;
-    banner.classList.add("is-new");
   };
 
   const hide = () => {
@@ -138,7 +147,7 @@ export function createAnnouncer(
     }
     const state = game.state();
     const text = state && statusMessage(state, game.localUsername);
-    if (text) show({ text });
+    if (text) show({ text, username: (state && statusSubject(state)) ?? undefined });
   };
 
   const showNext = () => {
@@ -157,7 +166,9 @@ export function createAnnouncer(
     next.onShow?.();
     const state = game.state();
     shownAtPlay = next.untilNextPlay && state ? playKey(state) : null;
-    timer = window.setTimeout(showNext, (next.seconds ?? ANNOUNCER.messageSeconds) * 1000);
+    // Every queued duration is written at the default pace, so scaling here
+    // covers messages, notices and the round's results board together.
+    timer = window.setTimeout(showNext, paced(next.seconds ?? ANNOUNCER.messageSeconds) * 1000);
   };
 
   return {
@@ -166,7 +177,7 @@ export function createAnnouncer(
       if (!state) return;
 
       if (previous) {
-        for (const text of eventMessages(previous, state, game.localUsername)) queue.push({ text });
+        for (const message of eventMessages(previous, state, game.localUsername)) queue.push(message);
 
         const results = roundResults(previous, state);
         if (results.length) {
@@ -210,7 +221,7 @@ export function createAnnouncer(
 
     notice(text) {
       window.clearTimeout(timer);
-      queue.unshift({ text, seconds: ANNOUNCER.noticeSeconds, untilNextPlay: true });
+      queue.unshift({ text, username: game.localUsername, seconds: ANNOUNCER.noticeSeconds, untilNextPlay: true });
       showNext();
     },
 

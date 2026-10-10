@@ -1,0 +1,212 @@
+{
+  "file": "/home/rlane/Work/wizard-game/blender/characters.blend",
+  "max_size": 512,
+  "quality": 82,
+  "backup": "/home/rlane/Work/wizard-game/blender/characters.before-texture-optimization-20261007-161300-057704.blend",
+  "images": [
+    {
+      "image": "file2.003",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": false,
+      "lossless": false,
+      "packed_bytes": 224038,
+      "packed": true
+    },
+    {
+      "image": "file2.005",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 419768,
+      "packed": true
+    },
+    {
+      "image": "file1.002",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": false,
+      "lossless": false,
+      "packed_bytes": 33656,
+      "packed": true
+    },
+    {
+      "image": "file3.002",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 54218,
+      "packed": true
+    },
+    {
+      "image": "file5.001",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 20820,
+      "packed": true
+    },
+    {
+      "image": "file4.002",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 102438,
+      "packed": true
+    },
+    {
+      "image": "file4.002__roughness",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 102400,
+      "packed": true
+    },
+    {
+      "image": "file6.001",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": false,
+      "lossless": false,
+      "packed_bytes": 17958,
+      "packed": true
+    },
+    {
+      "image": "file7",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": false,
+      "packed_bytes": 52682,
+      "packed": true
+    },
+    {
+      "image": "file9",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 21328,
+      "packed": true
+    },
+    {
+      "image": "file8",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 108854,
+      "packed": true
+    },
+    {
+      "image": "file8__roughness",
+      "old_size": [
+        1024,
+        1024
+      ],
+      "new_size": [
+        512,
+        512
+      ],
+      "format": "WEBP",
+      "quality": 82,
+      "data_texture": true,
+      "lossless": true,
+      "packed_bytes": 108862,
+      "packed": true
+    }
+  ]
+}

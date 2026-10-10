@@ -1,8 +1,9 @@
 import * as THREE from "three";
-import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
+import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
+import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
 
@@ -28,6 +29,12 @@ export interface TableCards {
     origins?: ReadonlyMap<string, Placement>,
     flyFromHand?: ReadonlySet<string>,
   ): void;
+  // How many players are at the table, which decides how many of the six
+  // played-card slots the trick uses: they are taken from the middle, so a
+  // three player game sits centred rather than bunched to one side. It is the
+  // player count rather than the cards played so far on purpose - keyed to the
+  // latter, every new card would re-centre the ones already down.
+  setPlayerCount(count: number): void;
   // The turned-up trump card, painted in the trump suit's colour; null hides it.
   setTrump(card: Card | null, trumpSuit: Suit | null): void;
   update(deltaSeconds: number): void;
@@ -106,6 +113,35 @@ export function createTableCards(
 ): TableCards {
   const handSlots = layout.localHand;
   const playedSlots = layout.played;
+  // Until a game says otherwise, every slot is in play: the demo table and a
+  // table opened before any state arrives then look as they always did.
+  let playerCount = playedSlots.length;
+
+  const centroid = (slots: readonly Placement[]) =>
+    slots
+      .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
+      .divideScalar(Math.max(slots.length, 1));
+
+  // The played-card slots this round uses: the middle `playerCount` of the six,
+  // shifted so the group sits on the centre of the full set.
+  //
+  // centredSlots alone is not enough here. It puts an odd spare slot on one
+  // side, which is nothing across the twenty slot hand fan but is half a card
+  // gap among six played slots: three players would sit visibly to one side.
+  // Translating the group onto the full set's centre fixes the odd counts and
+  // changes nothing for the even ones, and it keeps each slot's authored
+  // spacing, rotation and scale rather than inventing new placements.
+  const centredPlayedSlots = (count: number): readonly Placement[] => {
+    const used = centredSlots(playedSlots, count);
+    const offset = centroid(playedSlots).sub(centroid(used));
+    if (offset.lengthSq() < 1e-12) return used;
+    return used.map((slot) => ({ ...slot, position: slot.position.clone().add(offset) }));
+  };
+
+  // Recomputed only when the player count changes, since update() asks per card
+  // per frame.
+  let inUse = centredPlayedSlots(playerCount);
+  const playedSlotsInUse = () => inUse;
   const trumpSlot = layout.trump;
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
   const liftFor = (slot: Placement) => CARD_HANDLING.raiseLengths * factory.length * slot.scale.z;
@@ -146,6 +182,9 @@ export function createTableCards(
   let trump: {
     object: THREE.Object3D;
     face: THREE.MeshBasicMaterial | null;
+    // Shown only when the turned-up card is a Wizard or a Jester, carrying the
+    // trump colour its own face cannot.
+    outline: THREE.Mesh;
     card: string | null;
     color: string | null;
   } | null = null;
@@ -155,8 +194,8 @@ export function createTableCards(
   const flyFromHand = (entry: TableCard, slot: Placement): boolean => {
     const flight = entry.flight;
     if (!flight) return false;
-    const lift = Math.max(OPPONENT_PLAYS.liftSeconds, 1e-6);
-    const travel = Math.max(OPPONENT_PLAYS.travelSeconds, 1e-6);
+    const lift = Math.max(paced(OPPONENT_PLAYS.liftSeconds), 1e-6);
+    const travel = Math.max(paced(OPPONENT_PLAYS.travelSeconds), 1e-6);
     const t = clock - flight.startedAt;
     const raised = flight.from.position
       .clone()
@@ -196,11 +235,12 @@ export function createTableCards(
       const slot = handSlotFor(entry.key);
       return slot ? { slot, lift: entry.raised ? liftFor(slot) : 0 } : null;
     }
+    const inPlay = playedSlotsInUse();
     if (pending?.key === entry.key) {
-      const slot = playedSlots[trickOrder.length];
+      const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
     }
-    const slot = playedSlots[trickOrder.indexOf(entry.key)];
+    const slot = inPlay[trickOrder.indexOf(entry.key)];
     return slot ? { slot, lift: 0 } : null;
   };
 
@@ -227,6 +267,13 @@ export function createTableCards(
       if (hovered && !byKey.has(hovered)) hovered = null;
     },
 
+    setPlayerCount(count) {
+      const wanted = Math.max(1, Math.min(Math.round(count), playedSlots.length));
+      if (wanted === playerCount) return;
+      playerCount = wanted;
+      inUse = centredPlayedSlots(playerCount);
+    },
+
     setTrump(card, trumpSuit) {
       if (!trumpSlot) return;
       if (!card) {
@@ -241,15 +288,36 @@ export function createTableCards(
 
       const texture = cardTexture(card);
       if (!trump) {
-        const built = factory.build("trump-card-face", texture);
+        const built = factory.build("trump-card-face", texture, {
+          widthMultiplier: CARD_HANDLING.trumpOutlineWidthMultiplier,
+          ownMaterial: true,
+        });
         applyPlacement(built.object, trumpSlot);
-        trump = { object: built.object, face: built.face, card: null, color: null };
+        trump = {
+          object: built.object,
+          face: built.face,
+          outline: built.outline,
+          card: null,
+          color: null,
+        };
       }
       if (trump.face) trump.face.map = texture;
       if (trump.card !== cardKey(card)) trumpSuppressed = false;
       trump.object.visible = !trumpHeld && !trumpSuppressed;
       trump.card = cardKey(card);
       trump.color = trumpColor(trumpSuit);
+
+      // A Wizard or Jester turned up for trump shows no suit of its own: a
+      // Wizard means the round's first player picks one, a Jester means there
+      // is none. Either way the card alone cannot say what the trump is, so it
+      // is ringed in the trump colour - the chosen suit's, or the no-trump
+      // grey while a Wizard is still being decided. An ordinary trump card
+      // already shows its suit on its face and needs no ring.
+      const needsRing = isWizard(card) || isJester(card);
+      trump.outline.visible = needsRing;
+      if (needsRing) {
+        (trump.outline.material as THREE.MeshBasicMaterial).color.set(trump.color);
+      }
     },
 
     setTrick(cardsPlayed, origins, flyFromHand) {
@@ -318,6 +386,11 @@ export function createTableCards(
 
         entry.object.position.lerp(destination, follow);
         entry.object.quaternion.slerp(target.slot.quaternion, follow);
+        // Scale eases with the rest. Your own card moves through here rather
+        // than flyFromHand, so without this it keeps the hand slot's size all
+        // the way to the played slot - invisible while the two matched, plain
+        // as soon as they differ.
+        entry.object.scale.lerp(target.slot.scale, follow);
         entry.object.visible = true;
         entry.outline.visible =
           hovered === entry.key || entry.drag !== null || (leading === entry.key && trickOrder.includes(entry.key));
@@ -460,7 +533,7 @@ export function createTableCards(
     play(key) {
       const entry = cards.get(key);
       if (!entry || pending || !visibleHand().includes(key)) return false;
-      if (trickOrder.length >= playedSlots.length) return false;
+      if (trickOrder.length >= playedSlotsInUse().length) return false;
       entry.drag = null;
       entry.raised = false;
       if (hovered === key) hovered = null;

@@ -1,7 +1,9 @@
 import * as THREE from "three";
 import type { CardFactory, CardObject } from "./card-objects";
+import type { CardSound } from "./card-sound";
 import { blankCardTexture } from "./card-textures";
 import { DEALING } from "./config";
+import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import type { TableLayout } from "./table-layout";
 
@@ -43,7 +45,11 @@ const smooth = (x: number) => {
 // going (DEALING.approachDistance further from the middle, so it turns clear
 // of the cards already there), then turns and settles back into place. The
 // next card leaves the stack DEALING.intervalSeconds after the one before.
-export function createCardDeal(factory: CardFactory, layout: TableLayout): CardDeal {
+export function createCardDeal(
+  factory: CardFactory,
+  layout: TableLayout,
+  sound: CardSound,
+): CardDeal {
   // The stack targets hold their cards face up; turn each over about its long
   // axis so the stack lies face down.
   const faceDown = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 0, 1), Math.PI);
@@ -79,9 +85,9 @@ export function createCardDeal(factory: CardFactory, layout: TableLayout): CardD
 
   const animate = (flight: Flight): boolean => {
     const { card, from, step } = flight;
-    const lift = Math.max(DEALING.liftSeconds, 1e-6);
-    const travel = Math.max(DEALING.travelSeconds, 1e-6);
-    const settle = Math.max(DEALING.settleSeconds, 1e-6);
+    const lift = Math.max(paced(DEALING.liftSeconds), 1e-6);
+    const travel = Math.max(paced(DEALING.travelSeconds), 1e-6);
+    const settle = Math.max(paced(DEALING.settleSeconds), 1e-6);
     const t = clock - flight.startAt;
 
     if (t >= lift + travel + settle) {
@@ -141,7 +147,8 @@ export function createCardDeal(factory: CardFactory, layout: TableLayout): CardD
         top -= 1;
         if (card.face) card.face.map = step.face ?? blankCardTexture();
         flights.push({ card, from, step, startAt: nextLaunch });
-        nextLaunch += DEALING.intervalSeconds;
+        sound.play();
+        nextLaunch += paced(DEALING.intervalSeconds);
       }
 
       flights = flights.filter(animate);

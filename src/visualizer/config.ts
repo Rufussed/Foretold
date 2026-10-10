@@ -12,6 +12,26 @@
 // ─────────────────────────────────────────────────────────────────────────
 
 // ══════════════════════════════════════════════════════════════════════════
+// GAMEPLAY PACE
+// ══════════════════════════════════════════════════════════════════════════
+
+// Every duration below ending in Seconds that is a gameplay beat - the camera
+// turning to the active player, announcements holding, cards dealt and flown,
+// the trick's tesseract - is written at a pace of 1 and divided by the game's
+// pace at the moment it is used. 2 plays twice as fast, 0.5 half as fast.
+//
+// The pace is not set here, because the server's pauses must scale by the same
+// number: it is chosen per game in room setup (Room.ts, "Game Speed") and
+// travels with every snapshot. The default and the allowed range live in
+// backend/src/game/wizard/gameplayPace.ts, the one module both sides import;
+// the bot waits it scales are in wizardTiming.ts beside it.
+//
+// ?speed=2 overrides it for the session, to feel out pacing without restarting
+// a game. Scenery (the crown's bob, sparks, the backdrop's rotation), emotes
+// and the two network timeouts are deliberately left out.
+export { GAMEPLAY_PACE } from "../../backend/src/game/wizard/gameplayPace";
+
+// ══════════════════════════════════════════════════════════════════════════
 // SHADOWS
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -197,6 +217,10 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 // maxHeight rows, and the browser scales the result up to fill the canvas.
 // Raise maxHeight for sharpness, lower it for framerate.
 export const RENDER = {
+  // Most frames drawn per second; 0 draws on every screen refresh. Halving a
+  // 60Hz display's 60 roughly halves the work, which is what a modest or
+  // software-rendered machine needs to stop running hot and stuttering.
+  maxFps: 30,
   maxHeight: 3240, // tallest drawing buffer, in pixels
   maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
   // The same cap on phones and tablets, where a 3x panel means drawing nine
@@ -258,6 +282,18 @@ export const ANIMATION = {
   // Playback speed for every clip: 1 is as authored, 0.5 half speed.
   // three default: 1.
   timeScale: 1,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// MOON
+// ══════════════════════════════════════════════════════════════════════════
+
+// The moon's arc across the sky is one long clip (2000 frames, ~83s as
+// authored). It is stretched to take durationSeconds instead; every other clip
+// keeps its authored speed. ANIMATION.timeScale still applies on top.
+export const MOON = {
+  clipName: "moonPath", // the moon's animation clip in Wizard.glb
+  durationSeconds: 5 * 60, // one full arc, start to end. 0 = as authored
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -395,6 +431,11 @@ export const EMOTES = {
 
   // Stand-in for AI players deciding to emote: bots in a live game, or every
   // seat on the demo table, emote at random within this many seconds.
+  // NPCs reacting to a won trick each wait a random time between these, so
+  // they do not all move at once.
+  reactionMinSeconds: 0.5,
+  reactionMaxSeconds: 2.5,
+
   aiEnabled: true,
   aiMinSeconds: 6,
   aiMaxSeconds: 15,
@@ -491,6 +532,12 @@ export const CARD_HANDLING = {
   // Outline thickness on each side, as a fraction of the card width.
   outlineWidth: 0.015,
 
+  // The turned-up trump card's outline, when a Wizard or Jester was turned up
+  // and the card's own face cannot say what the trump is. It carries the trump
+  // colour, and is this many times the hand outline's thickness so it reads as
+  // a different thing from the hover highlight rather than a brighter one.
+  trumpOutlineWidthMultiplier: 2,
+
   // How far a clicked card rises, in card lengths.
   raiseLengths: 0.5,
 
@@ -582,10 +629,11 @@ export const TESSERACT = {
   // Its size at scale 1, in scene units across; the model itself is ~5 units.
   size: 0.5,
 
-  // When tinted to the trump colour. The model's own glow strength is 10 and
-  // it's half see-through, which bleaches a colour toward white; a gentler
-  // glow and a more solid body keep the trump colour dominant.
-  tintGlow: 1.5,
+  // When tinted to the reward colour (green, gold or red, by the winner's tricks
+  // against their prediction). The model's own glow strength is 10 and it's
+  // half see-through, which bleaches a colour toward white; a gentler glow and
+  // a more solid body keep the colour dominant.
+  tintGlow: 1.1,
   tintOpacity: 0.9,
 };
 
@@ -684,10 +732,121 @@ import ChessmasterII from "../assets/sound/CM.07.ChessmasterII.mp3";
 import medievalAmbient from "../assets/sound/deuslower-medieval-ambient-236809.mp3";
 
 export const MUSIC = {
+  // A live radio stream to play instead of the tracks below: its mirrors, tried
+  // in turn if one fails. Empty plays the tracks. Under trial while the game is
+  // unreleased: SomaFM has not given permission for it in a public game, so ask
+  // them before launch. The addresses are from SomaFM's own playlist for the
+  // channel (somafm.com/synphaera130.pls); it refuses other address forms.
+  streams: [
+    "https://ice2.somafm.com/synphaera-128-aac",
+    "https://ice6.somafm.com/synphaera-128-aac",
+    "https://ice5.somafm.com/synphaera-128-aac",
+  ] as string[],
+  streamCredit: "Music: Synphaera Radio on SomaFM (somafm.com)",
   // Imported rather than named by path so the build fingerprints them, the same
   // as the models and the card art; the order here is the playing order.
   urls: [medievalAmbient, thoughtWave, endGame, track01, counterMoves, ChessmasterII],
   volume: 0.35,
+  fadeInSeconds: 10, // the music rises from silence over this long, each time it starts
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// CARD SOUND  (a card leaving the stack as it's dealt)
+// ══════════════════════════════════════════════════════════════════════════
+
+import cardSound1 from "../assets/sound/card-sound--01.mp3";
+import cardSound2 from "../assets/sound/card-sound--02.mp3";
+import cardSound3 from "../assets/sound/card-sound--03.mp3";
+
+export const CARD_SOUND = {
+  // One is picked at random for each card.
+  urls: [cardSound1, cardSound2, cardSound3],
+  volume: 1,
+  // Playback speed (and so pitch) varies by up to this fraction either way.
+  rateVariation: 0.1,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// REWARD BURST  (golden rays as the tesseract dives into the winner)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Distances are scene units, times seconds. Each ray flies straight out from
+// the point in a random direction, easing to a stop, trailing a streak.
+export const BURST = {
+  enabled: true,
+  rays: 36, // rays in each burst
+  maxRays: 360, // most alive at once, across bursts
+  radius: 1.35, // how far the rays fly, at most
+  cameraDistance: 2.5, // for your own wins: how far in front of the camera it bursts, centred
+  radiusRandomness: 0.4, // fraction each ray's reach may fall short
+  lengthFraction: 0.35, // a ray's streak, as a fraction of how far it has flown
+  lifeSeconds: 0.9, // each ray's flight
+  lifeRandomness: 0.3,
+  tipSize: 0.07, // the glowing dot at each ray's head
+  // The colour follows the winner's tricks against their prediction: green,
+  // deeper the nearer they get, gold on it exactly, red once they're over.
+  color: [1, 0.78, 0.28] as [number, number, number], // gold: the prediction met
+  overColor: [1, 0, 0] as [number, number, number], // red: over it
+  underColor: [0, 1, 0.05] as [number, number, number], // green: reached as they near it
+  underStartColor: [0.2, 1, 0.2] as [number, number, number], // the lighter green of a first win towards it
+  brightness: 2.2,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// SCORE SOUND  (the tesseract appearing as a trick is won)
+// ══════════════════════════════════════════════════════════════════════════
+
+import scoreSound from "../assets/sound/score.mp3";
+
+export const SCORE_SOUND = {
+  url: scoreSound,
+  volume: 1,
+};
+
+import chimeWin from "../assets/sound/chime-win.mp3";
+import chimeLose from "../assets/sound/chimes-lose.mp3";
+
+// Played with each trick's burst of rays: the lose chime when the winner has
+// won more tricks than they predicted (the red burst), the win chime otherwise.
+export const CHIME_SOUND = {
+  winUrl: chimeWin,
+  loseUrl: chimeLose,
+  volume: 1,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// MOON CLOUDS  (fuzzy black clouds drifting across the moon)
+// ══════════════════════════════════════════════════════════════════════════
+
+// Clouds cross the moon from left to right as the camera sees it, between the
+// moon and the camera, and vanish once they've cleared its disc. Each is a
+// cluster of soft puffs, with its own size, speed and height. Sizes are in moon
+// radii as they appear on the cloud lane, a plane across the line from the moon
+// to the camera; times are seconds.
+export const CLOUDS = {
+  enabled: true,
+  moonObject: "moon", // the moon's node in Wizard.glb (a child of moon_parent, which carries the animation)
+  maxClouds: 10, // most on screen at once
+  spawnMinSeconds: 4, // wait a random time between these before the next cloud
+  spawnMaxSeconds: 12,
+
+  laneFraction: 0.2, // how far from the moon towards the camera the clouds sit (0 to 1)
+  heightSpread: 1.0, // how far above or below the moon's centre a cloud may pass, in moon radii
+
+  widthMin: 1.2, // each cloud's width, in moon radii: random between these
+  widthMax: 6.0,
+  aspect: 0.22, // a cloud's height as a fraction of its width: low, so they stretch sideways
+  crossMinSeconds: 25, // each cloud takes a random time between these to cross
+  crossMaxSeconds: 70, // from one side of the moon to the other
+
+  puffs: 24, // soft blobs making up each cloud
+  puffSizeMin: 0.16, // each puff's size as a fraction of its cloud's width
+  puffSizeMax: 0.3,
+  puffOpacity: 0.6, // each puff's opacity at its cloud's centre; they build up where they overlap
+  edgeOpacity: 0.35, // the share of that a puff at the cloud's edge keeps
+  fadeFraction: 0.2, // share of the crossing spent fading in, and again fading out
+  coreSoftness: 0.35, // how much of each puff is solid before it fades (0 fades from the middle, 1 is hard-edged)
+  color: [0, 0, 0] as [number, number, number],
 };
 
 // ══════════════════════════════════════════════════════════════════════════

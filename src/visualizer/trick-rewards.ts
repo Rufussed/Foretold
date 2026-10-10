@@ -1,5 +1,8 @@
 import * as THREE from "three";
-import { TRICK_REWARD } from "./config";
+import { BURST, TRICK_REWARD } from "./config";
+import { paced } from "./pace";
+import type { ChimeSound } from "./chime-sound";
+import type { BurstColor, RewardBurst } from "./reward-burst";
 import { createTesseract, loadTesseract, type Tesseract, type TesseractModel } from "./tesseract";
 
 export type RewardDestination =
@@ -16,6 +19,8 @@ export interface RewardPlan {
   destination: RewardDestination | null;
   // Tints the tesseract; null keeps its own colour.
   color: string | null;
+  // The burst's colour, from the winner's tricks against their prediction; gold if not given.
+  burstColor?: BurstColor;
 }
 
 export interface TrickRewards {
@@ -54,8 +59,12 @@ const easeIn = (t: number) => clamp01(t) ** 3;
 // tesseract grows there to TRICK_REWARD.startScale, floats to just above the
 // winner's head, swells to peakScale, then dives down into their head as it
 // shrinks away. For your own wins it hovers in front of the camera and dives
-// into it.
-export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
+// into it. The sound plays as the tesseract appears, and the burst of rays
+// flies out from where it dives in, with a chime.
+export function createTrickRewards(
+  environment: THREE.Object3D,
+  effects: { sound?: { play(): void }; burst?: RewardBurst; chime?: ChimeSound } = {},
+): TrickRewards {
   const rewards: Reward[] = [];
   let model: TesseractModel | null = null;
   loadTesseract()
@@ -78,13 +87,15 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
       const head = destination.head() ?? reward.lastHead ?? reward.plan.point;
       reward.lastHead = head.clone();
       const into = toLocal(head);
-      return { hover: into.clone().add(new THREE.Vector3(0, TRICK_REWARD.aboveHead, 0)), into };
+      return { hover: into.clone().add(new THREE.Vector3(0, TRICK_REWARD.aboveHead, 0)), into, burstAt: into };
     }
     const eye = destination.camera.getWorldPosition(new THREE.Vector3());
     const forward = destination.camera.getWorldDirection(new THREE.Vector3());
     return {
       hover: toLocal(eye.clone().addScaledVector(forward, TRICK_REWARD.cameraDistance)),
       into: toLocal(eye.clone().addScaledVector(forward, 0.2)),
+      // Your own win: the burst is centred in front of the camera, where you can see it all.
+      burstAt: toLocal(eye.clone().addScaledVector(forward, BURST.cameraDistance)),
     };
   };
 
@@ -103,11 +114,13 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
     },
 
     update(deltaSeconds) {
-      const gather = TRICK_REWARD.gatherSeconds;
-      const grow = TRICK_REWARD.growSeconds;
-      const float = TRICK_REWARD.floatSeconds;
-      const swell = TRICK_REWARD.swellSeconds;
-      const dive = TRICK_REWARD.diveSeconds;
+      // The gather-and-fly sequence, at the game's pace: the director waits on
+      // the same durations, so the two must scale together.
+      const gather = paced(TRICK_REWARD.gatherSeconds);
+      const grow = paced(TRICK_REWARD.growSeconds);
+      const float = paced(TRICK_REWARD.floatSeconds);
+      const swell = paced(TRICK_REWARD.swellSeconds);
+      const dive = paced(TRICK_REWARD.diveSeconds);
       const startScale = TRICK_REWARD.startScale;
       const peakScale = TRICK_REWARD.peakScale;
 
@@ -144,12 +157,13 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
           }
           reward.tesseract = createTesseract(model, environment);
           reward.tesseract.setColor(reward.plan.color);
+          effects.sound?.play();
         }
 
         const tesseract = reward.tesseract;
         tesseract.update(deltaSeconds);
         const since = t - gather;
-        const { hover, into } = destinationPoints(reward);
+        const { hover, into, burstAt } = destinationPoints(reward);
         let position: THREE.Vector3;
         let scale: number;
 
@@ -172,6 +186,10 @@ export function createTrickRewards(environment: THREE.Object3D): TrickRewards {
           scale = peakScale * (1 - k);
         } else {
           tesseract.dispose();
+          const burstColor = reward.plan.burstColor ?? BURST.color;
+          effects.burst?.spawn(burstAt, burstColor);
+          // Red means over the prediction: the falling chime; anything else the bright one.
+          effects.chime?.play(burstColor === BURST.overColor ? "lose" : "win");
           finish(index);
           continue;
         }

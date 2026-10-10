@@ -31,6 +31,8 @@ interface RoomConnection {
 	username: string;
 }
 
+const HEARTBEAT_MS = 25_000;
+
 const connections = new Map<number, Set<RoomConnection>>();
 
 // Keep WebSocket payload formatting in one place so every event uses the same
@@ -160,7 +162,12 @@ export function registerWizardSocket(
 
 			sendJson(socket, { type: "connected", roomId, username });
 			broadcastGameState(roomId, gameService);
-			void runner.run(roomId);
+			runner.run(roomId).catch((error) => {
+				// Not awaited, so a throw in here would otherwise be an unhandled
+				// rejection, and Node ends the process for those: one room's failure
+				// would end every other game on the server too.
+				console.error(`[wizard] runner failed for room ${roomId}:`, error);
+			});
 
 			socket.on("message", (rawMessage: { toString(): string }) => {
 				// Parse and validate each action against the current game state. The
@@ -243,7 +250,9 @@ export function registerWizardSocket(
 					wizardSessionManager.saveGame(currentGame);
 					broadcastGameState(roomId, gameService);
 
-					void runner.run(roomId);
+					runner.run(roomId).catch((error) => {
+						console.error(`[wizard] runner failed for room ${roomId}:`, error);
+					});
 
 				} catch (error) {
 					sendJson(socket, {
@@ -253,7 +262,28 @@ export function registerWizardSocket(
 				}
 			});
 
+			// A browser that stalls or loses its network never sends a close, so
+			// the connection would linger. Pinging also keeps proxies from idling
+			// the socket out; browsers answer pings on their own.
+			let alive = true;
+			socket.on("pong", () => {
+				alive = true;
+			});
+			const heartbeat = setInterval(() => {
+				if (!alive) {
+					socket.terminate();
+					return;
+				}
+				alive = false;
+				socket.ping();
+			}, HEARTBEAT_MS);
+
+			socket.on("error", () => {
+				socket.terminate();
+			});
+
 			socket.on("close", () => {
+				clearInterval(heartbeat);
 				removeConnection(roomId, connection);
 			});
 		},

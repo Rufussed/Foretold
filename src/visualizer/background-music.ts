@@ -28,19 +28,56 @@ export function createBackgroundMusic(): BackgroundMusic {
   let currentIndex = 0;
   let disposed = false;
   let muted = readMuted();
+  const silenced = (): boolean => muted;
 
-  const audio = new Audio(MUSIC.urls[currentIndex]);
+  // Plays the live stream while it works, trying each mirror, then the tracks.
+  let streamIndex = 0;
+  let streaming = MUSIC.streams.length > 0;
+
+  // No source yet: a muted visit never connects to the stream, whose
+  // connection would otherwise open with the page. start() gives it one.
+  const audio = new Audio();
   audio.loop = false;
-  audio.volume = MUSIC.volume;
+  audio.volume = 0;
   audio.preload = "auto";
+
+  // Rises from silence to full volume once the music actually starts playing: the
+  // first time, when the stream connects or the tracks begin, and again after
+  // being unmuted. The next track in a playlist carries on at full volume.
+  let needsFade = true;
+  let fadeFrame = 0;
+  const stopFade = (): void => {
+    cancelAnimationFrame(fadeFrame);
+    fadeFrame = 0;
+  };
+  const fadeIn = (): void => {
+    stopFade();
+    const seconds = MUSIC.fadeInSeconds;
+    if (seconds <= 0) {
+      audio.volume = MUSIC.volume;
+      return;
+    }
+    audio.volume = 0;
+    const startedAt = performance.now();
+    const step = (now: number): void => {
+      // The frame's timestamp can come just before the moment the fade started.
+      const progress = Math.min(Math.max((now - startedAt) / (seconds * 1000), 0), 1);
+      audio.volume = MUSIC.volume * progress;
+      fadeFrame = progress < 1 ? requestAnimationFrame(step) : 0;
+    };
+    fadeFrame = requestAnimationFrame(step);
+  };
 
   const unlockEvents = ["pointerdown", "keydown"] as const;
 
   const start = (): void => {
-    if (disposed || muted) {
+    if (disposed || silenced()) {
       return;
     }
 
+    if (!audio.getAttribute("src")) {
+      audio.src = streaming ? MUSIC.streams[streamIndex] : MUSIC.urls[currentIndex];
+    }
     audio.play().catch(() => {
       for (const type of unlockEvents) {
         window.addEventListener(
@@ -65,7 +102,7 @@ export function createBackgroundMusic(): BackgroundMusic {
   };
 
   const playNext = (): void => {
-    if (disposed || muted) {
+    if (disposed || silenced()) {
       return;
     }
 
@@ -76,7 +113,57 @@ export function createBackgroundMusic(): BackgroundMusic {
     start();
   };
 
-  audio.addEventListener("ended", playNext);
+  const fallBackToTracks = (): void => {
+    if (!streaming || disposed) {
+      return;
+    }
+
+    needsFade = true;
+    streamIndex += 1;
+    if (streamIndex < MUSIC.streams.length) {
+      console.warn(`[music] a stream failed; trying ${MUSIC.streams[streamIndex]}`);
+      audio.src = MUSIC.streams[streamIndex];
+    } else {
+      console.warn("[music] the streams failed; playing the tracks");
+      streaming = false;
+      audio.src = MUSIC.urls[currentIndex];
+    }
+    start();
+  };
+
+  audio.addEventListener("playing", () => {
+    console.info(`[music] playing ${audio.currentSrc}`);
+    if (needsFade) {
+      needsFade = false;
+      fadeIn();
+    }
+  });
+  audio.addEventListener("error", () =>
+    console.warn(`[music] could not play ${audio.currentSrc} (media error ${audio.error?.code ?? "?"})`),
+  );
+
+  // A stream only "ends" if the connection drops.
+  audio.addEventListener("ended", () => (streaming ? fallBackToTracks() : playNext()));
+  audio.addEventListener("error", fallBackToTracks);
+  // Stops or restarts the music to match whichever mute is now in force.
+  const applyMute = (): void => {
+    if (disposed) return;
+    if (silenced()) {
+      stopFade();
+      audio.pause();
+      if (streaming) {
+        // Stop downloading the stream; it comes back live, not from where it paused.
+        audio.removeAttribute("src");
+        audio.load();
+      }
+    } else {
+      needsFade = true;
+      if (streaming) {
+        audio.src = MUSIC.streams[streamIndex];
+      }
+      start();
+    }
+  };
   start();
 
   return {
@@ -87,16 +174,12 @@ export function createBackgroundMusic(): BackgroundMusic {
     setMuted(next: boolean): void {
       muted = next;
       saveMuted(next);
-
-      if (next) {
-        audio.pause();
-      } else {
-        start();
-      }
+      applyMute();
     },
 
     dispose(): void {
       disposed = true;
+      stopFade();
       audio.removeEventListener("ended", playNext);
 
       for (const type of unlockEvents) {

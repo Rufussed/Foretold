@@ -16,6 +16,17 @@ import { wizardGameRepository } from "./game/wizard/services/wizardGameRepositor
 import { wizardGameCompletionService } from "./game/wizard/services/wizardGameCompletionService.js";
 import { wizardSessionManager } from "./game/wizard/services/wizardSessionManager.js";
 
+// A rejection nobody handled ends the Node process, which on single-process
+// hosting takes every live game and the site itself down with it. One room's
+// failure is not worth that, so these are logged loudly and the server stays
+// up. They are still bugs: the log line is the thing to go and fix.
+process.on("unhandledRejection", (reason) => {
+  console.error("[server] unhandled rejection, staying up:", reason);
+});
+process.on("uncaughtException", (error) => {
+  console.error("[server] uncaught exception, staying up:", error);
+});
+
 const server = Fastify({
     logger: true,
     ajv: {

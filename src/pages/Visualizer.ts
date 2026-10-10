@@ -1,24 +1,33 @@
 import { API_BASE } from "../services/api";
+
 import {
   getCurrentUser,
   getActiveGameToken,
   getGuestUsername,
 } from "../services/auth";
-import { createGameSocket, type GameSocketMessage } from "../services/gameSocket";
+
+import {
+  connectGameSocket,
+  type GameConnectionHandle,
+} from "../services/gameSocket";
+
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
+import { reactionPending, reactToTrick } from "../visualizer/trick-reactions";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
+import { createEffectsToggle, type EffectsToggle } from "../visualizer/effects-toggle";
 import { createEmoteTrigger, type EmoteTrigger } from "../visualizer/emote-trigger";
 import type { GameConnection } from "../visualizer/game-connection";
 import { createGameHud, type GameHud } from "../visualizer/hud/game-hud";
 import { useHeadshotRenderer } from "../visualizer/hud/headshots";
 import { createCardTable, type CardTable } from "../visualizer/card-table";
 import { createDiagnostics, type Diagnostics } from "../visualizer/diagnostics";
-import { EMOTE_NAMES, SEAT_IDS, type Emote } from "../visualizer/player-characters";
+import { EMOTE_NAMES, SEAT_IDS, type Emote, type SeatId } from "../visualizer/player-characters";
 import { createTableDirector, type TableDirector } from "../visualizer/table-director";
+import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
@@ -56,7 +65,7 @@ export async function renderVisualizerPage(
 
   let destroyed = false;
   let scene: WizardSceneHandle | null = null;
-  let socket: WebSocket | null = null;
+  let socket: GameConnectionHandle | null = null;
   let selfPortrait: SelfPortrait | null = null;
   let cardTable: CardTable | null = null;
   let predictionPrompt: PredictionPrompt | null = null;
@@ -66,6 +75,7 @@ export async function renderVisualizerPage(
   let diagnostics: Diagnostics | null = null;
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
+  let effectsToggle: EffectsToggle | null = null;
   let fullscreenToggle: FullscreenToggle | null = null;
   const isGuestGame =
     !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
@@ -73,6 +83,7 @@ export async function renderVisualizerPage(
   teardown = () => {
     destroyed = true;
     musicToggle?.dispose();
+    effectsToggle?.dispose();
     fullscreenToggle?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
@@ -119,11 +130,15 @@ export async function renderVisualizerPage(
   const pageEl = container.querySelector<HTMLElement>(".visualizer-page");
   if (pageEl) {
     music = createBackgroundMusic();
-    musicToggle = createMusicToggle(pageEl, music);
+    const toolbar = document.createElement("div");
+    toolbar.className = "hud-toolbar";
+    pageEl.append(toolbar);
+    musicToggle = createMusicToggle(toolbar, music);
+    effectsToggle = createEffectsToggle(toolbar);
     // The page itself, not the canvas: the HUD, the prompts and the emotes
     // have to come with it, or fullscreen would show a table and nothing to
     // play it with. Null where the browser will not do fullscreen at all.
-    fullscreenToggle = createFullscreenToggle(pageEl, pageEl);
+    fullscreenToggle = createFullscreenToggle(toolbar, pageEl);
   }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
@@ -226,9 +241,7 @@ export async function renderVisualizerPage(
         localUsername: localUsername ?? "",
         state: () => latestState,
         send: (message) => {
-          if (socket?.readyState !== WebSocket.OPEN) return false;
-          socket.send(JSON.stringify(message));
-          return true;
+          return socket?.send(message) ?? false;
         },
       }
     : null;
@@ -240,7 +253,11 @@ export async function renderVisualizerPage(
   const director = createTableDirector({
     initial: null,
     localUsername: localUsername ?? "",
-    applyTable: () => cardTable?.applyState(),
+    applyTable: () => {
+      cardTable?.applyState();
+      // The player list lets go of last round's numbers as the deal starts.
+      gameHud?.refreshPlayers();
+    },
     applyHud: () => {
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
@@ -249,7 +266,15 @@ export async function renderVisualizerPage(
     dealing: () => cardTable?.dealing ?? false,
     lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
-    playTrickReward: (done) => (cardTable ? cardTable.playTrickReward(done) : done()),
+    playTrickReward: (done) => {
+      // The NPCs react as the trick is won.
+      const state = director.tableState();
+      if (state && trigger && seatSync) {
+        reactToTrick(state, trigger, (username) => seatSync?.seatOf(username) ?? null);
+      }
+      if (cardTable) cardTable.playTrickReward(done);
+      else done();
+    },
   });
   tableDirector = director;
   const tableConnection: GameConnection | null = gameConnection && {
@@ -276,10 +301,15 @@ export async function renderVisualizerPage(
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
+      tableRound: () => director.tableState()?.currentRound,
     });
   }
 
   const applyLatestState = () => {
+    // The server chose the pace in room setup and sends it with every snapshot;
+    // the visualiser's beats scale to match, so the director never waits on an
+    // animation the server has already moved past.
+    if (latestState) setPace(latestState.pace);
     if (seatSync && latestState && localUsername) {
       seatSync.applyPlayers(latestState.players, localUsername);
     }
@@ -345,6 +375,8 @@ export async function renderVisualizerPage(
         selfPortrait?.emote(emote),
       );
       trigger = emoteTrigger;
+      // A seat mid-emote, or about to react to a trick, is left alone by the random emoting.
+      const busy = (seat: SeatId) => reactionPending(seat) || !!players.debug(seat)?.emote;
 
       if (sync) {
         // Seats first, so the card table knows where each player sits.
@@ -354,9 +386,10 @@ export async function renderVisualizerPage(
             .seated()
             .filter(([, username]) => isBotName(username))
             .map(([seat]) => seat),
+          busy,
         );
       } else {
-        aiEmotes = createAiEmotes(emoteTrigger, () => SEAT_IDS);
+        aiEmotes = createAiEmotes(emoteTrigger, () => SEAT_IDS, busy);
       }
     },
       onUpdate: (deltaSeconds) => {
@@ -382,9 +415,20 @@ export async function renderVisualizerPage(
   if (live && token) {
     // Snapshots can arrive before the scene is ready; the newest is kept and
     // applied once the characters exist.
-    socket = createGameSocket(roomId, token);
-    socket.addEventListener("message", (event) => {
-      const message = JSON.parse(event.data as string) as GameSocketMessage;
+    const offline = document.createElement("div");
+    offline.className = "visualizer-offline";
+    offline.textContent = "Connection lost. Reconnecting…";
+    offline.hidden = true;
+    container.appendChild(offline);
+
+    socket = connectGameSocket(roomId, token, {
+      onStatus: (online, refused) => {
+        offline.textContent = refused
+          ? "The server would not let you back into this game. Reload the page."
+          : "Connection lost. Reconnecting…";
+        offline.hidden = online;
+      },
+      onMessage: (message) => {
 
       if (message.type === "game_state" && message.state) {
         latestState = message.state as PublicWizardGameState;
@@ -410,6 +454,7 @@ export async function renderVisualizerPage(
         trumpPrompt?.refused(message.error ?? "The server refused that.");
         gameHud?.refused(message.error ?? "");
       }
+      },
     });
   }
 
