@@ -299,19 +299,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 bid so players can see how many tricks they still need.
               </p>
             </section>
-
-            <section class="home-rules-section">
-              <h3>Bidding Variations</h3>
-              <ol>
-                <li><strong>Hidden Bid:</strong> Reveal all bids simultaneously.</li>
-                <li><strong>Delayed Reveal:</strong> Record bids and reveal them after the hand.</li>
-                <li>
-                  <strong>Optional Rule:</strong> If the last bidder has the highest
-                  score, they cannot make the bids even. This rule does not apply
-                  when there is a tie for the lead.
-                </li>
-              </ol>
-            </section>
           </div>
         `,
       );
