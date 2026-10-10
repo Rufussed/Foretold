@@ -401,28 +401,64 @@ export async function renderLobbyPage(
               </div>
 
               <div class="room-actions">
-                <button
-                  type="button"
-                  class="room-action-button"
-                  data-room-id="${room.id}"
-                  data-room-action="${
-                    isMember &&
-                    room.status === "waiting" &&
-                    room.createdBy !== currentUser.id
-                      ? "unjoin"
-                      : "open"
-                  }"
-                >
-                  ${
-                    isMember &&
-                    room.status === "waiting" &&
-                    room.createdBy !== currentUser.id
-                      ? "Unjoin"
-                      : isMember
-                        ? "Open Room"
-                        : "Join"
-                  }
-                </button>
+                ${
+                  room.status === "playing"
+                    ? isMember
+                      ? `
+                        <button
+                          type="button"
+                          class="room-action-button"
+                          data-room-id="${room.id}"
+                          data-room-action="open-game"
+                        >
+                          Open Game
+                        </button>
+                      `
+                      : `
+                        <button
+                          type="button"
+                          class="room-action-button"
+                          disabled
+                        >
+                          Game in Progress
+                        </button>
+                      `
+                    : isMember
+                      ? `
+                        <button
+                          type="button"
+                          class="room-action-button"
+                          data-room-id="${room.id}"
+                          data-room-action="open"
+                        >
+                          Open Room
+                        </button>
+                        ${
+                          room.createdBy !== currentUser.id
+                            ? `
+                              <button
+                                type="button"
+                                class="room-action-button"
+                                data-room-id="${room.id}"
+                                data-room-action="unjoin"
+                              >
+                                Unjoin
+                              </button>
+                            `
+                            : ""
+                        }
+                      `
+                      : `
+                        <button
+                          type="button"
+                          class="room-action-button"
+                          data-room-id="${room.id}"
+                          data-room-action="join"
+                        >
+                          Join
+                        </button>
+                      `
+                }
 
                 <span class="room-delete-slot">
                   ${
@@ -441,7 +477,7 @@ export async function renderLobbyPage(
                       : ""
                   }
                 </span>
-              </div>
+              </div>              
             </article>
           `;
         })
@@ -561,7 +597,23 @@ export async function renderLobbyPage(
               return;
             }
 
-            // Join/Open Room
+            if (action === "unavailable") {
+              return;
+            }
+
+            if (action === "open-game") {
+              window.location.hash = `#/game/${roomId}/visualizer`;
+              return;
+            }
+
+            if (action === "unjoin") {
+              // Keep your existing unjoin logic here.
+              // It should send the DELETE request and reload the room list.
+              // Do not replace that existing logic.
+              // ...
+              return;
+            }
+
             window.location.hash = `#/room/${roomId}`;
           },
         );

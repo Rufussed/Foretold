@@ -671,9 +671,20 @@ button:hover {
 }
 
 .room-message {
-  min-height: 1.4em;
-  color: #b3261e;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 16px;
+
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.85rem;
   font-weight: 600;
+  text-align: center;
 }
 
 .room-start {
@@ -2907,12 +2918,12 @@ button:hover {
 .room-row {
   display: grid;
   grid-template-columns:
-    minmax(180px, 1.8fr)
-    minmax(105px, 0.8fr)
-    minmax(95px, 0.8fr)
-    minmax(80px, 0.7fr)
+    minmax(150px, 1.8fr)
+    minmax(90px, 0.8fr)
+    minmax(80px, 0.8fr)
+    minmax(70px, 0.7fr)
     76px
-    minmax(170px, auto);
+    minmax(200px, 1.4fr);
   align-items: center;
   column-gap: 10px;
 }
@@ -2933,6 +2944,7 @@ button:hover {
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
+
 
 .room-row {
   min-height: 92px;
@@ -3054,6 +3066,13 @@ button:hover {
   gap: 8px;
   flex-wrap: nowrap;
   white-space: nowrap;
+  width: 250px;
+  box-sizing: border-box;
+}
+
+.room-actions .room-action-button {
+  min-width: 0;
+  text-align: center;
 }
 
 .room-delete-slot {
@@ -4103,15 +4122,21 @@ button:hover {
 }
 
 .room-waiting {
-  flex: 0 0 auto;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  box-sizing: border-box;
   margin: 0;
-  padding: 14px 30px;
-  border-top: 1px solid rgba(191, 125, 47, 0.16);
-  color: rgba(244, 235, 217, 0.58);
-  font-size: 1rem;
+  padding: 16px;
+
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.85rem;
+  font-weight: 600;
   text-align: center;
 }
-
 /* Footer */
 
 .room-footer {

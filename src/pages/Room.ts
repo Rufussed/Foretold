@@ -100,18 +100,22 @@ export async function renderRoomPage(
               class="room-avatar-picker"
             ></div>
 
+          </div>
+          <p
+            id="room-message"
+            class="room-message"
+            role="status"
+            hidden
+          ></p>
+
+
+          <div id="room-start" class="room-start" hidden>
             <p
               id="room-message"
               class="room-message"
               role="status"
+              hidden
             ></p>
-          </div>
-
-          <div
-            id="room-start"
-            class="room-start"
-            hidden
-          >
             <div class="room-start-controls">
 
               <label>
@@ -213,6 +217,7 @@ export async function renderRoomPage(
 
   const showMessage = (text: string) => {
     messageEl.textContent = text;
+    messageEl.hidden = !text;
   };
 
   const render = () => {
