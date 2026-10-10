@@ -241,14 +241,9 @@ export async function renderRoomPage(
 
     picker.setClaims(claims, user.username);
 
-    const isHost =
-      guestUsername !== null || room.createdBy === user.id;
-      console.log("[room debug]", {
-        guestUsername,
-        userId: user.id,
-        createdBy: room.createdBy,
-        isHost: guestUsername !== null || room.createdBy === user.id,
-      });
+    const isGuest = guestUsername !== null;
+
+    const isHost = isGuest || room.createdBy === user.id;
 
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
@@ -347,7 +342,11 @@ export async function renderRoomPage(
 
   const poll = async () => {
     try {
-      const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}`);
+      const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
       if (destroyed) {
         return;
@@ -428,7 +427,11 @@ export async function renderRoomPage(
   // Joining is idempotent, so opening the room is enough to take a seat: the
   // lobby's Join button and a shared room link both land here.
   try {
-    const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}`);
+    const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
     const current = response.ok ? ((await response.json()) as Room) : null;
 
     if (destroyed) {

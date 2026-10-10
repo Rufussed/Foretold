@@ -83,6 +83,10 @@ export function getGuestToken(): string | null {
 }
 
 export function getGuestUsername(): string | null {
+  if (getToken()) {
+    return null;
+  }
+
   return sessionStorage.getItem(GUEST_USERNAME_KEY);
 }
 

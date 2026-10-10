@@ -16,6 +16,7 @@ export interface Room {
   createdBy: number;
   createdByUsername: string;
   maxPlayers: number;
+  isPublic: boolean;
   players: RoomPlayer[];
   status: "waiting" | "playing";
 }

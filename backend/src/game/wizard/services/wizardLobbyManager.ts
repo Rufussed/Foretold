@@ -10,6 +10,7 @@ interface RoomRow {
   created_by: number;
   max_players: number;
   status: string;
+  is_public: number;
 }
 
 interface PlayerRow {
@@ -49,6 +50,7 @@ class WizardLobbyManager {
     created_by_username: string;
     max_players: number;
     status: string;
+    is_public: number;
   }): Room {
     return {
       id: row.id,
@@ -59,6 +61,7 @@ class WizardLobbyManager {
       maxPlayers: row.max_players,
       players: this.getRoomPlayers(row.id),
       status: row.status as "waiting" | "playing",
+      isPublic: row.is_public === 1,
     };
   }
 
@@ -73,7 +76,8 @@ class WizardLobbyManager {
             rooms.created_by,
             users.username AS created_by_username,
             rooms.max_players,
-            rooms.status
+            rooms.status,
+            rooms.is_public
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -89,6 +93,7 @@ class WizardLobbyManager {
         created_by_username: string;
         max_players: number;
         status: string;
+        is_public: number;
       }[];
 
     return rows.map((row) => this.mapRoom(row));
@@ -105,7 +110,8 @@ class WizardLobbyManager {
             rooms.created_by,
             users.username AS created_by_username,
             rooms.max_players,
-            rooms.status
+            rooms.status,
+            rooms.is_public
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -120,6 +126,7 @@ class WizardLobbyManager {
         created_by_username: string;
         max_players: number;
         status: string;
+        is_public: number;
       } | undefined;
 
     if (!row) {
@@ -134,18 +141,17 @@ class WizardLobbyManager {
     createdBy: number,
     username: string,
     maxPlayers: number = 4,
+    isPublic: boolean = true,
   ): Room {
      // Validate: ensure 3-6 range
     const validMax = Math.max(3, Math.min(6, maxPlayers));
 
     const result = db
-      .prepare(
-        `
-          INSERT INTO rooms (name, created_by, max_players, status)
-          VALUES (?, ?, ?, 'waiting')
-        `,
-      )
-      .run(name, createdBy, validMax);
+      .prepare(`
+        INSERT INTO rooms (name, created_by, max_players, status, is_public)
+        VALUES (?, ?, ?, 'waiting', ?)
+      `)
+    .run(name, createdBy, validMax, isPublic ? 1 : 0);
 
     const roomId = Number(result.lastInsertRowid);
 

@@ -2816,7 +2816,7 @@ button:hover {
   align-items: center;
   justify-content: center;
 
-  gap: 9px;
+  gap: 10px;
 
   min-width: 170px;
   height: 48px;
@@ -3051,10 +3051,17 @@ button:hover {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-
   gap: 8px;
   flex-wrap: nowrap;
   white-space: nowrap;
+}
+
+.room-delete-slot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  flex: 0 0 64px;
 }
 
 .room-action-button,
@@ -3334,6 +3341,44 @@ button:hover {
 
   font-size: 0.78rem;
   line-height: 1.6;
+}
+
+/* ---------------------------------------------------------
+   ROOM VISIBILITY SELECTOR
+   --------------------------------------------------------- */
+
+#roomVisibility {
+  width: 100%;
+  min-width: 0;
+  height: 42px;
+  padding: 0 12px;
+  border: 1px solid rgba(202, 139, 54, 0.42);
+  border-radius: 0;
+  background: rgba(12, 13, 11, 0.95);
+  color: #e2c18b;
+  font-family: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  outline: none;
+  transition:
+    background 160ms ease,
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+#roomVisibility:hover {
+  border-color: rgba(224, 157, 70, 0.75);
+  background: rgba(40, 28, 15, 0.95);
+}
+
+#roomVisibility:focus-visible {
+  border-color: rgba(226, 159, 71, 0.85);
+  box-shadow: 0 0 12px rgba(187, 111, 34, 0.15);
+}
+
+#roomVisibility option {
+  background: #0c0d0b;
+  color: #e2c18b;
 }
 
 /* ---------------------------------------------------------
@@ -3860,7 +3905,7 @@ button:hover {
   top: 0;
   left: 0;
   color: rgba(221, 177, 110, 0.8);
-  font-size: 1rem;
+  font-size: 1.2rem;
   text-decoration: none;
   transition: color 0.2s ease;
 }
@@ -4063,7 +4108,7 @@ button:hover {
   padding: 14px 30px;
   border-top: 1px solid rgba(191, 125, 47, 0.16);
   color: rgba(244, 235, 217, 0.58);
-  font-size: 0.86rem;
+  font-size: 1rem;
   text-align: center;
 }
 

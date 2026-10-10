@@ -12,6 +12,7 @@ import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
+import { friendService } from "../services/friendService.js";
 
 interface CreateGameBody {
   roomId?: number;
@@ -47,10 +48,38 @@ export default async function wizardRoutes(
   const wizardGameRunner =
     registerWizardSocket(server, wizardGameService);
 
-  server.get("/lobby", async () => {
-    return {
-      rooms: wizardLobbyManager.getRooms(),
-    };
+  server.get("/lobby", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const user = request.user as { sub?: string | number };
+    const userId = Number(user.sub);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return reply.status(401).send({ error: "Invalid user" });
+    }
+
+    const rooms = wizardLobbyManager.getRooms().filter((room) => {
+      // Public rooms are visible to everyone authenticated.
+      if (room.isPublic) {
+        return true;
+      }
+
+      // The creator can always see their own room.
+      if (room.createdBy === userId) {
+        return true;
+      }
+
+      // Private rooms are visible to the creator's accepted friends.
+      const creatorFriends = friendService.getFriends(room.createdBy);
+
+      return creatorFriends.some((friend) => friend.playerId === userId);
+    });
+
+    return reply.send({ rooms });
   });
 
   // A single room, so the waiting room can poll without refetching the list.
@@ -72,21 +101,54 @@ export default async function wizardRoutes(
         }
       },
       async (request, reply) => {
-    const params = request.params as { roomId?: string };
-    const roomId = Number(params.roomId);
+        try {
+          await request.jwtVerify();
+        } catch {
+          return reply.status(401).send({ error: "Unauthorized" });
+        }
 
-    if (!Number.isInteger(roomId)) {
-      return reply.status(400).send({ error: "Invalid room ID" });
-    }
+        const params = request.params as { roomId?: string };
+        const roomId = Number(params.roomId);
 
-    const room = wizardLobbyManager.getRoomById(roomId);
+        if (!Number.isInteger(roomId)) {
+          return reply.status(400).send({ error: "Invalid room ID" });
+        }
 
-    if (!room) {
-      return reply.status(404).send({ error: "Room not found" });
-    }
+        const room = wizardLobbyManager.getRoomById(roomId);
 
-    return reply.send(room);
-  });
+        if (!room) {
+          return reply.status(404).send({ error: "Room not found" });
+        }
+
+        const user = request.user as { sub?: string | number };
+        const userId = Number(user.sub);
+        const username = getAuthenticatedUsername(request);
+
+        if (!Number.isInteger(userId) || userId <= 0 || !username) {
+          return reply.status(401).send({ error: "Invalid user" });
+        }
+
+        const isMember = room.players.some(
+          (player) => player.username === username
+        );
+
+        if (!room.isPublic && room.createdBy !== userId && !isMember) {
+          const creatorFriends = friendService.getFriends(room.createdBy);
+
+          const isFriend = creatorFriends.some(
+            (friend) => friend.playerId === userId
+          );
+
+          if (!isFriend) {
+            return reply.status(403).send({
+              error: "This is a private room. Only the creator's friends can access it.",
+            });
+          }
+        }
+
+        return reply.send(room);
+      }
+    );
 
   //add schema to no create games, false typeofs
   server.post(
@@ -106,7 +168,10 @@ export default async function wizardRoutes(
                           type: "integer",
                           minimum: 3,
                           maximum: 6
-                      }
+                      },
+                      isPublic: {
+                        type: "boolean",
+                      },
                   }
               }
           }
@@ -121,6 +186,7 @@ export default async function wizardRoutes(
     const body = request.body as {
       name?: string;
       maxPlayers?: number;
+      isPublic?: boolean;
     };
     const tokenUser = request.user as {
       sub?: number;
@@ -144,6 +210,7 @@ export default async function wizardRoutes(
       Number(tokenUser.sub),
       tokenUser.username,
       body.maxPlayers,
+      body.isPublic ?? true,
     );
 
     return reply.send(room);
@@ -187,6 +254,40 @@ export default async function wizardRoutes(
       return reply.status(400).send({
         error: "roomId is required",
       });
+    }
+
+    const tokenUser = request.user as {
+      sub?: string | number;
+      username?: string;
+    };
+
+    const userId = Number(tokenUser.sub);
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return reply.status(401).send({
+        error: "Invalid user identity",
+      });
+    }
+
+    const room = wizardLobbyManager.getRoomById(body.roomId);
+
+    if (!room) {
+      return reply.status(404).send({
+        error: "Room not found",
+      });
+    }
+
+    if (!room.isPublic && room.createdBy !== userId) {
+      const creatorFriends = friendService.getFriends(room.createdBy);
+      const isFriend = creatorFriends.some(
+        (friend) => friend.playerId === userId,
+      );
+
+      if (!isFriend) {
+        return reply.status(403).send({
+          error: "This is a private room. Only the creator's friends can join.",
+        });
+      }
     }
 
     const result = wizardLobbyManager.joinRoom(body.roomId, username);

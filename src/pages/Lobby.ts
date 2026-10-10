@@ -14,6 +14,7 @@ interface LobbyRoom {
   }[];
   maxPlayers: number;
   status: "waiting" | "playing";
+  isPublic: boolean;
 }
 
 type LobbyData = {
@@ -126,6 +127,17 @@ export async function renderLobbyPage(
               />
             </label>
 
+            <label class="room-form-field" for="roomVisibility">
+              <span>Room visibility</span>
+              <select
+                class="room-visibility-select"
+                id="roomVisibility"
+                name="isPublic"
+              >
+              <option value="true" selected>Public</option>
+              <option value="false">Private — friends only</option>
+            </select>
+            </label>
             <fieldset class="room-form-field">
               <legend>Maximum players</legend>
 
@@ -168,20 +180,6 @@ export async function renderLobbyPage(
                 </label>
               </div>
             </fieldset>
-
-            <div class="room-access-preview">
-              <div>
-                <span class="room-access-label">
-                  Access
-                </span>
-
-                <strong>PUBLIC</strong>
-              </div>
-
-              <small>
-                Private rooms will be available in a future update.
-              </small>
-            </div>
 
             <div class="room-form-actions">
               <button
@@ -395,8 +393,10 @@ export async function renderLobbyPage(
               </div>
 
               <div>
-                <span class="access-badge">
-                  PUBLIC
+                <span
+                  class="access-badge ${room.isPublic ? "public" : "private"}"
+                >
+                  ${room.isPublic ? "PUBLIC" : "PRIVATE"}
                 </span>
               </div>
 
@@ -405,14 +405,18 @@ export async function renderLobbyPage(
                   type="button"
                   class="room-action-button"
                   data-room-id="${room.id}"
-                    data-room-action="${
-                      isMember && room.status === "waiting" && room.createdBy !== currentUser.id
-                        ? "unjoin"
-                        : "open"
-                    }"
+                  data-room-action="${
+                    isMember &&
+                    room.status === "waiting" &&
+                    room.createdBy !== currentUser.id
+                      ? "unjoin"
+                      : "open"
+                  }"
                 >
                   ${
-                    isMember && room.status === "waiting" && room.createdBy !== currentUser.id
+                    isMember &&
+                    room.status === "waiting" &&
+                    room.createdBy !== currentUser.id
                       ? "Unjoin"
                       : isMember
                         ? "Open Room"
@@ -420,16 +424,23 @@ export async function renderLobbyPage(
                   }
                 </button>
 
-                ${room.status === "waiting" && room.createdBy === currentUser.id ? `
-                  <button
-                    type="button"
-                    class="room-delete-button"
-                    data-delete-room-id="${room.id}"
-                    aria-label="Delete ${room.name}"
-                  >
-                    Delete
-                  </button>
-                ` : ""}
+                <span class="room-delete-slot">
+                  ${
+                    room.status === "waiting" &&
+                    room.createdBy === currentUser.id
+                      ? `
+                        <button
+                          type="button"
+                          class="room-delete-button"
+                          data-delete-room-id="${room.id}"
+                          aria-label="Delete ${room.name}"
+                        >
+                          Delete
+                        </button>
+                      `
+                      : ""
+                  }
+                </span>
               </div>
             </article>
           `;
@@ -655,6 +666,8 @@ export async function renderLobbyPage(
           formData.get("maxPlayers"),
         );
 
+      const isPublic = formData.get("isPublic") !== "false";
+
       if (!name) {
         return;
       }
@@ -683,6 +696,7 @@ export async function renderLobbyPage(
               body: JSON.stringify({
                 name,
                 maxPlayers,
+                isPublic,
               }),
             },
           );

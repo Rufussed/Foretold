@@ -114,6 +114,18 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 5,
+    description: "add public and private rooms",
+    up(db) {
+      if (!hasColumn(db, "rooms", "is_public")) {
+        db.exec(`
+          ALTER TABLE rooms
+          ADD COLUMN is_public INTEGER NOT NULL DEFAULT 1
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>
