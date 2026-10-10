@@ -193,119 +193,201 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "rules") {
       panelContainer.innerHTML = renderInfoPanel(
         "Rules",
-        "The basics of Wizard.",
+        "Learn the rules of Wizard.",
         `
           <div class="home-rules-content">
+
             <section class="home-rules-section">
               <h3>Materials</h3>
               <p>
-                A 60-card deck with four colours numbered 1 through 13,
-                four Wizards (Z), and four Jesters (N). Jesters are lowest
-                in value, followed by the numbered cards, with Wizards highest.
-                A score pad is also included.
+                Wizard is played with a 60-card deck containing four coloured
+                suits, numbered cards, Wizards (Z), and Jesters (N).
+                Wizards are the highest-ranking special cards, while Jesters
+                are the lowest. The game also uses a score pad.
               </p>
             </section>
 
             <section class="home-rules-section">
               <h3>Object of the Game</h3>
               <p>
-                Predict the number of tricks you will take in each round.
-                Correct predictions score points, and the player with the most
-                points wins.
+                Predict how many tricks you will win in each round.
+                Earn points by predicting correctly and avoid penalties
+                by estimating your tricks accurately. The player with
+                the highest total score at the end of the game wins.
               </p>
             </section>
 
             <section class="home-rules-section">
-              <h3>The Deal</h3>
+              <h3>Rounds and Dealing</h3>
               <p>
-                Deal one card to each player to determine the dealer. The high
-                card deals. On the first deal each player receives one card;
-                two cards are dealt on the second deal, three on the third,
-                and so on. The deal passes left after each round, and the new
-                dealer shuffles all 60 cards.
+                Each round determines how many cards each player receives.
+                In Round 1, each player receives one card. In Round 2,
+                each receives two cards, and so on.
               </p>
               <p>
-                Turn up the next card to determine trump. A Jester means there
-                is no trump. If it is a Wizard, the dealer chooses a suit. On
-                the last round, all cards are dealt and there is no trump.
+                The maximum number of rounds depends on the number of players:
               </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Bidding</h3>
+              <ul>
+                <li>3 players: 20 rounds</li>
+                <li>4 players: 15 rounds</li>
+                <li>5 players: 12 rounds</li>
+                <li>6 players: 10 rounds</li>
+              </ul>
               <p>
-                Beginning to the left of the dealer, each player states the
-                number of tricks they will take and the scorer records it. The
-                total bid may be greater than, less than, or equal to the
-                number of tricks available.
+                The dealer rotates after each round. After the cards are
+                dealt, the next card is revealed to determine the trump suit,
+                except in the final round, when there is no trump suit.
               </p>
             </section>
 
             <section class="home-rules-section">
-              <h3>The Play</h3>
+              <h3>Predictions</h3>
               <p>
-                Play begins to the left of the dealer and continues clockwise.
-                Any card may be led, but players must follow suit when possible.
-                If unable to follow suit, a player may play any card, including
-                trump. Wizards and Jesters may be played at any time.
+                Before playing, each player predicts how many tricks they
+                expect to win during the round. Your prediction can range
+                from zero to the number of cards in your hand.
+              </p>
+              <p>
+                <strong>Special rule:</strong> The last player to predict
+                cannot choose a number equal to the number of cards in their
+                hand. For example, if they have three cards, they cannot
+                predict three tricks.
+              </p>
+              <p>
+                This restriction prevents the total predictions from
+                equalling the number of tricks available in the round.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Tricks and Player Rotation</h3>
+              <p>
+                A trick consists of every player playing one card. The
+                winner takes the trick, and the number of tricks you win
+                during a round is your trick count.
+              </p>
+              <p>
+                The starting player rotates each round. The designated
+                starting player leads the first trick, and the winner
+                of each trick leads the next one.
+              </p>
+              <p>
+                For example, in Round 3, each player receives three cards,
+                so three tricks are played.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Playing Cards and Winning Tricks</h3>
+              <p>
+                The first card played determines the lead suit. Players
+                must follow that suit whenever possible. If you have no
+                cards of the lead suit, you may play any card, including
+                a trump card, Wizard, or Jester.
               </p>
               <ol>
-                <li>The first Wizard played wins the trick.</li>
-                <li>If no Wizard is played, the highest trump wins.</li>
-                <li>If no trump is played, the highest card of the led suit wins.</li>
+                <li>The highest-numbered card of the lead suit normally wins.</li>
+                <li>A trump card beats cards of the lead suit.</li>
+                <li>If multiple trump cards are played, the highest-numbered
+                  trump card wins, unless a Wizard determines the winner.</li>
+                <li>Wizards and Jesters follow their special rules.</li>
               </ol>
-              <p>The winner of each trick leads the next one.</p>
             </section>
 
             <section class="home-rules-section">
-              <h3>Leading Wizards or Jesters</h3>
+              <h3>Trump Suit</h3>
               <p>
-                A Wizard led first wins the trick, and players may play any
-                card. A Jester is a null card; the suit is determined by the
-                next card played, and Jesters always lose. If only Jesters are
-                played, the first Jester wins.
+                In every round except the final round, a card is revealed
+                after dealing to determine the trump suit. Trump is stronger
+                than the other coloured suits.
+              </p>
+              <p>
+                You may play a trump card when the lead suit is trump or
+                when you cannot follow the lead suit. If several trump
+                cards are played, the highest-numbered trump card wins,
+                unless a Wizard determines the winner.
+              </p>
+              <p>
+                <strong>If the revealed card is a Wizard:</strong>
+                The player leading the first trick chooses the trump suit.
+                A coloured rim around the Wizard displays the chosen suit
+                throughout the round.
+              </p>
+              <p>
+                <strong>If the revealed card is a Jester:</strong>
+                There is no trump suit for that round. The rim remains white.
+              </p>
+              <p>
+                <strong>Final round:</strong> No trump card is revealed,
+                and there is no trump suit.
+              </p>
+            </section>
+
+            <section class="home-rules-section">
+              <h3>Wizards and Jesters</h3>
+
+              <p>
+                <strong>Wizards:</strong> Wizards can be played at any time,
+                regardless of the lead suit. Normally, the first Wizard
+                played wins the trick, even if other Wizards are played later.
+              </p>
+              <p>
+                <strong>Final-round exception:</strong> In the final round,
+                the last Wizard played wins the trick instead of the first.
+              </p>
+              <p>
+                <strong>Strategy tip:</strong> Playing a Wizard after another
+                player has already played one can help you get rid of your
+                Wizard without winning the trick in a normal round.
+              </p>
+              <p>
+                <strong>Jesters:</strong> Jesters are the lowest-ranking
+                cards and normally lose tricks. They can be played at any
+                time and are useful when you want to avoid winning a trick.
+                If only Jesters are played, the first Jester wins.
               </p>
             </section>
 
             <section class="home-rules-section">
               <h3>Scoring</h3>
               <p>
-                A correct prediction scores 20 points plus 10 points for each
-                trick taken. An incorrect prediction loses 10 points for each
-                trick over or under the prediction.
+                Your score depends on how accurately you predict your tricks.
               </p>
+              <ul>
+                <li>Predict zero and win zero: +20 points.</li>
+                <li>Predict one or more tricks correctly: +10 points
+                  per predicted trick.</li>
+                <li>Miss your prediction: −10 points for each trick
+                  of difference.</li>
+              </ul>
+
               <div class="home-scoring-example">
-                <strong>Example</strong>
+                <strong>Examples</strong>
                 <p>
-                  Calling 0 and taking 0 scores 20. Calling 1 and taking 1
-                  scores 30. Calling 2 and taking 1 loses 10.
+                  Predict 0 and win 0: +20 points.<br>
+                  Predict 2 and win 2: +20 points.<br>
+                  Predict 3 and win 3: +30 points.<br>
+                  Predict 2 and win 1: −10 points.<br>
+                  Predict 2 and win 0: −20 points.
                 </p>
               </div>
             </section>
 
             <section class="home-rules-section">
-              <h3>Length of Game</h3>
+              <h3>Winning the Game</h3>
               <p>
-                Play continues until all 60 cards are dealt. Three players play
-                20 rounds, four play 15, five play 12, and six play 10 rounds.
+                After all rounds are completed, the player with the
+                highest total score wins.
               </p>
             </section>
 
-            <section class="home-rules-section">
-              <h3>Keeping Track of Tricks</h3>
-              <p>
-                Before play begins, announce each player&apos;s bid. Keep tricks
-                won visible to everyone. Coins or poker chips can mark each
-                bid so players can see how many tricks they still need.
-              </p>
-            </section>
           </div>
         `,
       );
+
       attachCloseEvent();
       return;
     }
-
     if (activePanel === "news") {
       panelContainer.innerHTML = renderInfoPanel(
         "News",
