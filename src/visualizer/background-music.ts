@@ -2,11 +2,17 @@ import { MUSIC } from "./config";
 
 export interface BackgroundMusic {
   readonly muted: boolean;
+  readonly source: MusicSource;
   setMuted(muted: boolean): void;
+  setSource(source: MusicSource): void;
   dispose(): void;
 }
 
 const MUTED_KEY = "wizard-music-muted";
+const SOURCE_KEY = "wizard-music-source";
+const TRACK_INDEX_KEY = "wizard-music-track-index";
+
+export type MusicSource = "stream" | "tracks";
 
 const readMuted = (): boolean => {
   try {
@@ -24,15 +30,51 @@ const saveMuted = (muted: boolean): void => {
   }
 };
 
+const readSource = (): MusicSource => {
+  try {
+    return localStorage.getItem(SOURCE_KEY) === "tracks" ? "tracks" : "stream";
+  } catch {
+    return "stream";
+  }
+};
+
+const saveSource = (source: MusicSource): void => {
+  try {
+    localStorage.setItem(SOURCE_KEY, source);
+  } catch {
+    // Storage unavailable: the choice lasts for this visit only.
+  }
+};
+
+const readTrackIndex = (): number => {
+  try {
+    const value = Number.parseInt(localStorage.getItem(TRACK_INDEX_KEY) ?? "", 10);
+    return Number.isInteger(value) && value >= 0 && value < MUSIC.urls.length ? value : 0;
+  } catch {
+    return 0;
+  }
+};
+
+const saveTrackIndex = (index: number): void => {
+  try {
+    localStorage.setItem(TRACK_INDEX_KEY, String(index));
+  } catch {
+    // Storage unavailable: the playlist position lasts for this visit only.
+  }
+};
+
 export function createBackgroundMusic(): BackgroundMusic {
-  let currentIndex = 0;
+  let currentIndex = readTrackIndex();
   let disposed = false;
   let muted = readMuted();
+  let source = readSource();
+  if (source === "stream" && MUSIC.streams.length === 0) {
+    source = "tracks";
+  }
   const silenced = (): boolean => muted;
 
-  // Plays the live stream while it works, trying each mirror, then the tracks.
   let streamIndex = 0;
-  let streaming = MUSIC.streams.length > 0;
+  let streaming = source === "stream" && MUSIC.streams.length > 0;
 
   // No source yet: a muted visit never connects to the stream, whose
   // connection would otherwise open with the page. start() gives it one.
@@ -108,6 +150,7 @@ export function createBackgroundMusic(): BackgroundMusic {
 
     currentIndex =
       (currentIndex + 1) % MUSIC.urls.length;
+    saveTrackIndex(currentIndex);
 
     audio.src = MUSIC.urls[currentIndex];
     start();
@@ -171,10 +214,28 @@ export function createBackgroundMusic(): BackgroundMusic {
       return muted;
     },
 
+    get source() {
+      return source;
+    },
+
     setMuted(next: boolean): void {
       muted = next;
       saveMuted(next);
       applyMute();
+    },
+
+    setSource(next: MusicSource): void {
+      if (disposed || source === next) return;
+      source = next;
+      saveSource(next);
+      streamIndex = 0;
+      streaming = source === "stream" && MUSIC.streams.length > 0;
+      needsFade = true;
+      stopFade();
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      start();
     },
 
     dispose(): void {

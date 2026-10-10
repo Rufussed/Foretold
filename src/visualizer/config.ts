@@ -745,7 +745,7 @@ export const MUSIC = {
   streamCredit: "Music: Synphaera Radio on SomaFM (somafm.com)",
   // Imported rather than named by path so the build fingerprints them, the same
   // as the models and the card art; the order here is the playing order.
-  urls: [medievalAmbient, thoughtWave, endGame, track01, counterMoves, ChessmasterII],
+  urls: [thoughtWave, endGame, track01, counterMoves, ChessmasterII, medievalAmbient],
   volume: 0.35,
   fadeInSeconds: 10, // the music rises from silence over this long, each time it starts
 };
@@ -761,7 +761,7 @@ import cardSound3 from "../assets/sound/card-sound--03.mp3";
 export const CARD_SOUND = {
   // One is picked at random for each card.
   urls: [cardSound1, cardSound2, cardSound3],
-  volume: 1,
+  volume: .5,
   // Playback speed (and so pitch) varies by up to this fraction either way.
   rateVariation: 0.1,
 };
@@ -800,7 +800,7 @@ import scoreSound from "../assets/sound/score.mp3";
 
 export const SCORE_SOUND = {
   url: scoreSound,
-  volume: 1,
+  volume: .5,
 };
 
 import chimeWin from "../assets/sound/chime-win.mp3";
@@ -811,7 +811,7 @@ import chimeLose from "../assets/sound/chimes-lose.mp3";
 export const CHIME_SOUND = {
   winUrl: chimeWin,
   loseUrl: chimeLose,
-  volume: 1,
+  volume: .5,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

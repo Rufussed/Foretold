@@ -1297,15 +1297,14 @@ button:hover {
   display: flex;
   gap: 6px;
   place-items: center;
-  padding: 0;
+  padding: 3px 4px;
   color: rgba(244, 235, 217, 0.9);
   background: rgba(8, 9, 7, 0.6);
-  border: 1px solid rgba(191, 125, 47, 0.28);
-  border-radius: 4px;
   backdrop-filter: blur(1px);
 }
 
 .visualizer-page .music-toggle,
+.visualizer-page .music-source-toggle,
 .visualizer-page .effects-toggle,
 .visualizer-page .fullscreen-toggle {
   display: grid;
@@ -1320,7 +1319,22 @@ button:hover {
   backdrop-filter: blur(1px);
 }
 
+.visualizer-page .music-source-toggle {
+  box-sizing: border-box;
+  width: 112px;
+  height: 26px;
+  min-height: 0;
+  padding: 0 3px;
+  border: 1px solid rgba(180, 119, 47, 0.3);
+  background: rgba(5, 6, 5, 0.72);
+  color: rgba(248, 240, 224, 0.9);
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
 .visualizer-page .music-toggle:hover,
+.visualizer-page .music-source-toggle:hover,
 .visualizer-page .effects-toggle:hover,
 .visualizer-page .fullscreen-toggle:hover {
   background: rgba(191, 125, 47, 0.12);
