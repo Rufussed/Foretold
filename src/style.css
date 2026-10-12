@@ -5024,3 +5024,49 @@ button:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* iPhone home-screen app prompts (see visualizer/iphone-app-prompts.ts). */
+.visualizer-page .install-hint {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: calc(100% - 32px);
+  padding: 8px 12px;
+  transform: translateX(-50%);
+  color: rgba(244, 235, 217, 0.95);
+  background: rgba(8, 9, 7, 0.85);
+  border: 1px solid rgba(191, 125, 47, 0.4);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.visualizer-page .install-hint button {
+  padding: 0 6px;
+  color: inherit;
+  background: none;
+  border: 0;
+  font-size: 1.2rem;
+}
+
+.visualizer-page .rotate-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  place-items: center;
+  padding: 24px;
+  color: rgba(244, 235, 217, 0.95);
+  background: #080907;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+@media (orientation: portrait) {
+  .visualizer-page .rotate-cover {
+    display: grid;
+  }
+}

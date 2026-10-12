@@ -16,6 +16,7 @@ import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot
 import { createAiEmotes } from "../visualizer/ai-emotes";
 import { reactionPending, reactToTrick } from "../visualizer/trick-reactions";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
+import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
 import { createEffectsToggle, type EffectsToggle } from "../visualizer/effects-toggle";
@@ -77,6 +78,7 @@ export async function renderVisualizerPage(
   let musicToggle: MusicToggle | null = null;
   let effectsToggle: EffectsToggle | null = null;
   let fullscreenToggle: FullscreenToggle | null = null;
+  let iphonePrompts: { dispose(): void } | null = null;
   const isGuestGame =
     !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
 
@@ -85,6 +87,7 @@ export async function renderVisualizerPage(
     musicToggle?.dispose();
     effectsToggle?.dispose();
     fullscreenToggle?.dispose();
+    iphonePrompts?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
     diagnostics?.dispose();
@@ -139,6 +142,7 @@ export async function renderVisualizerPage(
     // have to come with it, or fullscreen would show a table and nothing to
     // play it with. Null where the browser will not do fullscreen at all.
     fullscreenToggle = createFullscreenToggle(toolbar, pageEl);
+    iphonePrompts = createIPhoneAppPrompts(pageEl);
   }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
