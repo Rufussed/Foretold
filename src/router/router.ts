@@ -162,7 +162,7 @@ function renderCurrentRoute(container: HTMLElement): void {
         <main class="page">
           <section class="panel">
             <h1>Invalid game room</h1>
-            <a href="#/lobby">Back to Lobby</a>
+            <a href="#/lobby">Back to The Glade</a>
           </section>
         </main>
       `;

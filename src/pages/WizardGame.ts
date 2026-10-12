@@ -313,7 +313,7 @@ export async function renderWizardGamePage(
         <section class="panel">
           <h1>Game error</h1>
           <p>${getErrorMessage(error)}</p>
-          <a href="#/lobby">Back to Lobby</a>
+          <a href="#/lobby">Back to The Glade</a>
         </section>
       </main>
     `;
@@ -405,7 +405,7 @@ function renderGame(
 
       <nav class="navbar game-nav">
         <a href="#/home">Home</a>
-        <a href="#/lobby">Lobby</a>
+        <a href="#/lobby">The Glade</a>
         <a href="#/profile">Profile</a>
         <a class="game-nav-visualizer" href="#/game/${game.roomId}/visualizer">Back to 3D Visualizer</a>
       </nav>

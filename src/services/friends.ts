@@ -39,13 +39,22 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     },
   });
 
-  const data = (await response.json()) as T & { error?: string };
-
-  if (!response.ok) {
-    throw new Error(data.error ?? "Friend request failed");
+  // Most replies are JSON, but the status endpoint sends a bare word
+  // ("pending"), which is not valid JSON and made response.json() throw.
+  const text = await response.text();
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    data = text;
   }
 
-  return data;
+  if (!response.ok) {
+    const error = (data as { error?: string } | null)?.error;
+    throw new Error(error ?? "Friend request failed");
+  }
+
+  return data as T;
 }
 
 export function sendFriendRequest(userId: number): Promise<{ success: true }> {

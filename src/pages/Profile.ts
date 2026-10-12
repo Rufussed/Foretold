@@ -176,21 +176,16 @@ export async function renderProfilePage(
                     }
                   </button>
                 `
-                : `
+                : friendStatus === "pending"
+                  ? `<span class="profile-action profile-action-sent">Friend request sent</span>`
+                  : `
                   <button
                     class="profile-action"
                     type="button"
                     data-friend-action="${user.id}"
                     ${friendStatus === "friend" ? "data-remove=true" : ""}
-                    ${friendStatus === "pending" ? "disabled" : ""}
                   >
-                    ${
-                      friendStatus === "friend"
-                        ? "Remove Friend"
-                        : friendStatus === "pending"
-                          ? "Request Pending"
-                          : "Add Friend"
-                    }
+                    ${friendStatus === "friend" ? "Remove Friend" : "Add Friend"}
                   </button>
                 `
             }

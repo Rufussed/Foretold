@@ -59,7 +59,7 @@ export async function renderRoomPage(
       ? {
           id: 0,
           username: guestUsername,
-          displayName: guestUsername,
+          displayName: "Stranger",
           email: "",
         }
       : await getCurrentUser();
@@ -182,7 +182,9 @@ export async function renderRoomPage(
   const messageEl = element<HTMLParagraphElement>("#room-message");
   // "Rufus, choose your Wizard": the heading addresses the player by name.
   const chooseKickerEl = element<HTMLParagraphElement>("#room-choose-kicker");
-  chooseKickerEl.textContent = `${user.username}, choose your Wizard`;
+  // A guest's username is a generated id, so they are greeted as a stranger.
+  const greeting = guestUsername !== null ? "Stranger" : user.username;
+  chooseKickerEl.textContent = `${greeting}, choose your Wizard`;
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
@@ -225,7 +227,9 @@ export async function renderRoomPage(
       return;
     }
 
-    nameEl.textContent = room.name;
+    // The server names a guest's room after their generated username.
+    nameEl.textContent =
+      guestUsername !== null ? room.name.replace(guestUsername, "Stranger") : room.name;
     countEl.textContent = `${room.players.length}/${room.maxPlayers} players`;
 
     const claims = new Map<AvatarId, string>();

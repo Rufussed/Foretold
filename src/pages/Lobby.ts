@@ -21,15 +21,10 @@ type LobbyData = {
   rooms: LobbyRoom[];
 };
 
-function formatRoomDate(createdAt: string): string {
-  const date = new Date(`${createdAt.replace(" ", "T")}Z`);
-  return Number.isNaN(date.getTime())
-    ? createdAt
-    : date.toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      });
+// A guest's username is a generated id, so they are listed as a stranger.
+function playerLabel(username: string): string {
+  if (/^guest-/i.test(username)) return "Stranger";
+  return username.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
 
 export async function renderLobbyPage(
@@ -51,7 +46,7 @@ export async function renderLobbyPage(
         <div class="lobby-title-row">
           <div>
 
-            <h1>Lobby</h1>
+            <h1>The Glade</h1>
 
           </div>
 
@@ -68,10 +63,8 @@ export async function renderLobbyPage(
         <section class="rooms-panel">
           <div class="rooms-heading">
             <span>Room</span>
-            <span>Created</span>
-            <span>Host</span>
+            <span>Status</span>
             <span>Players</span>
-            <span>Access</span>
             <span>Action</span>
           </div>
 
@@ -362,7 +355,7 @@ export async function renderLobbyPage(
 
           const statusLabel =
             room.status === "playing"
-              ? "IN GAME"
+              ? "IN PROGRESS"
               : "WAITING";
 
           return `
@@ -372,32 +365,24 @@ export async function renderLobbyPage(
                   ${room.name}
                 </strong>
 
-                <span class="room-status">
-                  ${statusLabel}
+                <span class="room-creator">
+                  Created by ${playerLabel(room.createdByUsername)}
                 </span>
               </div>
 
-              <div class="room-created">
-                ${formatRoomDate(room.createdAt)}
-              </div>
-
-              <div class="room-creator">
-                ${room.createdByUsername}
+              <div class="room-status">
+                ${statusLabel}
               </div>
 
               <div class="player-count">
                 <span class="player-count-number">
                   ${playerCount}
                 </span>
-                <span>players</span>
-              </div>
-
-              <div>
-                <span
-                  class="access-badge ${room.isPublic ? "public" : "private"}"
-                >
-                  ${room.isPublic ? "PUBLIC" : "PRIVATE"}
-                </span>
+                <ul class="player-count-names">
+                  ${room.players
+                    .map((player) => `<li>${playerLabel(player.username)}</li>`)
+                    .join("")}
+                </ul>
               </div>
 
               <div class="room-actions">
@@ -411,7 +396,7 @@ export async function renderLobbyPage(
                           data-room-id="${room.id}"
                           data-room-action="open-game"
                         >
-                          Open Game
+                          Return to Game
                         </button>
                       `
                       : `
@@ -442,7 +427,7 @@ export async function renderLobbyPage(
                                 data-room-id="${room.id}"
                                 data-room-action="unjoin"
                               >
-                                Unjoin
+                                Leave
                               </button>
                             `
                             : ""

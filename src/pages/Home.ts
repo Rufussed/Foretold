@@ -727,11 +727,29 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         ".home-modal-backdrop",
       );
 
+    // A drag that starts in the box (selecting text in a field) and ends on
+    // the backdrop still fires a click on the backdrop, so only close when
+    // the press began there too.
+    let pressedOnBackdrop = false;
+    backdrop?.addEventListener("pointerdown", (event) => {
+      pressedOnBackdrop = event.target === backdrop;
+    });
     backdrop?.addEventListener("click", (event) => {
-      if (event.target === backdrop) {
+      if (event.target === backdrop && pressedOnBackdrop) {
         closePanel();
       }
+      pressedOnBackdrop = false;
     });
+  }
+
+  // A short confirmation that outlives the panel it came from.
+  function showToast(text: string): void {
+    const toast = document.createElement("div");
+    toast.className = "home-toast";
+    toast.setAttribute("role", "status");
+    toast.textContent = text;
+    document.body.append(toast);
+    window.setTimeout(() => toast.remove(), 2800);
   }
 
   function closePanel(): void {
@@ -856,12 +874,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           password,
         );
 
-        if (message) {
-          message.textContent =
-            `Account created for ${result.username}`;
-        }
-
-        form.reset();
+        void result;
+        closePanel();
+        showToast("You are signed up");
       } catch (error) {
         if (message) {
           message.textContent =

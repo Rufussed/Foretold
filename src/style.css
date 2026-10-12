@@ -55,11 +55,31 @@ label {
   font-weight: 600;
 }
 
-input {
+/* Dark fields, the same as the create-account panel's, so no control falls
+   back to the browser's white. */
+:where(input:not([type="checkbox"], [type="radio"], [type="range"]), textarea) {
   padding: 10px;
-  border: 1px solid #aab6c6;
+  color: #eee2cc;
+  background: #090a08;
+  border: 1px solid #373329;
   border-radius: 4px;
   font: inherit;
+}
+
+/* Browser autofill paints its own pale background over the field; paint the
+   dark one over that. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #eee2cc;
+  caret-color: #eee2cc;
+  box-shadow: 0 0 0 1000px #090a08 inset;
+  transition: background-color 600000s 0s;
+}
+
+:where(select, select option, select optgroup) {
+  color: #eee2cc;
+  background: #090a08;
 }
 
 /* Browsers give form controls their own UI font rather than the page's, so
@@ -72,19 +92,37 @@ optgroup {
   font: inherit;
 }
 
+/* The brand button, from the sign-up button: brown fill, copper edge, and a
+   gold edge and text when hovered. Everything below inherits these, so a
+   button no one has styled still matches. */
+:root {
+  --button-fill: linear-gradient(#874513, #5a2908);
+  --button-edge: #a66122;
+  --button-text: #f6e7cf;
+  --button-gold: #e4a348;
+  --button-gold-text: #ffbd62;
+}
+
 button {
   width: fit-content;
   padding: 10px 16px;
-  color: white;
-  background: #2457a6;
-  border: 0;
+  color: var(--button-text);
+  background: var(--button-fill);
+  border: 1px solid var(--button-edge);
   border-radius: 4px;
   font: inherit;
   cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    filter 180ms ease;
 }
 
-button:hover {
-  background: #1b4381;
+/* :where keeps this from outranking a component's own button styles. */
+:where(button):hover:not(:disabled) {
+  color: var(--button-gold-text);
+  border-color: var(--button-gold);
+  filter: brightness(1.12);
 }
 
 #backend-status {
@@ -878,13 +916,11 @@ button:hover {
   }
 }
 
-/* Prediction prompt: just above your card fan, clear of the trump card, with
-   no backdrop so the hand stays usable. The camera keeps the full scene height
-   in view, so the fan's top sits at the same fraction of the height (~73%) on
-   any window shape; raise "bottom" to lift the prompt higher. */
+/* Prediction prompt: centred on the screen, with no backdrop so the table
+   stays visible behind it. */
 .visualizer-page .prediction-modal {
   position: absolute;
-  bottom: calc(28% + 20px);
+  top: 50%;
   left: 50%;
   z-index: 2;
   /* Sized to its buttons, never wider than the screen. */
@@ -898,7 +934,7 @@ button:hover {
   border: 1px solid rgba(191, 125, 47, 0.38);
   border-radius: 4px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
-  transform: translateX(-50%);
+  transform: translate(-50%, -50%);
   backdrop-filter: blur(1px);
 }
 
@@ -972,11 +1008,6 @@ button:hover {
 }
 
 /* Trump choice after a Wizard or Jester is turned up: one swatch per suit. */
-/* Sits 30px higher than the prediction box it shares a position with. */
-.visualizer-page .prediction-modal.trump-modal {
-  bottom: calc(28% + 50px);
-}
-
 .trump-options {
   display: grid;
   /* Equal columns, so every swatch is the same size whatever its label. */
@@ -1042,9 +1073,11 @@ button:hover {
 .visualizer-page .hud-status {
   top: 16px;
   right: 16px;
-  width: 300px;
-  /* The top 32px is the row of buttons, which sit over it, and a little room under it. */
-  padding: 50px 10px 8px;
+  /* As narrow as the player panel bottom left. */
+  width: 168px;
+  /* The buttons sit over the top, in two rows at this width (the music
+     source, then the three buttons), with a little room under them. */
+  padding: 90px 10px 8px;
 }
 
 .hud-round {
@@ -1063,7 +1096,7 @@ button:hover {
 
 .hud-scores th:first-child,
 .hud-scores td:first-child {
-  width: 32%;
+  width: auto;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1083,9 +1116,8 @@ button:hover {
 .hud-scores td:not(:first-child) {
   text-align: right;
 }
-/*maybe unnecessary*/
 .hud-scores td:last-child {
-  width: 34px;
+  width: 40px;
 }
 
 .hud-scores td {
@@ -1267,7 +1299,7 @@ button:hover {
 /* Tricks won against the prediction, in the colours of the tesseract's burst
    (BURST in config.ts): green short of it, gold on it, red over it. */
 .hud-stat[data-standing="under"] .hud-stat-value {
-  color: rgb(0 255 13);
+  color: rgb(38 165 52);
 }
 
 .hud-stat[data-standing="met"] .hud-stat-value {
@@ -1275,14 +1307,15 @@ button:hover {
 }
 
 .hud-stat[data-standing="over"] .hud-stat-value {
-  color: rgb(255 0 0);
+  color: rgb(214 52 48);
 }
 
 /* Narrow screens: a narrower panel. */
 @media (max-width: 640px) {
   .visualizer-page .hud-status {
     top: 60px;
-    width: 240px;
+    /* The two-row button block starts above the panel here, so it needs less. */
+    padding-top: 40px;
   }
 }
 
@@ -1295,12 +1328,15 @@ button:hover {
   right: 26px;
   z-index: 3;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  /* Two rows inside the narrow status panel: the music source, then buttons. */
+  width: 150px;
+  box-sizing: border-box;
   gap: 6px;
   place-items: center;
   padding: 3px 4px;
   color: rgba(244, 235, 217, 0.9);
-  background: rgba(8, 9, 7, 0.6);
-  backdrop-filter: blur(1px);
 }
 
 .visualizer-page .music-toggle,
@@ -1321,7 +1357,8 @@ button:hover {
 
 .visualizer-page .music-source-toggle {
   box-sizing: border-box;
-  width: 112px;
+  /* The whole top row of the toolbar, wide enough for "Music: Wizardy vibe". */
+  flex: 1 0 100%;
   height: 26px;
   min-height: 0;
   padding: 0 3px;
@@ -1377,6 +1414,25 @@ button:hover {
 
 .visualizer-page .hud-announcer[hidden] {
   display: none;
+}
+
+/* A new announcement springs in from nothing, overshoots a little, then
+   settles at full size (the class is re-added by announcer.ts each time). */
+.visualizer-page .hud-announcer.is-popping {
+  transform-origin: top center;
+  animation: hud-announcer-pop 0.45s cubic-bezier(0.34, 1.2, 0.5, 1) both;
+}
+
+@keyframes hud-announcer-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .hud-announcer.is-popping {
+    animation: none;
+  }
 }
 
 .hud-announcer-text {
@@ -1488,6 +1544,8 @@ button:hover {
   padding: 0;
   text-align: left;
   background: none;
+  border: 0;
+  box-shadow: none;
   backdrop-filter: none;
 }
 
@@ -2046,11 +2104,11 @@ button:hover {
     0 8px 30px rgba(0, 0, 0, 0.48),
     0 0 24px rgba(211, 101, 18, 0.12);
 
-  padding: 7px 11px;
+  padding: 10.5px 16.5px;
 
   color: #f6e7cf;
   font-family: "Cinzel", serif;
-  font-size: 11px;
+  font-size: 16.5px;
   font-weight: 700;
   letter-spacing: 0.25em;
   text-transform: uppercase;
@@ -2588,7 +2646,7 @@ button:hover {
   }
 
   .home-play-button {
-    padding: 7px 11px;
+    padding: 10.5px 16.5px;
   }
 
   .home-footer {
@@ -2685,7 +2743,7 @@ button:hover {
   font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.12em;
-  text-transform: lowercase;
+  text-transform: none;
 
   text-decoration: none;
 
@@ -2931,13 +2989,13 @@ button:hover {
 .rooms-heading,
 .room-row {
   display: grid;
+  /* The columns never stack or drop away: each shrinks with the panel, and
+     its text is clipped before the layout changes. */
   grid-template-columns:
-    minmax(150px, 1.8fr)
-    minmax(90px, 0.8fr)
-    minmax(80px, 0.8fr)
-    minmax(70px, 0.7fr)
-    76px
-    minmax(200px, 1.4fr);
+    minmax(0, 1.4fr)
+    minmax(0, 0.8fr)
+    minmax(0, 0.7fr)
+    minmax(0, 2fr);
   align-items: center;
   column-gap: 10px;
 }
@@ -3006,6 +3064,10 @@ button:hover {
 }
 
 .room-status {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: rgba(205, 151, 82, 0.62);
 
   font-size: 0.62rem;
@@ -3026,8 +3088,11 @@ button:hover {
 }
 
 .room-created {
+  min-width: 0;
+  overflow: hidden;
   color: rgba(244, 234, 216, 0.52);
   font-size: 0.76rem;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -3043,6 +3108,25 @@ button:hover {
   text-transform: uppercase;
 }
 
+.player-count-names {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: rgba(244, 234, 216, 0.62);
+  font-size: 0.74rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.player-count-names li {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .player-count-number {
   color: #e1c18d;
 
@@ -3055,7 +3139,11 @@ button:hover {
   align-items: center;
   justify-content: center;
 
-  min-width: 70px;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0 4px;
+  box-sizing: border-box;
+  overflow: hidden;
   height: 25px;
 
   border: 1px solid rgba(143, 105, 54, 0.32);
@@ -3076,16 +3164,19 @@ button:hover {
 .room-actions {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: flex-start;
   gap: 8px;
   flex-wrap: nowrap;
   white-space: nowrap;
-  width: 250px;
+  min-width: 0;
   box-sizing: border-box;
 }
 
 .room-actions .room-action-button {
   min-width: 0;
+  padding: 0 clamp(4px, 1vw, 12px);
+  overflow: hidden;
+  text-overflow: ellipsis;
   text-align: center;
 }
 
@@ -3094,7 +3185,8 @@ button:hover {
   align-items: center;
   justify-content: center;
   width: 64px;
-  flex: 0 0 64px;
+  min-width: 0;
+  flex: 0 1 64px;
 }
 
 .room-action-button,
@@ -3652,34 +3744,6 @@ button:hover {
    --------------------------------------------------------- */
 
 @media (max-width: 900px) {
-  .rooms-heading {
-    display: none;
-  }
-
-  .room-row {
-    grid-template-columns: 1fr auto;
-    gap: 16px;
-
-    padding: 20px;
-  }
-
-  .room-creator,
-  .player-count,
-  .room-row > div:nth-child(5) {
-    display: none;
-  }
-
-  .room-actions {
-    grid-column: 2;
-    grid-row: 1;
-
-    flex-direction: column;
-  }
-
-  .room-main-info {
-    grid-column: 1;
-    grid-row: 1;
-  }
 }
 
 @media (max-width: 720px) {
@@ -3749,26 +3813,6 @@ button:hover {
     border-radius: 0;
   }
 
-  .room-row {
-    grid-template-columns: 1fr;
-
-    gap: 15px;
-  }
-
-  .room-actions {
-    grid-column: 1;
-    grid-row: auto;
-
-    flex-direction: row;
-
-    justify-content: flex-start;
-  }
-
-  .room-action-button,
-  .room-delete-button {
-    flex: 1;
-  }
-
   .lobby-footer {
     width: calc(100% - 28px);
 
@@ -3795,6 +3839,12 @@ button:hover {
 }
 
 @media (max-width: 420px) {
+  .rooms-heading,
+  .room-row {
+    padding: 0 10px;
+    column-gap: 6px;
+  }
+
   .lobby-nav span {
     display: none;
   }
@@ -3805,15 +3855,6 @@ button:hover {
 
   .lobby-title-row h1 {
     font-size: 2.35rem;
-  }
-
-  .room-actions {
-    flex-direction: column;
-  }
-
-  .room-action-button,
-  .room-delete-button {
-    width: 100%;
   }
 
   .player-count-options {
@@ -3987,16 +4028,6 @@ button:hover {
   display: flex;
   flex-direction: column;
 
-  border: 1px solid rgba(180, 119, 47, 0.27);
-  background:
-    linear-gradient(
-      135deg,
-      rgba(201, 127, 40, 0.035),
-      transparent 36%
-    ),
-    rgba(12, 13, 11, 0.62);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(1px);
 }
 
 /* Avatar section */
@@ -4012,7 +4043,6 @@ button:hover {
   align-items: center;
 
   padding: 18px 30px 10px;
-  border-bottom: 1px solid rgba(191, 125, 47, 0.16);
 }
 
 .room-section-heading {
@@ -4023,17 +4053,17 @@ button:hover {
 .room-avatar-picker {
   flex: 0 0 auto;
   width: 100%;
-  max-width: 620px;
+  max-width: 900px;
   min-height: 0;
   margin-top: 8px;
 }
 
 .room-avatar-picker .avatar-grid {
-  grid-template-columns: repeat(3, minmax(0, 175px));
-  grid-template-rows: repeat(2, minmax(0, 1fr));
+  /* All six on one row; the columns flex so the views shrink with the panel. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: auto;
   align-items: stretch;
   width: 100%;
-  height: 100%;
 }
 
 /* No reserved height: empty, this takes no room under the portraits,
@@ -4059,7 +4089,10 @@ button:hover {
 
 .room-start {
   flex: 0 0 auto;
-  margin: 4px 0 0;
+  /* The same width as the row of six characters above it. */
+  box-sizing: border-box;
+  width: min(calc(100% - 60px), 900px);
+  margin: 4px auto 0;
   padding: 16px 30px 18px;
   border: 1px solid rgba(180, 119, 47, 0.27);
   background:
@@ -4200,6 +4233,10 @@ button:hover {
   .room-start {
     padding-left: 20px;
     padding-right: 20px;
+  }
+
+  .room-start {
+    width: min(calc(100% - 40px), 900px);
   }
 
   .room-start-controls {
@@ -4679,6 +4716,12 @@ button:hover {
   color: rgba(244, 235, 217, 0.62);
 }
 
+/* A request already sent: the same box as the button, but nothing to press. */
+.profile-action-sent {
+  cursor: default;
+  user-select: none;
+}
+
 .profile-action:disabled {
   cursor: wait;
   opacity: 0.55;
@@ -5069,4 +5112,50 @@ button:hover {
   .visualizer-page .rotate-cover {
     display: grid;
   }
+}
+
+/* A short confirmation after signing up (see pages/Home.ts). */
+.home-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1000;
+  max-width: calc(100% - 32px);
+  padding: 22px 42px;
+  transform: translate(-50%, calc(-50% + 100px));
+  color: #eee2cc;
+  background: rgba(8, 9, 7, 0.94);
+  border: 1px solid rgba(191, 125, 47, 0.55);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+  font-size: 1.2rem;
+  text-align: center;
+  animation: home-fade-in 180ms ease both;
+}
+
+/* Buttons that restyle themselves still take the gold hover, so every action
+   button answers the pointer the same way. */
+.home-modal-primary:hover,
+.home-play-button:hover,
+.create-room-button:hover,
+.create-room-submit:hover:not(:disabled),
+.room-action-button:hover:not(:disabled),
+.room-start-button:hover:not(:disabled),
+.profile-action:hover:not(:disabled),
+.secondary-action:hover {
+  color: var(--button-gold-text);
+  border-color: var(--button-gold);
+}
+
+.home-modal-primary,
+.create-room-submit,
+.room-start-button,
+.profile-action,
+.secondary-action,
+.room-action-button,
+.create-room-button {
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
 }

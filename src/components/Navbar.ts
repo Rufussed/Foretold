@@ -13,7 +13,7 @@ export function renderNavbar(
       </a>
 
       <nav class="lobby-nav" aria-label="Main navigation">
-        ${isLobbyPage ? "" : '<a href="#/lobby">Lobby</a>'}
+        ${isLobbyPage ? "" : '<a href="#/lobby">The Glade</a>'}
       </nav>
 
       <div class="lobby-account">

@@ -103,6 +103,12 @@ export function createAnnouncer(
     setBorderCharacter(next.username);
     if (same) return;
 
+    // Spring in again for each new announcement; reading offsetWidth restarts
+    // the animation if the last one is still running.
+    banner.classList.remove("is-popping");
+    void banner.offsetWidth;
+    banner.classList.add("is-popping");
+
     board?.dispose();
     board = null;
     winner?.dispose();

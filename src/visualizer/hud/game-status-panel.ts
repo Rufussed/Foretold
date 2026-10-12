@@ -17,8 +17,6 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
       <thead>
         <tr>
           <th>Player</th>
-          <th>Prediction</th>
-          <th>Tricks</th>
           <th>Score</th>
         </tr>
       </thead>
@@ -38,8 +36,6 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
     {
       row: HTMLTableRowElement;
       name: HTMLElement;
-      prediction: HTMLElement;
-      tricks: HTMLElement;
       score: HTMLElement;
     }
   >();
@@ -66,11 +62,9 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
       if (!entry) {
         const row = document.createElement("tr");
         const name = document.createElement("td");
-        const prediction = document.createElement("td");
-        const tricks = document.createElement("td");
         const score = document.createElement("td");
-        row.append(name, prediction, tricks, score);
-        entry = { row, name, prediction, tricks, score };
+        row.append(name, score);
+        entry = { row, name, score };
         rows.set(player.username, entry);
       }
       entry.row.classList.toggle(
@@ -78,9 +72,6 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
         player.username === state.players[state.currentPlayerIndex]?.username,
       );
       entry.name.textContent = nameOf(player.username);
-      entry.prediction.textContent =
-        player.prediction === null ? "–" : String(player.prediction);
-      entry.tricks.textContent = String(player.tricksWon);
       entry.score.textContent = String(shown(player));
     }
     // Moving a row restarts its flash, so rows only move when the order changes.
