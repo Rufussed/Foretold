@@ -192,7 +192,9 @@ export async function renderRoomPage(
     roundsEl.replaceChildren(
       ...values.map((value, index) => new Option(index === 0 ? `Full game (${value})` : value, value)),
     );
-    roundsEl.value = values.includes(selected) ? selected : values[0] ?? "";
+    // A guest's game starts at 8 rounds; a longer or shorter choice stands.
+    const preferred = selected || (guestUsername !== null ? "8" : "");
+    roundsEl.value = values.includes(preferred) ? preferred : values[0] ?? "";
   };
   botsEl.addEventListener("change", updateRoundOptions);
   const startButton = element<HTMLButtonElement>("#room-start-button");
@@ -216,9 +218,10 @@ export async function renderRoomPage(
     // The server names a guest's room after their generated username.
     const roomName =
       guestUsername !== null ? room.name.replace(guestUsername, "Stranger") : room.name;
-    introEl.textContent =
-      `Welcome to ${roomName}. ${room.players.length}/${room.maxPlayers} players present. ` +
-      `${greeting}, choose your Avatar:`;
+    // A guest plays against NPCs alone, so the head count means nothing to them.
+    const present =
+      guestUsername !== null ? "" : ` ${room.players.length}/${room.maxPlayers} players present.`;
+    introEl.textContent = `Welcome to ${roomName}.${present} ${greeting}, choose your Avatar:`;
 
     const claims = new Map<AvatarId, string>();
 
@@ -270,7 +273,9 @@ export async function renderRoomPage(
           ),
         );
         // Every free seat filled, unless the host already chose.
-        const fallback = options.includes(String(freeSeats)) ? String(freeSeats) : options[0] ?? "";
+        // A guest starts with 4 NPCs besides themselves.
+        const wanted = guestUsername !== null ? "4" : String(freeSeats);
+        const fallback = options.includes(wanted) ? wanted : options[0] ?? "";
         botsEl.value = current.length && options.includes(selected) ? selected : fallback;
       }
 

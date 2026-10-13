@@ -534,7 +534,7 @@ export default async function wizardRoutes(
         `${guestUsername}'s Table`,
         guestUserId,
         guestUsername,
-        4,
+        6,
       );
 
       const token = server.jwt.sign(
