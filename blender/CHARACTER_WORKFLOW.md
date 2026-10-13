@@ -5,8 +5,8 @@ black-witch, goatman, demon, kungfu-girl. Each has a root empty, armature and me
 Roots stay at origin with scale 1; `seat2`–`seat6` in `Wizard-Scene.blend` supply
 placement and 3x scale. The FBX conversion remains inside the character asset.
 
-Each armature has six sequential NLA tracks: `idle`, `idleTwitchy`, `laugh`,
-`disbelief`, `disapproval`, `thumbsUp`. Export NLA Tracks, Slide to Zero enabled,
+Each armature has seven sequential NLA tracks: `idle`, `idleTwitchy`, `laugh`,
+`disbelief`, `disapproval`, `thumbsUp`, `victory`. Export NLA Tracks, Slide to Zero enabled,
 playback-range limiting disabled, WebP textures, Custom Properties enabled.
 
 ## Run from Blender's Python Console
@@ -24,13 +24,23 @@ export_characters.run()
 
 Exports to the six existing `src/assets/models/wizard/char-<character>.glb` paths.
 Backups and a verification report go under `blender/export-backups/<timestamp>/`.
-Each GLB is validated for six clip names, one skin, the intended character root,
+Each GLB is validated for seven clip names, one skin, the intended character root,
 absence of other character roots, and the current nonmetal material baseline.
 Each validated temporary file replaces its destination; an error can leave earlier
 characters updated, with originals still available in the backup directory.
 Visibility, selection and timeline are restored. The environment GLB is untouched.
 All skin influences are exported; test runtime performance/deformation in Three.js.
 If intentional metal materials are introduced later, update the material check.
+
+## Victory clip
+
+`victory` (added 2026-10-13) grafts a standing Mixamo cheer onto the seated pose:
+spine and above from `Victory.fbx`, hips and legs held on each rig's own idle
+frame 1. The upper body eases out of and back into idle frame 1 over the first
+20 / last 30 frames, so the clip starts and ends with hands on knees. It is not
+tagged `hand_rest_correction`; do not run the hand script on it. Rebuild with
+`import add_victory_clip as v; v.run()` (replaces existing victory tracks).
+Pre-victory blend: `export-backups/pre-victory/characters.blend`.
 
 ## Texture optimization
 

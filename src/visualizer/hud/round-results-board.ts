@@ -43,6 +43,8 @@ export function createResultsBoard(
   const build = (card: ResultCard) => {
     const element = document.createElement("div");
     element.className = "hud-result";
+    // The winner's crown takes the character's colour.
+    element.dataset.character = card.character;
     element.classList.toggle("is-winner", card.points === winner);
 
     const face = document.createElement("figure");

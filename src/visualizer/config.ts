@@ -444,6 +444,14 @@ export const EMOTES = {
   reactionMinSeconds: 0.5,
   reactionMaxSeconds: 2.5,
 
+  // The winners' "victory" clip at the end of a game loops for good. A
+  // character without the clip just stays idle.
+  // With several winners, the first starts at once and each next one starts a
+  // random time after the one before, between these (in seconds, whatever the
+  // game speed), so they are not in step.
+  victoryStaggerMinSeconds: 0.5,
+  victoryStaggerMaxSeconds: 1.5,
+
   aiEnabled: true,
   aiMinSeconds: 6,
   aiMaxSeconds: 15,

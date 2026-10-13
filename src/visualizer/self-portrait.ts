@@ -9,6 +9,8 @@ import { frameCharacter } from "./portrait";
 export interface SelfPortrait {
   setCharacter(character: CharacterId): void;
   emote(emote: Emote): void;
+  // The "victory" clip, looping for good.
+  victory(): void;
   // Development aid: what's showing and its animation state.
   debug(): {
     character: CharacterId | null;
@@ -120,6 +122,10 @@ export function createSelfPortrait(view: HTMLElement): SelfPortrait {
 
     emote(emote) {
       animator?.playOnce(emote);
+    },
+
+    victory() {
+      animator?.playLoop("victory");
     },
 
     debug() {

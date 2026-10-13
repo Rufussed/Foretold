@@ -17,7 +17,7 @@ export const SEAT_IDS: readonly SeatId[] = [2, 3, 4, 5, 6];
 // ones players send each other against exactly what is animated here.
 export type { Emote };
 export type IdleVariant = "idle" | "idleTwitchy";
-export type ClipName = IdleVariant | Emote;
+export type ClipName = IdleVariant | Emote | "victory";
 
 export interface PlayerCharacters {
   setCharacter(seat: SeatId, character: CharacterId): Promise<void>;
@@ -26,6 +26,9 @@ export interface PlayerCharacters {
   // still crossfade back to it. Mainly for previewing animations.
   loopClip(seat: SeatId, clip: ClipName): void;
   emote(seat: SeatId, emote: Emote): void;
+  // The winner's celebration: the "victory" clip, looping for good. Not an
+  // emote, so players cannot send it.
+  victory(seat: SeatId): void;
   clearPlayer(seat: SeatId): void;
   update(deltaSeconds: number): void;
   dispose(): void;
@@ -170,6 +173,10 @@ export function createPlayerCharacters(
         return;
       }
       instance.animator.playOnce(emote);
+    },
+
+    victory(seat) {
+      seated.get(seat)?.animator.playLoop("victory");
     },
 
     clearPlayer(seat) {

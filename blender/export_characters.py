@@ -7,7 +7,7 @@ import shutil
 import struct
 
 CHARACTERS = ('forest-elf', 'blind-wizard', 'black-witch', 'goatman', 'demon', 'kungfu-girl')
-CLIPS = {'idle', 'idleTwitchy', 'laugh', 'disbelief', 'disapproval', 'thumbsUp'}
+CLIPS = {'idle', 'idleTwitchy', 'laugh', 'disbelief', 'disapproval', 'thumbsUp', 'victory'}
 
 def run():
     source = Path(bpy.data.filepath)
@@ -60,7 +60,7 @@ def run():
                 assert kind == 0x4E4F534A
                 data = json.loads(f.read(length))
             clips = [a['name'] for a in data.get('animations', [])]
-            assert len(clips) == 6 and set(clips) == CLIPS, (name, clips)
+            assert len(clips) == len(CLIPS) and set(clips) == CLIPS, (name, clips)
             assert len(data.get('skins', [])) == 1, name
             names = {n.get('name') for n in data['nodes']}
             assert name in names and not any(other in names for other in CHARACTERS if other != name)

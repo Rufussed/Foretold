@@ -16,6 +16,7 @@ import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot
 import { createAiEmotes } from "../visualizer/ai-emotes";
 import { reactionPending, reactToOvertake, reactToTrick } from "../visualizer/trick-reactions";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
+import { EMOTES } from "../visualizer/config";
 import { createGuestSignupPrompt, type GuestSignupPrompt } from "../visualizer/guest-signup-prompt";
 import { createHudScale } from "../visualizer/hud-scale";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
@@ -28,7 +29,15 @@ import { createGameHud, type GameHud } from "../visualizer/hud/game-hud";
 import { useHeadshotRenderer } from "../visualizer/hud/headshots";
 import { createCardTable, type CardTable } from "../visualizer/card-table";
 import { createDiagnostics, type Diagnostics } from "../visualizer/diagnostics";
-import { EMOTE_NAMES, SEAT_IDS, type Emote, type SeatId } from "../visualizer/player-characters";
+import {
+  EMOTE_NAMES,
+  SEAT_IDS,
+  type Emote,
+  type PlayerCharacters,
+  type SeatId,
+} from "../visualizer/player-characters";
+import { gameWinners } from "../visualizer/hud/game-winner";
+import { emoticonUrl, type Emoticon } from "../visualizer/emoticons";
 import { createTableDirector, type TableDirector } from "../visualizer/table-director";
 import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
@@ -41,12 +50,13 @@ import { createTableLayout } from "../visualizer/table-layout";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
 
-// Each emote button shows an emoji; the name is its tooltip and accessible label.
-const EMOTE_BUTTONS: Record<Emote, { emoji: string; name: string }> = {
-  laugh: { emoji: "😂", name: "Laugh" },
-  disbelief: { emoji: "😲", name: "Disbelief" },
-  disapproval: { emoji: "👎", name: "Disapproval" },
-  thumbsUp: { emoji: "👍", name: "Thumbs up" },
+// Each emote button shows a drawn emoticon; the name is its tooltip and
+// accessible label.
+const EMOTE_BUTTONS: Record<Emote, { emoticon: Emoticon; name: string }> = {
+  laugh: { emoticon: "laugh", name: "Laugh" },
+  disbelief: { emoticon: "disbelief", name: "Disbelief" },
+  disapproval: { emoticon: "thumbsDown", name: "Disapproval" },
+  thumbsUp: { emoticon: "thumbsUp", name: "Thumbs up" },
 };
 
 
@@ -93,6 +103,7 @@ export async function renderVisualizerPage(
     fullscreenToggle?.dispose();
     iphonePrompts?.dispose();
     hudScale?.dispose();
+    victoryTimers.forEach((timer) => window.clearTimeout(timer));
     guestPrompt?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
@@ -123,7 +134,7 @@ export async function renderVisualizerPage(
       <div class="visualizer-emotes" id="visualizer-emotes">
         ${EMOTE_NAMES.map(
           (emote) =>
-            `<button type="button" data-emote="${emote}" title="${EMOTE_BUTTONS[emote].name}" aria-label="${EMOTE_BUTTONS[emote].name}">${EMOTE_BUTTONS[emote].emoji}</button>`,
+            `<button type="button" data-emote="${emote}" title="${EMOTE_BUTTONS[emote].name}" aria-label="${EMOTE_BUTTONS[emote].name}"><span class="emoticon" style="--emoticon: url('${emoticonUrl(EMOTE_BUTTONS[emote].emoticon)}')"></span></button>`,
         ).join("")}
       </div>
 
@@ -205,7 +216,29 @@ export async function renderVisualizerPage(
 
   const live = latestState !== null && localUsername !== null;
   let seatSync: SeatSync | null = null;
+  // The game is over: each winner plays their "victory" clip a few times, on
+  // their seat at the table and, for you, in the corner portrait.
+  const victoryTimers: number[] = [];
+  const celebrate = (state: PublicWizardGameState) => {
+    // The first winner starts at once; each after them a random while after
+    // the one before.
+    let delay = 0;
+    for (const winner of gameWinners(state)) {
+      victoryTimers.push(
+        window.setTimeout(() => {
+          if (winner.username === localUsername) selfPortrait?.victory();
+          const seat = seatSync?.seatOf(winner.username);
+          if (seat != null) characters?.victory(seat);
+        }, delay * 1000),
+      );
+      delay +=
+        EMOTES.victoryStaggerMinSeconds +
+        Math.random() * (EMOTES.victoryStaggerMaxSeconds - EMOTES.victoryStaggerMinSeconds);
+    }
+  };
   let trigger: EmoteTrigger | null = null;
+  let characters: PlayerCharacters | null = null;
+  let victoryShown = false;
   let aiEmotes: { update(deltaSeconds: number): void } | null = null;
   let turnCamera: TurnCamera | null = null;
 
@@ -216,9 +249,10 @@ export async function renderVisualizerPage(
     const avatar = latestState?.players.find(
       (player) => player.username === localUsername,
     )?.avatar;
-    selfPortrait.setCharacter(
-      isCharacterId(avatar) ? avatar : characterForUsername(localUsername),
-    );
+    const character = isCharacterId(avatar) ? avatar : characterForUsername(localUsername);
+    selfPortrait.setCharacter(character);
+    // The emote buttons wear their character's colour.
+    container.querySelector<HTMLElement>("#visualizer-emotes")?.setAttribute("data-character", character);
   };
 
   const selfEl = container.querySelector<HTMLElement>("#visualizer-self");
@@ -276,7 +310,13 @@ export async function renderVisualizerPage(
       gameHud?.applyState();
       // A guest's game is over: after the winner has been announced, offer to
       // record their deeds.
-      if (director.hudState()?.phase === "finished") guestPrompt?.schedule();
+      const finished = director.hudState();
+      if (finished?.phase === "finished") guestPrompt?.schedule();
+      // The winners celebrate once the announcements have been read.
+      if (finished?.phase === "finished" && !victoryShown) {
+        victoryShown = true;
+        gameHud?.whenIdle(() => celebrate(finished));
+      }
     },
     dealing: () => cardTable?.dealing ?? false,
     lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
@@ -353,6 +393,11 @@ export async function renderVisualizerPage(
       console.error(message);
     },
     onReady: (players, environment, view) => {
+      characters = players;
+      if (import.meta.env.DEV) {
+        // From the console: __wizardPlayers.victory(2) to preview the clip.
+        (window as unknown as Record<string, unknown>).__wizardPlayers = players;
+      }
       diagnostics?.note(`table ready (${live ? "live game" : "demo table"})`);
       useHeadshotRenderer(view.renderer);
       // Where everything sits around the table, read from the scene's targets.
@@ -396,7 +441,11 @@ export async function renderVisualizerPage(
       );
       trigger = emoteTrigger;
       // A seat mid-emote, or about to react to a trick, is left alone by the random emoting.
-      const busy = (seat: SeatId) => reactionPending(seat) || !!players.debug(seat)?.emote;
+      const busy = (seat: SeatId) =>
+        reactionPending(seat) ||
+        !!players.debug(seat)?.emote ||
+        // A winner is celebrating for good; nothing random cuts in.
+        players.debug(seat)?.idleVariant === "victory";
 
       if (sync) {
         // Seats first, so the card table knows where each player sits.

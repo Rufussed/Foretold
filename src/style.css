@@ -629,6 +629,13 @@ button {
 .visualizer-page {
   /* Set from the window's size by visualizer/hud-scale.ts. */
   --hud-scale: 1;
+  /* A character's colour, for anything marked with their data-character: the
+     announcement border and the emoticons. Gold unless a rule below says
+     otherwise. */
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
   position: fixed;
   inset: 0;
   width: 100%;
@@ -887,14 +894,35 @@ button {
   padding: 0;
   font-size: 22px;
   line-height: 1;
-  background: var(--ui-bg);
+  background: #000;
   border: var(--ui-edge);
   border-radius: 8px;
-  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .visualizer-emotes button:hover {
-  background: var(--ui-bg-hover);
+  background: #000;
+  border-color: var(--button-gold);
+}
+
+.visualizer-page .visualizer-emotes button {
+  display: grid;
+  place-items: center;
+}
+
+/* An emoticon in its character's colour: the drawn art keeps its shading, and
+   takes the hue of --border-mid. Its shape (the art's own transparency) is
+   cut out with the mask. */
+.emoticon {
+  display: block;
+  width: 30px;
+  height: 30px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
+    var(--emoticon) center / contain no-repeat;
+  background-blend-mode: color, normal;
+  mask: var(--emoticon) center / contain no-repeat;
+  -webkit-mask: var(--emoticon) center / contain no-repeat;
 }
 
 /* No separate small sizes for the portrait and emotes: the whole group
@@ -1431,40 +1459,44 @@ button {
   --border-glow: rgb(255 196 64 / 35%);
 }
 
-.visualizer-page .hud-announcer[data-character="forest-elf"] {
+.visualizer-page [data-character="forest-elf"] {
   --border-dark: #14501f;
   --border-mid: #4ade5a;
   --border-glint: #d6ffd0;
   --border-glow: rgb(74 222 90 / 35%);
+  /* The emoticons in the green of her face (sampled from her texture). */
+  --emoticon-tint: #87923a;
 }
 
-.visualizer-page .hud-announcer[data-character="kungfu-girl"] {
+.visualizer-page [data-character="kungfu-girl"] {
   --border-dark: #8a3a08;
   --border-mid: #ff9a2e;
   --border-glint: #ffe0b0;
   --border-glow: rgb(255 154 46 / 35%);
+  /* The emoticons a shade more orange than the border. */
+  --emoticon-tint: #ff7a14;
 }
 
 /* Dark metal: a grey border with a silver glint. */
-.visualizer-page .hud-announcer[data-character="black-witch"] {
+.visualizer-page [data-character="black-witch"] {
   --border-dark: #2a2d33;
   --border-mid: #8c939e;
   --border-glint: #f2f6fc;
   --border-glow: rgb(140 147 158 / 30%);
 }
 
-.visualizer-page .hud-announcer[data-character="demon"] {
+.visualizer-page [data-character="demon"] {
   --border-dark: #084845;
   --border-mid: #14b8aa;
   --border-glint: #a6ece6;
   --border-glow: rgb(20 184 170 / 30%);
 }
 
-.visualizer-page .hud-announcer[data-character="blind-wizard"] {
-  --border-dark: #2f1459;
-  --border-mid: #8a52e0;
-  --border-glint: #d8c4f7;
-  --border-glow: rgb(138 82 224 / 30%);
+.visualizer-page [data-character="blind-wizard"] {
+  --border-dark: #260f48;
+  --border-mid: #7040c0;
+  --border-glint: #c4acee;
+  --border-glow: rgb(112 64 192 / 30%);
 }
 
 /* The trump colour announcement: the border in the suit's own colour. */
@@ -1613,12 +1645,18 @@ button {
 }
 
 .hud-result.is-winner .hud-result-face::before {
-  content: "👑";
+  content: "";
   position: absolute;
   top: -13px;
   left: 18px;
-  font-size: 18px;
-  line-height: 1;
+  width: 20px;
+  height: 20px;
+  background:
+    linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
+    url("./assets/emoticons/crown.webp") center / contain no-repeat;
+  background-blend-mode: color, normal;
+  mask: url("./assets/emoticons/crown.webp") center / contain no-repeat;
+  -webkit-mask: url("./assets/emoticons/crown.webp") center / contain no-repeat;
   transform: translateX(-50%);
 }
 
@@ -1765,7 +1803,7 @@ button {
 }
 
 /* Game over: the winner's headshot, large, under the announcement, with a big
-   crown on top. A tie shows everyone on the top score, uncrowned. */
+   crown on top. A tie shows everyone on the top score, each crowned. */
 .hud-game-winner {
   display: flex;
   justify-content: center;
@@ -1789,18 +1827,20 @@ button {
   object-fit: cover;
 }
 
-.hud-game-winner:not(.is-tie) .hud-game-winner-face::before {
-  content: "👑";
+.hud-game-winner .hud-game-winner-face::before {
+  content: "";
   position: absolute;
   top: 0;
   left: 50%;
-  font-size: 52px;
-  line-height: 1;
+  width: 56px;
+  height: 56px;
+  background:
+    linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
+    url("./assets/emoticons/crown.webp") center / contain no-repeat;
+  background-blend-mode: color, normal;
+  mask: url("./assets/emoticons/crown.webp") center / contain no-repeat;
+  -webkit-mask: url("./assets/emoticons/crown.webp") center / contain no-repeat;
   transform: translateX(-50%);
-}
-
-.hud-game-winner.is-tie .hud-game-winner-face img {
-  border-color: rgb(255 255 255 / 40%);
 }
 
 @media (max-width: 640px) {
@@ -1809,8 +1849,9 @@ button {
     height: 88px;
   }
 
-  .hud-game-winner:not(.is-tie) .hud-game-winner-face::before {
-    font-size: 36px;
+  .hud-game-winner .hud-game-winner-face::before {
+    width: 38px;
+    height: 38px;
   }
 }
 /* Carlos added from here 28/09/26 */

@@ -10,7 +10,7 @@ export function gameWinners(state: PublicWizardGameState) {
 }
 
 // Under the game-over announcement: a large headshot of the winner with a big
-// crown on top. A tie shows everyone on the top score, without crowns.
+// crown on top. A tie shows everyone on the top score, each with a crown.
 export function createGameWinner(container: HTMLElement, state: PublicWizardGameState): { dispose(): void } {
   const winners = gameWinners(state);
   const element = document.createElement("div");
@@ -21,6 +21,7 @@ export function createGameWinner(container: HTMLElement, state: PublicWizardGame
   for (const player of winners) {
     const figure = document.createElement("figure");
     figure.className = "hud-game-winner-face";
+    figure.dataset.character = characterForPlayer(player);
     const image = document.createElement("img");
     image.alt = displayName(player.username);
     figure.append(image);

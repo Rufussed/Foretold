@@ -1,12 +1,13 @@
 import * as THREE from "three";
 import { TRUMP_CROWN } from "./config";
+import { emoticonUrl } from "./emoticons";
 
 export interface TrumpCrown {
   update(deltaSeconds: number): void;
   dispose(): void;
 }
 
-// A little crown emoji hovering over the middle of the trump card, just in
+// A little crown (the drawn emoticon) hovering over the middle of the trump card, just in
 // front of it as the camera sees it, bobbing gently. A sprite, so it always
 // faces the camera. Sized from the card itself, so it suits the table's scale
 // whatever the card targets are.
@@ -15,16 +16,7 @@ export function createTrumpCrown(
   camera: THREE.Camera,
   trumpCard: () => THREE.Object3D | null,
 ): TrumpCrown {
-  const canvas = document.createElement("canvas");
-  canvas.width = 128;
-  canvas.height = 128;
-  const context = canvas.getContext("2d")!;
-  context.font = "96px 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif";
-  context.textAlign = "center";
-  context.textBaseline = "middle";
-  context.fillText("👑", 64, 70);
-
-  const texture = new THREE.CanvasTexture(canvas);
+  const texture = new THREE.TextureLoader().load(emoticonUrl("crown"));
   texture.colorSpace = THREE.SRGBColorSpace;
   const material = new THREE.SpriteMaterial({ map: texture, transparent: true, toneMapped: false, depthWrite: false });
   const crown = new THREE.Sprite(material);
