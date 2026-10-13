@@ -1,6 +1,15 @@
 import * as THREE from "three";
 import { ANIMATION, EMOTES } from "./config";
 
+export interface SeamlessLoopOptions {
+  // Seconds into the clip where the loop begins (past the ease-in).
+  start: number;
+  // Seconds before the clip's end where the loop is cut (before the ease-out).
+  trim: number;
+  // Seconds the end of the loop takes to blend into its start.
+  fade: number;
+}
+
 export interface CharacterAnimator {
   readonly mixer: THREE.AnimationMixer;
   // The looping base clip, and the one-shot currently in charge, if any.
@@ -12,6 +21,11 @@ export interface CharacterAnimator {
   // Plays a clip once, blended in from whatever is showing, then blends back
   // to the loop.
   playOnce(name: string): void;
+  // Loops a clip as the base animation without ever returning to its first or
+  // last frames: it plays from the start once, then loops only the part from
+  // `start` to `trim` before the end, blending the end of that part into its
+  // start. For a clip authored to ease out of and back into idle at its ends.
+  playSeamlessLoop(name: string, options: SeamlessLoopOptions): void;
   actions(): Record<string, THREE.AnimationAction>;
   update(deltaSeconds: number): void;
   dispose(): void;
@@ -30,6 +44,9 @@ export function createCharacterAnimator(
   let loopName = "idle";
   let loopAction: THREE.AnimationAction | null = null;
   let onceAction: THREE.AnimationAction | null = null;
+  // A loop that blends its own end into its start, between two copies of the
+  // same clip taking turns (see playSeamlessLoop).
+  let seamless: { other: THREE.AnimationAction; options: SeamlessLoopOptions; duration: number } | null = null;
 
   const actionFor = (name: string) => {
     const clip = clips.get(name);
@@ -65,6 +82,7 @@ export function createCharacterAnimator(
     },
 
     playLoop(name) {
+      seamless = null;
       loopName = name;
       const next = actionFor(name);
       const previous = loopAction;
@@ -122,6 +140,31 @@ export function createCharacterAnimator(
       onceAction = next;
     },
 
+    playSeamlessLoop(name, options) {
+      const clip = clips.get(name);
+      if (!clip) {
+        console.warn(`[animation] ${label} has no "${name}" clip`);
+        return;
+      }
+      loopName = name;
+      const first = mixer.clipAction(clip);
+      // A second copy of the clip, so the next lap can start while this one
+      // fades out; one clip cannot be at two times at once.
+      const copy = clip.clone();
+      copy.name = `${name}~next`;
+      const second = mixer.clipAction(copy);
+
+      const from = onceAction ?? loopAction;
+      onceAction = null;
+      first.reset();
+      first.setLoop(THREE.LoopOnce, 1);
+      first.clampWhenFinished = true;
+      first.play();
+      if (from && from !== first) from.crossFadeTo(first, EMOTES.crossfadeSeconds, false);
+      loopAction = first;
+      seamless = { other: second, options, duration: clip.duration };
+    },
+
     actions() {
       const actions: Record<string, THREE.AnimationAction> = {};
       for (const [name, clip] of clips) {
@@ -133,6 +176,20 @@ export function createCharacterAnimator(
 
     update(deltaSeconds) {
       mixer.update(deltaSeconds);
+      // Near the loop's end the next lap starts, from the loop's start, and
+      // this one fades into it; they then swap roles for the lap after.
+      const current = loopAction;
+      if (seamless && current && current.time >= seamless.duration - seamless.options.trim) {
+        const next = seamless.other;
+        next.reset();
+        next.setLoop(THREE.LoopOnce, 1);
+        next.clampWhenFinished = true;
+        next.time = seamless.options.start;
+        next.play();
+        current.crossFadeTo(next, seamless.options.fade, false);
+        loopAction = next;
+        seamless.other = current;
+      }
     },
 
     dispose() {

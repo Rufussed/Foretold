@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { createCharacterAnimator, type CharacterAnimator } from "./character-animator";
 import { loadCharacterAsset, type CharacterId } from "./character-assets";
-import { SELF_PORTRAIT } from "./config";
+import { EMOTES, SELF_PORTRAIT } from "./config";
 import type { Emote } from "./player-characters";
 import { frameCharacter } from "./portrait";
 
@@ -125,7 +125,11 @@ export function createSelfPortrait(view: HTMLElement): SelfPortrait {
     },
 
     victory() {
-      animator?.playLoop("victory");
+      animator?.playSeamlessLoop("victory", {
+        start: EMOTES.victoryLoopStartSeconds,
+        trim: EMOTES.victoryLoopTrimSeconds,
+        fade: EMOTES.victoryLoopFadeSeconds,
+      });
     },
 
     debug() {

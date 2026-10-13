@@ -445,7 +445,14 @@ export const EMOTES = {
   reactionMaxSeconds: 2.5,
 
   // The winners' "victory" clip at the end of a game loops for good. A
-  // character without the clip just stays idle.
+  // character without the clip just stays idle. The clip is authored to ease
+  // out of and back into idle at its ends (blender/add_victory_clip.py: 20
+  // frames in, 30 out, at the scene's 30 fps), so the loop skips both: it plays
+  // the ease-in once, then repeats only what lies between, blending the end
+  // of that part into its start.
+  victoryLoopStartSeconds: 20 / 30,
+  victoryLoopTrimSeconds: 30 / 30,
+  victoryLoopFadeSeconds: 0.5,
   // With several winners, the first starts at once and each next one starts a
   // random time after the one before, between these (in seconds, whatever the
   // game speed), so they are not in step.

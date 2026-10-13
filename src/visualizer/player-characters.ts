@@ -3,7 +3,7 @@ import { EMOTE_NAMES, type Emote } from "../../backend/src/game/wizard/models/em
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { findBone, loadCharacterAsset, type CharacterId } from "./character-assets";
 import { createCharacterAnimator, type CharacterAnimator } from "./character-animator";
-import { CHARACTER_SEATING, DEFAULT_SEATING } from "./config";
+import { CHARACTER_SEATING, DEFAULT_SEATING, EMOTES } from "./config";
 
 export { CHARACTER_IDS, type CharacterId } from "./character-assets";
 
@@ -176,7 +176,11 @@ export function createPlayerCharacters(
     },
 
     victory(seat) {
-      seated.get(seat)?.animator.playLoop("victory");
+      seated.get(seat)?.animator.playSeamlessLoop("victory", {
+        start: EMOTES.victoryLoopStartSeconds,
+        trim: EMOTES.victoryLoopTrimSeconds,
+        fade: EMOTES.victoryLoopFadeSeconds,
+      });
     },
 
     clearPlayer(seat) {
