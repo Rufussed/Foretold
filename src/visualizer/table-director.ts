@@ -30,6 +30,8 @@ export interface TableDirectorOptions {
   lookAt(username: string | null, done: () => void): void;
   // Done once every announcement has had its time.
   whenAnnouncerIdle(done: () => void): void;
+  // Announces which suit is trumps, as the round's cards finish dealing.
+  announceTrump(state: PublicWizardGameState): void;
   // The finished trick's gather and tesseract; done once it has gone.
   playTrickReward(done: () => void): void;
 }
@@ -119,6 +121,11 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
     if (!previous) {
       showHud(next);
       await deal(next); // settles at once when joining partway through a round
+      // A game's first round starts here too, with nobody having predicted.
+      if (next.players.every((player) => player.prediction === null) && !next.currentTrick.playedCards.length) {
+        options.announceTrump(next);
+        await announcer();
+      }
       await announceTurn(next);
       return;
     }
@@ -128,6 +135,10 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       await announcer();
       await camera(null);
       await deal(next);
+      // The trump colour is announced in full before the first player is
+      // announced and the camera turns to them.
+      options.announceTrump(next);
+      await announcer();
       await announceTurn(next);
       return;
     }

@@ -13,7 +13,17 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
   const isLoggedIn = Boolean(token);
   const currentUser = isLoggedIn ? await getCurrentUser() : null;
 
+  // A guest finishing a game sends them here to sign up (see
+  // visualizer/guest-signup-prompt.ts).
   let activePanel: Panel = null;
+  try {
+    if (sessionStorage.getItem("wizardOpenSignup") === "1") {
+      sessionStorage.removeItem("wizardOpenSignup");
+      if (!isLoggedIn) activePanel = "signup";
+    }
+  } catch {
+    // No storage: the home page opens as usual.
+  }
 
   function render(): void {
     container.innerHTML = `

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { cardBackTexture } from "./card-textures";
-import { CARD_HANDLING } from "./config";
+import { CARD_HANDLING, CARDS } from "./config";
 
 export interface CardObject {
   object: THREE.Object3D;
@@ -18,11 +18,22 @@ export interface CardOutlineOptions {
   ownMaterial?: boolean;
 }
 
+// Which cards the screen pass leaves out of its edge smoothing (see
+// sharpen-pass.ts): the ones players read, so their art stays as scanned.
+export interface CardSmoothingOptions {
+  unsmoothed?: boolean;
+}
+
 export interface CardFactory {
   readonly width: number; // card face width, in card-mesh units
   readonly length: number; // card face length, in card-mesh units
   // A new card, added to the environment and hidden until something places it.
-  build(name: string, texture: THREE.Texture, outline?: CardOutlineOptions): CardObject;
+  build(
+    name: string,
+    texture: THREE.Texture,
+    outline?: CardOutlineOptions,
+    smoothing?: CardSmoothingOptions,
+  ): CardObject;
 }
 
 const TEMPLATE_NODE = "card01";
@@ -35,9 +46,37 @@ const OUTLINE_DEPTH = 0.004;
 // game, and the torches flicker too hard for a lit material to stay readable.
 // Unlit and untone-mapped, so the pixels reach the screen as they are. The
 // mesh still casts a shadow, which comes from its depth, not its material.
-function unlitCardMaterial(map: THREE.Texture, name: string): THREE.MeshBasicMaterial {
+function unlitCardMaterial(
+  map: THREE.Texture,
+  name: string,
+  unsmoothed = false,
+): THREE.MeshBasicMaterial {
   const material = new THREE.MeshBasicMaterial({ map, toneMapped: false });
   material.name = name;
+  // The two variants differ only in what onBeforeCompile writes, so three
+  // needs telling them apart or it would share one compiled program.
+  material.customProgramCacheKey = () => (unsmoothed ? "card-unsmoothed" : "card-smoothed");
+  material.onBeforeCompile = (shader) => {
+    // Sample the art's mipmaps a little sharper than the GPU would choose.
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <map_fragment>",
+        THREE.ShaderChunk.map_fragment.replace(
+          "texture2D( map, vMapUv )",
+          `texture2D( map, vMapUv, ${CARDS.mipBias.toFixed(2)} )`,
+        ),
+      )
+      // Mark the pixel, in the alpha nothing else uses, so the screen pass
+      // can leave it out of its edge smoothing (see sharpen-pass.ts). Opaque
+      // materials otherwise write exactly 1.
+      .replace(
+        "#include <opaque_fragment>",
+        unsmoothed
+          ? `#include <opaque_fragment>
+             gl_FragColor.a = 0.5;`
+          : "#include <opaque_fragment>",
+      );
+  };
   return material;
 }
 
@@ -81,7 +120,7 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
     width: size.x,
     length: size.z,
 
-    build(name, texture, outlineOptions) {
+    build(name, texture, outlineOptions, smoothing) {
       const object = template.clone(true);
       object.name = name;
       object.visible = false;
@@ -92,7 +131,7 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh || Array.isArray(mesh.material)) return;
         if (mesh.material.name !== FACE_MATERIAL_NAME) return;
-        const material = unlitCardMaterial(texture, mesh.material.name);
+        const material = unlitCardMaterial(texture, mesh.material.name, smoothing?.unsmoothed);
         mesh.material = material;
         faceMesh = mesh;
         faceMaterial = material;

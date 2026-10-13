@@ -57,7 +57,9 @@ export function createSelfPortrait(view: HTMLElement): SelfPortrait {
     const width = view.clientWidth;
     const height = view.clientHeight;
     if (!width || !height) return;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, SELF_PORTRAIT.maxPixelRatio));
+    renderer.setPixelRatio(
+      Math.min(window.devicePixelRatio * SELF_PORTRAIT.supersample, SELF_PORTRAIT.maxPixelRatio),
+    );
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();

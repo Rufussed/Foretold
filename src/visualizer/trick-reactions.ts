@@ -12,6 +12,10 @@ const PLEASED: readonly Emote[] = ["laugh", "thumbsUp"];
 const waiting = new Map<SeatId, number>();
 export const reactionPending = (seat: SeatId): boolean => (waiting.get(seat) ?? 0) > 0;
 
+// A short beat before the reaction, so it follows the card rather than
+// landing on it.
+const OVERTAKEN_DELAY_SECONDS = [0.25, 0.7] as const;
+
 const pick = (emotes: readonly Emote[]) => emotes[Math.floor(Math.random() * emotes.length)];
 
 // How the NPCs take a won trick. An NPC that played in it and lost shows
@@ -61,4 +65,26 @@ export function reactToTrick(
       trigger.request({ target: seat, emote, source: "ai" });
     }, delay);
   }
+}
+
+// An NPC whose card was leading the trick has just been overtaken by another
+// player's: it shows disbelief or disapproval. The reaction cuts across any
+// emote under way, and the seat counts as busy until it has played, so no
+// random emote starts on top of it.
+export function reactToOvertake(
+  previousLeader: string,
+  trigger: EmoteTrigger,
+  seatOf: (username: string) => SeatId | null,
+): void {
+  if (!isBotName(previousLeader)) return;
+  const seat = seatOf(previousLeader);
+  if (seat === null) return;
+  const emote = pick(SORE_LOSER);
+  const [min, max] = OVERTAKEN_DELAY_SECONDS;
+  const delay = (min + Math.random() * (max - min)) * 1000;
+  waiting.set(seat, (waiting.get(seat) ?? 0) + 1);
+  window.setTimeout(() => {
+    waiting.set(seat, (waiting.get(seat) ?? 1) - 1);
+    trigger.request({ target: seat, emote, source: "ai", force: true });
+  }, delay);
 }

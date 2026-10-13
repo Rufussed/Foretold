@@ -1,4 +1,5 @@
 import { API_BASE } from "../services/api";
+import { displayName } from "../utils/display-name";
 import { renderNavbar } from "../components/Navbar";
 import { getCurrentUser } from "../services/auth";
 
@@ -23,8 +24,7 @@ type LobbyData = {
 
 // A guest's username is a generated id, so they are listed as a stranger.
 function playerLabel(username: string): string {
-  if (/^guest-/i.test(username)) return "Stranger";
-  return username.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+  return displayName(username).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
 }
 
 export async function renderLobbyPage(

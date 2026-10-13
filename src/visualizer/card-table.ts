@@ -33,6 +33,9 @@ export interface CardTableOptions {
   headOf(seat: SeatId): THREE.Vector3 | null;
   // Called when a deal has finished landing.
   onDealDone?(): void;
+  // Called when another player's card takes the lead in the trick, with the
+  // player who was leading.
+  onOvertaken?(previousLeader: string): void;
 }
 
 export interface CardTable {
@@ -73,6 +76,7 @@ export function createCardTable({
   seatOf,
   headOf,
   onDealDone,
+  onOvertaken,
 }: CardTableOptions): CardTable {
   const factory = createCardFactory(environment);
   const cards = createTableCards(environment, factory, layout);
@@ -224,6 +228,8 @@ export function createCardTable({
   // The trick as last shown; null until the first update, so opening the table
   // mid-trick doesn't replay cards played before you arrived.
   let knownTrick: Set<string> | null = null;
+  // Who was winning the trick at the last update, to notice a change of lead.
+  let lastLeader: string | null = null;
   const rules = new WizardRules();
 
   const applyState = () => {
@@ -266,6 +272,9 @@ export function createCardTable({
     );
     const leadingPlay = state.currentTrick.playedCards.find((played) => played.username === leader);
     cards.setLeading(leadingPlay ? cardKey(leadingPlay.card) : null);
+    const newLeader = leadingPlay ? leader : null;
+    if (lastLeader && newLeader && newLeader !== lastLeader) onOvertaken?.(lastLeader);
+    lastLeader = newLeader;
     cards.setTrump(state.trumpCard, state.trumpSuit);
 
     // A finished trick's reward waits for the table director

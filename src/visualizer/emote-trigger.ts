@@ -11,6 +11,9 @@ export interface EmoteRequest {
   target: EmoteTarget;
   emote: Emote;
   source: TriggerSource;
+  // Play now, cutting across whatever the character is doing and ignoring the
+  // cooldown: for a reaction that has to land at its moment.
+  force?: boolean;
 }
 
 export interface EmoteTrigger {
@@ -48,14 +51,14 @@ export function createEmoteTrigger(
   };
 
   return {
-    request({ target, emote }) {
+    request({ target, emote, force }) {
       let state = targets.get(target);
       if (!state) {
         state = { readyAt: 0, queued: null };
         targets.set(target, state);
       }
 
-      if (clock >= state.readyAt) {
+      if (force || clock >= state.readyAt) {
         play(target, emote, state);
       } else if (EMOTES.onCooldownHit === "queue") {
         // One slot per character: the newest press replaces an older one.

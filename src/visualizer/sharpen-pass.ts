@@ -33,6 +33,7 @@ const FRAGMENT = /* glsl */ `
   uniform sampler2D tDiffuse;
   uniform vec2 texelSize;
   uniform float amount;
+  uniform float fxaa;
   uniform float exposure;
   varying vec2 vUv;
 
@@ -72,8 +73,55 @@ const FRAGMENT = /* glsl */ `
     return toSRGB(acesFilmic(texture2D(tDiffuse, uv).rgb));
   }
 
+  float luma(vec3 color) {
+    return dot(color, vec3(0.299, 0.587, 0.114));
+  }
+
+  // Edge-directed smoothing (after FXAA): where the four corners disagree
+  // about brightness there is an edge, and the pixel is averaged along it
+  // rather than across it. Flat areas, where the corners agree, are returned
+  // untouched, so the cost and the softening are only where an edge is.
+  vec3 smoothEdges(vec2 uv, vec3 rgbM) {
+    vec3 rgbNW = display(uv + vec2(-1.0, -1.0) * texelSize);
+    vec3 rgbNE = display(uv + vec2( 1.0, -1.0) * texelSize);
+    vec3 rgbSW = display(uv + vec2(-1.0,  1.0) * texelSize);
+    vec3 rgbSE = display(uv + vec2( 1.0,  1.0) * texelSize);
+    float lumaM = luma(rgbM);
+    float lumaNW = luma(rgbNW);
+    float lumaNE = luma(rgbNE);
+    float lumaSW = luma(rgbSW);
+    float lumaSE = luma(rgbSE);
+    float lumaMin = min(lumaM, min(min(lumaNW, lumaNE), min(lumaSW, lumaSE)));
+    float lumaMax = max(lumaM, max(max(lumaNW, lumaNE), max(lumaSW, lumaSE)));
+    if (lumaMax - lumaMin < max(0.0312, lumaMax * 0.125)) return rgbM;
+
+    vec2 dir = vec2(
+      -((lumaNW + lumaNE) - (lumaSW + lumaSE)),
+       ((lumaNW + lumaSW) - (lumaNE + lumaSE))
+    );
+    float reduce = max((lumaNW + lumaNE + lumaSW + lumaSE) * 0.03125, 0.0078125);
+    float scale = 1.0 / (min(abs(dir.x), abs(dir.y)) + reduce);
+    dir = clamp(dir * scale, vec2(-6.0), vec2(6.0)) * texelSize;
+
+    vec3 rgbA = 0.5 * (
+      display(uv + dir * (1.0 / 3.0 - 0.5)) +
+      display(uv + dir * (2.0 / 3.0 - 0.5))
+    );
+    vec3 rgbB = rgbA * 0.5 + 0.25 * (
+      display(uv + dir * -0.5) +
+      display(uv + dir * 0.5)
+    );
+    float lumaB = luma(rgbB);
+    return (lumaB < lumaMin || lumaB > lumaMax) ? rgbA : rgbB;
+  }
+
   void main() {
     vec3 middle = display(vUv);
+    // Card pixels are marked with an alpha of 0.5 (see card-objects.ts) and
+    // are left out of the smoothing, so their art stays as scanned.
+    float marker = texture2D(tDiffuse, vUv).a;
+    bool isCard = abs(marker - 0.5) < 0.2;
+    if (fxaa > 0.0 && !isCard) middle = mix(middle, smoothEdges(vUv, middle), fxaa);
 
     // The four edge neighbours: a cross, not a box, so the filter follows
     // horizontal and vertical detail (card edges, numerals) without the
@@ -106,7 +154,12 @@ export interface SharpenPass {
   dispose(): void;
 }
 
-export function createSharpenPass(renderer: THREE.WebGLRenderer, amount: number): SharpenPass {
+// `smoothing` is how much of the edge smoothing to apply, 0 to 1.
+export function createSharpenPass(
+  renderer: THREE.WebGLRenderer,
+  amount: number,
+  smoothing = 0,
+): SharpenPass {
   // The scene's own render target. Depth is needed (this is a 3D scene);
   // stencil is not. HalfFloat keeps the tone mapping's headroom, since the
   // filter runs after the renderer's own output encoding.
@@ -126,6 +179,7 @@ export function createSharpenPass(renderer: THREE.WebGLRenderer, amount: number)
       tDiffuse: { value: target.texture },
       texelSize: { value: new THREE.Vector2(1, 1) },
       amount: { value: amount },
+      fxaa: { value: smoothing },
       exposure: { value: renderer.toneMappingExposure },
     },
     depthTest: false,

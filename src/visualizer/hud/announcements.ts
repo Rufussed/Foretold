@@ -1,3 +1,4 @@
+import { displayName } from "../../utils/display-name";
 import { gameWinners } from "./game-winner";
 import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { Card } from "../../../backend/src/game/wizard/models/card";
@@ -21,7 +22,7 @@ export interface RoundResult {
   total: number;
 }
 
-const nameOf = (username: string, local: string) => (username === local ? "You" : username);
+const nameOf = (username: string, local: string) => (username === local ? "You" : displayName(username));
 
 export function cardName(card: Card): string {
   if (card.value === 14) return "Wizard";
@@ -51,7 +52,7 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
     case "trump-selection": {
       if (!current) return null;
       const turnedUp = `${state.trumpCard?.value === 14 ? "A Wizard" : "A Jester"} was turned up for trumps`;
-      return current === local ? `${turnedUp}: choose the trump suit.` : `${turnedUp}: ${current} is choosing the suit.`;
+      return current === local ? `${turnedUp}: choose the trump suit.` : `${turnedUp}: ${displayName(current)} is choosing the suit.`;
     }
     case "predictions": {
       if (!current) return null;
@@ -65,9 +66,9 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       if (!current || state.currentTrick.winnerUsername) return null;
       // The first card of each trick: that player leads.
       if (state.currentTrick.playedCards.length === 0) {
-        return current === local ? "You lead" : `${current} leads`;
+        return current === local ? "You lead" : `${displayName(current)} leads`;
       }
-      return current === local ? "Your Turn." : `${current}'s turn.`;
+      return current === local ? "Your Turn." : `${displayName(current)}'s turn.`;
     case "finished": {
       const winners = gameWinners(state);
       const winner = winners[0];
@@ -80,6 +81,16 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       return `${nameOf(winner.username, local)} ${winner.username === local ? "Win" : "Wins"} the Game!`;
     }
   }
+}
+
+// Said once a round's cards are dealt and the trump card is showing: which suit
+// is trumps. A Wizard or Jester turned up has its own announcements (the
+// choosing), so it says nothing here; the last round has no trump card at all.
+export function trumpMessage(state: PublicWizardGameState): string | null {
+  const card = state.trumpCard;
+  if (!card) return "No Trump Colour this round";
+  if (card.value === 14 || card.value === 0) return null;
+  return state.trumpSuit ? `Trump Colour is ${state.trumpSuit}` : null;
 }
 
 // A one-off announcement, and the player it's about.

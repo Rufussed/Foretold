@@ -14,8 +14,10 @@ import {
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName, seatNameFor } from "../../backend/src/game/wizard/models/bot";
 import { createAiEmotes } from "../visualizer/ai-emotes";
-import { reactionPending, reactToTrick } from "../visualizer/trick-reactions";
+import { reactionPending, reactToOvertake, reactToTrick } from "../visualizer/trick-reactions";
 import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/background-music";
+import { createGuestSignupPrompt, type GuestSignupPrompt } from "../visualizer/guest-signup-prompt";
+import { createHudScale } from "../visualizer/hud-scale";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -79,6 +81,8 @@ export async function renderVisualizerPage(
   let effectsToggle: EffectsToggle | null = null;
   let fullscreenToggle: FullscreenToggle | null = null;
   let iphonePrompts: { dispose(): void } | null = null;
+  let hudScale: { dispose(): void } | null = null;
+  let guestPrompt: GuestSignupPrompt | null = null;
   const isGuestGame =
     !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
 
@@ -88,6 +92,8 @@ export async function renderVisualizerPage(
     effectsToggle?.dispose();
     fullscreenToggle?.dispose();
     iphonePrompts?.dispose();
+    hudScale?.dispose();
+    guestPrompt?.dispose();
     music?.dispose();
     useHeadshotRenderer(null);
     diagnostics?.dispose();
@@ -143,6 +149,8 @@ export async function renderVisualizerPage(
     // play it with. Null where the browser will not do fullscreen at all.
     fullscreenToggle = createFullscreenToggle(toolbar, pageEl);
     iphonePrompts = createIPhoneAppPrompts(pageEl);
+    hudScale = createHudScale(pageEl);
+    if (isGuestGame) guestPrompt = createGuestSignupPrompt(pageEl, getGuestUsername() ?? "");
   }
 
   const canvas = container.querySelector<HTMLCanvasElement>(
@@ -266,10 +274,14 @@ export async function renderVisualizerPage(
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
       gameHud?.applyState();
+      // A guest's game is over: after the winner has been announced, offer to
+      // record their deeds.
+      if (director.hudState()?.phase === "finished") guestPrompt?.schedule();
     },
     dealing: () => cardTable?.dealing ?? false,
     lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
+    announceTrump: (state) => gameHud?.announceTrump(state),
     playTrickReward: (done) => {
       // The NPCs react as the trick is won.
       const state = director.tableState();
@@ -358,6 +370,10 @@ export async function renderVisualizerPage(
         seatOf: (username) => sync?.seatOf(username) ?? null,
         headOf: (seat) => players.headPosition(seat),
         onDealDone: () => director.dealt(),
+        // An NPC whose card was leading shows it did not like being beaten.
+        onOvertaken: (previousLeader) => {
+          if (trigger) reactToOvertake(previousLeader, trigger, (username) => sync?.seatOf(username) ?? null);
+        },
       });
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizardCards = cardTable.cards;

@@ -1,3 +1,4 @@
+import { displayName } from "../../utils/display-name";
 import type { CharacterId } from "../character-assets";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer } from "../seat-mapping";
@@ -23,7 +24,7 @@ const NAME_LIMIT = 10;
 // and ends in a full stop to show it was; a name shortened at a space is a
 // whole word already, so it needs no mark.
 const shortName = (username: string) => {
-  const firstWord = username.split(" ")[0] ?? username;
+  const firstWord = displayName(username).split(" ")[0] ?? username;
   return firstWord.length > NAME_LIMIT ? `${firstWord.slice(0, NAME_LIMIT)}.` : firstWord;
 };
 
@@ -65,10 +66,8 @@ export function createPlayerList(
     cell.textContent = text;
     return cell;
   };
-  // The first cell, over the names, holds the wizard from the home page.
-  const logo = document.createElement("span");
-  logo.className = "hud-logo";
-  headings.append(logo, headingFor("Predicts"), headingFor("Tricks"));
+  // The first cell, over the names, stays empty to keep the columns aligned.
+  headings.append(document.createElement("span"), headingFor("Predicts"), headingFor("Tricks"));
 
   const rows = new Map<string, Row>();
   let order = "";
@@ -84,7 +83,7 @@ export function createPlayerList(
     const name = document.createElement("figcaption");
     name.textContent = shortName(username);
     // The full name is still available to a pointer and a screen reader.
-    name.title = username;
+    name.title = displayName(username);
     face.append(image, name);
 
     // Labels hidden: the headings above say it once, but each row keeps its

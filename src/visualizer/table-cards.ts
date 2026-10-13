@@ -3,6 +3,7 @@ import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
+import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
 import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
@@ -93,6 +94,8 @@ interface TableCard {
   key: string;
   object: THREE.Object3D;
   outline: THREE.Mesh;
+  // The shared hover look, to go back to after the leader's ring.
+  outlineBase: { material: THREE.Material | THREE.Material[]; scale: THREE.Vector3 };
   raised: boolean;
   drag: THREE.Vector3 | null; // environment-local position while dragged
   placed: boolean;
@@ -159,17 +162,41 @@ export function createTableCards(
   let clock = 0;
   let warnedOverflow = false;
 
+  // One material for every leader's ring, made from the first outline's
+  // geometry, which all cards share.
+  let leadingMaterial: THREE.ShaderMaterial | null = null;
+  const applyOutlineStyle = (entry: TableCard, leader: boolean) => {
+    const { outline, outlineBase } = entry;
+    if (!leader) {
+      outline.material = outlineBase.material;
+      outline.scale.copy(outlineBase.scale);
+      return;
+    }
+    leadingMaterial ??= createLeadingOutlineMaterial(outline.geometry);
+    setLeadingOutlineTime(leadingMaterial, performance.now() / 1000);
+    outline.material = leadingMaterial;
+    const m = CARD_HANDLING.leadingOutlineWidthMultiplier;
+    outline.scale.set(
+      1 + (outlineBase.scale.x - 1) * m,
+      outlineBase.scale.y,
+      1 + (outlineBase.scale.z - 1) * m,
+    );
+  };
+
   const ensure = (card: Card): TableCard => {
     const key = cardKey(card);
     const existing = cards.get(key);
     if (existing) return existing;
 
-    const { object, outline } = factory.build(`table-card-${key}`, cardTexture(card));
+    const { object, outline } = factory.build(`table-card-${key}`, cardTexture(card), undefined, {
+      unsmoothed: true,
+    });
     object.userData.cardKey = key;
     const entry: TableCard = {
       key,
       object,
       outline,
+      outlineBase: { material: outline.material, scale: outline.scale.clone() },
       raised: false,
       drag: null,
       placed: false,
@@ -291,7 +318,7 @@ export function createTableCards(
         const built = factory.build("trump-card-face", texture, {
           widthMultiplier: CARD_HANDLING.trumpOutlineWidthMultiplier,
           ownMaterial: true,
-        });
+        }, { unsmoothed: true });
         applyPlacement(built.object, trumpSlot);
         trump = {
           object: built.object,
@@ -392,8 +419,12 @@ export function createTableCards(
         // as soon as they differ.
         entry.object.scale.lerp(target.slot.scale, follow);
         entry.object.visible = true;
-        entry.outline.visible =
-          hovered === entry.key || entry.drag !== null || (leading === entry.key && trickOrder.includes(entry.key));
+        const pointed = hovered === entry.key || entry.drag !== null;
+        const isLeading = leading === entry.key && trickOrder.includes(entry.key);
+        entry.outline.visible = pointed || isLeading;
+        // The leader gets the thick, turning gold ring; pointing at a card
+        // keeps the plain hover outline.
+        applyOutlineStyle(entry, isLeading && !pointed);
       }
     },
 

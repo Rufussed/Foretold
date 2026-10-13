@@ -1,4 +1,5 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
+import { displayName } from "../../utils/display-name";
 import { characterForPlayer } from "../seat-mapping";
 import { headshotUrl } from "./headshots";
 
@@ -21,7 +22,7 @@ export function createGameWinner(container: HTMLElement, state: PublicWizardGame
     const figure = document.createElement("figure");
     figure.className = "hud-game-winner-face";
     const image = document.createElement("img");
-    image.alt = player.username;
+    image.alt = displayName(player.username);
     figure.append(image);
     element.append(figure);
     headshotUrl(characterForPlayer(player))

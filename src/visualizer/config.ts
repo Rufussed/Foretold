@@ -213,15 +213,17 @@ export const CHARACTER_SEATING: Partial<Record<string, SeatingCorrection>> = {
 // ══════════════════════════════════════════════════════════════════════════
 
 // The scene is drawn at canvasHeight x pixelRatio pixels, so a 4K display
-// costs four times a 1080p one. These cap that: the buffer never exceeds
-// maxHeight rows, and the browser scales the result up to fill the canvas.
-// Raise maxHeight for sharpness, lower it for framerate.
+// costs four times a 1080p one. The aim is the screen's own sharpness: the
+// buffer matches the display's pixels (plus a little supersampling), and only
+// a total pixel budget - about 4K - stops a huge canvas from costing more than
+// a GPU can draw. Below that, the adaptive scale below gives up resolution
+// only when the frame rate falls short, and wins it back when it recovers.
 export const RENDER = {
   // Most frames drawn per second; 0 draws on every screen refresh. Halving a
   // 60Hz display's 60 roughly halves the work, which is what a modest or
   // software-rendered machine needs to stop running hot and stuttering.
   maxFps: 30,
-  maxHeight: 3240, // tallest drawing buffer, in pixels
+  maxPixels: 8_300_000, // most pixels in the drawing buffer (4K is 8.3M)
   maxPixelRatio: 3, // never draw more than 3 buffer pixels per CSS pixel
   // The same cap on phones and tablets, where a 3x panel means drawing nine
   // pixels for every one a laptop draws, on a GPU shared with the rest of the
@@ -248,19 +250,25 @@ export const RENDER = {
   // ~20MB of graphics memory on a device that has already been seen to run
   // out, and the cards are small enough on a phone that it buys little.
   touchSharpen: 0,
+  // Edge smoothing in the same pass, for the edges supersampling leaves:
+  // thin lines, and cards at a grazing angle. 0 off, 1 full. It costs one
+  // pass, mostly on the edges only. Off on touch for the same memory reason
+  // as the sharpen: running the pass at all needs the extra buffer.
+  smoothing: 1,
+  touchSmoothing: 0,
   // Draw fewer pixels when the device cannot hold targetFps, and more again
   // when it can. The multiplier rides on top of everything above, so a strong
   // machine keeps the full image and a weak one stays smooth instead of
   // everybody being held to what the weakest can manage.
   adaptive: {
     enabled: true,
-    targetFps: 50,
-    min: 0.5,
+    targetFps: 30,
+    min: 0.6,
     max: 1,
   },
   // Character textures are shrunk to at most this many pixels a side as they
   // load. Graphics memory goes with the square: 4096 needs 4x 2048.
-  characterTextureSize: 2048,
+  characterTextureSize: 1024,
   // 512, not 1024, because the characters ship 1024px textures: a 1024 limit
   // shrinks nothing at all, which is what it did until this was measured. Six
   // seated characters were 100MB+ of texture on a phone, and the graphics
@@ -477,7 +485,10 @@ export const SELF_PORTRAIT = {
   // Fill so the side away from the key light isn't pure black. three default: 1.
   ambientIntensity: 0.6,
 
-  maxPixelRatio: 2,
+  // The corner canvas is small, so it can afford the sharpness the table
+  // gets: drawn above the display's own density and shrunk by the GPU.
+  supersample: 1.5,
+  maxPixelRatio: 3,
   targetFps: 30,
 };
 
@@ -519,6 +530,15 @@ export const CARDS = {
   // fraction of the label height. The mesh's corners are rounded to about
   // 0.25 of the label height, so much below 0.1 starts to clip.
   labelMargin: 0.12,
+
+  // How much the scanned card art is sharpened as it loads, 0 for none. The
+  // art is shrunk to about 200 pixels, which softens it; this lifts the edges
+  // first. Much above 1 starts to halo the lettering.
+  artSharpen: 0.6,
+
+  // Reads the card's mipmaps this many levels sharper than the GPU would
+  // choose. Negative is crisper; below about -1 the edges shimmer in motion.
+  mipBias: -0.5,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -537,6 +557,11 @@ export const CARD_HANDLING = {
   // colour, and is this many times the hand outline's thickness so it reads as
   // a different thing from the hover highlight rather than a brighter one.
   trumpOutlineWidthMultiplier: 2,
+
+  // The leading card in the trick wears the announcer's gold ring with a
+  // glint running round it (see leading-outline.ts), this many times as thick
+  // as the hover outline.
+  leadingOutlineWidthMultiplier: 2.5,
 
   // How far a clicked card rises, in card lengths.
   raiseLengths: 0.5,

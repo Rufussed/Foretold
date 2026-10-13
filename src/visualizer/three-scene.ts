@@ -11,7 +11,7 @@ import { playClip } from "./moon-animation";
 import { createMoonClouds, type MoonClouds } from "./moon-clouds";
 import { createTorchSparks, type TorchSparks } from "./torch-sparks";
 import { createCameraFollow, type CameraFollow } from "./camera-follow";
-import { maxPixelRatio, sharpenAmount } from "./device-limits";
+import { maxPixelRatio, sharpenAmount, smoothingAmount } from "./device-limits";
 import { createRenderScale } from "./render-scale";
 import { createShadowThrottle, type ShadowThrottle } from "./shadow-throttle";
 import { createSharpenPass } from "./sharpen-pass";
@@ -95,7 +95,9 @@ export function createWizardScene(
   // Sharpening replaces most of what a higher supersample bought; see RENDER
   // in config.ts. It renders through a buffer, so it is skipped when off.
   const sharpenBy = sharpenAmount();
-  const sharpen = sharpenBy > 0 ? createSharpenPass(renderer, sharpenBy) : null;
+  const smoothBy = smoothingAmount();
+  const sharpen =
+    sharpenBy > 0 || smoothBy > 0 ? createSharpenPass(renderer, sharpenBy, smoothBy) : null;
   const draw = () => (sharpen ? sharpen.render(scene, camera) : renderer.render(scene, camera));
 
   // Set by resize(), read by the adaptive controller's re-size.
@@ -167,7 +169,7 @@ export function createWizardScene(
       Math.min(
         window.devicePixelRatio * RENDER.supersample,
         maxPixelRatio(),
-        RENDER.maxHeight / h,
+        Math.sqrt(RENDER.maxPixels / (w * h)),
       ) * renderScale;
     renderer.setPixelRatio(ratio);
     renderer.setSize(w, h, false);

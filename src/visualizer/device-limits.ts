@@ -16,6 +16,7 @@ import { BACKDROP, LIGHTING, RENDER, SHADOWS } from "./config";
 //   ?ratio=1.5        buffer pixels per CSS pixel
 //   ?portrait=0       the corner self portrait, which costs a second context
 //   ?sharpen=0.45     the sharpen pass
+//   ?smooth=1         edge smoothing in the same pass
 //   ?shadowres=256    shadow map side, to test whether a driver that cannot
 //                     manage a 1024 map can manage a small one
 //   ?pointshadows=1   whether the torches cast, which costs six faces each
@@ -52,6 +53,10 @@ export const tableTextureLimit = (): number =>
 // How hard the sharpen pass is applied, 0 for not at all.
 export const sharpenAmount = (): number =>
   numberParam("sharpen") ?? (isTouchDevice() ? RENDER.touchSharpen : RENDER.sharpen);
+
+// How much edge smoothing the sharpen pass applies, 0 for none.
+export const smoothingAmount = (): number =>
+  numberParam("smooth") ?? (isTouchDevice() ? RENDER.touchSmoothing : RENDER.smoothing);
 
 // Whether this light should cast a shadow at all on this device.
 export const castsShadow = (isPointLight: boolean): boolean => {

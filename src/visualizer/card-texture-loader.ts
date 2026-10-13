@@ -1,5 +1,7 @@
 import * as THREE from "three";
 import type { Card } from "../../backend/src/game/wizard/models/card";
+import { sharpenImage } from "./card-sharpen";
+import { CARDS } from "./config";
 
 // Loads the scanned card art from src/assets/cards. One file per card, plus the
 // single back shown on every face-down card.
@@ -59,7 +61,16 @@ function load(url: string): THREE.Texture {
 
   const texture = loader.load(
     url,
-    () => settle(texture),
+    () => {
+      // Lift the art's edges before the GPU shrinks it (see card-sharpen.ts).
+      const image = texture.image as (CanvasImageSource & { width: number; height: number }) | undefined;
+      const sharpened = image && sharpenImage(image, CARDS.artSharpen);
+      if (sharpened) {
+        texture.image = sharpened as unknown as HTMLImageElement;
+        texture.needsUpdate = true;
+      }
+      settle(texture);
+    },
     undefined,
     (error) => fail(error),
   );

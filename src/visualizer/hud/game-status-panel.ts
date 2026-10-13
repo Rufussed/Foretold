@@ -1,3 +1,4 @@
+import { displayName } from "../../utils/display-name";
 import type { GameConnection } from "../game-connection";
 import type { ScoreBoard } from "./announcer";
 import type { HudPart } from "./hud-part";
@@ -42,7 +43,7 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
   let order = "";
 
   // const nameOf = (username: string) => (username === game.localUsername ? "You" : username);
-  const nameOf = (username: string) => username;
+  const nameOf = (username: string) => displayName(username);
   const applyState = () => {
     const state = game.state();
     if (!state) {

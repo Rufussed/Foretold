@@ -1,9 +1,13 @@
 import type { GameConnection } from "../game-connection";
 import { createAnnouncer, type AnnouncerOptions } from "./announcer";
-import { followSuitMessage } from "./announcements";
+import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
+import { followSuitMessage, trumpMessage } from "./announcements";
 import { createGameStatusPanel } from "./game-status-panel";
 import type { HudPart } from "./hud-part";
 import { createPlayerList } from "./player-list";
+
+// The trump colour stays up this much longer than other messages, at any speed.
+const TRUMP_EXTRA_SECONDS = 1;
 
 export interface GameHudOptions extends AnnouncerOptions {
   // The round the card table is showing; see player-list.ts.
@@ -17,6 +21,8 @@ export interface GameHud extends HudPart {
   refused(error: string): void;
   // Calls done once every announcement has had its time.
   whenIdle(done: () => void): void;
+  // Which suit is trumps, said once the round's cards are dealt.
+  announceTrump(state: PublicWizardGameState): void;
 }
 
 // The in-game overlay: what's going on (top centre), the game status and
@@ -37,6 +43,10 @@ export function createGameHud(
     dispose: () => parts.forEach((part) => part.dispose()),
     refreshPlayers: () => playerList.applyState(),
     whenIdle: (done) => announcer.whenIdle(done),
+    announceTrump(state) {
+      const text = trumpMessage(state);
+      if (text) announcer.announce(text, TRUMP_EXTRA_SECONDS, state.trumpSuit ?? undefined);
+    },
     refused(error) {
       const state = game.state();
       // The server's words for a card that doesn't follow suit.

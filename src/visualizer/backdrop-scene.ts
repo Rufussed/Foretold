@@ -47,7 +47,13 @@ export function createBackdropScene(parent: HTMLElement): BackdropScene {
   const resize = () => {
     const width = window.innerWidth;
     const height = window.innerHeight;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, maxPixelRatio(), RENDER.maxHeight / height));
+    renderer.setPixelRatio(
+      Math.min(
+        window.devicePixelRatio,
+        maxPixelRatio(),
+        Math.sqrt(RENDER.maxPixels / (width * height)),
+      ),
+    );
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();

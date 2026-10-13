@@ -6,6 +6,19 @@
   background: #eef2f7;
 }
 
+/* The one box the interface wears: the brown frosted glass with its fine
+   edge, lightly blurred. Panels, prompts and HUD pieces all take these, so a
+   change here changes them together. */
+:root {
+  --ui-bg: rgba(12, 13, 11, 0.6);
+  --ui-bg-hover: rgba(12, 13, 11, 0.72);
+  --ui-bg-solid: rgba(12, 13, 11, 0.88);
+  --ui-edge: 1px solid rgba(191, 125, 47, 0.28);
+  --ui-edge-strong: 1px solid rgba(191, 125, 47, 0.45);
+  --ui-blur: blur(2px);
+  --ui-shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -614,12 +627,8 @@ button {
 }
 
 .visualizer-page {
-  /* The one box the game's UI wears: the character chooser's brown frosted
-     glass with its fine edge, lightly blurred. */
-  --ui-bg: rgba(12, 13, 11, 0.55);
-  --ui-bg-hover: rgba(12, 13, 11, 0.7);
-  --ui-edge: 1px solid rgba(191, 125, 47, 0.25);
-  --ui-blur: blur(4px);
+  /* Set from the window's size by visualizer/hud-scale.ts. */
+  --hud-scale: 1;
   position: fixed;
   inset: 0;
   width: 100%;
@@ -654,15 +663,15 @@ button {
 .visualizer-nav a {
   padding: 8px 12px;
   color: rgba(244, 235, 217, 0.88);
-  background: rgba(8, 9, 7, 0.6);
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 4px;
   text-decoration: none;
   font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -762,9 +771,9 @@ button {
      stands on its own frosted disc rather than on one shared box. */
   background: rgba(12, 13, 11, 0.55);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(191, 125, 47, 0.25);
+  border: var(--ui-edge);
   border-radius: 600px;
-  font-weight: 600;
+  font-weight: 400;
   text-align: center;
   cursor: pointer;
 }
@@ -888,33 +897,9 @@ button {
   background: var(--ui-bg-hover);
 }
 
-/* Smaller portrait and emotes on narrow screens. */
-@media (max-width: 640px) {
-  .visualizer-self {
-    right: 16px;
-    bottom: 52px;
-    width: 126px;
-    height: 160px;
-  }
-
-  .visualizer-self-view {
-    top: -18px;
-    height: 126px;
-  }
-
-  .visualizer-emotes {
-    right: 16px;
-    bottom: 16px;
-    width: 126px;
-    gap: 4px;
-  }
-
-  .visualizer-page .visualizer-emotes button {
-    height: 28px;
-    font-size: 16px;
-    border-radius: 8px;
-  }
-}
+/* No separate small sizes for the portrait and emotes: the whole group
+   scales smoothly with the window (see visualizer/hud-scale.ts), so it keeps
+   its proportions and stays centred in its box. */
 
 /* Prediction prompt: centred on the screen, with no backdrop so the table
    stays visible behind it. */
@@ -930,12 +915,12 @@ button {
   color: rgba(244, 235, 217, 0.92);
   text-align: center;
   /* The same box as the HUD panels (.hud-panel). */
-  background: rgba(8, 9, 7, 0.72);
-  border: 1px solid rgba(191, 125, 47, 0.38);
+  background: var(--ui-bg);
+  border: var(--ui-edge-strong);
   border-radius: 4px;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--ui-shadow);
   transform: translate(-50%, -50%);
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .prediction-modal[hidden] {
@@ -1058,11 +1043,11 @@ button {
   padding: 10px 12px;
   color: rgba(244, 235, 217, 0.9);
   font-size: 13px;
-  background: rgba(8, 9, 7, 0.6);
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 4px;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
-  backdrop-filter: blur(1px);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .hud-panel[hidden] {
@@ -1253,19 +1238,6 @@ button {
 /* Each heading is stacked, one upright letter above the next, over its own
    column and ending just above the numbers, so the columns can stay narrow. */
 
-/* The home page's wizard, cropped to the figure (the picture is 1541 x 1020
-   with the art in x 380-1170, y 60-900), in the corner over the names. */
-.hud-opponent-headings .hud-logo {
-  grid-column: 1;
-  grid-row: 1;
-  align-self: center;
-  justify-self: start;
-  width: 56px;
-  height: 60px;
-  margin-left: 6px;
-  background: url("/wizardLogo.png") -27px -4px / 109px 72px no-repeat;
-}
-
 .hud-opponent-headings .hud-stat-label {
   grid-row: 1;
   align-self: end;
@@ -1349,10 +1321,10 @@ button {
   height: 32px;
   padding: 0;
   color: rgba(244, 235, 217, 0.9);
-  background: rgba(8, 9, 7, 0.6);
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 4px;
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .music-source-toggle {
@@ -1397,19 +1369,20 @@ button {
   width: max-content;
   max-width: min(560px, calc(100% - 560px));
   margin: 0 auto;
-  padding: 13px 19px;
+  /* Tighter as the window shrinks (see visualizer/hud-scale.ts). */
+  padding: calc(13px * var(--hud-scale)) calc(19px * var(--hud-scale));
   color: rgba(244, 235, 217, 0.92);
   font-size: 17px;
   font-weight: 600;
   line-height: 1.35;
   text-align: center;
   /* The same box as the HUD panels (.hud-panel). */
-  background: rgba(8, 9, 7, 0.6);
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 4px;
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+  box-shadow: var(--ui-shadow);
   transform: none;
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .visualizer-page .hud-announcer[hidden] {
@@ -1481,17 +1454,46 @@ button {
 }
 
 .visualizer-page .hud-announcer[data-character="demon"] {
-  --border-dark: #0b5e5a;
-  --border-mid: #1ee3d2;
-  --border-glint: #c8fffa;
-  --border-glow: rgb(30 227 210 / 35%);
+  --border-dark: #084845;
+  --border-mid: #14b8aa;
+  --border-glint: #a6ece6;
+  --border-glow: rgb(20 184 170 / 30%);
 }
 
 .visualizer-page .hud-announcer[data-character="blind-wizard"] {
-  --border-dark: #3d1a73;
-  --border-mid: #a56bff;
-  --border-glint: #eadbff;
-  --border-glow: rgb(165 107 255 / 35%);
+  --border-dark: #2f1459;
+  --border-mid: #8a52e0;
+  --border-glint: #d8c4f7;
+  --border-glow: rgb(138 82 224 / 30%);
+}
+
+/* The trump colour announcement: the border in the suit's own colour. */
+.visualizer-page .hud-announcer[data-suit="red"] {
+  --border-dark: #6b1414;
+  --border-mid: #e53935;
+  --border-glint: #ffc9c4;
+  --border-glow: rgb(229 57 53 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-suit="green"] {
+  --border-dark: #14501f;
+  --border-mid: #43a047;
+  --border-glint: #d6ffd0;
+  --border-glow: rgb(67 160 71 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-suit="blue"] {
+  --border-dark: #0d3a78;
+  --border-mid: #1e88e5;
+  --border-glint: #cfe6ff;
+  --border-glow: rgb(30 136 229 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-suit="yellow"] {
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
 }
 
 .visualizer-page .hud-announcer.is-ingame {
@@ -1589,10 +1591,10 @@ button {
   gap: 10px;
   padding: 10px;
   /* The same box as the HUD panels (.hud-panel). */
-  background: rgba(8, 9, 7, 0.72);
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
   border-radius: 4px;
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
   animation: hud-result-in 0.3s ease-out;
 }
 
@@ -1712,31 +1714,11 @@ button {
   }
 }
 
-/* Narrow screens: below the nav column, left of the status panel. */
+/* Narrow screens: still centred at the top, just smaller. */
 @media (max-width: 640px) {
   .visualizer-page .hud-announcer {
-    top: 132px;
-    right: auto;
-    left: 16px;
-    max-width: calc(100% - 178px);
-    margin: 0;
     font-size: 13px;
-    text-align: left;
   }
-
-  /* Phones: one full-width card to a row, so no line has to wrap. */
-  .visualizer-page .hud-announcer.has-results {
-    left: 16px;
-    right: 16px;
-    width: auto;
-    max-width: none;
-  }
-
-  .visualizer-page .hud-results {
-    --card-width: 100%;
-  }
-
-
 }
 
 /* Dev builds: what went wrong in the 3D view (see diagnostics.ts). */
@@ -2220,7 +2202,7 @@ button {
   /* background: rgba(2, 3, 3, 0.76); */
 
   animation: home-fade-in 180ms ease both;
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .home-modal {
@@ -2707,8 +2689,8 @@ button {
 
   border-bottom: 1px solid rgba(191, 125, 47, 0.2);
 
-  background: rgba(8, 9, 7, 0.6);
-  backdrop-filter: blur(1px);
+  background: var(--ui-bg);
+  backdrop-filter: var(--ui-blur);
 }
 
 .lobby-brand {
@@ -2775,7 +2757,7 @@ button {
 
 .lobby-account a,
 .lobby-account button {
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  border: var(--ui-edge);
   background: rgba(10, 10, 8, 0.45);
   color: rgba(244, 235, 217, 0.88);
   padding: 8px 14px;
@@ -2970,7 +2952,7 @@ button {
 .rooms-panel {
   overflow: hidden;
 
-  border: 1px solid rgba(180, 119, 47, 0.27);
+  border: var(--ui-edge);
 
   background:
     linear-gradient(
@@ -2978,12 +2960,12 @@ button {
       rgba(201, 127, 40, 0.035),
       transparent 36%
     ),
-    rgba(12, 13, 11, 0.89);
+    var(--ui-bg-solid);
 
   box-shadow:
     0 25px 70px rgba(0, 0, 0, 0.38);
 
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .rooms-heading,
@@ -3392,7 +3374,7 @@ button {
 
   background: rgba(3, 4, 3, 0.72);
 
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .room-modal-backdrop[hidden] {
@@ -3420,7 +3402,7 @@ button {
     0 30px 100px rgba(0, 0, 0, 0.7),
     0 0 40px rgba(135, 76, 19, 0.06);
 
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .room-modal-close {
@@ -3541,7 +3523,7 @@ button {
 
   padding: 0 14px;
 
-  border: 1px solid rgba(191, 125, 47, 0.27);
+  border: var(--ui-edge);
   outline: none;
 
   background: rgba(3, 4, 3, 0.55);
@@ -3590,7 +3572,7 @@ button {
 
   margin: 0;
 
-  border: 1px solid rgba(191, 125, 47, 0.25);
+  border: var(--ui-edge);
 
   background: rgba(3, 4, 3, 0.45);
 
@@ -3884,7 +3866,7 @@ button {
   padding: 15px clamp(24px, 5vw, 80px);
   border-bottom: 1px solid rgba(191, 125, 47, 0.2);
   background: rgba(8, 9, 7, 0.35);
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .room-brand {
@@ -3945,7 +3927,7 @@ button {
 
 .room-account button {
   padding: 8px 14px;
-  border: 1px solid rgba(191, 125, 47, 0.28);
+  border: var(--ui-edge);
   background: rgba(10, 10, 8, 0.42);
 }
 
@@ -4094,15 +4076,15 @@ button {
   width: min(calc(100% - 60px), 900px);
   margin: 4px auto 0;
   padding: 16px 30px 18px;
-  border: 1px solid rgba(180, 119, 47, 0.27);
+  border: var(--ui-edge);
   background:
     linear-gradient(
       135deg,
       rgba(201, 127, 40, 0.035),
       transparent 36%
     ),
-    rgba(12, 13, 11, 0.88);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
+    var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
   backdrop-filter: blur(16px);
 }
 
@@ -4361,7 +4343,7 @@ button {
   border: 1px solid rgba(180, 119, 47, 0.2);
   background: rgba(12, 13, 11, 0.68);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
-  backdrop-filter: blur(1px);
+  backdrop-filter: var(--ui-blur);
 }
 
 .profile-highlight span,
@@ -4404,16 +4386,16 @@ button {
 }
 
 .profile-card {
-  border: 1px solid rgba(180, 119, 47, 0.27);
+  border: var(--ui-edge);
   background:
     linear-gradient(
       135deg,
       rgba(201, 127, 40, 0.035),
       transparent 36%
     ),
-    rgba(12, 13, 11, 0.89);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(1px);
+    var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: var(--ui-blur);
   padding: 20px 24px;
 }
 
@@ -5158,4 +5140,67 @@ button {
     color 180ms ease,
     background 180ms ease,
     box-shadow 180ms ease;
+}
+
+/* Phones and small windows: the corner pieces shrink together (see
+   visualizer/hud-scale.ts), so they keep their layout without overlapping. */
+.visualizer-page .visualizer-nav,
+.visualizer-page .hud-status,
+.visualizer-page .hud-toolbar,
+.visualizer-page .hud-opponents,
+.visualizer-page .visualizer-self,
+.visualizer-page .visualizer-emotes,
+.visualizer-page .prediction-modal,
+.visualizer-page .hud-results,
+.visualizer-page .hud-game-winner {
+  zoom: var(--hud-scale);
+}
+
+/* A guest's invitation to sign up, after their game (see
+   visualizer/guest-signup-prompt.ts). */
+.visualizer-page .guest-signup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 20;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(420px, calc(100% - 32px));
+  padding: 28px 32px;
+  transform: translate(-50%, -50%);
+  color: #eee2cc;
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge-strong);
+  box-shadow: var(--ui-shadow);
+  text-align: center;
+  animation: home-fade-in 240ms ease both;
+}
+
+.guest-signup-question {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.guest-signup-invitation {
+  margin: 0 0 6px;
+  color: var(--button-gold-text);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.guest-signup-button {
+  padding: 12px 28px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.visualizer-page .guest-signup-dismiss {
+  padding: 4px 8px;
+  color: rgba(238, 226, 204, 0.6);
+  background: none;
+  border: 0;
+  font-size: 0.8rem;
 }

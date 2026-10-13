@@ -1,4 +1,5 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
+import { displayName } from "../../utils/display-name";
 import { ANNOUNCER } from "../config";
 import { paced } from "../pace";
 import type { GameConnection } from "../game-connection";
@@ -12,6 +13,10 @@ export interface Announcer extends HudPart {
   // Shows this straight away, ahead of anything queued, for
   // ANNOUNCER.noticeSeconds or until the next card is played.
   notice(text: string): void;
+  // Shows this in turn with the queued announcements, for the usual time.
+  // extraSeconds is added to that time whatever the game speed.
+  // suit gives the border that suit's colour instead of a character's.
+  announce(text: string, extraSeconds?: number, suit?: string): void;
   // Calls done once every one-off announcement (results included) has had
   // its time and none is queued; straight away if none is.
   whenIdle(done: () => void): void;
@@ -32,6 +37,10 @@ interface Announcement {
   // The player it's about: the border takes their character's colour.
   username?: string;
   seconds?: number; // defaults to ANNOUNCER.messageSeconds
+  // Added after the pace scaling, so it is the same at every game speed.
+  extraSeconds?: number;
+  // The border takes this suit's colour (the trump colour announcement).
+  suit?: string;
   // May show while cards are being dealt (last round's results).
   duringDeal?: boolean;
   // Also ends early as soon as the next card is played.
@@ -101,6 +110,12 @@ export function createAnnouncer(
     shown = next;
     banner.hidden = false;
     setBorderCharacter(next.username);
+    if (next.suit) {
+      delete banner.dataset.character;
+      banner.dataset.suit = next.suit.toLowerCase();
+    } else {
+      delete banner.dataset.suit;
+    }
     if (same) return;
 
     // Spring in again for each new announcement; reading offsetWidth restarts
@@ -174,7 +189,10 @@ export function createAnnouncer(
     shownAtPlay = next.untilNextPlay && state ? playKey(state) : null;
     // Every queued duration is written at the default pace, so scaling here
     // covers messages, notices and the round's results board together.
-    timer = window.setTimeout(showNext, paced(next.seconds ?? ANNOUNCER.messageSeconds) * 1000);
+    timer = window.setTimeout(
+      showNext,
+      (paced(next.seconds ?? ANNOUNCER.messageSeconds) + (next.extraSeconds ?? 0)) * 1000,
+    );
   };
 
   return {
@@ -194,7 +212,7 @@ export function createAnnouncer(
             const player = state.players.find((candidate) => candidate.username === result.username);
             return {
               username: result.username,
-              name: result.username,
+              name: displayName(result.username),
               character: player ? characterForPlayer(player) : characterForUsername(result.username),
               lines: result.lines,
               points: result.points,
@@ -223,6 +241,11 @@ export function createAnnouncer(
         if (queue.length) showNext();
         else showStatus();
       }
+    },
+
+    announce(text, extraSeconds, suit) {
+      queue.push({ text, extraSeconds, suit });
+      if (!showing) showNext();
     },
 
     notice(text) {
