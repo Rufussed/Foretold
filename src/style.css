@@ -719,11 +719,6 @@ button {
   background: transparent;
 }
 
-.room-count {
-  margin-top: -12px;
-  color: #5b6b82;
-}
-
 .room-message {
   flex: 1;
   display: flex;
@@ -4068,7 +4063,7 @@ button {
 .room-title-row {
   position: relative;
   flex: 0 0 auto;
-  margin-bottom: 18px;
+  margin-bottom: 4px;
   text-align: center;
 }
 
@@ -4086,35 +4081,16 @@ button {
   color: #ffd54f;
 }
 
-.room-kicker,
-.room-section-kicker {
-  flex: 0 0 auto;
-  margin-bottom: 18px;
-  text-align: center;
-  color: rgba(191, 125, 47, 0.82);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-}
-
-.room-title-row h1 {
-  display: inline-block;
+/* The one intro line: room, players present, and the invitation to choose.
+   Clear of the Back button on the left, and of the corner buttons on the right. */
+.room-title-row .room-intro {
   margin: 0;
+  padding: 0 90px;
   color: rgba(248, 240, 224, 0.96);
   font-family: Georgia, "Times New Roman", serif;
-  font-size: clamp(1.7rem, 3vw, 2.5rem);
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
   font-weight: 500;
-  letter-spacing: 0.025em;
-}
-
-.room-count {
-  display: inline-block;
-  margin: 0 0 0 18px;
-  color: rgba(244, 235, 217, 0.62);
-  font-size: 0.78rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 /* Main glass table */
@@ -4140,12 +4116,7 @@ button {
   flex-direction: column;
   align-items: center;
 
-  padding: 18px 30px 10px;
-}
-
-.room-section-heading {
-  flex: 0 0 auto;
-  text-align: center;
+  padding: 4px 30px 10px;
 }
 
 .room-avatar-picker {
@@ -4373,8 +4344,8 @@ button {
     font-size: 0.68rem;
   }
 
-  .room-title-row h1 {
-    font-size: 2rem;
+  .room-title-row .room-intro {
+    font-size: 1.1rem;
   }
 }
 

@@ -9,13 +9,20 @@
 const FULL_WIDTH = 900;
 const FULL_HEIGHT = 640;
 const SMALLEST = 0.55;
+// Touch screens get it 25% bigger (still never past full size): on a phone
+// the plain fit left text and buttons too small to read and tap.
+const TOUCH_BOOST = 1.25;
 
-export const hudScaleFor = (width: number, height: number): number =>
-  Math.max(SMALLEST, Math.min(1, width / FULL_WIDTH, height / FULL_HEIGHT));
+const isTouchScreen = (): boolean => window.matchMedia("(pointer: coarse)").matches;
+
+export const hudScaleFor = (width: number, height: number, touch = false): number => {
+  const fit = Math.max(SMALLEST, Math.min(1, width / FULL_WIDTH, height / FULL_HEIGHT));
+  return touch ? Math.min(1, fit * TOUCH_BOOST) : fit;
+};
 
 export function createHudScale(page: HTMLElement): { dispose(): void } {
   const apply = () => {
-    const scale = hudScaleFor(window.innerWidth, window.innerHeight);
+    const scale = hudScaleFor(window.innerWidth, window.innerHeight, isTouchScreen());
     page.style.setProperty("--hud-scale", scale.toFixed(3));
   };
   apply();

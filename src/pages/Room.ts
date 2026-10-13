@@ -78,23 +78,12 @@ export async function renderRoomPage(
         <section class="room-title-row">
           <a href="#/lobby" class="room-back-button">Back</a>
 
-          <div>
-            <p class="room-kicker">GAME TABLE</p>
-            <h1 id="room-name">Waiting room</h1>
-            <p id="room-count" class="room-count"></p>
-          </div>
+          <h1 id="room-intro" class="room-intro">Welcome</h1>
         </section>
 
         <section class="room-main-panel">
 
           <div class="room-avatar-section">
-            <div class="room-section-heading">
-              <p
-                id="room-choose-kicker"
-                class="room-section-kicker"
-              >CHOOSE YOUR WIZARD</p>
-            </div>
-
             <div
               id="avatar-picker"
               class="room-avatar-picker"
@@ -177,14 +166,11 @@ export async function renderRoomPage(
     return found;
   };
 
-  const nameEl = element<HTMLHeadingElement>("#room-name");
-  const countEl = element<HTMLParagraphElement>("#room-count");
+  // One line: the room, who's here, and an invitation to pick a portrait.
+  const introEl = element<HTMLHeadingElement>("#room-intro");
   const messageEl = element<HTMLParagraphElement>("#room-message");
-  // "Rufus, choose your Wizard": the heading addresses the player by name.
-  const chooseKickerEl = element<HTMLParagraphElement>("#room-choose-kicker");
   // A guest's username is a generated id, so they are greeted as a stranger.
   const greeting = guestUsername !== null ? "Stranger" : user.username;
-  chooseKickerEl.textContent = `${greeting}, choose your Wizard`;
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
@@ -228,9 +214,11 @@ export async function renderRoomPage(
     }
 
     // The server names a guest's room after their generated username.
-    nameEl.textContent =
+    const roomName =
       guestUsername !== null ? room.name.replace(guestUsername, "Stranger") : room.name;
-    countEl.textContent = `${room.players.length}/${room.maxPlayers} players`;
+    introEl.textContent =
+      `Welcome to ${roomName}. ${room.players.length}/${room.maxPlayers} players present. ` +
+      `${greeting}, choose your Avatar:`;
 
     const claims = new Map<AvatarId, string>();
 
