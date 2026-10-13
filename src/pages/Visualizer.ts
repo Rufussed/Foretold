@@ -527,6 +527,10 @@ export async function renderVisualizerPage(
     });
   }
 
+  // iOS Safari only applies :active (the pressed highlight) to elements with a
+  // touch listener; this one does nothing else.
+  emoteBar?.addEventListener("touchstart", () => {}, { passive: true });
+
   emoteBar?.addEventListener("click", (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
       "[data-emote]",

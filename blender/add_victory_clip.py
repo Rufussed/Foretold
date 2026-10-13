@@ -5,7 +5,9 @@ standard way: legacy importer, Automatic Bone Orientation). Hips and legs, plus
 bones the FBX lacks (witch cloak, Neck1), hold the rig's own idle frame 1, so
 existing hip/foot corrections carry over. One constant world rotation maps the
 FBX spine onto the idle spine at frame 1; all later upper-body motion, including
-the FBX hip twist, rides on top of it. Hanging arms are tilted ARM_SPREAD
+the FBX hip twist, rides on top of it. The hips (and upper body with them) tip forward by one
+constant angle so the mean torso lean hits LEAN_TARGET; legs keep their idle
+world pose so they stay seated. Hanging arms are tilted ARM_SPREAD
 outward so the hands clear the seat. The upper body eases out of and back
 into the idle pose at the clip ends, since the FBX starts and ends standing.
 
@@ -19,6 +21,7 @@ CLIP = 'victory'
 CHARACTERS = ['forest-elf', 'blind-wizard', 'black-witch', 'goatman', 'demon', 'kungfu-girl']
 GAP = 15  # frames between NLA strips, as in build_character_library.py
 EASE_IN, EASE_OUT = 20, 30  # frames over which the upper body leaves / returns to the idle pose
+LEAN_TARGET = math.radians(0)  # mean torso pitch (hips→neck from vertical) to aim for; + leans forward
 ARM_SPREAD = math.radians(15)  # hanging arms tilt outward by this much, so hands clear the seat
 
 
@@ -53,6 +56,24 @@ def spread(arm, chest, down):
     out = (out - out.dot(down) * down).normalized()
     amount = smoothstep((direction.dot(down) - 0.6) / 0.3)
     return Quaternion(direction.cross(out).normalized(), ARM_SPREAD * amount)
+
+
+def torso_pitch(rig, clip, rotation, local, frames):
+    """Correction rotation that brings the mean hips→neck lean over `frames` to LEAN_TARGET."""
+    inv = rig.matrix_world.inverted().to_3x3()
+    up, forward = (inv @ Vector((0, 0, 1))).normalized(), (inv @ Vector((0, -1, 0))).normalized()
+    chain = ['mixamorig:Spine', 'mixamorig:Spine1', 'mixamorig:Spine2', 'mixamorig:Neck']
+    leans = []
+    for frame in frames:
+        pose = rotation('mixamorig:Spine', clip[frame])
+        pose.translation = Vector()
+        for parent, child in zip(chain, chain[1:]):
+            head = (pose @ local[child]).translation
+            pose = rotation(child, clip[frame])
+            pose.translation = head
+        leans.append(math.atan2(pose.translation.dot(forward), pose.translation.dot(up)))
+    lean = sum(leans) / len(leans)
+    return Quaternion(up.cross(forward).normalized(), LEAN_TARGET - lean), lean
 
 
 def sample(src, rig, frames):
@@ -92,6 +113,9 @@ def build(slug, src):
                   for side in ('Left', 'Right')}
     down = (rig.matrix_world.inverted().to_3x3() @ Vector((0, 0, -1))).normalized()
     align = idle[spine].to_quaternion() @ (clip[0][spine] @ to_target[spine]).inverted()
+    victory = lambda n, q: (align @ q[n] @ to_target[n]).to_matrix().to_4x4()
+    full = [i for i in range(len(clip)) if weight(i + 1, len(clip)) == 1]
+    pitch, lean = torso_pitch(rig, clip, victory, local, full)
 
     action = bpy.data.actions.new(slug + '__' + CLIP)
     action.use_fake_user = True
@@ -102,10 +126,11 @@ def build(slug, src):
     previous = {}
     for frame, sample_q in enumerate(clip, 1):
         poses, tilt = {}, {}
+        tip = Quaternion().slerp(pitch, weight(frame, len(clip)))  # hips tip forward; legs stay on idle
         for b in bones:
             parent = poses[b.parent.name] if b.parent else None
             if b.name in upper:
-                desired = (align @ sample_q[b.name] @ to_target[b.name]).to_matrix().to_4x4()
+                desired = (tip.to_matrix() @ victory(b.name, sample_q).to_3x3()).to_4x4()
                 desired.translation = (parent @ local[b.name]).translation
                 side = next((k for k, chain in arm_chains.items() if b.name in chain), None)
                 if side:  # whole arm chain swings about the shoulder joint
@@ -116,6 +141,9 @@ def build(slug, src):
             elif b.name in passengers:
                 # Upper-body bone the FBX lacks: keep its idle pose relative to its parent.
                 desired = parent @ (idle[b.parent.name].inverted() @ idle[b.name])
+            elif b.name == 'mixamorig:Hips':
+                desired = (tip.to_matrix() @ idle[b.name].to_3x3()).to_4x4()
+                desired.translation = idle[b.name].translation
             else:
                 desired = idle[b.name].copy()
             basis = (local[b.name].inverted() @ parent.inverted() if parent else rest[b.name].inverted()) @ desired
@@ -150,7 +178,7 @@ def build(slug, src):
     strip.blend_type = 'REPLACE'
     scene = bpy.context.scene
     scene.frame_end = max(scene.frame_end, int(strip.frame_end))
-    print(f'{slug}: victory baked, {len(clip)} frames at {cursor}')
+    print(f'{slug}: victory baked, {len(clip)} frames at {cursor}; torso lean {math.degrees(lean):+.1f}° corrected to {math.degrees(LEAN_TARGET):+.1f}°')
 
 
 def run(*characters):

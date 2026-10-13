@@ -899,9 +899,18 @@ button {
   border-radius: 8px;
 }
 
+/* Lit only while pressed: hover (sticky after a tap on touch screens) keeps
+   the resting look, and the gold goes as soon as the button is released. */
 .visualizer-page .visualizer-emotes button:hover {
+  color: inherit;
   background: #000;
+  border: var(--ui-edge);
+  filter: none;
+}
+
+.visualizer-page .visualizer-emotes button:active {
   border-color: var(--button-gold);
+  filter: brightness(1.12);
 }
 
 .visualizer-page .visualizer-emotes button {
@@ -1231,6 +1240,7 @@ button {
   min-width: 0;
   overflow: hidden;
   font-size: 12px;
+  font-weight: 400;
   text-align: left;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1289,11 +1299,11 @@ button {
 /* Your own line in the list. */
 .hud-opponent.is-you .hud-opponent-face figcaption {
   color: #ffd54f;
-  font-weight: 700;
 }
 
 .hud-opponent .hud-stat-value {
   font-size: 16px;
+  font-weight: 400;
 }
 
 /* Tricks won against the prediction, in the colours of the tesseract's burst
@@ -1499,6 +1509,8 @@ button {
   --border-mid: #7040c0;
   --border-glint: #c4acee;
   --border-glow: rgb(112 64 192 / 30%);
+  /* The emoticons a little darker than the border. */
+  --emoticon-tint: #4a2488;
 }
 
 /* The trump colour announcement: the border in the suit's own colour. */
@@ -1566,7 +1578,8 @@ button {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .visualizer-page .hud-announcer.is-ingame::before {
+  .visualizer-page .hud-announcer.is-ingame::before,
+  .hud-game-winner-face::after {
     animation: none;
   }
 }
@@ -1814,19 +1827,52 @@ button {
 }
 
 .hud-game-winner-face {
+  /* Gold unless the winner's character sets its own colours (those rules
+     outrank this one, so goatman, who has none, stays gold). */
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
   position: relative;
   margin: 0;
   padding-top: 34px;
 }
 
+/* The border is left clear for the ring drawn over it below. */
 .hud-game-winner-face img {
   display: block;
   width: 128px;
   height: 128px;
   background: rgb(255 255 255 / 12%);
-  border: 3px solid #ffd54f;
+  border: 3px solid transparent;
   border-radius: 50%;
+  box-shadow: 0 0 14px var(--border-glow);
   object-fit: cover;
+}
+
+/* The same turning ring as the in-game announcement, in the winner's colour. */
+.hud-game-winner-face::after {
+  position: absolute;
+  inset: 34px 0 0;
+  padding: 3px;
+  pointer-events: none;
+  content: "";
+  background: conic-gradient(
+    from var(--gold-angle),
+    var(--border-dark),
+    var(--border-mid) 15%,
+    var(--border-glint) 25%,
+    var(--border-mid) 35%,
+    var(--border-dark) 50%,
+    var(--border-mid) 75%,
+    var(--border-dark)
+  );
+  border-radius: 50%;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: hud-gold-border 4s linear infinite;
 }
 
 .hud-game-winner .hud-game-winner-face::before {
@@ -1843,6 +1889,8 @@ button {
   mask: url("./assets/emoticons/crown.webp") center / contain no-repeat;
   -webkit-mask: url("./assets/emoticons/crown.webp") center / contain no-repeat;
   transform: translateX(-50%);
+  /* Over the ring (::after), which would otherwise paint on top. */
+  z-index: 1;
 }
 
 @media (max-width: 640px) {
@@ -5210,7 +5258,7 @@ button {
   justify-items: center;
   gap: 10px;
   width: min(420px, calc(100% - 32px));
-  padding: 28px 32px;
+  padding: 16px 20px;
   transform: translate(-50%, -50%);
   color: #eee2cc;
   background: var(--ui-bg-solid);
