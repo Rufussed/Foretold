@@ -9,7 +9,6 @@ export const BOT_NAMES = {
     // Legend and myth
     "Merlin",
     "Arthur",
-    "Lancelot",
     "Taliesin",
     "Gwydion",
     "Oberon",
@@ -20,9 +19,16 @@ export const BOT_NAMES = {
     "Corvin",
     "Balthazar",
     "Fenwick",
+    // Tolkien, Earthsea, Game of Thrones
+    "Gandalf",
+    "Saruman",
+    "Radagast",
+    "Ged",
+    "Ogion",
+    "Vetch",
+    "Qyburn",
     // History
     "Nostradamus",
-    "John Dee",
     "Paracelsus",
     "Rasputin",
     "Agrippa",
@@ -46,6 +52,14 @@ export const BOT_NAMES = {
     "Lyra",
     "Ysolde",
     "Mirabel",
+    // Tolkien, Earthsea, Game of Thrones
+    "Galadriel",
+    "Melian",
+    "Melisandre",
+    "Quaithe",
+    "Lúthien",
+    "Tenar",
+    "Moss",
     // History
     "Cleopatra",
     "Boudica",
