@@ -5321,8 +5321,8 @@ button {
   font-size: 0.8rem;
 }
 
-/* The fullscreen / install button on every screen outside a game (see
-   components/system-button.ts), and room for it in the headers it sits over. */
+/* The fullscreen and install buttons on every screen outside a game (see
+   components/system-button.ts), and room for them in the headers they sit over. */
 .system-button {
   position: fixed;
   top: 10px;
@@ -5343,6 +5343,11 @@ button {
 
 .system-button[hidden] {
   display: none;
+}
+
+/* Install, to the left of fullscreen when both are there. */
+.system-button.is-second {
+  right: 52px;
 }
 
 .system-button svg {
@@ -5372,4 +5377,12 @@ body.has-system-button .home-topbar {
 
 body.has-system-button .lobby-header {
   padding-right: calc(clamp(24px, 5vw, 80px) + 44px);
+}
+
+body.has-two-system-buttons .home-topbar {
+  padding-right: calc(clamp(24px, 4.5vw, 76px) + 86px);
+}
+
+body.has-two-system-buttons .lobby-header {
+  padding-right: calc(clamp(24px, 5vw, 80px) + 86px);
 }
