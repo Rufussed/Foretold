@@ -1490,6 +1490,8 @@ button {
   --border-mid: #14b8aa;
   --border-glint: #a6ece6;
   --border-glow: rgb(20 184 170 / 30%);
+  /* The emoticons bluer and darker than the border. */
+  --emoticon-tint: #0d8296;
 }
 
 .visualizer-page [data-character="blind-wizard"] {
@@ -5244,4 +5246,57 @@ button {
   background: none;
   border: 0;
   font-size: 0.8rem;
+}
+
+/* The fullscreen / install button on every screen outside a game (see
+   components/system-button.ts), and room for it in the headers it sits over. */
+.system-button {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  /* The highest layer there is: the app sits at z-index 9999, and anything
+     above this button would cover it, or blur it with a backdrop filter. */
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: rgba(244, 235, 217, 0.9);
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge);
+  border-radius: 4px;
+}
+
+.system-button[hidden] {
+  display: none;
+}
+
+.system-button svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.system-hint {
+  position: fixed;
+  top: 54px;
+  right: 10px;
+  z-index: 2147483647;
+  max-width: min(260px, calc(100% - 20px));
+  padding: 12px 14px;
+  color: rgba(244, 235, 217, 0.95);
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge-strong);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+body.has-system-button .home-topbar {
+  padding-right: calc(clamp(24px, 4.5vw, 76px) + 44px);
+}
+
+body.has-system-button .lobby-header {
+  padding-right: calc(clamp(24px, 5vw, 80px) + 44px);
 }

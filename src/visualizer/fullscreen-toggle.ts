@@ -7,8 +7,8 @@
 // anything but a video - so the button only appears where it can work,
 // rather than sitting there doing nothing.
 
-const EXPAND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-const COLLAPSE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+export const EXPAND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+export const COLLAPSE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 export interface FullscreenToggle {
   dispose(): void;
@@ -26,7 +26,7 @@ interface FullscreenDocument extends Document {
 
 const doc = (): FullscreenDocument => document as FullscreenDocument;
 
-const isFullscreen = (): boolean =>
+export const isFullscreen = (): boolean =>
   Boolean(doc().fullscreenElement ?? doc().webkitFullscreenElement);
 
 export const fullscreenAvailable = (element: HTMLElement): boolean => {
@@ -36,6 +36,28 @@ export const fullscreenAvailable = (element: HTMLElement): boolean => {
       (target.requestFullscreen || target.webkitRequestFullscreen),
   );
 };
+
+// Enters or leaves fullscreen, quietly if the browser refuses.
+export async function toggleFullscreen(target: HTMLElement): Promise<void> {
+  const element = target as FullscreenElement;
+  try {
+    if (isFullscreen()) await (doc().exitFullscreen?.() ?? doc().webkitExitFullscreen?.());
+    else await (element.requestFullscreen?.() ?? element.webkitRequestFullscreen?.());
+  } catch (error) {
+    console.warn("[fullscreen] refused:", error);
+  }
+}
+
+// Runs the handler whenever the page enters or leaves fullscreen, by any
+// route (the button, Escape, a system gesture); returns how to stop.
+export function onFullscreenChange(handler: () => void): () => void {
+  document.addEventListener("fullscreenchange", handler);
+  document.addEventListener("webkitfullscreenchange", handler);
+  return () => {
+    document.removeEventListener("fullscreenchange", handler);
+    document.removeEventListener("webkitfullscreenchange", handler);
+  };
+}
 
 export function createFullscreenToggle(
   root: HTMLElement,
@@ -58,29 +80,19 @@ export function createFullscreenToggle(
   };
 
   const toggle = async () => {
-    const element = target as FullscreenElement;
-    try {
-      if (isFullscreen()) await (doc().exitFullscreen?.() ?? doc().webkitExitFullscreen?.());
-      else await (element.requestFullscreen?.() ?? element.webkitRequestFullscreen?.());
-    } catch (error) {
-      // A browser may refuse - the gesture was not direct enough, or the
-      // page is in an iframe without permission. Nothing else breaks.
-      console.warn("[fullscreen] refused:", error);
-    }
+    await toggleFullscreen(target);
     render();
   };
 
   button.addEventListener("click", () => void toggle());
   // The viewer can also leave with Escape or the system gesture, so follow
   // the document rather than assuming the button is the only way out.
-  document.addEventListener("fullscreenchange", render);
-  document.addEventListener("webkitfullscreenchange", render);
+  const stopWatching = onFullscreenChange(render);
   render();
 
   return {
     dispose() {
-      document.removeEventListener("fullscreenchange", render);
-      document.removeEventListener("webkitfullscreenchange", render);
+      stopWatching();
       button.remove();
     },
   };

@@ -2,7 +2,10 @@ import { renderHomePage } from "../pages/Home";
 import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
 import { destroyWizardGamePage, renderWizardGamePage } from "../pages/WizardGame";
+import { mountSystemButton } from "../components/system-button";
 import { getActiveGameToken } from "../services/auth";
+
+const systemButton = mountSystemButton();
 
 // three.js is large; only pull the visualizer bundle in when it's actually
 // needed instead of paying for it on every route.
@@ -72,6 +75,8 @@ async function loadVisualizer(
 // fallback configuration. Protected routes redirect unauthenticated users.
 function renderCurrentRoute(container: HTMLElement): void {
   const route = window.location.hash || "#/home";
+  // Outside a game, the fullscreen / install button sits top right.
+  systemButton.setVisible(!route.startsWith("#/game/"));
 
   if (!route.startsWith("#/game/") || !route.endsWith("/visualizer")) {
     destroyVisualizer();

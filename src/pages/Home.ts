@@ -9,9 +9,20 @@ import {
 type Panel = "login" | "signup" | "about" | "rules" | "news" | "contact" | "legal" | null;
 
 export async function renderHomePage(container: HTMLElement): Promise<void> {
+  // The page must come up whatever the server is doing: a cold or unreachable
+  // backend (a phone on a weak connection) used to leave only the 3D backdrop
+  // showing, because the page waited on this lookup and never drew.
+  const lookup = localStorage.getItem("wizardToken")
+    ? await Promise.race([
+        getCurrentUser().catch(() => null),
+        new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 5000)),
+      ])
+    : null;
+  const currentUser = lookup;
+  // A rejected session has already removed its token; a lookup that merely
+  // failed or timed out keeps it, so the account buttons still show.
   const token = localStorage.getItem("wizardToken");
   const isLoggedIn = Boolean(token);
-  const currentUser = isLoggedIn ? await getCurrentUser() : null;
 
   // A guest finishing a game sends them here to sign up (see
   // visualizer/guest-signup-prompt.ts).
