@@ -6,6 +6,7 @@ import {
   onFullscreenChange,
   toggleFullscreen,
 } from "../visualizer/fullscreen-toggle";
+import { INSTALL_ICON as INSTALL, isInstalled as installed } from "../utils/pwa-install";
 import { isIPhone } from "../visualizer/iphone-app-prompts";
 
 // One small button at the top right of every screen outside a game, so the
@@ -15,13 +16,6 @@ import { isIPhone } from "../visualizer/iphone-app-prompts";
 //    which is the way to lose Safari's toolbars there;
 //  - in an installed app, where there is nothing to gain, it is not shown.
 // In a game the HUD has its own fullscreen button, so the router hides this.
-
-const INSTALL = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
-const installed = (): boolean =>
-  (navigator as Navigator & { standalone?: boolean }).standalone === true ||
-  window.matchMedia("(display-mode: standalone)").matches ||
-  window.matchMedia("(display-mode: fullscreen)").matches;
 
 export interface SystemButton {
   setVisible(visible: boolean): void;

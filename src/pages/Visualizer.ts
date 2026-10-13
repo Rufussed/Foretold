@@ -23,6 +23,7 @@ import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
 import { createEffectsToggle, type EffectsToggle } from "../visualizer/effects-toggle";
+import { createInstallToggle, type InstallToggle } from "../visualizer/install-toggle";
 import { createEmoteTrigger, type EmoteTrigger } from "../visualizer/emote-trigger";
 import type { GameConnection } from "../visualizer/game-connection";
 import { createGameHud, type GameHud } from "../visualizer/hud/game-hud";
@@ -89,6 +90,7 @@ export async function renderVisualizerPage(
   let music: BackgroundMusic | null = null;
   let musicToggle: MusicToggle | null = null;
   let effectsToggle: EffectsToggle | null = null;
+  let installToggle: InstallToggle | null = null;
   let fullscreenToggle: FullscreenToggle | null = null;
   let iphonePrompts: { dispose(): void } | null = null;
   let hudScale: { dispose(): void } | null = null;
@@ -100,6 +102,7 @@ export async function renderVisualizerPage(
     destroyed = true;
     musicToggle?.dispose();
     effectsToggle?.dispose();
+    installToggle?.dispose();
     fullscreenToggle?.dispose();
     iphonePrompts?.dispose();
     hudScale?.dispose();
@@ -155,6 +158,7 @@ export async function renderVisualizerPage(
     pageEl.append(toolbar);
     musicToggle = createMusicToggle(toolbar, music);
     effectsToggle = createEffectsToggle(toolbar);
+    installToggle = createInstallToggle(toolbar, pageEl);
     // The page itself, not the canvas: the HUD, the prompts and the emotes
     // have to come with it, or fullscreen would show a table and nothing to
     // play it with. Null where the browser will not do fullscreen at all.

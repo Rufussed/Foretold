@@ -1343,7 +1343,8 @@ button {
   /* Two rows inside the narrow status panel: the music source, then buttons. */
   width: 150px;
   box-sizing: border-box;
-  gap: 6px;
+  /* 4px across: four 32px buttons fit the second row. */
+  gap: 6px 4px;
   place-items: center;
   padding: 3px 4px;
   color: rgba(244, 235, 217, 0.9);
@@ -1352,6 +1353,7 @@ button {
 .visualizer-page .music-toggle,
 .visualizer-page .music-source-toggle,
 .visualizer-page .effects-toggle,
+.visualizer-page .install-toggle,
 .visualizer-page .fullscreen-toggle {
   display: grid;
   place-items: center;
@@ -1383,6 +1385,7 @@ button {
 .visualizer-page .music-toggle:hover,
 .visualizer-page .music-source-toggle:hover,
 .visualizer-page .effects-toggle:hover,
+.visualizer-page .install-toggle:hover,
 .visualizer-page .fullscreen-toggle:hover {
   background: rgba(191, 125, 47, 0.12);
   border-color: rgba(191, 125, 47, 0.65);
@@ -1390,9 +1393,31 @@ button {
 
 .visualizer-page .music-toggle svg,
 .visualizer-page .effects-toggle svg,
+.visualizer-page .install-toggle svg,
 .visualizer-page .fullscreen-toggle svg {
   width: 20px;
   height: 20px;
+}
+
+.visualizer-page .install-toggle[hidden] {
+  display: none;
+}
+
+/* How to install, where the browser has no dialog for it (see
+   visualizer/install-toggle.ts): under the toolbar; a tap closes it. */
+.visualizer-page .install-help {
+  position: absolute;
+  top: 100px;
+  right: 26px;
+  z-index: 5;
+  max-width: min(260px, calc(100% - 32px));
+  padding: 10px 12px;
+  color: rgba(244, 235, 217, 0.95);
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge-strong);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.4;
 }
 
 /* What's going on, top centre (see hud/announcer.ts). */
