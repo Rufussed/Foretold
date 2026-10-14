@@ -21,6 +21,19 @@ interface LoginBody {
 export default async function authRoutes(
   server: FastifyInstance,
 ): Promise<void> {
+  // Signing up and logging in both end with the same session token.
+  function signSessionToken(user: { id: number; username: string }): string {
+    return server.jwt.sign(
+      {
+        sub: user.id,
+        username: user.username,
+      },
+      {
+        expiresIn: "8h",
+      },
+    );
+  }
+
   server.post<{ Body: RegisterBody }>(
     "/register",
     async (request, reply) => {
@@ -71,11 +84,14 @@ export default async function authRoutes(
         playerStatsRepository.initializeForUser(user.id);
 
         return reply.status(201).send({
-          id: user.id,
-          username: user.username,
-          displayName: user.displayName,
-          email: user.email,
-          createdAt: user.createdAt,
+          token: signSessionToken(user),
+          user: {
+            id: user.id,
+            username: user.username,
+            displayName: user.displayName,
+            email: user.email,
+            createdAt: user.createdAt,
+          },
         });
       } catch (error) {
         server.log.error(error);
@@ -116,15 +132,7 @@ export default async function authRoutes(
 		});
 		}
 
-		const token = server.jwt.sign(
-		{
-			sub: user.id,
-			username: user.username,
-		},
-		{
-			expiresIn: "8h",
-		},
-		);
+		const token = signSessionToken(user);
 
 		return reply.send({
 		token,

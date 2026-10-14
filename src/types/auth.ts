@@ -10,8 +10,11 @@ export interface LoginResponse {
 }
 
 export interface RegistrationResponse {
-  id: number;
-  username: string;
+  token: string;
+  user: {
+    id: number;
+    username: string;
+  };
 }
 
 export interface PlayerStats {

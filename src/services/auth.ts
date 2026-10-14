@@ -67,9 +67,12 @@ export async function register(
     error?: string;
   };
 
-  if (!response.ok) {
+  if (!response.ok || !data.token) {
     throw new Error(data.error ?? "Registration failed");
   }
+
+  // A new account is signed straight in.
+  localStorage.setItem(TOKEN_KEY, data.token);
 
   return data;
 }

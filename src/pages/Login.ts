@@ -123,10 +123,11 @@ export function renderLoginPage(container: HTMLElement): void {
 
       if (registrationMessage) {
         registrationMessage.textContent =
-          `Account created for ${result.username}`;
+          `Account created for ${result.user.username}`;
       }
 
       registrationForm.reset();
+      await updateUserStatus();
     } catch (error) {
       if (registrationMessage) {
         registrationMessage.textContent =

@@ -9,7 +9,7 @@ export function renderNavbar(
   container.innerHTML = `
     <header class="lobby-header">
       <a class="lobby-brand" href="#/home">
-        <img src="/wizardLogo.png" alt="Wizard" />
+        <img src="/wizardLogo.webp" alt="Wizard" />
       </a>
 
       <nav class="lobby-nav" aria-label="Main navigation">

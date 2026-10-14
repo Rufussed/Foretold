@@ -36,6 +36,21 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     // No storage: the home page opens as usual.
   }
 
+  // Signed-in players are greeted by name; a session whose lookup failed
+  // still counts as signed in, so it gets a plain welcome rather than
+  // "Stranger".
+  function welcomeMessage(): string {
+    if (!isLoggedIn) {
+      return "Welcome, Stranger";
+    }
+
+    const name = currentUser?.displayName || currentUser?.username;
+
+    return name
+      ? `Welcome, ${name.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)}`
+      : "Welcome";
+  }
+
   function render(): void {
     container.innerHTML = `
     <main
@@ -47,7 +62,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           <a class="home-brand" href="#/home">
             <img
               class="home-logo"
-              src="/wizardLogo.png"
+              src="/wizardLogo.webp"
               alt="Wizard"
             />
           </a>
@@ -112,6 +127,8 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         </header>
 
         <section class="home-table-action">
+          <p class="home-welcome">${welcomeMessage()}</p>
+
           <button
             type="button"
             class="home-play-button"
@@ -888,16 +905,20 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       );
 
       try {
-        const result = await register(
+        await register(
           username,
           displayName,
           email,
           password,
         );
 
-        void result;
         closePanel();
         showToast("You are signed up");
+
+        window.location.hash = "#/home";
+        window.dispatchEvent(
+          new HashChangeEvent("hashchange"),
+        );
       } catch (error) {
         if (message) {
           message.textContent =

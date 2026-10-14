@@ -80,14 +80,16 @@ label {
 }
 
 /* Browser autofill paints its own pale background over the field; paint the
-   dark one over that. */
+   dark one over that. Important, because the fields' own focus shadows and
+   transitions would otherwise replace it and the pale background shows
+   whenever an autofilled field is selected. */
 input:-webkit-autofill,
 input:-webkit-autofill:hover,
 input:-webkit-autofill:focus {
   -webkit-text-fill-color: #eee2cc;
   caret-color: #eee2cc;
-  box-shadow: 0 0 0 1000px #090a08 inset;
-  transition: background-color 600000s 0s;
+  box-shadow: 0 0 0 1000px #090a08 inset !important;
+  transition: background-color 600000s 0s !important;
 }
 
 :where(select, select option, select optgroup) {
@@ -149,7 +151,7 @@ button {
 
 .home-page {
   min-height: 100vh;
-  padding: 64px 32px;
+  padding: 4px 32px 64px;
   color: white;
   /* The table scene shows through (see backdrop-scene.ts). */
   background-image: linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%));
@@ -1624,7 +1626,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
   max-width: calc(3 * var(--card-width) + 2 * 10px);
 }
@@ -2003,7 +2005,7 @@ button {
    Top bar
    --------------------------------------------------------- */
 .home-logo {
-  width: 180px;
+  width: 114px;
   height: auto;
   display: block;
 }
@@ -2016,7 +2018,7 @@ button {
   align-items: center;
   justify-content: space-between;
 
-  padding: 28px clamp(24px, 4.5vw, 76px);
+  padding: 10px clamp(24px, 4.5vw, 76px) 28px;
 }
 
 .home-brand {
@@ -2168,7 +2170,31 @@ button {
   top: 43%;
   left: 51%;
 
+  /* The welcome sits above Play Now. */
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+
   transform: translate(-50%, -50%);
+}
+
+/* Letter spacing also lands after the last letter, which pushes the visible
+   label left of centre; take that trailing space back off. */
+.home-table-action .home-play-button > span:last-child {
+  margin-right: -0.25em;
+}
+
+.home-welcome {
+  margin: 0 0 4px;
+
+  color: #f6e7cf;
+  font-family: "Cinzel", serif;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
 }
 
 .home-play-button {
@@ -2699,7 +2725,7 @@ button {
   }
 
   .home-topbar {
-    padding: 19px 18px;
+    padding: 10px 18px 19px;
   }
 
   .home-rune-mark {
@@ -2727,7 +2753,7 @@ button {
   .home-top-nav {
     position: absolute;
 
-    top: 72px;
+    top: 63px;
     left: 18px;
 
     margin: 0;
@@ -2816,10 +2842,8 @@ button {
 .lobby-brand img {
   display: block;
 
-  width: 90px;
-  height: 62px;
-
-  object-fit: cover;
+  width: auto;
+  height: 72px;
 
   mix-blend-mode: screen;
 }
@@ -3120,6 +3144,21 @@ button {
 
   transition:
     background 160ms ease;
+}
+
+/* On wider screens the columns stop at a set width and the set sits in the
+   middle of the panel; the rows' own backgrounds still span it. The Action
+   column only needs room for its buttons here. */
+@media (min-width: 900px) {
+  .rooms-heading,
+  .room-row {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 0.8fr)
+      minmax(0, 0.7fr)
+      minmax(0, 1.2fr);
+    padding-inline: max(24px, calc((100% - 860px) / 2));
+  }
 }
 
 .room-row:last-child {
@@ -3840,8 +3879,7 @@ button {
   }
 
   .lobby-brand img {
-    width: 75px;
-    height: 52px;
+    height: 60px;
   }
 
   .lobby-nav {
