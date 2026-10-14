@@ -2,6 +2,7 @@ import { API_BASE } from "../services/api";
 import { displayName } from "../utils/display-name";
 import { renderNavbar } from "../components/Navbar";
 import { getCurrentUser } from "../services/auth";
+import { formatDateTime } from "../utils/format-date-time";
 
 interface LobbyRoom {
   id: number;
@@ -63,7 +64,7 @@ export async function renderLobbyPage(
         <section class="rooms-panel">
           <div class="rooms-heading">
             <span>Room</span>
-            <span>Status</span>
+            <span>Created</span>
             <span>Players</span>
             <span>Action</span>
           </div>
@@ -353,25 +354,20 @@ export async function renderLobbyPage(
           const playerCount =
             `${room.players.length}/${room.maxPlayers}`;
 
-          const statusLabel =
-            room.status === "playing"
-              ? "IN PROGRESS"
-              : "WAITING";
-
           return `
             <article class="room-row">
-              <div class="room-main-info">
-                <strong class="room-name">
-                  ${room.name}
-                </strong>
+              <strong class="room-name">
+                ${room.name}
+              </strong>
+
+              <div class="room-created">
+                <span class="room-created-at">
+                  ${formatDateTime(room.createdAt)}
+                </span>
 
                 <span class="room-creator">
-                  Created by ${playerLabel(room.createdByUsername)}
+                  by ${playerLabel(room.createdByUsername)}
                 </span>
-              </div>
-
-              <div class="room-status">
-                ${statusLabel}
               </div>
 
               <div class="player-count">
