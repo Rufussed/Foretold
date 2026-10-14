@@ -146,7 +146,7 @@ class WizardGameCompletionService {
           , users.is_guest AS isGuest
         FROM rooms
           JOIN users ON users.id = rooms.created_by
-        WHERE id = ?
+        WHERE rooms.id = ?
       `)
       .get(game.roomId) as RoomInfo | undefined;
 

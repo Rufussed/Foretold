@@ -127,35 +127,46 @@ wizardLobbyManager.resetPlayingRooms();
 setInterval(() => {
   const expiredRoomIds = wizardLobbyManager.getExpiredRoomIds();
 
+  // Each room is cleared on its own: one that throws is logged and skipped,
+  // rather than ending the pass and leaving every room after it in place
+  // (which is how expired rooms once piled up for days).
   for (const roomId of expiredRoomIds) {
-    const room = wizardLobbyManager.getRoomById(roomId);
-
-    if (!room) {
-      continue;
-    }
-
-    if (room.status === "playing") {
-      wizardSessionManager.getGame(roomId);
-      continue;
-    }
-
-    const creator = db
-      .prepare(`
-        SELECT created_by AS createdBy, is_guest AS isGuest
-        FROM rooms
-        JOIN users ON users.id = rooms.created_by
-        WHERE rooms.id = ?
-      `)
-      .get(roomId) as { createdBy: number; isGuest: number } | undefined;
-
-    wizardLobbyManager.deleteRoom(roomId);
-
-    if (creator?.isGuest === 1) {
-      db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(creator.createdBy);
-      db.prepare("DELETE FROM users WHERE id = ? AND is_guest = 1").run(creator.createdBy);
+    try {
+      expireRoom(roomId);
+    } catch (error) {
+      console.error(`[server] could not expire room ${roomId}:`, error);
     }
   }
 }, 5000);
+
+function expireRoom(roomId: number): void {
+  const room = wizardLobbyManager.getRoomById(roomId);
+
+  if (!room) {
+    return;
+  }
+
+  if (room.status === "playing") {
+    wizardSessionManager.getGame(roomId);
+    return;
+  }
+
+  const creator = db
+    .prepare(`
+      SELECT created_by AS createdBy, is_guest AS isGuest
+      FROM rooms
+      JOIN users ON users.id = rooms.created_by
+      WHERE rooms.id = ?
+    `)
+    .get(roomId) as { createdBy: number; isGuest: number } | undefined;
+
+  wizardLobbyManager.deleteRoom(roomId);
+
+  if (creator?.isGuest === 1) {
+    db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(creator.createdBy);
+    db.prepare("DELETE FROM users WHERE id = ? AND is_guest = 1").run(creator.createdBy);
+  }
+}
 
 try {
   await server.listen({

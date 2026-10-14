@@ -446,4 +446,125 @@ describe("WizardGameCompletionService", () => {
       `).run(creatorId, player2Id, player3Id);
     }
   });
+
+  // The room lookup joins users, so an unqualified "id" was ambiguous and
+  // every expiry threw; the 24-hour cleanup then stalled on the first
+  // playing room and nothing after it was ever removed.
+  it("deletes the game, room players, and room when a game expires", () => {
+    const creatorId = createTestUser(
+      "cleanup-expiry-creator",
+      "Creator",
+    );
+    const player2Id = createTestUser(
+      "cleanup-expiry-player2",
+      "Player 2",
+    );
+    const player3Id = createTestUser(
+      "cleanup-expiry-player3",
+      "Player 3",
+    );
+
+    const room = db.prepare(`
+      INSERT INTO rooms (
+        name,
+        created_by,
+        max_players,
+        status
+      )
+      VALUES (?, ?, ?, 'playing')
+    `).run(
+      "Cleanup Expiry Room",
+      creatorId,
+      3,
+    );
+
+    const roomId = Number(room.lastInsertRowid);
+
+    for (const [userId, username] of [
+      [creatorId, "cleanup-expiry-creator"],
+      [player2Id, "cleanup-expiry-player2"],
+      [player3Id, "cleanup-expiry-player3"],
+    ] as const) {
+      db.prepare(`
+        INSERT INTO room_players (
+          room_id,
+          user_id,
+          username
+        )
+        VALUES (?, ?, ?)
+      `).run(roomId, userId, username);
+    }
+
+    db.prepare(`
+      INSERT INTO games (
+        room_id,
+        status,
+        state_json
+      )
+      VALUES (?, 'playing', ?)
+    `).run(roomId, JSON.stringify({ roomId }));
+
+    const game = createTestGame(
+      roomId,
+      "cleanup-expiry-creator",
+      "cleanup-expiry-player2",
+      "cleanup-expiry-player3",
+    );
+
+    try {
+      wizardGameCompletionService.expireGame(game);
+
+      const gameRow = db.prepare(`
+        SELECT id
+        FROM games
+        WHERE room_id = ?
+      `).get(roomId);
+
+      const roomPlayers = db.prepare(`
+        SELECT id
+        FROM room_players
+        WHERE room_id = ?
+      `).all(roomId);
+
+      const roomRow = db.prepare(`
+        SELECT id
+        FROM rooms
+        WHERE id = ?
+      `).get(roomId);
+
+      expect(gameRow).toBeUndefined();
+      expect(roomPlayers).toHaveLength(0);
+      expect(roomRow).toBeUndefined();
+    } finally {
+      db.prepare(`
+        DELETE FROM games
+        WHERE room_id = ?
+      `).run(roomId);
+
+      db.prepare(`
+        DELETE FROM room_players
+        WHERE room_id = ?
+      `).run(roomId);
+
+      db.prepare(`
+        DELETE FROM rooms
+        WHERE id = ?
+      `).run(roomId);
+
+      db.prepare(`
+        DELETE FROM player_opponents
+        WHERE player_id IN (?, ?, ?)
+      `).run(creatorId, player2Id, player3Id);
+
+      db.prepare(`
+        DELETE FROM player_stats
+        WHERE user_id IN (?, ?, ?)
+      `).run(creatorId, player2Id, player3Id);
+
+      db.prepare(`
+        DELETE FROM users
+        WHERE id IN (?, ?, ?)
+      `).run(creatorId, player2Id, player3Id);
+    }
+  });
 });
