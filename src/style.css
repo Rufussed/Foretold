@@ -1425,7 +1425,11 @@ button {
      transform to disagree with the entrance animation. */
   right: 0;
   left: 0;
-  z-index: 2;
+  /* Announcements, the round's score cards and the winner sit over every
+     other part of the game screen. Only the guest sign-up prompt (which
+     follows the winner and must stay clickable) and the rotate-your-phone
+     cover go above. */
+  z-index: 15;
   width: max-content;
   max-width: min(560px, calc(100% - 560px));
   margin: 0 auto;
