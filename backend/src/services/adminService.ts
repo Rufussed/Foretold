@@ -1,5 +1,6 @@
 import db, { transaction } from "../db/database.js";
 import { wizardLobbyManager } from "../game/wizard/services/wizardLobbyManager.js";
+import { deleteGuestUser } from "../game/wizard/services/guestCleanup.js";
 
 export interface AdminRoom {
   id: number;
@@ -88,9 +89,27 @@ export const adminService = {
     return rows.map((row) => ({ ...row, isGuest: row.isGuest === 1 }));
   },
 
-  // The room, its players and its game, including a game held in memory.
+  // The room, its players and its game, including a game held in memory. A
+  // guest's table is all a guest has, so the guest goes with it.
   deleteRoom(roomId: number): boolean {
-    return wizardLobbyManager.deleteRoom(roomId);
+    const creator = db
+      .prepare(`
+        SELECT rooms.created_by AS id, users.is_guest AS isGuest
+        FROM rooms
+          JOIN users ON users.id = rooms.created_by
+        WHERE rooms.id = ?
+      `)
+      .get(roomId) as { id: number; isGuest: number } | undefined;
+
+    if (!wizardLobbyManager.deleteRoom(roomId)) {
+      return false;
+    }
+
+    if (creator?.isGuest === 1) {
+      deleteGuestUser(creator.id);
+    }
+
+    return true;
   },
 
   // A user goes with everything that cannot stand without them: the rooms

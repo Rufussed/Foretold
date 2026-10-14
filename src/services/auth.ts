@@ -116,6 +116,28 @@ export async function createGuestGame(): Promise<GuestGameResponse> {
   return data;
 }
 
+// A guest is only ever at their one table. Leaving it ends the guest: the
+// server removes the table, its game and the account, and this tab forgets
+// the guest. keepalive lets the request finish even as the page moves on.
+export function endGuestSession(): void {
+  const token = getGuestToken();
+
+  sessionStorage.removeItem(GUEST_TOKEN_KEY);
+  sessionStorage.removeItem(GUEST_USERNAME_KEY);
+
+  if (!token) {
+    return;
+  }
+
+  fetch(`${API_BASE}/wizard/guest-games`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+    keepalive: true,
+  }).catch(() => {
+    // The server's own cleanup removes the guest if this never arrives.
+  });
+}
+
 export async function getCurrentUser(): Promise<User> {
   const token = localStorage.getItem(TOKEN_KEY);
 

@@ -4,7 +4,7 @@ import { renderLobbyPage } from "../pages/Lobby";
 import { renderAdminPage } from "../pages/Admin";
 import { destroyWizardGamePage, renderWizardGamePage } from "../pages/WizardGame";
 import { mountSystemButton } from "../components/system-button";
-import { getActiveGameToken } from "../services/auth";
+import { endGuestSession, getActiveGameToken, getGuestToken } from "../services/auth";
 
 const systemButton = mountSystemButton();
 
@@ -76,6 +76,16 @@ async function loadVisualizer(
 // fallback configuration. Protected routes redirect unauthenticated users.
 function renderCurrentRoute(container: HTMLElement): void {
   const route = window.location.hash || "#/home";
+
+  // A guest belongs to their own room and game pages; anywhere else means
+  // they have left the table, by whatever button or link.
+  if (
+    getGuestToken() &&
+    !route.startsWith("#/room/") &&
+    !route.startsWith("#/game/")
+  ) {
+    endGuestSession();
+  }
   // Outside a game, the fullscreen / install button sits top right.
   systemButton.setVisible(!route.startsWith("#/game/"));
 

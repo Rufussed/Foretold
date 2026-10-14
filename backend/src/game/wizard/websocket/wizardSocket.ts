@@ -6,6 +6,7 @@ import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { SUITS, type Suit } from "../models/card.js";
 import { isBotName, seatNameFor } from "../models/bot.js";
 import { isEmote } from "../models/emote.js";
+import { guestTableEmptied, guestTableJoined } from "../services/guestCleanup.js";
 
 interface SocketQuery {
 	token?: string;
@@ -159,6 +160,7 @@ export function registerWizardSocket(
 			const roomConnections = connections.get(roomId) ?? new Set();
 			roomConnections.add(connection);
 			connections.set(roomId, roomConnections);
+			guestTableJoined(roomId);
 
 			sendJson(socket, { type: "connected", roomId, username });
 			broadcastGameState(roomId, gameService);
@@ -285,6 +287,10 @@ export function registerWizardSocket(
 			socket.on("close", () => {
 				clearInterval(heartbeat);
 				removeConnection(roomId, connection);
+
+				if (!connections.has(roomId)) {
+					guestTableEmptied(roomId);
+				}
 			});
 		},
 	);

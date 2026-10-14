@@ -13,6 +13,7 @@ import { clampPace } from "../gameplayPace.js";
 import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
 import { friendService } from "../services/friendService.js";
+import { deleteGuest } from "../services/guestCleanup.js";
 
 interface CreateGameBody {
   roomId?: number;
@@ -559,6 +560,23 @@ export default async function wizardRoutes(
             : "Could not create guest game",
       });
     }
+  });
+
+  // A guest leaving their table: the table, its game and the guest all go.
+  server.delete("/guest-games", async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const userId = Number((request.user as { sub?: string | number }).sub);
+
+    if (!Number.isInteger(userId) || !deleteGuest(userId)) {
+      return reply.status(404).send({ error: "No guest game to leave" });
+    }
+
+    return reply.status(204).send();
   });
 
   server.post(

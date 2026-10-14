@@ -16,6 +16,7 @@ import { playerStatsRepository } from "./game/wizard/services/playerStatsReposit
 import { wizardGameRepository } from "./game/wizard/services/wizardGameRepository.js";
 import { wizardGameCompletionService } from "./game/wizard/services/wizardGameCompletionService.js";
 import { wizardSessionManager } from "./game/wizard/services/wizardSessionManager.js";
+import { cleanUpGuests, deleteGuestUser } from "./game/wizard/services/guestCleanup.js";
 
 // A rejection nobody handled ends the Node process, which on single-process
 // hosting takes every live game and the site itself down with it. One room's
@@ -142,6 +143,12 @@ setInterval(() => {
       console.error(`[server] could not expire room ${roomId}:`, error);
     }
   }
+
+  try {
+    cleanUpGuests();
+  } catch (error) {
+    console.error("[server] could not clean up guests:", error);
+  }
 }, 5000);
 
 function expireRoom(roomId: number): void {
@@ -168,8 +175,7 @@ function expireRoom(roomId: number): void {
   wizardLobbyManager.deleteRoom(roomId);
 
   if (creator?.isGuest === 1) {
-    db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(creator.createdBy);
-    db.prepare("DELETE FROM users WHERE id = ? AND is_guest = 1").run(creator.createdBy);
+    deleteGuestUser(creator.createdBy);
   }
 }
 
