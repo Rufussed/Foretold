@@ -3,6 +3,7 @@ import cors from "@fastify/cors";
 import db from "./db/database.js";
 import { seedUsers } from "./db/seedUsers.js";
 import authRoutes from "./routes/auth.js";
+import adminRoutes from "./routes/admin.js";
 import jwt from "@fastify/jwt";
 import wizardRoutes from "./game/wizard/routes/wizardRoutes.js";
 import websocket from "@fastify/websocket";
@@ -89,6 +90,10 @@ await server.register(authRoutes, {
 
 await server.register(wizardRoutes, {
   prefix: "/wizard",
+});
+
+await server.register(adminRoutes, {
+  prefix: "/admin",
 });
 
 // In production the built frontend (npm run build -> dist/) is served from

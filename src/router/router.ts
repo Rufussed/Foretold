@@ -1,6 +1,7 @@
 import { renderHomePage } from "../pages/Home";
 import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
+import { renderAdminPage } from "../pages/Admin";
 import { destroyWizardGamePage, renderWizardGamePage } from "../pages/WizardGame";
 import { mountSystemButton } from "../components/system-button";
 import { getActiveGameToken } from "../services/auth";
@@ -126,6 +127,16 @@ function renderCurrentRoute(container: HTMLElement): void {
     }
     
     renderLobbyPage(container);
+    return;
+  }
+
+  if (route === "#/admin") {
+    if (!localStorage.getItem("wizardToken")) {
+      window.location.hash = "#/home";
+      return;
+    }
+
+    void renderAdminPage(container);
     return;
   }
 

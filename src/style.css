@@ -5383,3 +5383,93 @@ body.has-two-system-buttons .home-topbar {
 body.has-two-system-buttons .lobby-header {
   padding-right: calc(clamp(24px, 5vw, 80px) + 86px);
 }
+
+/* =========================================================
+   ADMIN PAGE
+   ========================================================= */
+
+.admin-content {
+  position: relative;
+  z-index: 1;
+
+  width: min(1180px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 40px 0 80px;
+
+  color: #eee0c7;
+}
+
+.admin-content h1 {
+  margin: 0 0 8px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 500;
+}
+
+.admin-message {
+  min-height: 1.4em;
+  margin: 0 0 16px;
+  color: rgba(224, 161, 77, 0.9);
+}
+
+.admin-panel {
+  margin-bottom: 28px;
+  padding: 18px;
+
+  border: var(--ui-edge);
+  background: var(--ui-bg-solid);
+}
+
+.admin-panel h2 {
+  margin: 0 0 4px;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+
+.admin-panel h2 span,
+.admin-note,
+.admin-table small {
+  color: rgba(244, 234, 216, 0.5);
+}
+
+.admin-note {
+  margin: 0 0 12px;
+  font-size: 0.8rem;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.admin-table th {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(191, 125, 47, 0.25);
+
+  color: rgba(224, 161, 77, 0.7);
+  font-size: 0.66rem;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.admin-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(191, 125, 47, 0.1);
+  white-space: nowrap;
+}
+
+.admin-delete {
+  padding: 5px 12px;
+  font-size: 0.72rem;
+}
+
+.admin-empty {
+  margin: 0;
+  color: rgba(244, 234, 216, 0.5);
+}
