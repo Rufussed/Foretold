@@ -3,6 +3,7 @@ import type { CharacterId } from "../character-assets";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer } from "../seat-mapping";
 import { headshotUrl } from "./headshots";
+import { createPlayerListGuides } from "./player-list-guides";
 import type { HudPart } from "./hud-part";
 import { createRoundStat, type RoundStat } from "./round-stats";
 
@@ -43,7 +44,7 @@ export interface PlayerListOptions {
 // round: the first to predict first, the second second, and so on. The first
 // player moves on each deal, so the list reorders with it. Each is one line - a
 // small headshot beside their name, then this round's prediction and tricks
-// won, a labelled column each. Your own line is picked out.
+// won, a column each. Your own line is picked out.
 export function createPlayerList(
   root: HTMLElement,
   game: GameConnection,
@@ -56,21 +57,35 @@ export function createPlayerList(
   root.append(grid);
 
   // One set of column headings for the whole panel; the rows below carry only
-  // their numbers.
+  // their numbers. Each heading is one line, ending over the end of its own
+  // column, stepped so the later columns' headings sit higher and run back
+  // over the earlier columns without meeting.
   const headings = document.createElement("div");
   headings.className = "hud-opponent hud-opponent-headings";
   headings.setAttribute("aria-hidden", "true");
-  const headingFor = (text: string) => {
+  const headingFor = (text: string, column: string) => {
     const cell = document.createElement("span");
-    cell.className = "hud-stat-label";
+    cell.className = `hud-stat-label hud-heading-${column}`;
     cell.textContent = text;
     return cell;
   };
-  // The first cell, over the names, stays empty to keep the columns aligned.
-  headings.append(document.createElement("span"), headingFor("Predicts"), headingFor("Tricks"));
+  const orderHeading = headingFor("Play Order", "order");
+  const predictionsHeading = headingFor("Predictions", "predictions");
+  const tricksHeading = headingFor("Tricks", "tricks");
+  headings.append(tricksHeading, predictionsHeading, orderHeading);
 
   const rows = new Map<string, Row>();
   let order = "";
+
+  // Faint lines from each heading down its column.
+  const guides = createPlayerListGuides(grid, () => {
+    const first = rows.get(order.split("\n")[0] ?? "");
+    if (!first) return null;
+    return {
+      headings: [orderHeading, predictionsHeading, tricksHeading],
+      columnCells: [...first.element.children] as HTMLElement[],
+    };
+  });
 
   const buildRow = (username: string): Row => {
     const element = document.createElement("div");
@@ -123,6 +138,7 @@ export function createPlayerList(
         }
         grid.replaceChildren(
           headings,
+          guides.element,
           ...players.map((player) => {
             let row = rows.get(player.username);
             if (!row) {
@@ -157,9 +173,11 @@ export function createPlayerList(
       }
 
       grid.hidden = players.length === 0;
+      guides.update();
     },
 
     dispose() {
+      guides.dispose();
       grid.remove();
     },
   };
