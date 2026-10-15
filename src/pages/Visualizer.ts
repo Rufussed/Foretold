@@ -50,6 +50,7 @@ import { hourglassEnabled, selfPortraitEnabled } from "../visualizer/device-limi
 import { createHourglassTurns, type HourglassTurns } from "../visualizer/hourglass-turns";
 import { createTurnHourglass, type TurnHourglass } from "../visualizer/turn-hourglass";
 import { createTurnTimeoutNotice, type TurnTimeoutNotice } from "../visualizer/turn-timeout-notice";
+import { createTurnReadySignal, type TurnReadySignal } from "../visualizer/turn-ready-signal";
 import { createTableLayout } from "../visualizer/table-layout";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
@@ -101,6 +102,7 @@ export async function renderVisualizerPage(
   let hourglass: TurnHourglass | null = null;
   let hourglassTurns: HourglassTurns | null = null;
   let timeoutNotice: TurnTimeoutNotice | null = null;
+  let turnReady: TurnReadySignal | null = null;
   const isGuestGame =
     !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
 
@@ -323,6 +325,7 @@ export async function renderVisualizerPage(
       gameHud?.applyState();
       hourglassTurns?.applyState();
       timeoutNotice?.applyState();
+      turnReady?.applyState();
       // A guest's game is over: after the winner has been announced, offer to
       // record their deeds.
       const finished = director.hudState();
@@ -375,6 +378,14 @@ export async function renderVisualizerPage(
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
       tableRound: () => director.tableState()?.currentRound,
+    });
+
+    // Your move's countdown starts once your table has shown you your turn.
+    turnReady = createTurnReadySignal({
+      localUsername: gameConnection.localUsername,
+      state: () => director.hudState(),
+      turnShown: () => director.turnShown(),
+      send: (message) => gameConnection.send(message),
     });
 
     // A line about time or fate when your own move runs out of time.

@@ -1,4 +1,4 @@
-export const TURN_TIMEOUT_OPTIONS = [30_000, 45_000, 60_000, null] as const;
+export const TURN_TIMEOUT_OPTIONS = [15_000, 30_000, 45_000, 60_000, null] as const;
 
 export type TurnTimeoutMs = (typeof TURN_TIMEOUT_OPTIONS)[number];
 

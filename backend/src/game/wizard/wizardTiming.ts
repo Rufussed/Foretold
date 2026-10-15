@@ -34,4 +34,11 @@ export const WIZARD_TIMING = {
   // Once the game is finished, before the room and the game are cleaned up, so
   // the final state reaches everyone and has a moment to be read.
   finishedHoldMs: 2500,
+
+  // A human's move with a time limit starts its countdown once their table
+  // has shown them their turn - after the walk-in and the deal - which their
+  // client reports (turn_ready). If it never does (a closed tab, a dropped
+  // connection), the countdown starts anyway after this long. Not paced: it
+  // covers the slowest deal at the slowest speed.
+  turnReadyWaitMs: 45000,
 };

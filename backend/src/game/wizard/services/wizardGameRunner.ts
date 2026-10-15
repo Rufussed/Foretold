@@ -112,12 +112,29 @@ export class WizardGameRunner {
           const decisionKey = getDecisionKey(game);
           const timeoutMs = game.turnTimeoutMs;
 
-          // Start a deadline only when this decision has a configured timeout.
+          // A decision with a time limit starts its countdown once the
+          // player's table has shown them their turn, after any walk-in and
+          // deal: their client says so (turn_ready, which sets the deadline in
+          // wizardSocket.ts and wakes this). If it never does, the countdown
+          // starts anyway after turnReadyWaitMs.
           if (timeoutMs !== null && game.turnDeadlineAt === null) {
-            game.turnDeadlineAt = Date.now() + timeoutMs;
+            await this.waitForDecision(roomId, WIZARD_TIMING.turnReadyWaitMs);
 
-            wizardSessionManager.saveGame(game);
-            this.broadcast(roomId);
+            const waited = wizardSessionManager.getGame(roomId);
+
+            if (!waited) {
+              return;
+            }
+
+            if (getDecisionKey(waited) === decisionKey && waited.turnDeadlineAt === null) {
+              waited.turnDeadlineAt = Date.now() + timeoutMs;
+
+              wizardSessionManager.saveGame(waited);
+              this.broadcast(roomId);
+            }
+
+            // Look again: the countdown is running, or the move was made.
+            continue;
           }
 
           const deadline = game.turnDeadlineAt;

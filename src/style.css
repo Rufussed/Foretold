@@ -866,7 +866,9 @@ button {
   /* Centred over the emote row, which is 32px wider and reaches left. */
   right: 32px;
   bottom: 88px;
-  z-index: 1;
+  /* No layer of its own, so its background and character can sit on
+     different ones: the background with the HUD panels, the character
+     above the score box but below the emotes. */
   width: var(--self-width);
   height: var(--self-width); /* a circle */
   margin: 0;
@@ -876,6 +878,7 @@ button {
 .visualizer-self::before {
   position: absolute;
   inset: 0;
+  z-index: 1;
   content: "";
   background: var(--ui-bg);
   border: var(--ui-edge);
@@ -892,6 +895,7 @@ button {
    wide gestures, below for hands coming over its bottom edge. */
 .visualizer-self-view {
   position: absolute;
+  z-index: 2;
   bottom: -100px;
   left: -90px;
   width: calc(100% + 180px);
@@ -914,7 +918,7 @@ button {
   position: absolute;
   right: 16px;
   bottom: 16px;
-  z-index: 2;
+  z-index: 3; /* in front of the portrait's character */
   display: flex;
   /* A little wider than the portrait, out to the left, to space the
      emoticons out. */
@@ -4303,7 +4307,7 @@ button {
 .room-start-controls {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(3, max-content);
+  grid-template-columns: repeat(4, max-content);
   align-items: end;
   justify-content: center;
   gap: 12px;
@@ -4344,7 +4348,7 @@ button {
 
 .room-variations-controls {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, max-content));
+  grid-template-columns: repeat(2, minmax(0, max-content));
   justify-content: center;
   gap: 12px;
   margin-top: 10px;
@@ -4470,7 +4474,7 @@ button {
   }
 
   .room-start-controls {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     align-items: end;
     gap: 8px;
   }

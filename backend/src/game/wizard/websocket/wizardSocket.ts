@@ -204,6 +204,25 @@ export function registerWizardSocket(
 					sendJson(socket, { type: "error", error: "Game not found" });
 					return;
 				}
+
+				// Not a move: this player's table now shows them their turn, after
+				// any walk-in and deal, so its countdown starts now (see the runner).
+				if (message.type === "turn_ready") {
+					const current = currentGame.players[currentGame.currentPlayerIndex];
+					if (
+						currentGame.phase !== "finished" &&
+						currentGame.turnTimeoutMs !== null &&
+						currentGame.turnDeadlineAt === null &&
+						current?.username === username
+					) {
+						currentGame.turnDeadlineAt = Date.now() + currentGame.turnTimeoutMs;
+						wizardSessionManager.saveGame(currentGame);
+						broadcastGameState(roomId, gameService);
+						runner.notifyAction(roomId);
+					}
+					return;
+				}
+
 				// Reject actions submitted after the current decision's deadline.
 				if (
 					currentGame.turnDeadlineAt !== null &&

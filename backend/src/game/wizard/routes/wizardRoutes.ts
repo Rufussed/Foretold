@@ -182,7 +182,7 @@ export default async function wizardRoutes(
                         anyOf: [
                           {
                             type: "integer",
-                            enum: [30000, 45000, 60000],
+                            enum: [15000, 30000, 45000, 60000],
                           },
                           {
                             type: "null",
@@ -204,7 +204,7 @@ export default async function wizardRoutes(
       name?: string;
       maxPlayers?: number;
       isPublic?: boolean;
-      turnTimeoutMs?: 30000 | 45000 | 60000 | null;
+      turnTimeoutMs?: 15000 | 30000 | 45000 | 60000 | null;
     };
     const tokenUser = request.user as {
       sub?: number;
@@ -463,7 +463,7 @@ export default async function wizardRoutes(
             // out, the room keeps the one it has.
             turnTimeoutMs: {
               anyOf: [
-                { type: "integer", enum: [30000, 45000, 60000] },
+                { type: "integer", enum: [15000, 30000, 45000, 60000] },
                 { type: "null" }
               ]
             }

@@ -129,6 +129,17 @@ export async function renderRoomPage(
                 </select>
               </label>
 
+              <label>
+                <span>Time per move</span>
+                <select id="room-turn-timeout">
+                  <option value="15000">15 seconds</option>
+                  <option value="30000" selected>30 seconds</option>
+                  <option value="45000">45 seconds</option>
+                  <option value="60000">1 minute</option>
+                  <option value="none">No limit</option>
+                </select>
+              </label>
+
               <details class="room-variations">
                 <summary>Rule Variations</summary>
                 <div class="room-variations-controls">
@@ -148,15 +159,6 @@ export async function renderRoomPage(
                     </select>
                   </label>
 
-                  <label>
-                    <span>Time per move</span>
-                    <select id="room-turn-timeout">
-                      <option value="30000" selected>30 seconds</option>
-                      <option value="45000">45 seconds</option>
-                      <option value="60000">1 minute</option>
-                      <option value="none">No limit</option>
-                    </select>
-                  </label>
                 </div>
               </details>
 
