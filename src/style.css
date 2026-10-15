@@ -693,6 +693,35 @@ button {
   border-color: rgba(191, 125, 47, 0.65);
 }
 
+/* The turn hourglass, under Leave Table, centred and 90% as wide as it (see
+   visualizer/turn-hourglass.ts). The box is the upright hourglass, 0.72 wide
+   to 1 tall. Its canvas is square and larger, centred on it, so the glass has
+   room to turn sideways mid-flip: the camera fits a 0.683 half-height around
+   the 0.36 radius discs (TURN_HOURGLASS.fitRadius), so the canvas is 1.9
+   times the box's width. */
+.visualizer-hourglass {
+  position: relative;
+  align-self: center;
+  width: 90%;
+  margin-top: 10px;
+  aspect-ratio: 0.72;
+  pointer-events: none;
+}
+
+.visualizer-hourglass[hidden] {
+  display: none;
+}
+
+.visualizer-hourglass canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 190%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
 #wizard-visualizer-loading {
   position: absolute;
   inset: 0;

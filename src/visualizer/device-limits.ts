@@ -15,6 +15,7 @@ import { BACKDROP, LIGHTING, RENDER, SHADOWS } from "./config";
 //   ?lights=2         how many torch lights stay lit (-1 for all)
 //   ?ratio=1.5        buffer pixels per CSS pixel
 //   ?portrait=0       the corner self portrait, which costs a second context
+//   ?hourglass=0      the turn hourglass, which costs a context too
 //   ?sharpen=0.45     the sharpen pass
 //   ?smooth=1         edge smoothing in the same pass
 //   ?shadowres=256    shadow map side, to test whether a driver that cannot
@@ -101,6 +102,9 @@ export const shadowsEnabled = (renderer?: { getContext(): WebGLRenderingContext 
 // Whether the corner self portrait, which costs a second WebGL context, runs.
 export const selfPortraitEnabled = (): boolean =>
   boolParam("portrait") ?? (!isTouchDevice() || BACKDROP.touchSelfPortrait);
+
+// Whether the turn hourglass, which costs a WebGL context of its own, runs.
+export const hourglassEnabled = (): boolean => boolParam("hourglass") ?? true;
 
 // How many torch lights to keep lit; -1 for all of them.
 export const maxTorchLights = (): number =>

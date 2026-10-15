@@ -508,6 +508,42 @@ export const SELF_PORTRAIT = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// TURN HOURGLASS  (top left, under Leave Table; see turn-hourglass.ts)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const TURN_HOURGLASS = {
+  // How long a human player has for a move. The flip, the settle, the drain
+  // and the clear all fit inside it, so the sand runs out as the time does.
+  // Placeholder until the server's timing config sends the real value.
+  turnSeconds: 30,
+
+  // The flip at the start of a turn, end over end, and the sand then sliding
+  // down onto the neck before it runs (blender/build_hourglass.py).
+  flipSeconds: 2,
+  settleSeconds: 0.3,
+
+  // Once the top is empty, the last grains in the stream fall for this long.
+  clearSeconds: 0.5,
+
+  // A move made early: the sand left in the top runs out this fast, then
+  // clears, so the next turn can flip from empty.
+  finishSeconds: 0.4,
+
+  // The camera: looking down by this much, from far enough to fit the
+  // hourglass mid-flip, when it is as wide as it is tall.
+  elevationDegrees: 12,
+  fov: 30,
+  fitRadius: 0.66,
+
+  keyLightIntensity: 2.6,
+  ambientIntensity: 1.1,
+
+  supersample: 1.5,
+  maxPixelRatio: 3,
+  targetFps: 30,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // CARDS  (code-generated faces, until handmade textures replace them)
 // ══════════════════════════════════════════════════════════════════════════
 

@@ -46,7 +46,9 @@ import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt"
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
-import { selfPortraitEnabled } from "../visualizer/device-limits";
+import { hourglassEnabled, selfPortraitEnabled } from "../visualizer/device-limits";
+import { createHourglassTurns, type HourglassTurns } from "../visualizer/hourglass-turns";
+import { createTurnHourglass, type TurnHourglass } from "../visualizer/turn-hourglass";
 import { createTableLayout } from "../visualizer/table-layout";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
@@ -95,6 +97,8 @@ export async function renderVisualizerPage(
   let iphonePrompts: { dispose(): void } | null = null;
   let hudScale: { dispose(): void } | null = null;
   let guestPrompt: GuestSignupPrompt | null = null;
+  let hourglass: TurnHourglass | null = null;
+  let hourglassTurns: HourglassTurns | null = null;
   const isGuestGame =
     !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
 
@@ -116,6 +120,7 @@ export async function renderVisualizerPage(
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
     gameHud?.dispose();
+    hourglass?.destroy();
     socket?.close();
     selfPortrait?.destroy();
     scene?.destroy();
@@ -131,6 +136,7 @@ export async function renderVisualizerPage(
 
       <nav class="visualizer-nav">
         <a href="${isGuestGame ? "#/home" : "#/lobby"}">Leave Table</a>
+        <div class="visualizer-hourglass" id="visualizer-hourglass" hidden></div>
 
       </nav>
 
@@ -312,6 +318,7 @@ export async function renderVisualizerPage(
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
       gameHud?.applyState();
+      hourglassTurns?.applyState();
       // A guest's game is over: after the winner has been announced, offer to
       // record their deeds.
       const finished = director.hudState();
@@ -363,6 +370,23 @@ export async function renderVisualizerPage(
       statusBlocked: () => !director.turnShown(),
       tableRound: () => director.tableState()?.currentRound,
     });
+
+    // The hourglass times each human player's move. Its own WebGL context,
+    // so a device that will not give one just plays without it.
+    const hourglassView = container.querySelector<HTMLElement>("#visualizer-hourglass");
+    if (hourglassView && hourglassEnabled()) {
+      try {
+        hourglass = createTurnHourglass(hourglassView);
+        hourglassView.hidden = false;
+        hourglassTurns = createHourglassTurns(hourglass, {
+          state: () => director.hudState(),
+          turnShown: () => director.turnShown(),
+        });
+      } catch (error) {
+        diagnostics?.note(`no hourglass: ${String(error)}`);
+        console.warn("[visualizer] no hourglass:", error);
+      }
+    }
   }
 
   const applyLatestState = () => {
