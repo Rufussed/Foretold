@@ -1,6 +1,7 @@
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
+import { normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_EXPIRATION_MS } from "./wizardGameRepository.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
 
@@ -24,6 +25,24 @@ type JoinRoomResult =
 
 
 class WizardLobbyManager {
+  private parseOptions(json: string | null): WizardGameOptions {
+    try {
+      return normalizeGameOptions(json ? JSON.parse(json) : null);
+    } catch {
+      return normalizeGameOptions(null);
+    }
+  }
+
+  // The host's rule variations, saved as they choose so the others can see
+  // them. Only while the room waits for its game.
+  setRoomOptions(roomId: number, options: WizardGameOptions): void {
+    db.prepare(`
+      UPDATE rooms
+      SET options_json = ?
+      WHERE id = ? AND status = 'waiting'
+    `).run(JSON.stringify(normalizeGameOptions(options)), roomId);
+  }
+
   private getRoomPlayers(roomId: number): RoomPlayer[] {
     const rows = db
       .prepare(
@@ -51,6 +70,7 @@ class WizardLobbyManager {
     max_players: number;
     status: string;
     is_public: number;
+    options_json: string | null;
   }): Room {
     return {
       id: row.id,
@@ -62,6 +82,7 @@ class WizardLobbyManager {
       players: this.getRoomPlayers(row.id),
       status: row.status as "waiting" | "playing",
       isPublic: row.is_public === 1,
+      options: this.parseOptions(row.options_json),
     };
   }
 
@@ -77,7 +98,8 @@ class WizardLobbyManager {
             users.username AS created_by_username,
             rooms.max_players,
             rooms.status,
-            rooms.is_public
+            rooms.is_public,
+            rooms.options_json
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -94,6 +116,7 @@ class WizardLobbyManager {
         max_players: number;
         status: string;
         is_public: number;
+        options_json: string | null;
       }[];
 
     return rows.map((row) => this.mapRoom(row));
@@ -111,7 +134,8 @@ class WizardLobbyManager {
             users.username AS created_by_username,
             rooms.max_players,
             rooms.status,
-            rooms.is_public
+            rooms.is_public,
+            rooms.options_json
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -127,6 +151,7 @@ class WizardLobbyManager {
         max_players: number;
         status: string;
         is_public: number;
+        options_json: string | null;
       } | undefined;
 
     if (!row) {

@@ -418,6 +418,8 @@ export async function renderVisualizerPage(
         game: tableConnection,
         seatOf: (username) => sync?.seatOf(username) ?? null,
         headOf: (seat) => players.headPosition(seat),
+        headTurnOf: (seat) => players.headQuaternion(seat),
+        headRadiusOf: (seat) => players.headRadius(seat),
         onDealDone: () => director.dealt(),
         // An NPC whose card was leading shows it did not like being beaten.
         onOvertaken: (previousLeader) => {

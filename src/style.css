@@ -4219,6 +4219,42 @@ button {
   justify-self: center;
 }
 
+/* Rule variants most games leave alone, folded away under the main choices. */
+.room-variations {
+  grid-column: 1 / -1;
+  justify-self: center;
+  color: rgba(244, 235, 217, 0.64);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.room-variations summary {
+  cursor: pointer;
+}
+
+/* The host's chosen rule variations, as the other players see them: under
+   the portraits, in the waiting message's colour. */
+.room-variations-summary {
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.room-variations-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, max-content));
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
 .room-start-controls label {
   display: flex;
   flex-direction: column;
@@ -4352,6 +4388,14 @@ button {
   .room-start-controls select,
   .room-start-button {
     width: 100%;
+  }
+
+  .room-variations {
+    width: 100%;
+  }
+
+  .room-variations-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .room-footer {

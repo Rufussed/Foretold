@@ -4,6 +4,7 @@ import type { Card, Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "./wizardRules.js";
 import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.js";
+import { isBlindRound, normalizeGameOptions } from "../gameOptions.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 export class WizardBotService {
@@ -28,6 +29,12 @@ export class WizardBotService {
     }
 
     const suits: Suit[] = ["Blue", "Red", "Yellow", "Green"];
+
+    // Played blind, the bot can't see its own card to choose by, so it picks
+    // at random.
+    if (this.isBlind(game)) {
+      return suits[Math.floor(Math.random() * suits.length)] as Suit;
+    }
 
     let bestSuit: Suit = "Blue";
     let bestCount = -1;
@@ -63,9 +70,11 @@ export class WizardBotService {
       throw new Error("Bot player does not exist");
     }
 
-    const prediction = player.hand.filter((card) => {
-      return card.value === 14 || card.value >= 12;
-    }).length;
+    const prediction = this.isBlind(game)
+      ? this.blindPrediction(game, player.username)
+      : player.hand.filter((card) => {
+          return card.value === 14 || card.value >= 12;
+        }).length;
 
     // As last predictor, step off a number the rules forbid.
     const choice = Math.min(prediction, game.currentRound);
@@ -74,6 +83,22 @@ export class WizardBotService {
       forbiddenPrediction(game.players, game.currentRound),
       game.currentRound,
     );
+  }
+
+  private isBlind(game: WizardGameState): boolean {
+    return isBlindRound(normalizeGameOptions(game.options), game.currentRound);
+  }
+
+  // A blind round's one card is unseen, so the bot bids on the cards it can
+  // see: if anyone else holds a Wizard or a high card, it expects to lose.
+  private blindPrediction(game: WizardGameState, username: string): number {
+    const othersStrong = game.players.some(
+      (other) =>
+        other.username !== username &&
+        other.hand.some((card) => card.value === 14 || card.value >= 12),
+    );
+
+    return othersStrong ? 0 : 1;
   }
 
   // Return the first legal card. This is intentionally a simple strategy:

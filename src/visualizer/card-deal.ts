@@ -8,7 +8,9 @@ import { applyPlacement, type Placement } from "./placement";
 import type { TableLayout } from "./table-layout";
 
 export interface DealStep {
-  target: Placement;
+  // Where the card lands; a function for a place that moves while the card is
+  // on its way (a blind round's card, held by a head or the camera).
+  target: Placement | (() => Placement);
   // The face the card shows once it lands; null for one this player can't see.
   face: THREE.Texture | null;
   onLanded(): void;
@@ -85,6 +87,7 @@ export function createCardDeal(
 
   const animate = (flight: Flight): boolean => {
     const { card, from, step } = flight;
+    const target = typeof step.target === "function" ? step.target() : step.target;
     const lift = Math.max(paced(DEALING.liftSeconds), 1e-6);
     const travel = Math.max(paced(DEALING.travelSeconds), 1e-6);
     const settle = Math.max(paced(DEALING.settleSeconds), 1e-6);
@@ -96,12 +99,12 @@ export function createCardDeal(
       return false;
     }
 
-    const cruise = Math.max(stackTop, step.target.position.y) + DEALING.liftHeight;
+    const cruise = Math.max(stackTop, target.position.y) + DEALING.liftHeight;
     const above = from.position.clone().setY(cruise);
     // Past its place, on the line out from the middle of the table.
-    const outward = step.target.position.clone().sub(from.position).setY(0);
+    const outward = target.position.clone().sub(from.position).setY(0);
     if (outward.lengthSq() > 1e-8) outward.normalize().multiplyScalar(DEALING.approachDistance);
-    const over = step.target.position.clone().add(outward).setY(cruise);
+    const over = target.position.clone().add(outward).setY(cruise);
 
     if (t < lift) {
       card.object.position.lerpVectors(from.position, above, smooth(t / lift));
@@ -111,10 +114,10 @@ export function createCardDeal(
       card.object.quaternion.copy(from.quaternion);
     } else {
       const k = smooth((t - lift - travel) / settle);
-      card.object.position.lerpVectors(over, step.target.position, k);
-      card.object.quaternion.slerpQuaternions(from.quaternion, step.target.quaternion, k);
+      card.object.position.lerpVectors(over, target.position, k);
+      card.object.quaternion.slerpQuaternions(from.quaternion, target.quaternion, k);
     }
-    card.object.scale.copy(step.target.scale);
+    card.object.scale.copy(target.scale);
     return true;
   };
 

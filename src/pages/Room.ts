@@ -3,6 +3,8 @@ import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
+import { describeRuleVariations } from "../utils/rule-variations";
+import { normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import {
   createAvatarPicker,
   type AvatarPicker,
@@ -127,6 +129,27 @@ export async function renderRoomPage(
                 </select>
               </label>
 
+              <details class="room-variations">
+                <summary>Rule Variations</summary>
+                <div class="room-variations-controls">
+                  <label>
+                    <span>First round</span>
+                    <select id="room-blind-first-round">
+                      <option value="false" selected>See your own card</option>
+                      <option value="true">Blind: see everyone else's card</option>
+                    </select>
+                  </label>
+
+                  <label>
+                    <span>Two or more Wizards</span>
+                    <select id="room-wizard-wins">
+                      <option value="first" selected>First Wizard wins</option>
+                      <option value="last">Last Wizard wins</option>
+                    </select>
+                  </label>
+                </div>
+              </details>
+
               <button
                 type="button"
                 id="room-start-button"
@@ -137,6 +160,12 @@ export async function renderRoomPage(
 
             </div>
           </div>
+
+          <p
+            id="room-variations-summary"
+            class="room-variations-summary"
+            hidden
+          ></p>
 
           <p
             id="room-waiting"
@@ -177,6 +206,15 @@ export async function renderRoomPage(
   // How fast the game plays out, for everyone in it: the server's pauses and
   // the table's animations both scale by it. See gameplayPace.ts.
   const paceEl = element<HTMLSelectElement>("#room-pace");
+  // The rule variations, for everyone in the game. See gameOptions.ts.
+  const wizardWinsEl = element<HTMLSelectElement>("#room-wizard-wins");
+  const blindFirstRoundEl = element<HTMLSelectElement>("#room-blind-first-round");
+  // What the host has chosen, for everyone else waiting.
+  const variationsSummaryEl = element<HTMLParagraphElement>("#room-variations-summary");
+  const chosenOptions = () => ({
+    wizardWins: wizardWinsEl.value,
+    blindFirstRound: blindFirstRoundEl.value === "true",
+  });
   let humanCount = 0;
   let maxPlayers = 0;
 
@@ -202,6 +240,9 @@ export async function renderRoomPage(
   const waitingEl = element<HTMLParagraphElement>("#room-waiting");
 
   let room: Room | null = null;
+  // Whether the host's selects have been set from what the room saved, so a
+  // reload keeps their choices.
+  let optionsLoaded = false;
   // The avatar just clicked, shown before the server confirms it.
   let pendingAvatar: AvatarId | null = null;
 
@@ -247,6 +288,15 @@ export async function renderRoomPage(
 
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
+
+    const options = normalizeGameOptions(room.options);
+    variationsSummaryEl.hidden = isHost;
+    variationsSummaryEl.textContent = describeRuleVariations(options);
+    if (isHost && !optionsLoaded) {
+      optionsLoaded = true;
+      wizardWinsEl.value = options.wizardWins;
+      blindFirstRoundEl.value = String(options.blindFirstRound);
+    }
 
     if (!isHost) {
       waitingEl.textContent = "Waiting for the game creator to start the game…";
@@ -391,6 +441,34 @@ export async function renderRoomPage(
     }
   };
 
+  // The host's rule variations are saved to the room as they change, so
+  // everyone waiting sees them. One save at a time, so they land in order.
+  let optionsSave = Promise.resolve();
+  const saveOptions = () => {
+    const options = chosenOptions();
+    optionsSave = optionsSave.then(async () => {
+      if (destroyed) return;
+      try {
+        const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}/options`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(options),
+        });
+        if (!response.ok) {
+          const data = (await response.json()) as { error?: string };
+          showMessage(data.error ?? "Could not save the rule variations");
+        }
+      } catch (error) {
+        console.warn("[room] saving rule variations failed:", error);
+      }
+    });
+  };
+  wizardWinsEl.addEventListener("change", saveOptions);
+  blindFirstRoundEl.addEventListener("change", saveOptions);
+
   startButton.addEventListener("click", async () => {
     startButton.disabled = true;
     showMessage("");
@@ -407,6 +485,7 @@ export async function renderRoomPage(
           botCount: Number(botsEl.value),
           maxRounds: Number(roundsEl.value),
           pace: Number(paceEl.value),
+          ...chosenOptions(),
         }),
       });
 

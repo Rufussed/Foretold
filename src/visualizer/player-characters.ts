@@ -34,6 +34,12 @@ export interface PlayerCharacters {
   dispose(): void;
   // Where a seated character's head is, in world space; null if the seat is empty.
   headPosition(seat: SeatId): THREE.Vector3 | null;
+  // The head's world rotation as it turns with the animation; null if the
+  // seat is empty or the character has no head bone.
+  headQuaternion(seat: SeatId): THREE.Quaternion | null;
+  // Roughly how far the head's surface is from headPosition: from there to
+  // the top of the head. Null if the seat is empty or there's no head top.
+  headRadius(seat: SeatId): number | null;
   // Development aid: live animation state for a seat, or null if empty.
   debug(seat: SeatId): CharacterDebugState | null;
 }
@@ -109,6 +115,14 @@ export function createPlayerCharacters(
       const mesh = child as THREE.SkinnedMesh;
       if (mesh.isSkinnedMesh) mesh.skeleton.dispose();
     });
+  };
+
+  // Midway between the base of the skull and the top of the head.
+  const headPosition = (seat: SeatId): THREE.Vector3 | null => {
+    const instance = seated.get(seat);
+    if (!instance) return null;
+    const base = (instance.head ?? instance.root).getWorldPosition(new THREE.Vector3());
+    return instance.headTop ? base.lerp(instance.headTop.getWorldPosition(new THREE.Vector3()), 0.5) : base;
   };
 
   return {
@@ -201,12 +215,17 @@ export function createPlayerCharacters(
       // the renderer's forceContextLoss releases their GPU copies.
     },
 
-    headPosition(seat) {
+    headPosition,
+
+    headRadius(seat) {
       const instance = seated.get(seat);
-      if (!instance) return null;
-      // Midway between the base of the skull and the top of the head.
-      const base = (instance.head ?? instance.root).getWorldPosition(new THREE.Vector3());
-      return instance.headTop ? base.lerp(instance.headTop.getWorldPosition(new THREE.Vector3()), 0.5) : base;
+      const middle = headPosition(seat);
+      if (!instance?.headTop || !middle) return null;
+      return middle.distanceTo(instance.headTop.getWorldPosition(new THREE.Vector3()));
+    },
+
+    headQuaternion(seat) {
+      return seated.get(seat)?.head?.getWorldQuaternion(new THREE.Quaternion()) ?? null;
     },
 
     debug(seat) {

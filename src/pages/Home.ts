@@ -359,6 +359,12 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 <strong>Final round:</strong> No trump card is revealed,
                 and there is no trump suit.
               </p>
+              <p>
+                <strong>Blind first round (rule variation):</strong> In the
+                first round each player holds their one card facing outwards,
+                so you can see everyone's card except your own. Predict, then
+                play your card without ever seeing it.
+              </p>
             </section>
 
             <section class="home-rules-section">
@@ -370,13 +376,14 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 played wins the trick, even if other Wizards are played later.
               </p>
               <p>
-                <strong>Final-round exception:</strong> In the final round,
-                the last Wizard played wins the trick instead of the first.
+                <strong>Rule variation:</strong> The host can choose
+                <em>Last Wizard wins</em> in the game's Rule Variations, so
+                the last Wizard played takes the trick instead of the first.
               </p>
               <p>
-                <strong>Strategy tip:</strong> Playing a Wizard after another
-                player has already played one can help you get rid of your
-                Wizard without winning the trick in a normal round.
+                <strong>Strategy tip:</strong> When the first Wizard wins,
+                playing a Wizard after another player has already played one
+                gets rid of your Wizard without winning the trick.
               </p>
               <p>
                 <strong>Jesters:</strong> Jesters are the lowest-ranking

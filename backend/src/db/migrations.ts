@@ -126,6 +126,17 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 6,
+    description: "rooms.options_json, the host's rule variations",
+    up(db) {
+      // JSON of WizardGameOptions; null until the host changes one, which
+      // reads as the official rules (see gameOptions.ts).
+      if (!hasColumn(db, "rooms", "options_json")) {
+        db.exec("ALTER TABLE rooms ADD COLUMN options_json TEXT");
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

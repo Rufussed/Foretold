@@ -2,6 +2,12 @@ import { DeckService } from "./deckService.js";
 import { WizardRules } from "./wizardRules.js";
 import { forbiddenPrediction } from "../gameplayRules.js";
 import { GAMEPLAY_PACE, clampPace } from "../gameplayPace.js";
+import {
+  DEFAULT_GAME_OPTIONS,
+  isBlindRound,
+  normalizeGameOptions,
+  type WizardGameOptions,
+} from "../gameOptions.js";
 import { isJester, isWizard } from "../models/card.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 
@@ -70,6 +76,8 @@ export class WizardGameService {
     maxRounds?: number,
     // How fast the game plays out, from room setup; 1 is the tuned default.
     pace: number = GAMEPLAY_PACE.default,
+    // The advanced rules from room setup.
+    options: WizardGameOptions = DEFAULT_GAME_OPTIONS,
   ): WizardGameState {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
@@ -122,6 +130,7 @@ export class WizardGameService {
       deck: deck.getCards(),
       phase: "predictions",
       pace: clampPace(pace),
+      options: normalizeGameOptions(options),
     };
 
     this.dealRound(game);
@@ -268,7 +277,7 @@ export class WizardGameService {
     const winnerUsername = this.rules.determineTrickWinner(
       game.currentTrick.playedCards,
       game.trumpSuit,
-      game.currentRound === game.totalRounds,
+      normalizeGameOptions(game.options).wizardWins,
     );
 
     if (!winnerUsername) {
@@ -401,6 +410,7 @@ export class WizardGameService {
     username: string,
   ): PublicWizardGameState {
     // Hide every other player's hand while preserving card counts for the UI.
+    // A blind round turns that round: you see everyone's card but your own.
     const requestingPlayer = game.players.find(
       (player) => player.username === username,
     );
@@ -409,21 +419,26 @@ export class WizardGameService {
       throw new Error("You are not a player in this game");
     }
 
+    const options = normalizeGameOptions(game.options);
+    const blindRound = isBlindRound(options, game.currentRound);
+
     return {
       roomId: game.roomId,
-      players: game.players.map((player) => ({
-        username: player.username,
-        avatar: player.avatar,
-        hand:
-          player.username === username
-            ? player.hand
-            : [],
-        handCount: player.hand.length,
-        prediction: player.prediction,
-        tricksWon: player.tricksWon,
-        score: player.score,
-        roundScores: player.roundScores,
-      })),
+      players: game.players.map((player) => {
+        const isRequester = player.username === username;
+        const handVisible = blindRound ? !isRequester : isRequester;
+
+        return {
+          username: player.username,
+          avatar: player.avatar,
+          hand: handVisible ? player.hand : [],
+          handCount: player.hand.length,
+          prediction: player.prediction,
+          tricksWon: player.tricksWon,
+          score: player.score,
+          roundScores: player.roundScores,
+        };
+      }),
       currentRound: game.currentRound,
       totalRounds: game.totalRounds,
       startingPlayerIndex: game.startingPlayerIndex,
@@ -439,6 +454,8 @@ export class WizardGameService {
       // Through clampPace, so a game saved before the pace existed still
       // reports a usable one.
       pace: clampPace(game.pace),
+      options,
+      blindRound,
     };
   }
 

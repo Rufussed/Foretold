@@ -164,8 +164,8 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
     const playedBy = played ? next.currentTrick.playedCards.at(-1)?.username : undefined;
     showTable(next);
     // Your own drops land where you put them; everyone else's cards fly,
-    // including your NPC's when you're watching.
-    if (playedBy && (playedBy !== options.localUsername || isBotName(playedBy))) {
+    // including your NPC's when you're watching, and yours in a blind round.
+    if (playedBy && (playedBy !== options.localUsername || isBotName(playedBy) || next.blindRound)) {
       await wait(OPPONENT_PLAYS.liftSeconds + OPPONENT_PLAYS.travelSeconds);
     }
     showHud(next); // a prediction or trump choice

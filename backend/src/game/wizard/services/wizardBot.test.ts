@@ -66,4 +66,27 @@ describe("WizardBotService", () => {
     assert.ok(cardIndex >= 0);
     assert.ok(cardIndex < game.players[1]!.hand.length);
   });
+  it("bids on the other players' cards in a blind round", () => {
+    const gameService = new WizardGameService();
+    const botService = new WizardBotService(gameService);
+    const game = gameService.createGame(1, ["alice", "Merlin NPC", "Morgana NPC"], new Map(), 3, 1, {
+      wizardWins: "first",
+      blindFirstRound: true,
+    });
+    const [alice, merlin, morgana] = game.players;
+    if (!alice || !merlin || !morgana) throw new Error("Test players are missing");
+    game.phase = "predictions";
+    game.currentPlayerIndex = 1;
+
+    // Its own Wizard is unseen; the others' low cards say it should win.
+    merlin.hand = [{ suit: "Blue", value: 14 }];
+    alice.hand = [{ suit: "Red", value: 2 }];
+    morgana.hand = [{ suit: "Green", value: 3 }];
+    assert.equal(botService.choosePrediction(game), 1);
+
+    // Someone else holds a Wizard, so it expects to lose.
+    merlin.hand = [{ suit: "Blue", value: 13 }];
+    alice.hand = [{ suit: "Red", value: 14 }];
+    assert.equal(botService.choosePrediction(game), 0);
+  });
 });

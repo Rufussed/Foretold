@@ -1,11 +1,16 @@
 import * as THREE from "three";
 import { WizardRules } from "../../backend/src/game/wizard/services/wizardRules";
+import { normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import type { Card } from "../../backend/src/game/wizard/models/card";
+import { createBlindCardControls } from "./blind-card-controls";
+import { createBlindCards, type BlindCards, type BlindHolder } from "./blind-cards";
+import { createBlindPlacements } from "./blind-placements";
 import { createCardControls } from "./card-controls";
 import { createCardSound } from "./card-sound";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
 import { cardKey, cardTexture } from "./card-textures";
+import { CARD_HANDLING } from "./config";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
@@ -31,6 +36,10 @@ export interface CardTableOptions {
   seatOf(username: string): SeatId | null;
   // Where the character in a seat has their head, for the trick reward.
   headOf(seat: SeatId): THREE.Vector3 | null;
+  // How the character in a seat has their head turned, for a blind round's
+  // card held to it.
+  headTurnOf(seat: SeatId): THREE.Quaternion | null;
+  headRadiusOf(seat: SeatId): number | null;
   // Called when a deal has finished landing.
   onDealDone?(): void;
   // Called when another player's card takes the lead in the trick, with the
@@ -42,6 +51,8 @@ export interface CardTable {
   readonly cards: TableCards;
   readonly deal: CardDeal;
   readonly opponents: OpponentHands;
+  // A blind round's cards, held facing away from their holders.
+  readonly blind: BlindCards;
   readonly rewards: TrickRewards;
   // True from the start of a deal (including waiting for the intro camera
   // move) until its last card has landed.
@@ -65,7 +76,8 @@ export interface CardTable {
 const DEMO_CARDS_EACH = 9;
 
 // Everything cards: connects the stack and dealing, your hand and its pointer
-// controls, the other players' hands, the trick and the trump to the game.
+// controls, the other players' hands, a blind round's held cards, the trick
+// and the trump to the game.
 // A new round is dealt from the stack; a card dropped on the play area is sent
 // to the server as your play.
 export function createCardTable({
@@ -75,12 +87,18 @@ export function createCardTable({
   game,
   seatOf,
   headOf,
+  headTurnOf,
+  headRadiusOf,
   onDealDone,
   onOvertaken,
 }: CardTableOptions): CardTable {
   const factory = createCardFactory(environment);
   const cards = createTableCards(environment, factory, layout);
   const opponents = createOpponentHands(factory, layout);
+  const blind = createBlindCards(
+    factory,
+    createBlindPlacements({ environment, layout, camera: () => view.camera, headOf, headTurnOf, headRadiusOf }),
+  );
   const sound = createCardSound();
   const deal = createCardDeal(factory, layout, sound);
   const scoreSound = createScoreSound();
@@ -115,13 +133,39 @@ export function createCardTable({
     onPlay,
   });
 
+  // A blind round's one card is played unseen: it is the only card in the
+  // hand, so its index is 0.
+  const blindControls = createBlindCardControls({
+    canvas: view.canvas,
+    camera: view.camera,
+    blind,
+    holdOrbit: view.holdOrbit,
+    canPlay: () => !!game?.state()?.blindRound && canPlay(),
+    // The same play line as your hand's: above your middle hand slot.
+    playLine: () => {
+      const slot = centredSlots(layout.localHand, 1)[0];
+      if (!slot) return null;
+      const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
+      return environment.localToWorld(
+        slot.position.clone().addScaledVector(up, CARD_HANDLING.playLineLengths * factory.length * slot.scale.z),
+      );
+    },
+    onPlay: () => !!game?.send({ type: "play_card", cardIndex: 0 }),
+  });
+
   let dealCount = 0;
   let dealPending = false;
 
   // Runs a planned deal: hides whatever is about to arrive, then reveals each
-  // card as it lands.
-  const runDeal = (plan: readonly PlannedCard[]) => {
+  // card as it lands. A blind round deals everyone's card to their blind-card
+  // target instead of their hand.
+  const runDeal = (plan: readonly PlannedCard[], blindRound = false) => {
     deal.reset();
+
+    const holderOf = (to: Recipient): BlindHolder => (to.kind === "local" ? "local" : to.seat);
+    blind.holdForDeal(
+      blindRound ? plan.flatMap((planned) => (planned.to === "trump" ? [] : [holderOf(planned.to)])) : [],
+    );
 
     const localKeys = plan.flatMap((planned) =>
       planned.to !== "trump" && planned.to.kind === "local" ? [cardKey(planned.card)] : [],
@@ -145,6 +189,15 @@ export function createCardTable({
         return layout.trump
           ? [{ target: layout.trump, face: cardTexture(card), onLanded: () => cards.holdTrump(false) }]
           : [];
+      }
+      if (blindRound) {
+        const holder = holderOf(to);
+        return [{
+          target: () => blind.slotFor(holder),
+          // Your own lands with its back to you, unseen.
+          face: holder === "local" ? null : cardTexture(card),
+          onLanded: () => blind.releaseDealt(holder),
+        }];
       }
       if (to.kind === "local") {
         const target = centredSlots(layout.localHand, localCount)[slot];
@@ -176,6 +229,7 @@ export function createCardTable({
       deal.deal(steps, () => {
         for (const seat of shown.keys()) opponents.setShown(seat, null);
         cards.holdForDeal([]);
+        blind.holdForDeal([]);
         cards.holdTrump(false);
         if (thisDeal !== dealCount) return;
         dealPending = false;
@@ -238,15 +292,33 @@ export function createCardTable({
 
     const hand = localPlayer(game)?.hand ?? [];
     cards.setHand(hand);
+    // In a blind round every card is held up to its holder's forehead, and you
+    // can see every card but your own.
+    const blindRound = !!state.blindRound;
+    const holderOf = (username: string): BlindHolder | null =>
+      username === game.localUsername ? "local" : seatOf(username);
+    const holdings = new Map<BlindHolder, Card | null>();
+    for (const player of blindRound ? state.players : []) {
+      const holder = holderOf(player.username);
+      if (holder === null || player.handCount === 0) continue;
+      holdings.set(holder, holder === "local" ? null : player.hand[0] ?? null);
+    }
+
     // Which played-card slots the trick uses: centred for fewer than six.
     cards.setPlayerCount(state.players.length);
     // A card another player has just played rises out of their hand on its
     // way to the table: from the last card showing in their fan, before the
-    // hand counts below take it away.
+    // hand counts below take it away. In a blind round every card, yours
+    // included, comes from where it was held.
     const origins = new Map<string, Placement>();
     for (const played of state.currentTrick.playedCards) {
       const key = cardKey(played.card);
       if (!knownTrick || knownTrick.has(key) || deal.dealing) continue;
+      if (blindRound) {
+        const holder = holderOf(played.username);
+        if (holder !== null) origins.set(key, blind.heldAt(holder));
+        continue;
+      }
       if (played.username === game.localUsername) continue;
       const seat = seatOf(played.username);
       if (seat === null) continue;
@@ -263,12 +335,14 @@ export function createCardTable({
             .map((played) => cardKey(played.card)),
     );
     cards.setTrick(state.currentTrick.playedCards.map((played) => played.card), origins, fromHand);
+    // Only now, so a card just played flies from where it was, dropped or held.
+    blind.set(holdings);
     knownTrick = new Set(state.currentTrick.playedCards.map((played) => cardKey(played.card)));
     // The card winning the trick so far, by the server's own rules.
     const leader = rules.determineTrickWinner(
       state.currentTrick.playedCards,
       state.trumpSuit,
-      state.currentRound === state.totalRounds,
+      normalizeGameOptions(state.options).wizardWins,
     );
     const leadingPlay = state.currentTrick.playedCards.find((played) => played.username === leader);
     cards.setLeading(leadingPlay ? cardKey(leadingPlay.card) : null);
@@ -284,7 +358,8 @@ export function createCardTable({
     for (const player of state.players) {
       if (player.username === game.localUsername) continue;
       const seat = seatOf(player.username);
-      if (seat !== null) counts.set(seat, player.handCount);
+      // A blind round's cards are held up, not fanned in the hand.
+      if (seat !== null) counts.set(seat, blindRound ? 0 : player.handCount);
     }
     opponents.setCounts(counts);
 
@@ -321,7 +396,22 @@ export function createCardTable({
       .map((key) => byKey.get(key))
       .filter((card): card is Card => !!card);
 
-    runDeal(planDeal({ recipients, cardsEach: state.currentRound, localHand, trump: state.trumpCard }));
+    // A blind round's deal shows the others' cards and hides yours.
+    const seatHands = new Map<SeatId, readonly Card[]>();
+    for (const player of blindRound ? state.players : []) {
+      const seat = player.username === game.localUsername ? null : seatOf(player.username);
+      if (seat !== null && player.hand.length) seatHands.set(seat, player.hand);
+    }
+    runDeal(
+      planDeal({
+        recipients,
+        cardsEach: state.currentRound,
+        localHand: blindRound ? null : localHand,
+        seatHands,
+        trump: state.trumpCard,
+      }),
+      blindRound,
+    );
   };
 
   // On the demo table you deal: the first card goes to your left, and the deal
@@ -376,6 +466,7 @@ export function createCardTable({
     cards,
     deal,
     opponents,
+    blind,
     rewards,
     get dealing() {
       return dealPending;
@@ -393,18 +484,23 @@ export function createCardTable({
       const burstColor = won ? burstColorFor(won.tricksWon, won.prediction) : burstColorFor(0, null);
       startReward(destinationFor(winner), roundOver, burstColor, done);
     },
-    refused: () => cards.cancelPlay(),
+    refused: () => {
+      cards.cancelPlay();
+      blind.cancelPlay();
+    },
     redealDemo,
     playTestReward,
     update(deltaSeconds) {
       deal.update(deltaSeconds);
       cards.update(deltaSeconds);
+      blind.update();
       rewards.update(deltaSeconds);
       burst.update(deltaSeconds);
       // crown.update(deltaSeconds);
     },
     dispose() {
       controls.dispose();
+      blindControls.dispose();
       sound.dispose();
       scoreSound.dispose();
       chime.dispose();

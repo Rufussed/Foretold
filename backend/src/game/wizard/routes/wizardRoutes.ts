@@ -10,6 +10,7 @@ import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
+import { normalizeGameOptions } from "../gameOptions.js";
 import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
 import { friendService } from "../services/friendService.js";
@@ -23,6 +24,9 @@ interface CreateGameBody {
   // How fast the game plays out, chosen in room setup. Out-of-range values are
   // clamped rather than refused, so a stale client cannot fail to start a game.
   pace?: number;
+  // The rule variations (see gameOptions.ts); left out, the official ones.
+  wizardWins?: "first" | "last";
+  blindFirstRound?: boolean;
 }
 
 interface PredictionBody {
@@ -412,6 +416,72 @@ export default async function wizardRoutes(
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
 
+  // The host's rule variations, saved as they choose them so everyone waiting
+  // in the room can see them. The game starts with whatever is chosen then.
+  server.post(
+    "/lobby/:roomId/options",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["wizardWins", "blindFirstRound"],
+          additionalProperties: false,
+          properties: {
+            wizardWins: {
+              type: "string",
+              enum: ["first", "last"]
+            },
+            blindFirstRound: {
+              type: "boolean"
+            }
+          }
+        }
+      }
+    },
+  async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const params = request.params as { roomId?: string };
+    const roomId = Number(params.roomId);
+    const userId = Number((request.user as { sub?: string | number }).sub);
+    const room = wizardLobbyManager.getRoomById(roomId);
+
+    if (!room) {
+      return reply.status(404).send({ error: "Room not found" });
+    }
+
+    if (room.createdBy !== userId) {
+      return reply.status(403).send({
+        error: "Only the host can choose the rule variations",
+      });
+    }
+
+    if (room.status !== "waiting") {
+      return reply.status(409).send({
+        error: "Rule variations can only be changed before the game starts",
+      });
+    }
+
+    wizardLobbyManager.setRoomOptions(roomId, normalizeGameOptions(request.body));
+
+    return reply.send(wizardLobbyManager.getRoomById(roomId));
+  });
+
   server.delete("/lobby/:roomId", {
     schema: {
       params: {
@@ -603,6 +673,13 @@ export default async function wizardRoutes(
             pace: {
               type: "number",
               exclusiveMinimum: 0
+            },
+            wizardWins: {
+              type: "string",
+              enum: ["first", "last"]
+            },
+            blindFirstRound: {
+              type: "boolean"
             }
           }
         }
@@ -706,6 +783,11 @@ export default async function wizardRoutes(
         claims,
         maxRounds,
         clampPace(body.pace),
+        // What the start button sent, falling back to what the room saved.
+        normalizeGameOptions({
+          wizardWins: body.wizardWins ?? room.options.wizardWins,
+          blindFirstRound: body.blindFirstRound ?? room.options.blindFirstRound,
+        }),
       );
 
       game.status = "playing";

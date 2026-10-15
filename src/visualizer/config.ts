@@ -644,6 +644,28 @@ export const OPPONENT_PLAYS = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// BLIND CARDS  (a blind first round's cards, held up facing outwards)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const BLIND_CARDS = {
+  // How far in front of each other player's face their card is held, in
+  // metres (scene units), measured from the head's surface.
+  headForwardMetres: 0.3,
+
+  // How far above the middle of the head, along the head's own up, so the
+  // card sits in front of the forehead, in metres (scene units).
+  headUpMetres: 0.5,
+
+  // How far in front of the camera your own card is held, in metres. It
+  // follows the camera, so it stays in view as the camera turns.
+  cameraForwardMetres: 8,
+
+  // How far above the middle of the view your own card is held, along the
+  // camera's up, in metres (scene units); negative is below.
+  cameraUpMetres: -1.15,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // HEADSHOTS  (the other players' pictures, bottom left)
 // ══════════════════════════════════════════════════════════════════════════
 

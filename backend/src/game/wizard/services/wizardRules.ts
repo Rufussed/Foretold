@@ -1,3 +1,4 @@
+import type { WizardWins } from "../gameOptions.js";
 import {
   isJester,
   isWizard,
@@ -112,13 +113,13 @@ export class WizardRules {
     return 0;
   }
 
-  // Determine the winner from cards played in turn order. In the final round
-  // Wizards are resolved in reverse play order, matching the game's special
-  // no-trump end-round rule.
+  // Determine the winner from cards played in turn order. When several
+  // Wizards are played, the game's wizardWins option picks the first or the
+  // last of them.
   determineTrickWinner(
     playedCards: Array<{ username: string; card: Card }>,
     trumpSuit: Suit | null,
-    isFinalRound: boolean,
+    wizardWins: WizardWins,
   ): string | null {
     if (playedCards.length === 0) {
       return null;
@@ -127,16 +128,13 @@ export class WizardRules {
     //Handles if Wizard is play first, there is no Suit
     const leadSuit = this.getLeadSuit(playedCards);
 
-    // Handle Wizards before ordinary card comparison because multiple
-    // Wizards require a different ordering in the final round.
+    // Handle Wizards before ordinary card comparison, since which of several
+    // Wizards wins is a game option rather than a card comparison.
     const wizardPlays = playedCards.filter(({ card }) => isWizard(card));
 
     if (wizardPlays.length > 0) {
-      if (isFinalRound) {
-        return wizardPlays[wizardPlays.length - 1]?.username ?? null;
-      }
-
-      return wizardPlays[0]?.username ?? null;
+      const winning = wizardWins === "last" ? wizardPlays.at(-1) : wizardPlays[0];
+      return winning?.username ?? null;
     }
 
     const firstPlay = playedCards[0];

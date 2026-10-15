@@ -4,6 +4,38 @@ import { WizardGameService } from "./wizardGameService.js";
 
 
 describe("WizardGameService", () => {
+  it("shows a blind first round's cards to everyone but their holder", () => {
+    const service = new WizardGameService();
+    const game = service.createGame(1, ["alice", "bob", "mike"], new Map(), 3, 1, {
+      wizardWins: "first",
+      blindFirstRound: true,
+    });
+
+    const blind = service.getPublicGameState(game, "alice");
+    const hands = new Map(blind.players.map((player) => [player.username, player]));
+    assert.equal(blind.blindRound, true);
+    assert.equal(hands.get("alice")?.hand.length, 0);
+    assert.equal(hands.get("alice")?.handCount, 1);
+    assert.equal(hands.get("bob")?.hand.length, 1);
+    assert.equal(hands.get("mike")?.hand.length, 1);
+
+    // From the second round, hands are private again.
+    game.currentRound = 2;
+    const sighted = service.getPublicGameState(game, "alice");
+    assert.equal(sighted.blindRound, false);
+    assert.equal(sighted.players.find((player) => player.username === "bob")?.hand.length, 0);
+  });
+
+  it("treats a game saved before options existed as the official rules", () => {
+    const service = new WizardGameService();
+    const game = service.createGame(1, ["alice", "bob", "mike"]);
+    delete game.options;
+
+    const state = service.getPublicGameState(game, "alice");
+    assert.deepEqual(state.options, { wizardWins: "first", blindFirstRound: false });
+    assert.equal(state.blindRound, false);
+  });
+
   it("handles game creation and the first round", () => {
     // your existing test code here
     const service = new WizardGameService();

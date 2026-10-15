@@ -1,5 +1,6 @@
 import type { AvatarId } from "./avatar.js";
 import type { Card, Suit } from "./card.js";
+import type { WizardGameOptions } from "../gameOptions.js";
 
 // A room member and the avatar they claimed, if any, while the room waits.
 export interface RoomPlayer {
@@ -19,6 +20,8 @@ export interface Room {
   isPublic: boolean;
   players: RoomPlayer[];
   status: "waiting" | "playing";
+  // The rule variations the host has chosen so far, shown to everyone waiting.
+  options: WizardGameOptions;
 }
 
 export interface GamePlayer {
@@ -60,10 +63,14 @@ export interface WizardGameState {
   // Games saved before the pace existed have none, so read it through
   // clampPace rather than trusting it.
   pace: number;
+  // The advanced rules chosen in room setup. Games saved before they existed
+  // have none, so read them through normalizeGameOptions.
+  options?: WizardGameOptions;
 }
 
 // This is the client-safe projection of WizardGameState. Other players' cards
-// are omitted while hand sizes remain available to render the game UI.
+// are omitted while hand sizes remain available to render the game UI. In a
+// blind round it is the other way round: everyone's card but your own.
 export interface PublicGamePlayer {
   username: string;
   avatar: AvatarId;
@@ -90,6 +97,9 @@ export interface PublicWizardGameState {
   deckCount: number;
   // The game's pace, so the visualiser scales its beats to match the server's.
   pace: number;
+  options: WizardGameOptions;
+  // True while this round is played blind (see gameOptions.ts).
+  blindRound: boolean;
 }
 
 export interface RoundScore {

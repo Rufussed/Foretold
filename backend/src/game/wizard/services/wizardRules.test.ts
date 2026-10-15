@@ -149,12 +149,12 @@ describe("WizardRules", () => {
             { username: "carol", card: wizard },
           ],
           "Red",
-          false,
+          "first",
         ),
       ).toBe("carol");
     });
 
-    it("first Wizard wins when two Wizards are played in a normal round", () => {
+    it("first Wizard wins when two Wizards are played and the first wins", () => {
       expect(
         rules.determineTrickWinner(
           [
@@ -162,12 +162,12 @@ describe("WizardRules", () => {
             { username: "bob", card: wizard },
           ],
           "Red",
-          false,
+          "first",
         ),
       ).toBe("alice");
     });
 
-    it("first Wizard wins when multiple Wizards are played in a normal round", () => {
+    it("first Wizard wins when multiple Wizards are played and the first wins", () => {
       expect(
         rules.determineTrickWinner(
           [
@@ -176,12 +176,12 @@ describe("WizardRules", () => {
             { username: "carol", card: blueSeven },
           ],
           "Red",
-          false,
+          "first",
         ),
       ).toBe("alice");
     });
 
-    it("last Wizard wins when two Wizards are played in the final round", () => {
+    it("last Wizard wins when two Wizards are played and the last wins", () => {
       expect(
         rules.determineTrickWinner(
           [
@@ -189,12 +189,12 @@ describe("WizardRules", () => {
             { username: "bob", card: wizard },
           ],
           "Red",
-          true,
+          "last",
         ),
       ).toBe("bob");
     });
 
-    it("last Wizard wins when multiple Wizards are played in the final round", () => {
+    it("last Wizard wins when multiple Wizards are played and the last wins", () => {
       expect(
         rules.determineTrickWinner(
           [
@@ -203,7 +203,7 @@ describe("WizardRules", () => {
             { username: "carol", card: wizard },
           ],
           "Red",
-          true,
+          "last",
         ),
       ).toBe("carol");
     });
