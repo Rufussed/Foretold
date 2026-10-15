@@ -49,6 +49,7 @@ import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portra
 import { hourglassEnabled, selfPortraitEnabled } from "../visualizer/device-limits";
 import { createHourglassTurns, type HourglassTurns } from "../visualizer/hourglass-turns";
 import { createTurnHourglass, type TurnHourglass } from "../visualizer/turn-hourglass";
+import { createTurnTimeoutNotice, type TurnTimeoutNotice } from "../visualizer/turn-timeout-notice";
 import { createTableLayout } from "../visualizer/table-layout";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
@@ -99,6 +100,7 @@ export async function renderVisualizerPage(
   let guestPrompt: GuestSignupPrompt | null = null;
   let hourglass: TurnHourglass | null = null;
   let hourglassTurns: HourglassTurns | null = null;
+  let timeoutNotice: TurnTimeoutNotice | null = null;
   const isGuestGame =
     !localStorage.getItem("wizardToken") && Boolean(getGuestUsername());
 
@@ -121,6 +123,7 @@ export async function renderVisualizerPage(
     trumpPrompt?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
+    timeoutNotice?.dispose();
     socket?.close();
     selfPortrait?.destroy();
     scene?.destroy();
@@ -319,6 +322,7 @@ export async function renderVisualizerPage(
       trumpPrompt?.applyState();
       gameHud?.applyState();
       hourglassTurns?.applyState();
+      timeoutNotice?.applyState();
       // A guest's game is over: after the winner has been announced, offer to
       // record their deeds.
       const finished = director.hudState();
@@ -357,18 +361,33 @@ export async function renderVisualizerPage(
   if (gameConnection && page) {
     // Bidding waits until every card has been dealt.
     // Prompts open once your turn has been announced.
+    // Your move's time ran out: the game is making it, so the prompts close.
+    const timedOut = () => timeoutNotice?.timedOut() ?? false;
     predictionPrompt = createPredictionPrompt(page, hudConnection!, {
-      blocked: () => !cardTable || cardTable.dealing || !director.turnShown(),
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
     // A Wizard or Jester turned up for trump: the round's first player picks the suit.
     trumpPrompt = createTrumpPrompt(page, hudConnection!, {
-      blocked: () => !cardTable || cardTable.dealing || !director.turnShown(),
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
     // The banner's gameplay lines wait until every card, trump included, has landed.
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
       tableRound: () => director.tableState()?.currentRound,
+    });
+
+    // "Time waits for no one" when your own move runs out of time.
+    timeoutNotice = createTurnTimeoutNotice({
+      localUsername: gameConnection.localUsername,
+      state: () => director.hudState(),
+      turnShown: () => director.turnShown(),
+      latest: () => latestState,
+      notice: (text) => gameHud?.notice(text),
+      onTimedOut: () => {
+        predictionPrompt?.applyState();
+        trumpPrompt?.applyState();
+      },
     });
 
     // The hourglass times each human player's move. Its own WebGL context,
@@ -401,6 +420,7 @@ export async function renderVisualizerPage(
     if (latestState) setPace(latestState.pace);
     // A move's deadline can arrive before the table has caught up with it.
     hourglassTurns?.applyState();
+    timeoutNotice?.applyState();
     if (seatSync && latestState && localUsername) {
       seatSync.applyPlayers(latestState.players, localUsername);
     }

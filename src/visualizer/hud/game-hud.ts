@@ -19,6 +19,8 @@ export interface GameHud extends HudPart {
   refreshPlayers(): void;
   // The server refused a move, with its reason.
   refused(error: string): void;
+  // Says this to you straight away, ahead of anything queued.
+  notice(text: string): void;
   // Calls done once every announcement has had its time.
   whenIdle(done: () => void): void;
   // Which suit is trumps, said once the round's cards are dealt.
@@ -43,6 +45,7 @@ export function createGameHud(
     dispose: () => parts.forEach((part) => part.dispose()),
     refreshPlayers: () => playerList.applyState(),
     whenIdle: (done) => announcer.whenIdle(done),
+    notice: (text) => announcer.notice(text),
     announceTrump(state) {
       const text = trumpMessage(state);
       if (text) announcer.announce(text, TRUMP_EXTRA_SECONDS, state.trumpSuit ?? undefined);

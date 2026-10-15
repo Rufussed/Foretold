@@ -1,6 +1,7 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
 import { TURN_HOURGLASS } from "./config";
+import { deadlineOf, moveKey } from "./move-deadline";
 import type { TurnHourglass } from "./turn-hourglass";
 
 export interface HourglassTurns {
@@ -20,19 +21,6 @@ export interface HourglassTurnsOptions {
   setShown(shown: boolean): void;
 }
 
-// One move: who, in which phase, and how far into the round. The trick count
-// tells apart a player leading two tricks in a row.
-const moveKey = (state: PublicWizardGameState): string => {
-  const tricks = state.players.reduce((sum, player) => sum + player.tricksWon, 0);
-  return [
-    state.currentRound,
-    state.phase,
-    state.currentPlayerIndex,
-    tricks,
-    state.currentTrick.playedCards.length,
-  ].join(":");
-};
-
 // Times each human player's move on the hourglass. It starts when the table
 // shows it is their turn and runs out at the server's deadline for the move
 // (turnDeadlineAt), when the game makes the move for them. The server sets
@@ -46,15 +34,7 @@ export function createHourglassTurns(
   let timing: string | null = null;
   let timedTo: number | null = null; // the deadline the hourglass runs to
 
-  // The move's deadline, from whichever snapshot of this move has it.
-  const deadlineOf = (key: string): number | null => {
-    for (const state of [options.latest(), options.state()]) {
-      if (state && state.turnDeadlineAt !== null && moveKey(state) === key) {
-        return state.turnDeadlineAt;
-      }
-    }
-    return null;
-  };
+  const deadline = (key: string) => deadlineOf(key, [options.latest(), options.state()]);
 
   return {
     applyState() {
@@ -77,11 +57,11 @@ export function createHourglassTurns(
         timing = key;
         timedTo = null;
         if (key === null || !state) return;
-        const deadline = deadlineOf(key);
-        timedTo = deadline;
+        const due = deadline(key);
+        timedTo = due;
         const seconds =
-          deadline !== null
-            ? (deadline - Date.now()) / 1000
+          due !== null
+            ? (due - Date.now()) / 1000
             : (state.turnTimeoutMs ?? TURN_HOURGLASS.turnSeconds * 1000) / 1000;
         hourglass.startTurn(Math.max(seconds, 0));
         return;
@@ -89,10 +69,10 @@ export function createHourglassTurns(
 
       // The same move: its deadline may have just arrived.
       if (key !== null) {
-        const deadline = deadlineOf(key);
-        if (deadline !== null && deadline !== timedTo) {
-          timedTo = deadline;
-          hourglass.retime(Math.max((deadline - Date.now()) / 1000, 0));
+        const due = deadline(key);
+        if (due !== null && due !== timedTo) {
+          timedTo = due;
+          hourglass.retime(Math.max((due - Date.now()) / 1000, 0));
         }
       }
     },
