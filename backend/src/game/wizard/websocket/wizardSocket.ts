@@ -202,7 +202,17 @@ export function registerWizardSocket(
 					sendJson(socket, { type: "error", error: "Game not found" });
 					return;
 				}
-
+				// Reject actions submitted after the current decision's deadline.
+				if (
+					currentGame.turnDeadlineAt !== null &&
+					Date.now() >= currentGame.turnDeadlineAt
+				) {
+					sendJson(socket, {
+						type: "error",
+						error: "Time is up. The game will make the decision for you.",
+					});
+					return;
+				}
 				try {
 					if (message.type === "submit_prediction") {
 						if (
@@ -247,8 +257,13 @@ export function registerWizardSocket(
 						);
 					}
 
+					// The human has completed this decision.
+					// The runner will start a fresh deadline for the next human decision.
+					currentGame.turnDeadlineAt = null;
+
 					wizardSessionManager.saveGame(currentGame);
 					broadcastGameState(roomId, gameService);
+					runner.notifyAction(roomId);
 
 					runner.run(roomId).catch((error) => {
 						console.error(`[wizard] runner failed for room ${roomId}:`, error);

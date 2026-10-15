@@ -56,6 +56,7 @@ interface GameState {
   | "playing"
   | "finished";
   deckCount: number;
+  turnDeadlineAt: number | null;
 }
 
 interface DebugEvent {

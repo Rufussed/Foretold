@@ -4,6 +4,7 @@ import { forbiddenPrediction } from "../gameplayRules.js";
 import { GAMEPLAY_PACE, clampPace } from "../gameplayPace.js";
 import { isJester, isWizard } from "../models/card.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
+import type { TurnTimeoutMs } from "../wizardTiming.js";
 
 import type {
   GamePlayer,
@@ -70,6 +71,7 @@ export class WizardGameService {
     maxRounds?: number,
     // How fast the game plays out, from room setup; 1 is the tuned default.
     pace: number = GAMEPLAY_PACE.default,
+    turnTimeoutMs: TurnTimeoutMs = 30_000,
   ): WizardGameState {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
@@ -122,6 +124,8 @@ export class WizardGameService {
       deck: deck.getCards(),
       phase: "predictions",
       pace: clampPace(pace),
+      turnTimeoutMs,
+      turnDeadlineAt: null,
     };
 
     this.dealRound(game);
@@ -439,6 +443,8 @@ export class WizardGameService {
       // Through clampPace, so a game saved before the pace existed still
       // reports a usable one.
       pace: clampPace(game.pace),
+      turnTimeoutMs: game.turnTimeoutMs,
+      turnDeadlineAt: game.turnDeadlineAt,
     };
   }
 

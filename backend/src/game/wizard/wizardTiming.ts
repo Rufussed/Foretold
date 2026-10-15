@@ -2,6 +2,16 @@
 // follow what's happening. Every value is in milliseconds at the default pace;
 // the game's pace divides them (see gameplayPace.ts), and the runner applies
 // that in one place, in its wait().
+
+export const TURN_TIMEOUT_OPTIONS = [30_000, 45_000, 60_000, null] as const;
+
+export type TurnTimeoutMs = (typeof TURN_TIMEOUT_OPTIONS)[number];
+
+export function isTurnTimeoutMs(value: unknown): value is TurnTimeoutMs {
+  return TURN_TIMEOUT_OPTIONS.some((option) => option === value);
+}
+
+
 export const WIZARD_TIMING = {
   // How long a bot "thinks" before choosing trumps after a Wizard or Jester is
   // turned up, so everyone can see who is choosing. Env BOT_TRUMP_DELAY_MS overrides.

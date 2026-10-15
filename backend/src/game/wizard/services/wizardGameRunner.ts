@@ -14,6 +14,7 @@ export type GameStateBroadcaster = (
 export class WizardGameRunner {
   private readonly botService: WizardBotService;
   private readonly runningRooms = new Set<number>();
+  private readonly decisionWakeups = new Map<number, () => void>();
 
   constructor(
     private readonly gameService: WizardGameService,
@@ -92,18 +93,102 @@ export class WizardGameRunner {
         if (!currentPlayer) {
           return;
         }
+        
+        let timedOutHuman = false;
 
-        // Human's turn: stop and wait for the socket to trigger the runner after
-        // the human acts.
+        // HUMAN TURN: wait for the player, or let the bot decide when the timer expires.
         if (!this.botService.isBot(currentPlayer.username)) {
+          const getDecisionKey = (state: typeof game): string => {
+            const player = state.players[state.currentPlayerIndex];
+
+            return [
+              state.phase,
+              state.currentRound,
+              player?.username ?? "",
+              state.currentTrick.playedCards.length,
+            ].join(":");
+          };
+
+          const decisionKey = getDecisionKey(game);
+          const timeoutMs = game.turnTimeoutMs;
+
+          // Start a deadline only when this decision has a configured timeout.
+          if (timeoutMs !== null && game.turnDeadlineAt === null) {
+            game.turnDeadlineAt = Date.now() + timeoutMs;
+
+            wizardSessionManager.saveGame(game);
+            this.broadcast(roomId);
+          }
+
+          const deadline = game.turnDeadlineAt;
+
+          // No timer: wait indefinitely for a human action.
+          // Otherwise, wait only for the remaining time.
+          const remaining =
+            deadline === null ? null : Math.max(0, deadline - Date.now());
+
+          await this.waitForDecision(roomId, remaining);
+
+          // The game may have changed while the runner was waiting.
+          const currentGame = wizardSessionManager.getGame(roomId);
+
+          if (!currentGame) {
+            return;
+          }
+
+          // Never make a move for an old or already completed decision.
+          if (
+            getDecisionKey(currentGame) !== decisionKey ||
+            currentGame.turnDeadlineAt !== deadline
+          ) {
+            continue;
+          }
+
+          // With no timer, keep waiting until the human acts.
+          if (deadline === null) {
+            continue;
+          }
+
+          // The deadline may have been extended or the timer may have fired early.
+          if (Date.now() < deadline) {
+            continue;
+          }
+
+          const timedOutPlayer =
+            currentGame.players[currentGame.currentPlayerIndex];
+          if (
+            !timedOutPlayer ||
+            this.botService.isBot(timedOutPlayer.username)
+          ) {
+            continue;
+          }
+
+          // The timeout has expired. Continue into the bot decision logic
+          // below, but use the current game state.
+          timedOutHuman = true;
+        }
+
+        const decisionGame = timedOutHuman
+          ? wizardSessionManager.getGame(roomId)
+          : game;
+
+        if (!decisionGame) {
           return;
         }
 
+        const decisionPlayer =
+          decisionGame.players[decisionGame.currentPlayerIndex];
+
+        if (!decisionPlayer) {
+          return;
+        }
+
+        // If a human timed out, clear the deadline before making the
+        // decision so the next turn can receive its own deadline.
+        
         // --------------------------------------------------
         // BOT TRUMP SELECTION
-        // --------------------------------------------------
-
-        if (game.phase === "trump-selection") {
+        if (decisionGame.phase === "trump-selection") {
           // Pause first, so every player sees who is choosing, then make sure
           // nothing changed meanwhile.
           await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
@@ -111,7 +196,8 @@ export class WizardGameRunner {
           if (
             !stillChoosing ||
             stillChoosing.phase !== "trump-selection" ||
-            stillChoosing.players[stillChoosing.currentPlayerIndex]?.username !== currentPlayer.username
+            stillChoosing.turnDeadlineAt !== decisionGame.turnDeadlineAt ||
+            stillChoosing.players[stillChoosing.currentPlayerIndex]?.username !== decisionPlayer.username
           ) {
             continue;
           }
@@ -120,10 +206,11 @@ export class WizardGameRunner {
 
           this.gameService.chooseTrumpSuit(
             stillChoosing,
-            currentPlayer.username,
+            decisionPlayer.username,
             trumpSuit,
           );
 
+          stillChoosing.turnDeadlineAt = null;
           wizardSessionManager.saveGame(stillChoosing);
           this.broadcast(roomId);
 
@@ -135,7 +222,7 @@ export class WizardGameRunner {
         // BOT PREDICTION
         // --------------------------------------------------
 
-        if (game.phase === "predictions") {
+        if (decisionGame.phase === "predictions") {
           // The same pause as before a bot plays, then make sure it's still
           // this bot's prediction to make.
           await this.wait(WIZARD_TIMING.botPlayDelayMs, pace);
@@ -143,7 +230,8 @@ export class WizardGameRunner {
           if (
             !stillPredicting ||
             stillPredicting.phase !== "predictions" ||
-            stillPredicting.players[stillPredicting.currentPlayerIndex]?.username !== currentPlayer.username
+            stillPredicting.turnDeadlineAt !== decisionGame.turnDeadlineAt ||
+            stillPredicting.players[stillPredicting.currentPlayerIndex]?.username !== decisionPlayer.username
           ) {
             continue;
           }
@@ -153,10 +241,11 @@ export class WizardGameRunner {
 
           this.gameService.submitPrediction(
             stillPredicting,
-            currentPlayer.username,
+            decisionPlayer.username,
             prediction,
           );
 
+          stillPredicting.turnDeadlineAt = null;
           wizardSessionManager.saveGame(stillPredicting);
           this.broadcast(roomId);
 
@@ -168,7 +257,7 @@ export class WizardGameRunner {
         // BOT CARD
         // --------------------------------------------------
 
-        if (game.phase === "playing") {
+        if (decisionGame.phase === "playing") {
           // Give the table a moment to follow along before a bot plays.
           await this.wait(WIZARD_TIMING.botPlayDelayMs, pace);
 
@@ -182,8 +271,9 @@ export class WizardGameRunner {
           // The game may have moved on while the bot waited.
           const stillBotsTurn =
             currentGame.phase === "playing" &&
+            currentGame.turnDeadlineAt === decisionGame.turnDeadlineAt &&
             currentGame.players[currentGame.currentPlayerIndex]?.username ===
-              currentPlayer.username &&
+              decisionPlayer.username &&
             currentGame.currentTrick.playedCards.length <
               currentGame.players.length;
 
@@ -196,6 +286,7 @@ export class WizardGameRunner {
 
           this.gameService.playCard(currentGame, cardIndex);
 
+          currentGame.turnDeadlineAt = null;
           wizardSessionManager.saveGame(currentGame);
           this.broadcast(roomId);
 
@@ -210,6 +301,39 @@ export class WizardGameRunner {
     }
 }
 
+  notifyAction(roomId: number): void {
+    this.decisionWakeups.get(roomId)?.();
+  }
+
+    private waitForDecision(
+      roomId: number,
+      milliseconds: number | null,
+    ): Promise<void> {
+    return new Promise((resolve) => {
+      let settled = false;
+      let timer: ReturnType<typeof setTimeout>;
+
+      const finish = () => {
+        if (settled) {
+          return;
+        }
+
+        settled = true;
+        clearTimeout(timer);
+
+        if (this.decisionWakeups.get(roomId) === finish) {
+          this.decisionWakeups.delete(roomId);
+        }
+
+        resolve();
+      };
+
+      if (milliseconds !== null) {
+       timer = setTimeout(finish, milliseconds);
+      }
+      this.decisionWakeups.set(roomId, finish);
+    });
+  }
   // Waits a duration written at the default pace, scaled to this game's pace.
   // Scaling here rather than at each call site means every pause the runner
   // takes is paced, including any added later.

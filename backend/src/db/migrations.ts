@@ -126,6 +126,18 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+  version: 6,
+  description: "add per-room turn timeout",
+  up(db) {
+    if (!hasColumn(db, "rooms", "turn_timeout_ms")) {
+      db.exec(`
+        ALTER TABLE rooms
+        ADD COLUMN turn_timeout_ms INTEGER DEFAULT 30000
+      `);
+    }
+  },
+},
 ];
 
 const currentVersion = (db: MigratableDb): number =>

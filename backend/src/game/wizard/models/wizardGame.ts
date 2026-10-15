@@ -1,5 +1,6 @@
 import type { AvatarId } from "./avatar.js";
 import type { Card, Suit } from "./card.js";
+import type { TurnTimeoutMs } from "../wizardTiming.js";
 
 // A room member and the avatar they claimed, if any, while the room waits.
 export interface RoomPlayer {
@@ -17,6 +18,7 @@ export interface Room {
   createdByUsername: string;
   maxPlayers: number;
   isPublic: boolean;
+  turnTimeoutMs: TurnTimeoutMs;
   players: RoomPlayer[];
   status: "waiting" | "playing";
 }
@@ -60,6 +62,8 @@ export interface WizardGameState {
   // Games saved before the pace existed have none, so read it through
   // clampPace rather than trusting it.
   pace: number;
+  turnDeadlineAt: number | null;
+  turnTimeoutMs: TurnTimeoutMs;
 }
 
 // This is the client-safe projection of WizardGameState. Other players' cards
@@ -90,6 +94,8 @@ export interface PublicWizardGameState {
   deckCount: number;
   // The game's pace, so the visualiser scales its beats to match the server's.
   pace: number;
+  turnDeadlineAt: number | null;
+  turnTimeoutMs: TurnTimeoutMs;
 }
 
 export interface RoundScore {
