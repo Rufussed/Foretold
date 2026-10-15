@@ -883,7 +883,7 @@ export const BURST = {
   enabled: true,
   rays: 36, // rays in each burst
   maxRays: 360, // most alive at once, across bursts
-  radius: 1.35, // how far the rays fly, at most
+  radius: 2.03, // how far the rays fly, at most (50% up from 1.35)
   cameraDistance: 2.5, // for your own wins: how far in front of the camera it bursts, centred
   radiusRandomness: 0.4, // fraction each ray's reach may fall short
   lengthFraction: 0.35, // a ray's streak, as a fraction of how far it has flown
@@ -988,7 +988,10 @@ export const SPARKS = {
   waveAmplitude: 0.08, // how far a spark weaves to each side
   waveRandomness: 0.5, // fraction each spark's wave frequency and size may vary
 
-  colorStart: [1, 0.85, 0.45] as [number, number, number], // as it flares
-  colorEnd: [1, 0.3, 0.05] as [number, number, number], // as it dies
+  // Orange throughout. brightness multiplies these and the result is capped
+  // at full, so green above about a fifth of the red caps out too and the
+  // flare turns yellow: 0.22 x 3 is about 0.66, an orange against red at 1.
+  colorStart: [1, 0.22, 0.04] as [number, number, number], // as it flares
+  colorEnd: [1, 0.12, 0.02] as [number, number, number], // as it dies
   brightness: 3, // glow strength
 };
