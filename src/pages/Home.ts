@@ -239,7 +239,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               <h3>Materials</h3>
               <p>
                 Wizard is played with a 60-card deck containing four coloured
-                suits, numbered cards, Wizards (Z), and Jesters (N).
+                suits, numbered cards, Wizards, and Jesters.
                 Wizards are the highest-ranking special cards, while Jesters
                 are the lowest. The game also uses a score pad.
               </p>
