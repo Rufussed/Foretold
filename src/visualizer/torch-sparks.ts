@@ -26,8 +26,10 @@ const VERTEX = /* glsl */ `
 `;
 
 const FRAGMENT = /* glsl */ `
+  uniform vec3 uColorBorn;
   uniform vec3 uColorStart;
   uniform vec3 uColorEnd;
+  uniform float uShift;
   uniform float uBrightness;
   varying float vGlow;
   varying float vAge;
@@ -35,7 +37,12 @@ const FRAGMENT = /* glsl */ `
     // A soft round dot, brightest in the middle.
     float d = length(gl_PointCoord - 0.5) * 2.0;
     float falloff = smoothstep(1.0, 0.0, d);
-    vec3 color = mix(uColorStart, uColorEnd, vAge) * uBrightness;
+    // Born pale yellow, turning orange over the first uShift of its life,
+    // then dying down to deep red-orange.
+    vec3 color = vAge < uShift
+      ? mix(uColorBorn, uColorStart, vAge / uShift)
+      : mix(uColorStart, uColorEnd, (vAge - uShift) / max(1.0 - uShift, 0.001));
+    color *= uBrightness;
     gl_FragColor = vec4(color * falloff * vGlow, falloff * vGlow);
   }
 `;
@@ -72,7 +79,9 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
     fragmentShader: FRAGMENT,
     uniforms: {
       uPixelsPerUnit: { value: 500 },
+      uColorBorn: { value: new THREE.Color(...SPARKS.colorBorn) },
       uColorStart: { value: new THREE.Color(...SPARKS.colorStart) },
+      uShift: { value: Math.max(SPARKS.colorShiftFraction, 0.001) },
       uColorEnd: { value: new THREE.Color(...SPARKS.colorEnd) },
       uBrightness: { value: SPARKS.brightness },
     },

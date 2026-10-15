@@ -988,10 +988,15 @@ export const SPARKS = {
   waveAmplitude: 0.08, // how far a spark weaves to each side
   waveRandomness: 0.5, // fraction each spark's wave frequency and size may vary
 
-  // Orange throughout. brightness multiplies these and the result is capped
-  // at full, so green above about a fifth of the red caps out too and the
-  // flare turns yellow: 0.22 x 3 is about 0.66, an orange against red at 1.
-  colorStart: [1, 0.22, 0.04] as [number, number, number], // as it flares
+  // Each spark is born pale yellow, turns orange over the first
+  // colorShiftFraction of its life, then dies down to deep red-orange.
+  // brightness multiplies these and the result is capped at full, so green
+  // above about a fifth of the red caps out too and reads yellow: that is
+  // what colorBorn does on purpose, and colorStart avoids (0.22 x 3 is about
+  // 0.66, an orange against red at 1).
+  colorBorn: [1, 0.85, 0.45] as [number, number, number], // as it's born
+  colorStart: [1, 0.22, 0.04] as [number, number, number], // orange, once shifted
   colorEnd: [1, 0.12, 0.02] as [number, number, number], // as it dies
+  colorShiftFraction: 0.5, // share of its life spent turning from born to orange
   brightness: 3, // glow strength
 };
