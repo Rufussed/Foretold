@@ -4,6 +4,11 @@ import type { Room, RoomPlayer } from "../models/wizardGame.js";
 import { normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_EXPIRATION_MS } from "./wizardGameRepository.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
+import {
+  isTurnTimeoutMs,
+  type TurnTimeoutMs,
+} from "../turnTimeout.js";
+
 
 interface RoomRow {
   id: number;
@@ -12,6 +17,8 @@ interface RoomRow {
   max_players: number;
   status: string;
   is_public: number;
+  options_json: string | null;
+  turn_timeout_ms: number | null;
 }
 
 interface PlayerRow {
@@ -71,6 +78,7 @@ class WizardLobbyManager {
     status: string;
     is_public: number;
     options_json: string | null;
+    turn_timeout_ms: number | null;
   }): Room {
     return {
       id: row.id,
@@ -83,6 +91,7 @@ class WizardLobbyManager {
       status: row.status as "waiting" | "playing",
       isPublic: row.is_public === 1,
       options: this.parseOptions(row.options_json),
+      turnTimeoutMs: row.turn_timeout_ms as TurnTimeoutMs,
     };
   }
 
@@ -99,7 +108,8 @@ class WizardLobbyManager {
             rooms.max_players,
             rooms.status,
             rooms.is_public,
-            rooms.options_json
+            rooms.options_json,
+            rooms.turn_timeout_ms
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -117,6 +127,7 @@ class WizardLobbyManager {
         status: string;
         is_public: number;
         options_json: string | null;
+        turn_timeout_ms: number | null;
       }[];
 
     return rows.map((row) => this.mapRoom(row));
@@ -135,7 +146,8 @@ class WizardLobbyManager {
             rooms.max_players,
             rooms.status,
             rooms.is_public,
-            rooms.options_json
+            rooms.options_json,
+            rooms.turn_timeout_ms
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -152,6 +164,7 @@ class WizardLobbyManager {
         status: string;
         is_public: number;
         options_json: string | null;
+        turn_timeout_ms: number | null;
       } | undefined;
 
     if (!row) {
@@ -167,16 +180,33 @@ class WizardLobbyManager {
     username: string,
     maxPlayers: number = 4,
     isPublic: boolean = true,
+    turnTimeoutMs: TurnTimeoutMs = 30_000,
   ): Room {
+    if (!isTurnTimeoutMs(turnTimeoutMs)) {
+      throw new Error("Invalid turn timeout");
+    }
      // Validate: ensure 3-6 range
     const validMax = Math.max(3, Math.min(6, maxPlayers));
 
     const result = db
       .prepare(`
-        INSERT INTO rooms (name, created_by, max_players, status, is_public)
-        VALUES (?, ?, ?, 'waiting', ?)
+        INSERT INTO rooms (
+          name,
+          created_by,
+          max_players,
+          status,
+          is_public,
+          turn_timeout_ms
+        )
+        VALUES (?, ?, ?, 'waiting', ?, ?)
       `)
-    .run(name, createdBy, validMax, isPublic ? 1 : 0);
+      .run(
+        name,
+        createdBy,
+        validMax,
+        isPublic ? 1 : 0,
+        turnTimeoutMs,
+      );
 
     const roomId = Number(result.lastInsertRowid);
 

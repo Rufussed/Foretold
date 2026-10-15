@@ -177,6 +177,17 @@ export default async function wizardRoutes(
                       isPublic: {
                         type: "boolean",
                       },
+                      turnTimeoutMs: {
+                        anyOf: [
+                          {
+                            type: "integer",
+                            enum: [30000, 45000, 60000],
+                          },
+                          {
+                            type: "null",
+                          },
+                        ],
+                      },
                   }
               }
           }
@@ -192,6 +203,7 @@ export default async function wizardRoutes(
       name?: string;
       maxPlayers?: number;
       isPublic?: boolean;
+      turnTimeoutMs?: 30000 | 45000 | 60000 | null;
     };
     const tokenUser = request.user as {
       sub?: number;
@@ -216,6 +228,7 @@ export default async function wizardRoutes(
       tokenUser.username,
       body.maxPlayers,
       body.isPublic ?? true,
+      body.turnTimeoutMs === undefined ? 30_000 : body.turnTimeoutMs,
     );
 
     return reply.send(room);
@@ -788,6 +801,7 @@ export default async function wizardRoutes(
           wizardWins: body.wizardWins ?? room.options.wizardWins,
           blindFirstRound: body.blindFirstRound ?? room.options.blindFirstRound,
         }),
+        room.turnTimeoutMs,
       );
 
       game.status = "playing";
