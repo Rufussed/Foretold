@@ -1,7 +1,16 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { deadlineOf, moveKey } from "./move-deadline";
 
-const MESSAGE = "Time waits for no one. The Fates have chosen for you.";
+// One of these, at random, each time.
+const MESSAGES = [
+  "Time waits for no one.",
+  "The Fates have chosen for you.",
+  "The Ancestors have moved through you.",
+  "Destiny has grown impatient.",
+  "The moment has passed.",
+];
+
+const pickMessage = () => MESSAGES[Math.floor(Math.random() * MESSAGES.length)];
 
 export interface TurnTimeoutNotice {
   // Call whenever the HUD's state, whether its turn is shown, or the latest
@@ -37,7 +46,7 @@ export function createTurnTimeoutNotice(options: TurnTimeoutNoticeOptions): Turn
     timer = 0;
     if (watching !== key || expired === key) return;
     expired = key;
-    options.notice(MESSAGE);
+    options.notice(pickMessage());
     options.onTimedOut();
   };
 

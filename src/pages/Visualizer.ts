@@ -377,7 +377,7 @@ export async function renderVisualizerPage(
       tableRound: () => director.tableState()?.currentRound,
     });
 
-    // "Time waits for no one" when your own move runs out of time.
+    // A line about time or fate when your own move runs out of time.
     timeoutNotice = createTurnTimeoutNotice({
       localUsername: gameConnection.localUsername,
       state: () => director.hudState(),
