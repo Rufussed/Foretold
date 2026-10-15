@@ -92,6 +92,8 @@ describe("WizardGameRunner", () => {
       deck: [],
       phase: "finished",
       pace: 1,
+      turnDeadlineAt: null,
+      turnTimeoutMs: 30_000,
     } as WizardGameState;
 
     wizardSessionManager.saveGame(game);

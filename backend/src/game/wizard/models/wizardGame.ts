@@ -1,6 +1,7 @@
 import type { AvatarId } from "./avatar.js";
 import type { Card, Suit } from "./card.js";
 import type { WizardGameOptions } from "../gameOptions.js";
+import type { TurnTimeoutMs } from "../turnTimeout.js";
 
 // A room member and the avatar they claimed, if any, while the room waits.
 export interface RoomPlayer {
@@ -18,6 +19,7 @@ export interface Room {
   createdByUsername: string;
   maxPlayers: number;
   isPublic: boolean;
+  turnTimeoutMs: TurnTimeoutMs;
   players: RoomPlayer[];
   status: "waiting" | "playing";
   // The rule variations the host has chosen so far, shown to everyone waiting.
@@ -66,6 +68,8 @@ export interface WizardGameState {
   // The advanced rules chosen in room setup. Games saved before they existed
   // have none, so read them through normalizeGameOptions.
   options?: WizardGameOptions;
+  turnDeadlineAt: number | null;
+  turnTimeoutMs: TurnTimeoutMs;
 }
 
 // This is the client-safe projection of WizardGameState. Other players' cards
@@ -100,6 +104,8 @@ export interface PublicWizardGameState {
   options: WizardGameOptions;
   // True while this round is played blind (see gameOptions.ts).
   blindRound: boolean;
+  turnDeadlineAt: number | null;
+  turnTimeoutMs: TurnTimeoutMs;
 }
 
 export interface RoundScore {

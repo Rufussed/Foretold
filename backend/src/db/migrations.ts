@@ -130,10 +130,38 @@ const MIGRATIONS: Migration[] = [
     version: 6,
     description: "rooms.options_json, the host's rule variations",
     up(db) {
-      // JSON of WizardGameOptions; null until the host changes one, which
-      // reads as the official rules (see gameOptions.ts).
+      // JSON of WizardGameOptions; null until the host changes one,
+      // which reads as the official rules (see gameOptions.ts).
       if (!hasColumn(db, "rooms", "options_json")) {
         db.exec("ALTER TABLE rooms ADD COLUMN options_json TEXT");
+      }
+    },
+  },
+  {
+    version: 7,
+    description: "add per-room turn timeout",
+    up(db) {
+      if (!hasColumn(db, "rooms", "turn_timeout_ms")) {
+        db.exec(`
+          ALTER TABLE rooms
+          ADD COLUMN turn_timeout_ms INTEGER DEFAULT 30000
+        `);
+      }
+    },
+  },
+  {
+    version: 8,
+    description: "ensure room options and turn timeout columns exist",
+    up(db) {
+      if (!hasColumn(db, "rooms", "options_json")) {
+        db.exec("ALTER TABLE rooms ADD COLUMN options_json TEXT");
+      }
+
+      if (!hasColumn(db, "rooms", "turn_timeout_ms")) {
+        db.exec(`
+          ALTER TABLE rooms
+          ADD COLUMN turn_timeout_ms INTEGER DEFAULT 30000
+        `);
       }
     },
   },

@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS rooms (
   max_players INTEGER NOT NULL DEFAULT 4,
   status TEXT NOT NULL DEFAULT 'waiting',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  turn_timeout_ms INTEGER DEFAULT 30000,
   FOREIGN KEY (created_by) REFERENCES users(id)
 );
 

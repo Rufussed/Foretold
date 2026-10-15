@@ -10,6 +10,7 @@ import {
 } from "../gameOptions.js";
 import { isJester, isWizard } from "../models/card.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
+import type { TurnTimeoutMs } from "../turnTimeout.js";
 
 import type {
   GamePlayer,
@@ -78,6 +79,7 @@ export class WizardGameService {
     pace: number = GAMEPLAY_PACE.default,
     // The advanced rules from room setup.
     options: WizardGameOptions = DEFAULT_GAME_OPTIONS,
+    turnTimeoutMs: TurnTimeoutMs = 30_000,
   ): WizardGameState {
     if (usernames.length < 3 || usernames.length > 6) {
       throw new Error("Wizard games require 3 to 6 players");
@@ -131,6 +133,8 @@ export class WizardGameService {
       phase: "predictions",
       pace: clampPace(pace),
       options: normalizeGameOptions(options),
+      turnTimeoutMs,
+      turnDeadlineAt: null,
     };
 
     this.dealRound(game);
@@ -456,6 +460,8 @@ export class WizardGameService {
       pace: clampPace(game.pace),
       options,
       blindRound,
+      turnTimeoutMs: game.turnTimeoutMs,
+      turnDeadlineAt: game.turnDeadlineAt,
     };
   }
 

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import db from "../../../db/database.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
+import { randomUUID } from "node:crypto";
+
 
 function createTestUser(
   username: string,
@@ -16,10 +18,10 @@ function createTestUser(
     )
     VALUES (?, ?, ?, ?)
   `).run(
-    username,
+    `${username}-${randomUUID()}`,
     "test-password-hash",
     displayName,
-    `${username}@example.com`,
+    `${username}-${randomUUID()}@example.com`,
   );
 
   const userId = Number(result.lastInsertRowid);
@@ -101,6 +103,8 @@ function createTestGame(
     deck: [],
     phase: "finished",
     pace: 1,
+    turnDeadlineAt: null,
+    turnTimeoutMs: 30_000,
   };
 }
 
