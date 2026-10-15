@@ -50,6 +50,19 @@ class WizardLobbyManager {
     `).run(JSON.stringify(normalizeGameOptions(options)), roomId);
   }
 
+  // The host's turn timeout, chosen with the rule variations; null for no
+  // limit. Like the options, only while the room is still waiting.
+  setRoomTurnTimeout(roomId: number, turnTimeoutMs: TurnTimeoutMs): void {
+    if (!isTurnTimeoutMs(turnTimeoutMs)) {
+      throw new Error("Invalid turn timeout");
+    }
+    db.prepare(`
+      UPDATE rooms
+      SET turn_timeout_ms = ?
+      WHERE id = ? AND status = 'waiting'
+    `).run(turnTimeoutMs, roomId);
+  }
+
   private getRoomPlayers(roomId: number): RoomPlayer[] {
     const rows = db
       .prepare(

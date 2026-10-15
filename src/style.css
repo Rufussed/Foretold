@@ -851,20 +851,25 @@ button {
   pointer-events: none;
 }
 
-/* Emotes: a row of four in the bottom right corner, under your portrait,
-   as wide as it is (156px). */
-/* Emotes: a row of four below your portrait. */
-/* Your own character, bottom right of the table view. */
+/* Your own character, bottom right of the table view, over a row of four
+   round emote buttons as wide as it. The background is a circle; the body is
+   cut off along its lower half, at the waist, but the arms are not, so hands
+   reaching forward come over its edge (visualizer/portrait-arm-crop.ts does
+   the cut; SELF_PORTRAIT in config.ts frames it). Raised arms go up past its
+   top. */
+.visualizer-page {
+  --self-width: 188px;
+}
+
 .visualizer-self {
   position: absolute;
-  right: 16px;
-  bottom: 64px;
+  /* Centred over the emote row, which is 32px wider and reaches left. */
+  right: 32px;
+  bottom: 88px;
   z-index: 1;
-  width: 156px;
-  height: 196px;
+  width: var(--self-width);
+  height: var(--self-width); /* a circle */
   margin: 0;
-  overflow: hidden;
-  border-radius: 600px;
 }
 
 /* Background behind the character portrait. */
@@ -882,13 +887,15 @@ button {
   display: none;
 }
 
-/* Character portrait. */
+/* Character portrait: well past the circle on every side, so arms are never
+   cut by the canvas's own edge - above for raised arms, out to the sides for
+   wide gestures, below for hands coming over its bottom edge. */
 .visualizer-self-view {
   position: absolute;
-  top: -30px;
-  left: 0;
-  width: 100%;
-  height: 226px;
+  bottom: -100px;
+  left: -90px;
+  width: calc(100% + 180px);
+  height: calc(100% + 240px);
 }
 
 .visualizer-self-view canvas {
@@ -909,39 +916,73 @@ button {
   bottom: 16px;
   z-index: 2;
   display: flex;
-  width: 156px;
+  /* A little wider than the portrait, out to the left, to space the
+     emoticons out. */
+  width: calc(var(--self-width) + 32px);
   gap: 4px;
+}
+
+/* One shared backing for the four emoticons: a rounded black patch, blurred
+   so its edges fade out softly into the table. */
+.visualizer-emotes::before {
+  position: absolute;
+  inset: 2px -6px 2px 4px;
+  z-index: -1;
+  content: "";
+  background: rgb(0 0 0 / 75%);
+  border-radius: 999px;
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+/* No box: just the emoticon, with a soft black edge. The edge is shadows on
+   the button rather than the emoticon, whose mask would cut it away: a tight
+   one keeps the shape crisp, and wider ones feather it out. */
+.visualizer-page .visualizer-emotes {
+  --emote-outline: drop-shadow(0 0 1px #000) drop-shadow(0 0 3px #000)
+    drop-shadow(0 0 3px #000);
 }
 
 .visualizer-page .visualizer-emotes button {
   flex: 1;
   min-width: 0;
-  height: 40px;
+  aspect-ratio: 1;
   padding: 0;
   font-size: 22px;
   line-height: 1;
-  background: #000;
-  border: var(--ui-edge);
-  border-radius: 8px;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  filter: var(--emote-outline);
 }
 
 /* Lit only while pressed: hover (sticky after a tap on touch screens) keeps
    the resting look, and the gold goes as soon as the button is released. */
 .visualizer-page .visualizer-emotes button:hover {
   color: inherit;
-  background: #000;
-  border: var(--ui-edge);
-  filter: none;
+  background: none;
+  border: none;
+  filter: var(--emote-outline);
 }
 
 .visualizer-page .visualizer-emotes button:active {
-  border-color: var(--button-gold);
-  filter: brightness(1.12);
+  filter: brightness(1.12) drop-shadow(0 0 1px var(--button-gold))
+    drop-shadow(0 0 3px var(--button-gold)) drop-shadow(0 0 3px var(--button-gold));
 }
 
 .visualizer-page .visualizer-emotes button {
-  display: grid;
-  place-items: center;
+  position: relative;
+  /* The emoticons are drawn larger than their buttons and may spill out. */
+  overflow: visible;
+}
+
+/* Centred on the button by position, since a grid gives up centring an item
+   bigger than its cell, and raised a little: the art sits low in its frame. */
+.visualizer-emotes .emoticon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% - 3px));
 }
 
 /* An emoticon in its character's colour: the drawn art keeps its shading, and
@@ -949,8 +990,8 @@ button {
    cut out with the mask. */
 .emoticon {
   display: block;
-  width: 30px;
-  height: 30px;
+  width: 56px;
+  height: 56px;
   pointer-events: none;
   background:
     linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
@@ -4303,7 +4344,7 @@ button {
 
 .room-variations-controls {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content));
+  grid-template-columns: repeat(3, minmax(0, max-content));
   justify-content: center;
   gap: 12px;
   margin-top: 10px;

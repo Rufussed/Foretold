@@ -484,12 +484,18 @@ export const SELF_PORTRAIT = {
   // Vertical field of view, in degrees. three default: 50.
   fov: 36,
 
-  // How much of the character fits vertically, in hip-to-face heights. Lower
-  // fills the box more; too low crops raised-arm emotes.
-  span: 1.95,
+  // The canvas runs from a little below the background circle, for hands
+  // reaching over its edge, to well above it, for raised arms (see
+  // .visualizer-self-view in style.css); the body is cut at the circle's
+  // bottom (portrait-arm-crop.ts). These two place the character in it.
 
-  // Aim relative to the face: 0 straight at it, negative tilts down the body.
-  lookOffset: -0.35,
+  // How much of the character fits the canvas's height, in hip-to-face
+  // heights. Lower is bigger; too low and wide gestures run off the sides.
+  span: 2.35,
+
+  // Aim relative to the face, in hip-to-face heights: positive looks above
+  // it. Raising it lowers the character, so the cut moves up its body.
+  lookOffset: -0.12,
 
   // Turns the camera around the character, in degrees; 0 is straight on.
   azimuthDegrees: 0,
@@ -500,10 +506,12 @@ export const SELF_PORTRAIT = {
   // Fill so the side away from the key light isn't pure black. three default: 1.
   ambientIntensity: 0.6,
 
-  // The corner canvas is small, so it can afford the sharpness the table
-  // gets: drawn above the display's own density and shrunk by the GPU.
+  // Drawn a little above the display's own density and shrunk by the GPU,
+  // but at most 1.5 buffer pixels per CSS pixel: the canvas reaches well past
+  // the circle for the arms, so it is a large area to redraw thirty times a
+  // second, and on a phone's dense screen it would be several times larger.
   supersample: 1.5,
-  maxPixelRatio: 3,
+  maxPixelRatio: 1.5,
   targetFps: 30,
 };
 
@@ -512,9 +520,10 @@ export const SELF_PORTRAIT = {
 // ══════════════════════════════════════════════════════════════════════════
 
 export const TURN_HOURGLASS = {
-  // How long a human player has for a move. The flip, the settle, the drain
-  // and the clear all fit inside it, so the sand runs out as the time does.
-  // Placeholder until the server's timing config sends the real value.
+  // A move's time comes from the server: the room's time limit, then the
+  // move's own deadline (see hourglass-turns.ts). The flip, the settle, the
+  // drain and the clear all fit inside it, so the sand runs out as the time
+  // does. This is only the fallback for a game that sends no limit.
   turnSeconds: 30,
 
   // The flip at the start of a turn, end over end, and the sand then sliding

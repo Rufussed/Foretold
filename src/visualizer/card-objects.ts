@@ -18,11 +18,34 @@ export interface CardOutlineOptions {
   ownMaterial?: boolean;
 }
 
-// Which cards the screen pass leaves out of its edge smoothing (see
-// sharpen-pass.ts): the ones players read, so their art stays as scanned.
+// How the screen pass (sharpen-pass.ts) treats a card's pixels.
 export interface CardSmoothingOptions {
+  // Left out of its edge smoothing: the cards players read, so their art
+  // stays as scanned.
   unsmoothed?: boolean;
+  // Its paper edge blurred instead of sharpened: the stack, whose side is
+  // sixty card edges each thinner than a pixel, which otherwise break up into
+  // flickering stripes. The edge has no art to lose; the back stays crisp.
+  soft?: boolean;
 }
+
+// What a card's pixels tell the screen pass, in the alpha nothing else uses
+// (opaque materials otherwise write exactly 1). sharpen-pass.ts reads these.
+type PixelMark = "none" | "unsmoothed" | "soft";
+const MARK_ALPHA: Record<Exclude<PixelMark, "none">, string> = {
+  unsmoothed: "0.5",
+  soft: "0.25",
+};
+
+// Writes the mark after the material's own output.
+const markPixels = (fragmentShader: string, mark: PixelMark) =>
+  mark === "none"
+    ? fragmentShader
+    : fragmentShader.replace(
+        "#include <opaque_fragment>",
+        `#include <opaque_fragment>
+         gl_FragColor.a = ${MARK_ALPHA[mark]};`,
+      );
 
 export interface CardFactory {
   readonly width: number; // card face width, in card-mesh units
@@ -39,6 +62,7 @@ export interface CardFactory {
 const TEMPLATE_NODE = "card01";
 const FACE_MATERIAL_NAME = "Card Front";
 const BACK_MATERIAL_NAME = "Card Back";
+const EDGE_MATERIAL_NAME = "Card Paper Edge";
 // Sits just behind the card's back face, so only its rim shows past the edges.
 const OUTLINE_DEPTH = 0.004;
 
@@ -49,36 +73,38 @@ const OUTLINE_DEPTH = 0.004;
 function unlitCardMaterial(
   map: THREE.Texture,
   name: string,
-  unsmoothed = false,
+  mark: PixelMark = "none",
 ): THREE.MeshBasicMaterial {
   const material = new THREE.MeshBasicMaterial({ map, toneMapped: false });
   material.name = name;
-  // The two variants differ only in what onBeforeCompile writes, so three
-  // needs telling them apart or it would share one compiled program.
-  material.customProgramCacheKey = () => (unsmoothed ? "card-unsmoothed" : "card-smoothed");
+  // The variants differ only in what onBeforeCompile writes, so three needs
+  // telling them apart or it would share one compiled program.
+  material.customProgramCacheKey = () => `card-${mark}`;
   material.onBeforeCompile = (shader) => {
     // Sample the art's mipmaps a little sharper than the GPU would choose.
-    shader.fragmentShader = shader.fragmentShader
-      .replace(
+    shader.fragmentShader = markPixels(
+      shader.fragmentShader.replace(
         "#include <map_fragment>",
         THREE.ShaderChunk.map_fragment.replace(
           "texture2D( map, vMapUv )",
           `texture2D( map, vMapUv, ${CARDS.mipBias.toFixed(2)} )`,
         ),
-      )
-      // Mark the pixel, in the alpha nothing else uses, so the screen pass
-      // can leave it out of its edge smoothing (see sharpen-pass.ts). Opaque
-      // materials otherwise write exactly 1.
-      .replace(
-        "#include <opaque_fragment>",
-        unsmoothed
-          ? `#include <opaque_fragment>
-             gl_FragColor.a = 0.5;`
-          : "#include <opaque_fragment>",
-      );
+      ),
+      mark,
+    );
   };
   return material;
 }
+
+// The card's own material (its paper edge), marked for the screen pass.
+const markedCopy = (original: THREE.Material, mark: PixelMark): THREE.Material => {
+  const material = original.clone();
+  material.customProgramCacheKey = () => `card-edge-${mark}`;
+  material.onBeforeCompile = (shader) => {
+    shader.fragmentShader = markPixels(shader.fragmentShader, mark);
+  };
+  return material;
+};
 
 // Makes card objects from the card mesh in Wizard.glb (the one under card01),
 // each with its own face material and a hidden hover outline behind it. Every
@@ -106,6 +132,18 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
     if (mesh.material.name !== BACK_MATERIAL_NAME) return;
     mesh.material = unlitCardMaterial(cardBackTexture(), mesh.material.name);
   });
+  // Soft cards' copy of the shared paper edge, made when first needed and
+  // shared among them.
+  const softCopies = new Map<THREE.Material, THREE.Material>();
+  const softCopy = (material: THREE.Material) => {
+    let copy = softCopies.get(material);
+    if (!copy) {
+      copy = markedCopy(material, "soft");
+      softCopies.set(material, copy);
+    }
+    return copy;
+  };
+
   front.geometry.computeBoundingBox();
   const size = front.geometry.boundingBox!.getSize(new THREE.Vector3());
 
@@ -127,11 +165,24 @@ export function createCardFactory(environment: THREE.Object3D): CardFactory {
 
       let faceMesh: THREE.Mesh | null = null;
       let faceMaterial: THREE.MeshBasicMaterial | null = null;
+      const mark: PixelMark = smoothing?.soft ? "soft" : smoothing?.unsmoothed ? "unsmoothed" : "none";
       object.traverse((child) => {
         const mesh = child as THREE.Mesh;
         if (!mesh.isMesh || Array.isArray(mesh.material)) return;
-        if (mesh.material.name !== FACE_MATERIAL_NAME) return;
-        const material = unlitCardMaterial(texture, mesh.material.name, smoothing?.unsmoothed);
+        // A soft card is a stack card: it still casts the stack's shadow onto
+        // the table, but takes none, since each card's edge in the stack would
+        // be shadowed by the one a hair above it, in stripes.
+        if (mark === "soft") mesh.receiveShadow = false;
+        if (mesh.material.name !== FACE_MATERIAL_NAME) {
+          // Only the paper edge is softened; the back keeps its art crisp.
+          if (mark === "soft" && mesh.material.name === EDGE_MATERIAL_NAME) {
+            mesh.material = softCopy(mesh.material);
+          }
+          return;
+        }
+        // A soft card's face is treated like any other: the softening is for
+        // its edge alone.
+        const material = unlitCardMaterial(texture, mesh.material.name, mark === "soft" ? "none" : mark);
         mesh.material = material;
         faceMesh = mesh;
         faceMaterial = material;

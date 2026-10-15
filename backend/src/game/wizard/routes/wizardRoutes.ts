@@ -11,6 +11,7 @@ import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import { normalizeGameOptions } from "../gameOptions.js";
+import { isTurnTimeoutMs } from "../turnTimeout.js";
 import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
 import { friendService } from "../services/friendService.js";
@@ -457,6 +458,14 @@ export default async function wizardRoutes(
             },
             blindFirstRound: {
               type: "boolean"
+            },
+            // The turn timeout (see turnTimeout.ts); null for no limit. Left
+            // out, the room keeps the one it has.
+            turnTimeoutMs: {
+              anyOf: [
+                { type: "integer", enum: [30000, 45000, 60000] },
+                { type: "null" }
+              ]
             }
           }
         }
@@ -491,6 +500,11 @@ export default async function wizardRoutes(
     }
 
     wizardLobbyManager.setRoomOptions(roomId, normalizeGameOptions(request.body));
+
+    const body = request.body as { turnTimeoutMs?: unknown };
+    if ("turnTimeoutMs" in body && isTurnTimeoutMs(body.turnTimeoutMs)) {
+      wizardLobbyManager.setRoomTurnTimeout(roomId, body.turnTimeoutMs);
+    }
 
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });

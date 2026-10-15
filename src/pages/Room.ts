@@ -147,6 +147,16 @@ export async function renderRoomPage(
                       <option value="last">Last Wizard wins</option>
                     </select>
                   </label>
+
+                  <label>
+                    <span>Time per move</span>
+                    <select id="room-turn-timeout">
+                      <option value="30000" selected>30 seconds</option>
+                      <option value="45000">45 seconds</option>
+                      <option value="60000">1 minute</option>
+                      <option value="none">No limit</option>
+                    </select>
+                  </label>
                 </div>
               </details>
 
@@ -209,11 +219,15 @@ export async function renderRoomPage(
   // The rule variations, for everyone in the game. See gameOptions.ts.
   const wizardWinsEl = element<HTMLSelectElement>("#room-wizard-wins");
   const blindFirstRoundEl = element<HTMLSelectElement>("#room-blind-first-round");
+  // How long a human player has for each move before the game makes it for
+  // them; "none" for no limit. See turnTimeout.ts.
+  const turnTimeoutEl = element<HTMLSelectElement>("#room-turn-timeout");
   // What the host has chosen, for everyone else waiting.
   const variationsSummaryEl = element<HTMLParagraphElement>("#room-variations-summary");
   const chosenOptions = () => ({
     wizardWins: wizardWinsEl.value,
     blindFirstRound: blindFirstRoundEl.value === "true",
+    turnTimeoutMs: turnTimeoutEl.value === "none" ? null : Number(turnTimeoutEl.value),
   });
   let humanCount = 0;
   let maxPlayers = 0;
@@ -291,11 +305,12 @@ export async function renderRoomPage(
 
     const options = normalizeGameOptions(room.options);
     variationsSummaryEl.hidden = isHost;
-    variationsSummaryEl.textContent = describeRuleVariations(options);
+    variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {
       optionsLoaded = true;
       wizardWinsEl.value = options.wizardWins;
       blindFirstRoundEl.value = String(options.blindFirstRound);
+      turnTimeoutEl.value = room.turnTimeoutMs === null ? "none" : String(room.turnTimeoutMs);
     }
 
     if (!isHost) {
@@ -468,12 +483,17 @@ export async function renderRoomPage(
   };
   wizardWinsEl.addEventListener("change", saveOptions);
   blindFirstRoundEl.addEventListener("change", saveOptions);
+  turnTimeoutEl.addEventListener("change", saveOptions);
 
   startButton.addEventListener("click", async () => {
     startButton.disabled = true;
     showMessage("");
 
     try {
+      // The time per move goes with the room, not the start: the game takes
+      // the room's saved one, so a save still on its way lands first.
+      const { turnTimeoutMs: _saved, ...rules } = chosenOptions();
+      await optionsSave;
       const response = await fetch(`${API_BASE}/wizard/games`, {
         method: "POST",
         headers: {
@@ -485,7 +505,7 @@ export async function renderRoomPage(
           botCount: Number(botsEl.value),
           maxRounds: Number(roundsEl.value),
           pace: Number(paceEl.value),
-          ...chosenOptions(),
+          ...rules,
         }),
       });
 

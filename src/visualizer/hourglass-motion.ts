@@ -95,6 +95,24 @@ export function finishTimeline(
   return { ...timeline, drainStart: now, drainFrom: drain, drainEnd: now + finishSeconds };
 }
 
+// The time is now known to run out at endsAt (the server's deadline, which
+// can arrive after the turn has started showing): the sand still to drain
+// runs out by then instead, carrying on from where it is.
+export function retimeTimeline(
+  timeline: HourglassTimeline,
+  now: number,
+  endsAt: number,
+): HourglassTimeline {
+  const drainEnd = Math.max(endsAt - timeline.clearSeconds, now + 0.1);
+  if (now < timeline.drainStart) {
+    return { ...timeline, drainEnd: Math.max(drainEnd, timeline.drainStart + 0.1) };
+  }
+  // Already empty and clearing: let it finish as it is.
+  if (now >= timeline.drainEnd) return timeline;
+  const { drain } = poseAt(timeline, now);
+  return { ...timeline, drainStart: now, drainFrom: drain, drainEnd };
+}
+
 export const timelineDone = (timeline: HourglassTimeline, now: number) =>
   now >= timeline.drainEnd + timeline.clearSeconds;
 

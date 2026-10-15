@@ -40,6 +40,12 @@ export interface TableDirectorOptions {
 // the table for good.
 const STEP_TIMEOUT_MS = 30000;
 
+// The same move as before, the turn's deadline aside: the server sends the
+// deadline in a snapshot of its own once a human's turn has begun.
+const onlyDeadlineChanged = (previous: PublicWizardGameState, next: PublicWizardGameState) =>
+  JSON.stringify({ ...previous, turnDeadlineAt: null }) ===
+  JSON.stringify({ ...next, turnDeadlineAt: null });
+
 const trickComplete = (state: PublicWizardGameState) =>
   !!state.currentTrick.winnerUsername && state.currentTrick.playedCards.length === state.players.length;
 
@@ -116,6 +122,15 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
   };
 
   const play = async (previous: PublicWizardGameState | null, next: PublicWizardGameState) => {
+    // Nothing to play out: take the new deadline quietly, with the turn
+    // still shown and its prompts left open.
+    if (previous && onlyDeadlineChanged(previous, next)) {
+      table = next;
+      hud = next;
+      options.applyHud();
+      return;
+    }
+
     hideTurn();
 
     if (!previous) {

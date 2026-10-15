@@ -5,6 +5,7 @@ import { TURN_HOURGLASS } from "./config";
 import {
   finishTimeline,
   poseAt,
+  retimeTimeline,
   RUN_OUT,
   startTimeline,
   stepWeights,
@@ -16,6 +17,9 @@ import {
 export interface TurnHourglass {
   // A turn starts: flip, settle, then drain, all inside seconds.
   startTurn(seconds: number): void;
+  // The time now runs out secondsLeft from now: the rest of the sand drains by
+  // then, from where it is.
+  retime(secondsLeft: number): void;
   // The move was made: the sand left runs out quickly.
   finishTurn(): void;
   destroy(): void;
@@ -165,6 +169,10 @@ export function createTurnHourglass(view: HTMLElement): TurnHourglass {
   return {
     startTurn(seconds) {
       timeline = startTimeline(clock(), seconds, TURN_HOURGLASS);
+    },
+
+    retime(secondsLeft) {
+      if (timeline) timeline = retimeTimeline(timeline, clock(), clock() + secondsLeft);
     },
 
     finishTurn() {

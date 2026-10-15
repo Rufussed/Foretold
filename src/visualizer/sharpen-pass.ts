@@ -117,10 +117,12 @@ const FRAGMENT = /* glsl */ `
 
   void main() {
     vec3 middle = display(vUv);
-    // Card pixels are marked with an alpha of 0.5 (see card-objects.ts) and
-    // are left out of the smoothing, so their art stays as scanned.
+    // Card pixels are marked in their alpha (see card-objects.ts): 0.5 for
+    // the cards players read, left out of the smoothing so their art stays
+    // as scanned; 0.25 for the stack, softened rather than sharpened.
     float marker = texture2D(tDiffuse, vUv).a;
-    bool isCard = abs(marker - 0.5) < 0.2;
+    bool isCard = abs(marker - 0.5) < 0.12;
+    bool isSoft = abs(marker - 0.25) < 0.12;
     if (fxaa > 0.0 && !isCard) middle = mix(middle, smoothEdges(vUv, middle), fxaa);
 
     // The four edge neighbours: a cross, not a box, so the filter follows
@@ -132,6 +134,19 @@ const FRAGMENT = /* glsl */ `
       display(vUv + vec2(0.0, texelSize.y)) +
       display(vUv - vec2(0.0, texelSize.y))
     );
+
+    // The stack's paper edges: blurred over a few pixels, which melts the
+    // sub-pixel stripes of its side into one tone, and never sharpened.
+    if (isSoft) {
+      vec3 sum = middle;
+      for (int i = 1; i <= 3; i++) {
+        float d = float(i);
+        sum += display(vUv + vec2(0.0, texelSize.y * d)) + display(vUv - vec2(0.0, texelSize.y * d));
+        sum += display(vUv + vec2(texelSize.x * d, 0.0)) + display(vUv - vec2(texelSize.x * d, 0.0));
+      }
+      gl_FragColor = vec4(sum / 13.0, 1.0);
+      return;
+    }
 
     // How much this pixel stands out from its neighbours; flat areas score
     // near zero and are left as they are.

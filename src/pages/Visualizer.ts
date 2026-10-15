@@ -276,7 +276,7 @@ export async function renderVisualizerPage(
     // that has run out of them refuses here, before the table is even tried.
     // The portrait is a garnish, so losing it must not cost the game.
     try {
-      selfPortrait = createSelfPortrait(selfView);
+      selfPortrait = createSelfPortrait(selfView, selfEl);
       diagnostics?.note("portrait view created");
       updateSelfPortrait();
     } catch (error) {
@@ -378,9 +378,14 @@ export async function renderVisualizerPage(
       try {
         hourglass = createTurnHourglass(hourglassView);
         hourglassView.hidden = false;
+        const view = hourglassView;
         hourglassTurns = createHourglassTurns(hourglass, {
           state: () => director.hudState(),
           turnShown: () => director.turnShown(),
+          latest: () => latestState,
+          setShown: (shown) => {
+            view.hidden = !shown;
+          },
         });
       } catch (error) {
         diagnostics?.note(`no hourglass: ${String(error)}`);
@@ -394,6 +399,8 @@ export async function renderVisualizerPage(
     // the visualiser's beats scale to match, so the director never waits on an
     // animation the server has already moved past.
     if (latestState) setPace(latestState.pace);
+    // A move's deadline can arrive before the table has caught up with it.
+    hourglassTurns?.applyState();
     if (seatSync && latestState && localUsername) {
       seatSync.applyPlayers(latestState.players, localUsername);
     }

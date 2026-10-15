@@ -287,13 +287,15 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               </p>
               <p>
                 <strong>Special rule:</strong> The last player to predict
-                cannot choose a number equal to the number of cards in their
-                hand. For example, if they have three cards, they cannot
-                predict three tricks.
+                cannot choose the number that would make everyone's
+                predictions add up to the number of tricks in the round. For
+                example, with three cards each, if the other players have
+                predicted one trick between them, the last player cannot
+                predict two.
               </p>
               <p>
-                This restriction prevents the total predictions from
-                equalling the number of tricks available in the round.
+                So the predictions never match the tricks available, and at
+                least one player must miss.
               </p>
             </section>
 

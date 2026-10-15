@@ -62,7 +62,8 @@ export function createCardDeal(
   }));
   const stackTop = slots.reduce((top, slot) => Math.max(top, slot.position.y), 0);
   const stack = slots.map((_, index) =>
-    factory.build(`stack-card-object-${index + 1}`, blankCardTexture()),
+    // Soft: the stack's side is too fine to sharpen (see card-objects.ts).
+    factory.build(`stack-card-object-${index + 1}`, blankCardTexture(), undefined, { soft: true }),
   );
 
   let top = -1; // index of the top card still on the stack

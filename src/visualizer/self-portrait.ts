@@ -5,6 +5,7 @@ import { loadCharacterAsset, type CharacterId } from "./character-assets";
 import { EMOTES, SELF_PORTRAIT } from "./config";
 import type { Emote } from "./player-characters";
 import { frameCharacter } from "./portrait";
+import { applyPortraitArmCrop, type PortraitArmCrop } from "./portrait-arm-crop";
 
 export interface SelfPortrait {
   setCharacter(character: CharacterId): void;
@@ -24,7 +25,10 @@ export interface SelfPortrait {
 // can watch the emotes they trigger. Their chair at the table holds the camera,
 // so this is the only place they appear. Its own small canvas keeps it
 // independent of the table's renderer, shadows and resolution cap.
-export function createSelfPortrait(view: HTMLElement): SelfPortrait {
+//
+// outline is the round background the character sits in: the body is cut at
+// the waist along its lower half, the arms are not (see portrait-arm-crop.ts).
+export function createSelfPortrait(view: HTMLElement, outline: HTMLElement): SelfPortrait {
   const canvas = document.createElement("canvas");
   view.append(canvas);
 
@@ -40,11 +44,29 @@ export function createSelfPortrait(view: HTMLElement): SelfPortrait {
   let character: CharacterId | null = null;
   let model: THREE.Object3D | null = null;
   let animator: CharacterAnimator | null = null;
+  let crop: PortraitArmCrop | null = null;
   let destroyed = false;
+
+  // Where the outline circle is on the canvas, in drawing-buffer pixels from
+  // its bottom left, measured from the page so the HUD's zoom is allowed for.
+  const placeCut = () => {
+    if (!crop) return;
+    const box = canvas.getBoundingClientRect();
+    const circle = outline.getBoundingClientRect();
+    if (!box.width || !box.height) return;
+    const scale = canvas.width / box.width;
+    crop.setCircle(
+      (circle.left + circle.width / 2 - box.left) * scale,
+      (box.bottom - (circle.top + circle.height / 2)) * scale,
+      (circle.width / 2) * scale,
+    );
+  };
 
   const removeModel = () => {
     animator?.dispose();
     animator = null;
+    crop?.dispose();
+    crop = null;
     if (!model) return;
     model.removeFromParent();
     // Skeletons are per clone; geometry and textures belong to the cache.
@@ -65,9 +87,11 @@ export function createSelfPortrait(view: HTMLElement): SelfPortrait {
     renderer.setSize(width, height, false);
     camera.aspect = width / height;
     camera.updateProjectionMatrix();
+    placeCut();
   };
   const resizeObserver = new ResizeObserver(resize);
   resizeObserver.observe(view);
+  resizeObserver.observe(outline);
   resize();
 
   let frame = 0;
@@ -98,6 +122,8 @@ export function createSelfPortrait(view: HTMLElement): SelfPortrait {
 
           const root = cloneSkinned(asset.template);
           scene.add(root);
+          crop = applyPortraitArmCrop(root);
+          placeCut();
           const nextAnimator = createCharacterAnimator(root, asset.clips, next);
           nextAnimator.playLoop("idle");
 
