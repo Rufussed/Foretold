@@ -1392,6 +1392,19 @@ button {
   stroke-width: 1;
 }
 
+/* Whose move it is: a yellow ring round the headshot and a yellow line
+   under the name. */
+.hud-opponent.is-current .hud-opponent-face img {
+  box-shadow: 0 0 0 2px #ffd54f;
+}
+
+.hud-opponent.is-current .hud-opponent-face figcaption {
+  text-decoration: underline;
+  text-decoration-color: #ffd54f;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
 /* Your own line in the list. */
 .hud-opponent.is-you .hud-opponent-face figcaption {
   color: #ffd54f;

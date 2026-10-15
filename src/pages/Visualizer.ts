@@ -378,6 +378,7 @@ export async function renderVisualizerPage(
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
       tableRound: () => director.tableState()?.currentRound,
+      turnShown: () => director.turnShown(),
     });
 
     // Your move's countdown starts once your table has shown you your turn.

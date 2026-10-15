@@ -12,6 +12,8 @@ const TRUMP_EXTRA_SECONDS = 1;
 export interface GameHudOptions extends AnnouncerOptions {
   // The round the card table is showing; see player-list.ts.
   tableRound?(): number | undefined;
+  // Whether the current move's player has been announced; see player-list.ts.
+  turnShown?(): boolean;
 }
 
 export interface GameHud extends HudPart {

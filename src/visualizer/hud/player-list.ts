@@ -38,13 +38,17 @@ export interface PlayerListOptions {
   // The round the card table is showing, undefined before it has one. The list
   // runs ahead of the table once a round is scored, until the next deal starts.
   tableRound?(): number | undefined;
+  // Whether the current move's player has been announced. The highlight moves
+  // to them then, not when their turn begins on the server.
+  turnShown?(): boolean;
 }
 
 // Bottom left: every player, you included, in the order they predict this
 // round: the first to predict first, the second second, and so on. The first
 // player moves on each deal, so the list reorders with it. Each is one line - a
 // small headshot beside their name, then this round's prediction and tricks
-// won, a column each. Your own line is picked out.
+// won, a column each. Your own line is picked out, and so is whoever's move
+// it is.
 export function createPlayerList(
   root: HTMLElement,
   game: GameConnection,
@@ -76,6 +80,8 @@ export function createPlayerList(
 
   const rows = new Map<string, Row>();
   let order = "";
+  // Who is highlighted: the player whose move was last announced.
+  let highlighted: string | undefined;
 
   // Faint lines from each heading down its column.
   const guides = createPlayerListGuides(grid, () => {
@@ -150,9 +156,19 @@ export function createPlayerList(
         );
       }
 
+      // Whose move it is, once it has been announced; until then, whoever's
+      // move was announced last. Nobody between rounds or once it's over.
+      if (holding || state.phase === "finished") {
+        highlighted = undefined;
+      } else if (options.turnShown?.() ?? true) {
+        highlighted = state.players[state.currentPlayerIndex]?.username;
+      }
+      const current = highlighted;
+
       for (const player of players) {
         const row = rows.get(player.username)!;
         row.element.classList.toggle("is-you", player.username === game.localUsername);
+        row.element.classList.toggle("is-current", player.username === current);
         const played = holding ? player.roundScores.at(-1) : undefined;
         const prediction = played ? played.prediction : player.prediction;
         const tricksWon = played ? played.tricksWon : player.tricksWon;
