@@ -55,14 +55,15 @@ import { createTableLayout } from "../visualizer/table-layout";
 import { centreForPlays } from "../visualizer/portrait-camera";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type SceneView, type WizardSceneHandle } from "../visualizer/three-scene";
+import { t, type MessageKey } from "../i18n";
 
 // Each emote button shows a drawn emoticon; the name is its tooltip and
 // accessible label.
-const EMOTE_BUTTONS: Record<Emote, { emoticon: Emoticon; name: string }> = {
-  laugh: { emoticon: "laugh", name: "Laugh" },
-  disbelief: { emoticon: "disbelief", name: "Disbelief" },
-  disapproval: { emoticon: "thumbsDown", name: "Disapproval" },
-  thumbsUp: { emoticon: "thumbsUp", name: "Thumbs up" },
+const EMOTE_BUTTONS: Record<Emote, { emoticon: Emoticon; name: MessageKey }> = {
+  laugh: { emoticon: "laugh", name: "game.emote.laugh" },
+  disbelief: { emoticon: "disbelief", name: "game.emote.disbelief" },
+  disapproval: { emoticon: "thumbsDown", name: "game.emote.disapproval" },
+  thumbsUp: { emoticon: "thumbsUp", name: "game.emote.thumbsUp" },
 };
 
 
@@ -137,11 +138,11 @@ export async function renderVisualizerPage(
     <main class="visualizer-page">
       <div class="visualizer-canvas-wrap">
         <canvas id="wizard-visualizer-canvas"></canvas>
-        <div id="wizard-visualizer-loading">Loading scene…</div>
+        <div id="wizard-visualizer-loading">${t("game.loading")}</div>
       </div>
 
       <nav class="visualizer-nav">
-        <a href="${isGuestGame ? "#/home" : "#/lobby"}">Leave Table</a>
+        <a href="${isGuestGame ? "#/home" : "#/lobby"}">${t("game.leave")}</a>
         <div class="visualizer-hourglass" id="visualizer-hourglass" hidden></div>
 
       </nav>
@@ -149,7 +150,7 @@ export async function renderVisualizerPage(
       <div class="visualizer-emotes" id="visualizer-emotes">
         ${EMOTE_NAMES.map(
           (emote) =>
-            `<button type="button" data-emote="${emote}" title="${EMOTE_BUTTONS[emote].name}" aria-label="${EMOTE_BUTTONS[emote].name}"><span class="emoticon" style="--emoticon: url('${emoticonUrl(EMOTE_BUTTONS[emote].emoticon)}')"></span></button>`,
+            `<button type="button" data-emote="${emote}" title="${t(EMOTE_BUTTONS[emote].name)}" aria-label="${t(EMOTE_BUTTONS[emote].name)}"><span class="emoticon" style="--emoticon: url('${emoticonUrl(EMOTE_BUTTONS[emote].emoticon)}')"></span></button>`,
         ).join("")}
       </div>
 
@@ -547,7 +548,7 @@ export async function renderVisualizerPage(
     diagnostics?.note(`no 3D view: ${String(error)}`);
     if (loadingEl) {
       loadingEl.textContent =
-        "This device could not open a 3D view. Closing other tabs and reopening the browser usually frees one up; the Technical View still works.";
+        t("game.no3d");
       loadingEl.classList.remove("hidden");
     }
     console.error(error);
@@ -562,15 +563,15 @@ export async function renderVisualizerPage(
     // applied once the characters exist.
     const offline = document.createElement("div");
     offline.className = "visualizer-offline";
-    offline.textContent = "Connection lost. Reconnecting…";
+    offline.textContent = t("game.reconnecting");
     offline.hidden = true;
     container.appendChild(offline);
 
     socket = connectGameSocket(roomId, token, {
       onStatus: (online, refused) => {
         offline.textContent = refused
-          ? "The server would not let you back into this game. Reload the page."
-          : "Connection lost. Reconnecting…";
+          ? t("game.refusedBack")
+          : t("game.reconnecting");
         offline.hidden = online;
       },
       onMessage: (message) => {
@@ -595,8 +596,8 @@ export async function renderVisualizerPage(
         // follow: the card returns to your hand.
         console.warn("[visualizer] server refused:", message.error);
         cardTable?.refused();
-        predictionPrompt?.refused(message.error ?? "The server refused that.");
-        trumpPrompt?.refused(message.error ?? "The server refused that.");
+        predictionPrompt?.refused(message.error ?? t("game.refused"));
+        trumpPrompt?.refused(message.error ?? t("game.refused"));
         gameHud?.refused(message.error ?? "");
       }
       },

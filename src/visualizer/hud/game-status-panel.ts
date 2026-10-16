@@ -2,6 +2,7 @@ import { displayName } from "../../utils/display-name";
 import type { GameConnection } from "../game-connection";
 import type { ScoreBoard } from "./announcer";
 import type { HudPart } from "./hud-part";
+import { t } from "../../i18n";
 
 export type GameStatusPanel = HudPart & ScoreBoard;
 
@@ -10,15 +11,15 @@ export type GameStatusPanel = HudPart & ScoreBoard;
 export function createGameStatusPanel(root: HTMLElement, game: GameConnection): GameStatusPanel {
   const panel = document.createElement("section");
   panel.className = "hud-panel hud-status";
-  panel.setAttribute("aria-label", "Game status");
+  panel.setAttribute("aria-label", t("game.status"));
   panel.hidden = true;
   panel.innerHTML = `
     <p class="hud-round"></p>
     <table class="hud-scores">
       <thead>
         <tr>
-          <th>Player</th>
-          <th>Score</th>
+          <th>${t("game.player")}</th>
+          <th>${t("game.score")}</th>
         </tr>
       </thead>
       <tbody></tbody>
@@ -51,7 +52,7 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
       return;
     }
 
-    roundEl.textContent = `Round ${state.currentRound} of ${state.totalRounds}`;
+    roundEl.textContent = t("game.round", { round: String(state.currentRound), total: String(state.totalRounds) });
 
 
     const shown = (player: { username: string; score: number }) => held.get(player.username) ?? player.score;

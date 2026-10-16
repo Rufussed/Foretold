@@ -5,6 +5,7 @@ import {
   onInstallChange,
   promptInstall,
 } from "../utils/pwa-install";
+import { t } from "../i18n";
 
 export interface InstallToggle {
   dispose(): void;
@@ -20,8 +21,8 @@ export function createInstallToggle(root: HTMLElement, hintRoot: HTMLElement): I
   button.type = "button";
   button.className = "install-toggle";
   button.innerHTML = INSTALL_ICON;
-  button.title = "Install as an app";
-  button.setAttribute("aria-label", "Install as an app");
+  button.title = t("system.install");
+  button.setAttribute("aria-label", t("system.install"));
   root.append(button);
 
   let hint: HTMLElement | null = null;

@@ -7,6 +7,8 @@
 // anything but a video - so the button only appears where it can work,
 // rather than sitting there doing nothing.
 
+import { t } from "../i18n";
+
 export const EXPAND = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 export const COLLAPSE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
@@ -73,7 +75,7 @@ export function createFullscreenToggle(
   const render = () => {
     const on = isFullscreen();
     button.innerHTML = on ? COLLAPSE : EXPAND;
-    const label = on ? "Leave fullscreen" : "Fullscreen";
+    const label = t(on ? "system.leaveFullscreen" : "system.fullscreen");
     button.title = label;
     button.setAttribute("aria-label", label);
     button.setAttribute("aria-pressed", String(on));

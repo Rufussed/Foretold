@@ -6,6 +6,7 @@ import { headshotUrl } from "./headshots";
 import { createPlayerListGuides } from "./player-list-guides";
 import type { HudPart } from "./hud-part";
 import { createRoundStat, type RoundStat } from "./round-stats";
+import { t } from "../../i18n";
 
 interface Row {
   element: HTMLElement;
@@ -56,7 +57,7 @@ export function createPlayerList(
 ): HudPart {
   const grid = document.createElement("section");
   grid.className = "hud-panel hud-opponents";
-  grid.setAttribute("aria-label", "Players");
+  grid.setAttribute("aria-label", t("game.players"));
   grid.hidden = true;
   root.append(grid);
 
@@ -73,9 +74,9 @@ export function createPlayerList(
     cell.textContent = text;
     return cell;
   };
-  const orderHeading = headingFor("Play Order", "order");
-  const predictionsHeading = headingFor("Predictions", "predictions");
-  const tricksHeading = headingFor("Tricks", "tricks");
+  const orderHeading = headingFor(t("game.playOrder"), "order");
+  const predictionsHeading = headingFor(t("game.predictions"), "predictions");
+  const tricksHeading = headingFor(t("game.tricks"), "tricks");
   headings.append(tricksHeading, predictionsHeading, orderHeading);
 
   const rows = new Map<string, Row>();
@@ -109,8 +110,8 @@ export function createPlayerList(
 
     // Labels hidden: the headings above say it once, but each row keeps its
     // own for anyone listening rather than looking.
-    const prediction = createRoundStat("Prediction", { labelHidden: true });
-    const won = createRoundStat("Tricks", { labelHidden: true });
+    const prediction = createRoundStat(t("game.prediction"), { labelHidden: true });
+    const won = createRoundStat(t("game.tricks"), { labelHidden: true });
     element.append(face, prediction.element, won.element);
     return { element, image, prediction, won, character: null };
   };

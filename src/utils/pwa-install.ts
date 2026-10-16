@@ -7,6 +7,8 @@
 // Share > Add to Home Screen, so it gets instructions instead, as does an
 // Android browser that never offered the dialog.
 
+import { t } from "../i18n";
+
 export const INSTALL_ICON = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 
 interface InstallPromptEvent extends Event {
@@ -63,8 +65,8 @@ export async function promptInstall(): Promise<boolean> {
 
 export const installInstructions = (): string =>
   isIPhone()
-    ? "To install: tap Share, then Add to Home Screen."
-    : "To install: open the browser menu (⋮), then Install app or Add to Home screen.";
+    ? t("system.installIos")
+    : t("system.installOther");
 
 // Runs the handler when installing becomes possible or stops being; returns how to stop.
 export function onInstallChange(handler: () => void): () => void {
