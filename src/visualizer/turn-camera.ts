@@ -7,7 +7,7 @@ import type { SceneView } from "./three-scene";
 export interface TurnCamera {
   // Turns toward a player, or back to the normal view for null (also used for
   // you); done once the camera is there.
-  lookAt(username: string | null, done: () => void): void;
+  lookAt(username: string | null, done: () => void, seconds?: number): void;
 }
 
 export interface TurnCameraOptions {
@@ -29,25 +29,37 @@ export function createTurnCamera({
 }: TurnCameraOptions): TurnCamera {
   const aims = new Map<SeatId, THREE.Vector3>();
 
-  // Just above the middle of that player's card set, which faces them.
+  // Just in front of the player's root: their seat node, which the character
+  // is parented to, moved a little along its local +Z.
+  // The camera only turns about the vertical axis toward it, so its height
+  // plays no part. Falls back to the middle of their card set.
   const aimAt = (seat: SeatId) => {
     let point = aims.get(seat);
     if (!point) {
-      const hand = layout.handFor(seat);
-      const centre = hand
-        .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
-        .divideScalar(Math.max(hand.length, 1));
-      point = environment.localToWorld(centre).add(new THREE.Vector3(0, CAMERA_FOLLOW.lookHeight, 0));
+      const node = environment.getObjectByName(`seat${seat}`);
+      if (node) {
+        environment.updateWorldMatrix(true, true);
+        point = node.getWorldPosition(new THREE.Vector3());
+        // Out in front of them: along the node's local +Z, the way it faces.
+        const forward = new THREE.Vector3(0, 0, 1).transformDirection(node.matrixWorld);
+        point.addScaledVector(forward, CAMERA_FOLLOW.aimOutLength);
+      } else {
+        const hand = layout.handFor(seat);
+        const centre = hand
+          .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
+          .divideScalar(Math.max(hand.length, 1));
+        point = environment.localToWorld(centre);
+      }
       aims.set(seat, point);
     }
     return point;
   };
 
   return {
-    lookAt(username, done) {
+    lookAt(username, done, seconds) {
       const seat =
         CAMERA_FOLLOW.enabled && username !== null && username !== localUsername ? seatOf(username) : null;
-      view.lookToward(seat === null ? null : aimAt(seat), done);
+      view.lookToward(seat === null ? null : aimAt(seat), done, seconds);
     },
   };
 }

@@ -92,6 +92,7 @@ export function createCardTable({
   onDealDone,
   onOvertaken,
 }: CardTableOptions): CardTable {
+  const cameraPosition = new THREE.Vector3();
   const factory = createCardFactory(environment);
   const cards = createTableCards(environment, factory, layout);
   const opponents = createOpponentHands(factory, layout);
@@ -492,6 +493,7 @@ export function createCardTable({
     playTestReward,
     update(deltaSeconds) {
       deal.update(deltaSeconds);
+      cards.setHandFrame(view.cameraYaw(), view.camera.getWorldPosition(cameraPosition));
       cards.update(deltaSeconds);
       blind.update();
       rewards.update(deltaSeconds);

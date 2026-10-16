@@ -22,7 +22,11 @@ export interface RoundResult {
   total: number;
 }
 
-const nameOf = (username: string, local: string) => (username === local ? "You" : displayName(username));
+// A bot's username ends in " NPC", which the banner leaves off.
+export const announcedName = (username: string): string =>
+  displayName(username).replace(/ NPC$/, "");
+
+const nameOf = (username: string, local: string) => (username === local ? "You" : announcedName(username));
 
 export function cardName(card: Card): string {
   if (card.value === 14) return "Wizard";
@@ -52,7 +56,7 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
     case "trump-selection": {
       if (!current) return null;
       const turnedUp = `${state.trumpCard?.value === 14 ? "A Wizard" : "A Jester"} was turned up for trumps`;
-      return current === local ? `${turnedUp}: choose the trump suit.` : `${turnedUp}: ${displayName(current)} is choosing the suit.`;
+      return current === local ? `${turnedUp}: choose the trump suit.` : `${turnedUp}: ${announcedName(current)} is choosing the suit.`;
     }
     case "predictions": {
       if (!current) return null;
@@ -66,9 +70,9 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       if (!current || state.currentTrick.winnerUsername) return null;
       // The first card of each trick: that player leads.
       if (state.currentTrick.playedCards.length === 0) {
-        return current === local ? "You lead" : `${displayName(current)} leads`;
+        return current === local ? "You lead" : `${announcedName(current)} leads`;
       }
-      return current === local ? "Your Turn." : `${displayName(current)}'s turn.`;
+      return current === local ? "Your Turn." : `${announcedName(current)}'s turn.`;
     case "finished": {
       const winners = gameWinners(state);
       const winner = winners[0];

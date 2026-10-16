@@ -52,8 +52,9 @@ import { createTurnHourglass, type TurnHourglass } from "../visualizer/turn-hour
 import { createTurnTimeoutNotice, type TurnTimeoutNotice } from "../visualizer/turn-timeout-notice";
 import { createTurnReadySignal, type TurnReadySignal } from "../visualizer/turn-ready-signal";
 import { createTableLayout } from "../visualizer/table-layout";
+import { centreForPlays } from "../visualizer/portrait-camera";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
-import { createWizardScene, type WizardSceneHandle } from "../visualizer/three-scene";
+import { createWizardScene, type SceneView, type WizardSceneHandle } from "../visualizer/three-scene";
 
 // Each emote button shows a drawn emoticon; the name is its tooltip and
 // accessible label.
@@ -231,6 +232,7 @@ export async function renderVisualizerPage(
 
   const live = latestState !== null && localUsername !== null;
   let seatSync: SeatSync | null = null;
+  let sceneView: SceneView | null = null;
   // The game is over: each winner plays their "victory" clip a few times, on
   // their seat at the table and, for you, in the corner portrait.
   const victoryTimers: number[] = [];
@@ -337,7 +339,9 @@ export async function renderVisualizerPage(
       }
     },
     dealing: () => cardTable?.dealing ?? false,
-    lookAt: (username, done) => (turnCamera ? turnCamera.lookAt(username, done) : done()),
+    lookAt: (username, done, seconds) =>
+      turnCamera ? turnCamera.lookAt(username, done, seconds) : done(),
+    centreForPlays,
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
     announceTrump: (state) => gameHud?.announceTrump(state),
     playTrickReward: (done) => {
@@ -377,6 +381,8 @@ export async function renderVisualizerPage(
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
+      seatOf: (username) => seatSync?.seatOf(username) ?? null,
+      tableWidthPx: () => canvas.clientWidth * (sceneView?.tableWidthFraction() ?? 1),
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
     });
@@ -460,6 +466,7 @@ export async function renderVisualizerPage(
       console.error(message);
     },
     onReady: (players, environment, view) => {
+      sceneView = view;
       characters = players;
       if (import.meta.env.DEV) {
         // From the console: __wizardPlayers.victory(2) to preview the clip.

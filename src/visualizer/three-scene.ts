@@ -43,7 +43,14 @@ export interface SceneView {
   // Turns the camera toward a point in the world, or back to its normal view
   // with null. A change of point switches orbit controls off.
   // onArrive: called once the camera has finished turning there.
-  lookToward(point: THREE.Vector3 | null, onArrive?: () => void): void;
+  // seconds overrides how long this turn takes.
+  lookToward(point: THREE.Vector3 | null, onArrive?: () => void, seconds?: number): void;
+  // How far the camera has turned about the vertical axis from its normal
+  // view, in radians; 0 until the intro has finished.
+  cameraYaw(): number;
+  // How much of the canvas's width the table top takes up in the camera's
+  // normal view, 0 to 1; 1 until the table has been measured.
+  tableWidthFraction(): number;
 }
 
 export interface WizardSceneOptions {
@@ -119,12 +126,23 @@ export function createWizardScene(
   let follow: CameraFollow | null = null;
   let lookingAt: THREE.Vector3 | null = null;
   let introDone = false;
+  let environmentRoot: THREE.Object3D | null = null;
   const introWaiters: Array<() => void> = [];
   // The intro camera move has finished, or there wasn't one.
   const finishIntro = () => {
     if (introDone) return;
     introDone = true;
     follow?.captureRest();
+    // The intro has put the camera in its normal place, which is what the
+    // table is measured from.
+    if (environmentRoot) {
+      // The camera has walked up to its chair and now sits in it; the chair
+      // would only be in the way of the view.
+      const chair = environmentRoot.getObjectByName("chair_1");
+      if (chair) chair.visible = false;
+      measureTable(environmentRoot);
+      resize();
+    }
     console.info("[camera] intro finished");
     for (const waiter of introWaiters.splice(0)) waiter();
   };
@@ -158,6 +176,39 @@ export function createWizardScene(
   // The environment can finish loading after navigation has torn this down.
   let disposed = false;
 
+  // The field of view the camera was authored with. Kept apart from
+  // camera.fov, which resize() widens when the window is too narrow.
+  let authoredFov: number | null = null;
+  // The tangent of the half-angle, from the camera's normal view, that just
+  // takes in the table top from side to side; null until the intro is over.
+  let tableHalfTan: number | null = null;
+  let tableRawHalfTan: number | null = null;
+  let measured = false;
+  let targetFov = 0;
+
+  const measureTable = (environment: THREE.Object3D) => {
+    const table = environment.getObjectByName("table-top");
+    if (!table) return;
+    camera.updateMatrixWorld(true);
+    table.updateWorldMatrix(true, true);
+    const toCamera = camera.matrixWorldInverse.copy(camera.matrixWorld).invert();
+    const point = new THREE.Vector3();
+    let widest = 0;
+    table.traverse((child) => {
+      const mesh = child as THREE.Mesh;
+      const positions = mesh.geometry?.getAttribute("position");
+      if (!positions) return;
+      const toView = mesh.matrixWorld.clone().premultiply(toCamera);
+      for (let i = 0; i < positions.count; i++) {
+        point.fromBufferAttribute(positions, i).applyMatrix4(toView);
+        if (point.z < 0) widest = Math.max(widest, Math.abs(point.x) / -point.z);
+      }
+    });
+    tableRawHalfTan = widest > 0 ? widest : null;
+    tableHalfTan = widest > 0 ? widest * CAMERA.tableFitMargin : null;
+    measured = true;
+  };
+
   const resize = () => {
     const w = canvas.clientWidth || window.innerWidth;
     const h = canvas.clientHeight || window.innerHeight;
@@ -177,6 +228,35 @@ export function createWizardScene(
     // Vertical FOV stays as authored; horizontal widens or narrows with the
     // window, and matching aspect to the canvas avoids any stretching.
     camera.aspect = w / h;
+    // Never narrower than the table top: if the authored vertical field would
+    // leave less than that across, widen the vertical field to suit.
+    authoredFov ??= camera.fov;
+    const authoredHalfTan = Math.tan(THREE.MathUtils.degToRad(authoredFov) / 2);
+    const halfTan =
+      tableHalfTan === null ? authoredHalfTan : Math.max(authoredHalfTan, tableHalfTan / camera.aspect);
+    targetFov = THREE.MathUtils.radToDeg(2 * Math.atan(halfTan));
+    // Until the table has been measured there is nothing to ease from.
+    if (!measured) camera.fov = targetFov;
+    camera.updateProjectionMatrix();
+  };
+
+  // Glides the field of view to the framing the table needs, slow at both
+  // ends, so a change in what must fit (the intro ending, a rotation) does not
+  // pop. A new target mid-glide starts from wherever the view is.
+  let fovGlide: { from: number; to: number; elapsed: number } | null = null;
+  const easeFov = (dt: number) => {
+    if (!fovGlide || fovGlide.to !== targetFov) {
+      if (Math.abs(camera.fov - targetFov) < 1e-3) {
+        fovGlide = null;
+        return;
+      }
+      fovGlide = { from: camera.fov, to: targetFov, elapsed: 0 };
+    }
+    fovGlide.elapsed += dt;
+    const t = Math.min(1, fovGlide.elapsed / Math.max(CAMERA.reframeSeconds, 1e-6));
+    const eased = t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+    camera.fov = fovGlide.from + (fovGlide.to - fovGlide.from) * eased;
+    if (t >= 1) fovGlide = null;
     camera.updateProjectionMatrix();
   };
   // Watching the canvas rather than the window: a rotation, the address bar
@@ -225,6 +305,9 @@ export function createWizardScene(
       // glTF cameras come through as children of the scene graph.
       const gltfCamera = gltf.cameras[0] as THREE.PerspectiveCamera | undefined;
       if (gltfCamera) camera = gltfCamera;
+      authoredFov = null;
+      measured = false;
+      environmentRoot = gltf.scene;
       resize();
       follow = createCameraFollow(camera);
 
@@ -359,7 +442,15 @@ export function createWizardScene(
           if (introDone) callback();
           else introWaiters.push(callback);
         },
-        lookToward: (point, onArrive) => {
+        tableWidthFraction: () =>
+          tableRawHalfTan === null
+            ? 1
+            : Math.min(
+                1,
+                tableRawHalfTan / (Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect),
+              ),
+        cameraYaw: () => (introDone && !controls?.enabled ? (follow?.yaw() ?? 0) : 0),
+        lookToward: (point, onArrive, seconds) => {
           const changed = point === null ? lookingAt !== null : !lookingAt?.equals(point);
           lookingAt = point ? point.clone() : null;
           // Orbit controls are for testing: when the turn moves the camera,
@@ -369,7 +460,7 @@ export function createWizardScene(
             applyOrbit();
             console.info("[camera] orbit controls off: following the turn");
           }
-          if (follow) follow.setTarget(point, onArrive);
+          if (follow) follow.setTarget(point, onArrive, seconds);
           else onArrive?.();
         },
       });
@@ -422,12 +513,15 @@ export function createWizardScene(
     mixer?.update(dt);
     sparks?.update(dt);
     clouds?.update(dt);
-    options.onUpdate?.(dt);
-    players?.update(dt);
+    // The camera moves before the page's update, so anything that rides with
+    // it (your hand) is placed against where the camera is this frame.
     // Orbit controls drive the camera while they're on; otherwise, once the
     // intro has played, it follows the turn.
     if (controls?.enabled) controls.update();
     else if (introDone) follow?.update(dt);
+    easeFov(dt);
+    options.onUpdate?.(dt);
+    players?.update(dt);
     scaler?.sample(dt);
     shadowThrottle?.update();
     draw();

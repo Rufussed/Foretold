@@ -69,6 +69,10 @@ export interface TableCards {
   dragTo(key: string, world: THREE.Vector3): void;
   endDrag(key: string): void;
   handTargets(): HandTarget[];
+  // Turns your hand about the vertical axis through a point (world space) so
+  // it stays put relative to the camera as that turns. Held at 0 while cards
+  // are still being dealt. Call every frame, before update.
+  setHandFrame(yaw: number, pivot: THREE.Vector3): void;
   moveInHand(key: string, index: number): void;
   // Sends a hand card to the next free played slot; false if it can't go.
   play(key: string): boolean;
@@ -252,9 +256,24 @@ export function createTableCards(
 
   // A hand card's slot: centred for the whole hand, cards still being dealt
   // included, so each lands where it stays and nothing shifts mid-deal.
+  // Your hand rides with the camera: its slots are turned by handYaw about
+  // handPivot (environment space), which is how far the camera has turned.
+  let handYaw = 0;
+  const handPivot = new THREE.Vector3();
+  const handTurn = new THREE.Quaternion();
+  const turnAbout = (position: THREE.Vector3, by: number) =>
+    position.sub(handPivot).applyAxisAngle(up, by).add(handPivot);
+
   const handSlotFor = (key: string): Placement | undefined => {
     const hand = handOrder.filter((candidate) => candidate !== pending?.key);
-    return centredSlots(handSlots, hand.length)[hand.indexOf(key)];
+    const slot = centredSlots(handSlots, hand.length)[hand.indexOf(key)];
+    if (!slot || handYaw === 0) return slot;
+    handTurn.setFromAxisAngle(up, handYaw);
+    return {
+      position: turnAbout(slot.position.clone(), handYaw),
+      quaternion: handTurn.clone().multiply(slot.quaternion),
+      scale: slot.scale,
+    };
   };
 
   const targetOf = (entry: TableCard): { slot: Placement; lift: number } | null => {
@@ -370,6 +389,25 @@ export function createTableCards(
       }
       if (pending && trickOrder.includes(pending.key)) pending = null;
       trickOrderShown = new Set(trickOrder);
+    },
+
+    setHandFrame(yaw, pivot) {
+      // Cards being dealt fly to unturned slots, so the hand waits for them.
+      const wanted = held.size > 0 ? 0 : yaw;
+      handPivot.copy(environment.worldToLocal(pivot.clone()));
+      const by = wanted - handYaw;
+      if (by !== 0) {
+        handTurn.setFromAxisAngle(up, by);
+        // Cards at rest in the hand move with the camera; ones being dragged
+        // or lifted by the easing keep following their own target.
+        for (const key of visibleHand()) {
+          const entry = cards.get(key);
+          if (!entry || !entry.placed || entry.drag) continue;
+          turnAbout(entry.object.position, by);
+          entry.object.quaternion.premultiply(handTurn);
+        }
+      }
+      handYaw = wanted;
     },
 
     update(deltaSeconds) {
