@@ -876,6 +876,10 @@ button {
   width: var(--self-width);
   height: var(--self-width); /* a circle */
   margin: 0;
+  /* Decoration only. Its canvas reaches well past the circle, and on a
+     portrait phone that covers most of the hand, so it must let touches
+     through to the cards beneath. */
+  pointer-events: none;
 }
 
 /* Background behind the character portrait. */
