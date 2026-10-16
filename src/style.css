@@ -3984,8 +3984,8 @@ button {
 
   padding: 24px;
 
-  background: rgba(3, 4, 3, 0.72);
-
+  /* Same see-through blur as the Home panels (About, Rules...). */
+  animation: home-fade-in 180ms ease both;
   backdrop-filter: var(--ui-blur);
 }
 
@@ -4000,21 +4000,33 @@ button {
 
   padding: 38px;
 
-  border: 1px solid rgba(191, 125, 47, 0.34);
+  border: 1px solid rgba(188, 125, 49, 0.55);
 
   background:
     linear-gradient(
-      135deg,
-      rgba(181, 111, 31, 0.055),
-      transparent 42%
+      140deg,
+      rgba(255, 185, 84, 0.045),
+      transparent 1000%
     ),
-    rgba(11, 12, 10, 0.97);
+    #11120f;
 
   box-shadow:
-    0 30px 100px rgba(0, 0, 0, 0.7),
-    0 0 40px rgba(135, 76, 19, 0.06);
+    0 28px 90px rgba(0, 0, 0, 0.75),
+    inset 0 0 45px rgba(0, 0, 0, 0.3);
 
-  backdrop-filter: var(--ui-blur);
+  animation: home-modal-in 240ms ease both;
+}
+
+/* Thin inner frame, as on the Home panels. */
+.room-modal::before {
+  position: absolute;
+  inset: 2px;
+
+  border: 1px solid rgba(179, 112, 37, 0.16);
+
+  pointer-events: none;
+
+  content: "";
 }
 
 .room-modal-close {
