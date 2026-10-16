@@ -21,6 +21,10 @@
 
 * {
   box-sizing: border-box;
+
+  /* One thin amber scrollbar everywhere (Home panels, lobby, profile...). */
+  scrollbar-color: rgba(191, 125, 47, 0.45) transparent;
+  scrollbar-width: thin;
 }
 
 body {
@@ -5786,13 +5790,6 @@ button {
 .profile-opponents .opponents-list {
   max-height: 420px;
   overflow-y: auto;
-}
-
-.profile-opponents .opponents-list,
-.profile-scroll-list,
-.profile-search-results {
-  scrollbar-color: rgba(191, 125, 47, 0.45) transparent;
-  scrollbar-width: thin;
 }
 
 /* Record with the history under it on the left, social on the right. */
