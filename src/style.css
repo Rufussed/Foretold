@@ -2695,6 +2695,20 @@ button {
     box-shadow 180ms ease;
 }
 
+.home-auth-form input[type="date"] {
+  color-scheme: dark;
+}
+
+.home-auth-hint {
+  display: block;
+  margin-top: 6px;
+  color: rgba(159, 148, 127, 0.72);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
 .home-auth-form input:focus {
   border-color: #a86322;
 

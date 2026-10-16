@@ -494,11 +494,25 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              ${t("signup.displayName")}
+              ${t("signup.lastName")}
               <input
-                name="displayName"
+                name="lastName"
                 type="text"
-                maxlength="30"
+                autocomplete="family-name"
+                maxlength="50"
+                required
+              />
+              <small class="home-auth-hint">${t("signup.privateHint")}</small>
+            </label>
+
+            <label>
+              ${t("signup.birthDate")}
+              <input
+                name="birthDate"
+                type="date"
+                autocomplete="bday"
+                min="1900-01-01"
+                max="${new Date().toISOString().slice(0, 10)}"
                 required
               />
             </label>
@@ -517,6 +531,17 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               ${t("signup.password")}
               <input
                 name="password"
+                type="password"
+                autocomplete="new-password"
+                minlength="8"
+                required
+              />
+            </label>
+
+            <label>
+              ${t("signup.confirmPassword")}
+              <input
+                name="confirmPassword"
                 type="password"
                 autocomplete="new-password"
                 minlength="8"
@@ -924,8 +949,12 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         formData.get("username") ?? "",
       );
 
-      const displayName = String(
-        formData.get("displayName") ?? "",
+      const lastName = String(
+        formData.get("lastName") ?? "",
+      );
+
+      const birthDate = String(
+        formData.get("birthDate") ?? "",
       );
 
       const email = String(
@@ -936,10 +965,19 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         formData.get("password") ?? "",
       );
 
+      // There is no password reset, so a typo here would lock the player out.
+      if (password !== String(formData.get("confirmPassword") ?? "")) {
+        if (message) {
+          message.textContent = t("signup.passwordMismatch");
+        }
+        return;
+      }
+
       try {
         await register(
           username,
-          displayName,
+          lastName,
+          birthDate,
           email,
           password,
         );

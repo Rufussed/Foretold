@@ -5,6 +5,8 @@ CREATE TABLE IF NOT EXISTS users (
   display_name TEXT NOT NULL,
   email TEXT NOT NULL UNIQUE,
   is_guest INTEGER NOT NULL DEFAULT 0,
+  last_name TEXT NOT NULL DEFAULT '',
+  birth_date TEXT NOT NULL DEFAULT '',
   created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

@@ -109,7 +109,7 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Username</th><th>Name</th><th>Email</th>
+            <th>Username</th><th>Last name</th><th>Born</th><th>Email</th>
             <th>Joined</th><th>Rooms</th><th></th>
           </tr>
         </thead>
@@ -119,7 +119,8 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
               (user) => `
                 <tr>
                   <td>${escapeHtml(user.username)}${user.isGuest ? " <small>guest</small>" : ""}</td>
-                  <td>${escapeHtml(user.displayName)}</td>
+                  <td>${escapeHtml(user.lastName)}</td>
+                  <td>${escapeHtml(user.birthDate)}</td>
                   <td>${escapeHtml(user.email)}</td>
                   <td>${formatDateTime(user.createdAt)}</td>
                   <td>${user.roomsCreated}</td>

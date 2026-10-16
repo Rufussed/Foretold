@@ -57,6 +57,10 @@ const censor = new TextCensor().setStrategy(
 // The matcher drops letters outside plain ASCII, so "Scheiß" would slip
 // through. ß and s are one character each, so the positions it finds in the
 // copy are the same in the original, which is what gets masked.
+export function containsProfanity(text: string): boolean {
+  return matcher.hasMatch(text.replace(/ß/g, "s"));
+}
+
 export function maskProfanity(text: string): string {
   const matches = matcher.getAllMatches(text.replace(/ß/g, "s"));
   return matches.length ? censor.applyTo(text, matches) : text;

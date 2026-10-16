@@ -15,7 +15,8 @@ export interface AdminRoom {
 export interface AdminUser {
   id: number;
   username: string;
-  displayName: string;
+  lastName: string;
+  birthDate: string;
   email: string;
   createdAt: string;
   isGuest: boolean;

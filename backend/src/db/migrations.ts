@@ -204,6 +204,40 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 11,
+    description: "last name and date of birth instead of a display name",
+    up(db) {
+      // The display name players gave becomes their last name, and everyone
+      // gets the stand-in birth date 2000-01-01. Guests keep both empty.
+      if (!hasColumn(db, "users", "last_name")) {
+        db.exec(`
+          ALTER TABLE users
+          ADD COLUMN last_name TEXT NOT NULL DEFAULT ''
+        `);
+        db.exec(`
+          UPDATE users
+          SET last_name = display_name
+          WHERE is_guest = 0
+        `);
+      }
+
+      if (!hasColumn(db, "users", "birth_date")) {
+        db.exec(`
+          ALTER TABLE users
+          ADD COLUMN birth_date TEXT NOT NULL DEFAULT ''
+        `);
+        db.exec(`
+          UPDATE users
+          SET birth_date = '2000-01-01'
+          WHERE is_guest = 0
+        `);
+      }
+
+      // Pages show the display name, so from now on it is the username.
+      db.exec("UPDATE users SET display_name = username");
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

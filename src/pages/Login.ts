@@ -40,8 +40,13 @@ export function renderLoginPage(container: HTMLElement): void {
           </label>
 
           <label>
-            Display name
-            <input name="displayName" type="text" required />
+            Last name
+            <input name="lastName" type="text" required />
+          </label>
+
+          <label>
+            Date of birth
+            <input name="birthDate" type="date" required />
           </label>
 
           <label>
@@ -109,14 +114,16 @@ export function renderLoginPage(container: HTMLElement): void {
 
     const formData = new FormData(registrationForm);
     const username = String(formData.get("username") ?? "");
-    const displayName = String(formData.get("displayName") ?? "");
+    const lastName = String(formData.get("lastName") ?? "");
+    const birthDate = String(formData.get("birthDate") ?? "");
     const email = String(formData.get("email") ?? "");
     const password = String(formData.get("password") ?? "");
 
     try {
       const result = await register(
         username,
-        displayName,
+        lastName,
+        birthDate,
         email,
         password,
       );

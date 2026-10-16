@@ -49,7 +49,8 @@ export async function login(
 
 export async function register(
   username: string,
-  displayName: string,
+  lastName: string,
+  birthDate: string,
   email: string,
   password: string,
 ): Promise<RegistrationResponse> {
@@ -60,7 +61,8 @@ export async function register(
     },
     body: JSON.stringify({
       username,
-      displayName,
+      lastName,
+      birthDate,
       email,
       password,
     }),

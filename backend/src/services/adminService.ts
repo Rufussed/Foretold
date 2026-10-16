@@ -16,7 +16,8 @@ export interface AdminRoom {
 export interface AdminUser {
   id: number;
   username: string;
-  displayName: string;
+  lastName: string;
+  birthDate: string;
   email: string;
   createdAt: string;
   isGuest: boolean;
@@ -72,7 +73,8 @@ export const adminService = {
         SELECT
           users.id,
           users.username,
-          users.display_name AS displayName,
+          users.last_name AS lastName,
+          users.birth_date AS birthDate,
           users.email,
           users.created_at AS createdAt,
           users.is_guest AS isGuest,
