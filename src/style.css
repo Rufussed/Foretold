@@ -654,6 +654,10 @@ button {
 
 .visualizer-canvas-wrap canvas {
   display: block;
+  /* The canvas takes every touch itself: card drags and taps must never be
+     claimed by the browser as a scroll, pull-to-refresh or toolbar gesture,
+     which cancels the pointer mid-drag. */
+  touch-action: none;
   width: 100%;
   height: 100%;
 }

@@ -87,7 +87,11 @@ export function createCardControls(options: CardControlsOptions): CardControls {
     // The press belongs to the card, not to the orbit controls underneath.
     event.stopImmediatePropagation();
     options.holdOrbit(true);
-    canvas.setPointerCapture(event.pointerId);
+    try {
+      canvas.setPointerCapture(event.pointerId);
+    } catch {
+      // Some mobile browsers refuse; the press still works without capture.
+    }
 
     const position = cards.positionOf(key) ?? new THREE.Vector3();
     const facing = camera.getWorldDirection(new THREE.Vector3()).negate();
@@ -137,8 +141,12 @@ export function createCardControls(options: CardControlsOptions): CardControls {
     const { key, dragging } = press;
     press = null;
     options.holdOrbit(false);
-    if (canvas.hasPointerCapture(event.pointerId)) {
-      canvas.releasePointerCapture(event.pointerId);
+    try {
+      if (canvas.hasPointerCapture(event.pointerId)) {
+        canvas.releasePointerCapture(event.pointerId);
+      }
+    } catch {
+      // Already released.
     }
 
     if (!dragging) {
