@@ -8,6 +8,7 @@ export interface PlayerOpponent {
   opponentId: number | null;
   opponentName: string;
   gamesPlayed: number;
+  lastPlayedAt: string;
 }
 
 class PlayerOpponentRepository {
@@ -87,7 +88,8 @@ class PlayerOpponentRepository {
         opponent_type AS opponentType,
         opponent_id AS opponentId,
         opponent_name AS opponentName,
-        games_played AS gamesPlayed
+        games_played AS gamesPlayed,
+        last_played_at AS lastPlayedAt
       FROM player_opponents
       WHERE player_id = ?
       ORDER BY games_played DESC

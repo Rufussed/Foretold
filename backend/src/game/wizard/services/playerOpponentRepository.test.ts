@@ -56,6 +56,7 @@ describe("PlayerOpponentRepository", () => {
         opponentId,
         opponentName: "opponent-test-player-2",
         gamesPlayed: 1,
+        lastPlayedAt: expect.any(String),
       });
     } finally {
       db.prepare(`
@@ -175,6 +176,7 @@ describe("PlayerOpponentRepository", () => {
         opponentId: null,
         opponentName: "Morgana NPC",
         gamesPlayed: 1,
+        lastPlayedAt: expect.any(String),
       });
     } finally {
       db.prepare(`

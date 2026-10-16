@@ -215,6 +215,13 @@ export const en = {
   "profile.acceptFailed": "Could not accept request",
   "profile.rejectFailed": "Could not reject request",
   "profile.updateFailed": "Could not update friendship",
+  "profile.show": "Show",
+  "profile.sortRecent": "Most recent",
+  "profile.sortMostGames": "Most games",
+  "profile.filterFriends": "Filter friends",
+  "profile.noFriendMatch": "No friend matches that name.",
+  "profile.remove": "Remove",
+  "profile.confirmRemove": "Remove {name} from your friends?",
 
   "avatar.you": "You",
   "avatar.forest-elf": "Forest Elf",

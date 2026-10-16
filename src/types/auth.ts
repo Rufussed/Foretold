@@ -38,4 +38,5 @@ export interface PlayerOpponent {
   opponentId: number | null;
   opponentName: string;
   gamesPlayed: number;
+  lastPlayedAt: string;
 }

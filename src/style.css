@@ -5502,11 +5502,159 @@ button {
 
 .profile-mini-request {
   display: grid;
-  gap: 7px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
 }
 
 .profile-mini-request .profile-action-group {
-  justify-content: flex-start;
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+/* Friends and requests keep the card one size however many there are. */
+.profile-scroll-list {
+  max-height: 248px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.profile-mini-friend {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.profile-mini-friend[hidden] {
+  display: none;
+}
+
+.profile-mini-friend .profile-mini-player span {
+  flex: 1;
+}
+
+.profile-list-filter,
+.profile-select {
+  border: 1px solid rgba(191, 125, 47, 0.24);
+  background: rgba(8, 9, 7, 0.52);
+  color: #f4ebd9;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 7px 10px;
+}
+
+.profile-list-filter {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.profile-list-filter:focus,
+.profile-select:focus {
+  border-color: rgba(191, 125, 47, 0.7);
+  outline: none;
+}
+
+.profile-select option {
+  background: #14120e;
+}
+
+/* Headers that open and close the panel below them: history, social,
+   friends, requests. */
+
+.profile-collapse-toggle {
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.profile-collapse-toggle h2 {
+  margin-bottom: 0;
+}
+
+.profile-collapse-toggle:focus-visible {
+  outline: 1px solid rgba(191, 125, 47, 0.7);
+  outline-offset: 4px;
+}
+
+[data-collapse-body][hidden] {
+  display: none;
+}
+
+.profile-history-body {
+  margin-top: 12px;
+}
+
+.profile-social-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-social-summary-heading.profile-collapse-toggle[aria-expanded="false"] {
+  margin-bottom: 0;
+}
+
+.profile-social-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* A few pixels more under the count, so it clears the filter box and the
+   first request's buttons. */
+.profile-social-summary-heading.profile-collapse-toggle {
+  margin-bottom: 13px;
+  line-height: 1.2;
+}
+
+.profile-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  align-self: center;
+}
+
+.profile-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #e0a14d;
+  border-bottom: 2px solid #e0a14d;
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+}
+
+.profile-chevron-small {
+  width: 6px;
+  height: 6px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.profile-collapse-toggle[aria-expanded="true"] > * > .profile-chevron {
+  transform: rotate(45deg);
+}
+
+.profile-history-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  cursor: default;
+}
+
+.profile-collapse-toggle[aria-expanded="false"] .profile-history-controls {
+  display: none;
+}
+
+.profile-history-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 /* Expanded search */
@@ -5528,8 +5676,157 @@ button {
 }
 
 .profile-opponents .opponents-list {
-  overflow: visible;
-  max-height: none;
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+.profile-opponents .opponents-list,
+.profile-scroll-list,
+.profile-search-results {
+  scrollbar-color: rgba(191, 125, 47, 0.45) transparent;
+  scrollbar-width: thin;
+}
+
+/* Record with the history under it on the left, social on the right. */
+
+.profile-detail-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-main-column,
+.profile-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.profile-main-column .profile-opponents,
+.profile-side-column .profile-player-search {
+  margin: 0;
+}
+
+/* On a screen big enough the whole profile fits in it: the page does not
+   scroll, the long lists scroll inside their cards. */
+@media (min-width: 851px) and (min-height: 700px) {
+  .profile-page {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    min-height: 0;
+  }
+
+  .profile-content {
+    flex: 1;
+    min-height: 0;
+    padding: clamp(16px, 3vh, 32px) 0 12px;
+  }
+
+  .profile-heading {
+    margin-bottom: clamp(10px, 2vh, 24px);
+  }
+
+  .profile-heading h1 {
+    font-size: clamp(1.8rem, 5vh, 3.4rem);
+  }
+
+  .profile-highlights {
+    margin-bottom: clamp(10px, 1.6vh, 16px);
+  }
+
+  .profile-highlight {
+    min-height: 0;
+    padding: clamp(8px, 1.4vh, 14px) 16px;
+  }
+
+  .profile-highlight strong {
+    margin: clamp(4px, 0.8vh, 8px) 0 2px;
+    font-size: clamp(1.3rem, 3.4vh, 2.3rem);
+  }
+
+  .profile-card {
+    padding: clamp(14px, 2.2vh, 20px) 24px;
+  }
+
+  .profile-card h2 {
+    margin-bottom: clamp(8px, 1.4vh, 14px);
+  }
+
+  /* The six numbers in one row, so the record card stays low. */
+  .profile-record-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .profile-record-item {
+    padding: 10px;
+  }
+
+  .profile-main-column .profile-opponents,
+  .profile-social-summary {
+    overflow: hidden;
+  }
+
+  .opponent-row {
+    padding: 9px 14px;
+  }
+
+  .profile-social-summary {
+    gap: 10px;
+  }
+
+  .profile-social-summary-section {
+    padding-top: 10px;
+  }
+
+  .profile-detail-grid {
+    flex: 1;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .profile-main-column,
+  .profile-side-column,
+  .profile-history-body,
+  .profile-social-body,
+  .profile-social-summary-section,
+  .profile-social-section-body {
+    min-height: 0;
+  }
+
+  .profile-main-column .profile-opponents,
+  .profile-social-summary {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .profile-history-body,
+  .profile-social-body,
+  .profile-social-summary-section,
+  .profile-social-section-body {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+  }
+
+  .profile-main-column .opponents-list,
+  .profile-scroll-list {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .profile-side-column .profile-search-results {
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .profile-footer {
+    padding-bottom: 12px;
+  }
 }
 
 @media (max-width: 850px) {

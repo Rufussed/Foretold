@@ -216,6 +216,13 @@ export const de: Record<MessageKey, string> = {
   "profile.acceptFailed": "Anfrage konnte nicht angenommen werden",
   "profile.rejectFailed": "Anfrage konnte nicht abgelehnt werden",
   "profile.updateFailed": "Freundschaft konnte nicht geändert werden",
+  "profile.show": "Anzeigen",
+  "profile.sortRecent": "Zuletzt gespielt",
+  "profile.sortMostGames": "Meiste Spiele",
+  "profile.filterFriends": "Freunde filtern",
+  "profile.noFriendMatch": "Kein Name passt.",
+  "profile.remove": "Entfernen",
+  "profile.confirmRemove": "{name} aus deinen Freunden entfernen?",
 
   "avatar.you": "Du",
   "avatar.forest-elf": "Waldelfe",
