@@ -14,10 +14,11 @@ export interface WizardGameOptions {
   blindFirstRound: boolean;
 }
 
-// What a new room starts with: the variations room setup offers selected.
+// What every new room starts with: the official rules (you see your own
+// cards, the first Wizard wins). The host can switch variations on per room.
 export const DEFAULT_GAME_OPTIONS: WizardGameOptions = {
-  wizardWins: "last",
-  blindFirstRound: true,
+  wizardWins: "first",
+  blindFirstRound: false,
 };
 
 // How the game was played before the variations existed: the official rules.

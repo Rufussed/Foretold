@@ -165,16 +165,16 @@ export async function renderRoomPage(
                   <label>
                     <span>${t("room.firstRound")}</span>
                     <select id="room-blind-first-round">
-                      <option value="false">${t("room.firstRound.own")}</option>
-                      <option value="true" selected>${t("room.firstRound.blind")}</option>
+                      <option value="false" selected>${t("room.firstRound.own")}</option>
+                      <option value="true">${t("room.firstRound.blind")}</option>
                     </select>
                   </label>
 
                   <label>
                     <span>${t("room.wizardWins")}</span>
                     <select id="room-wizard-wins">
-                      <option value="first">${t("room.wizardWins.first")}</option>
-                      <option value="last" selected>${t("room.wizardWins.last")}</option>
+                      <option value="first" selected>${t("room.wizardWins.first")}</option>
+                      <option value="last">${t("room.wizardWins.last")}</option>
                     </select>
                   </label>
 
