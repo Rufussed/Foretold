@@ -2692,6 +2692,203 @@ button {
 }
 
 /* ---------------------------------------------------------
+   Board
+   --------------------------------------------------------- */
+
+.home-modal:has(.home-board) {
+  width: min(560px, calc(100vw - 48px));
+}
+
+.home-board {
+  margin-top: 22px;
+
+  text-align: left;
+}
+
+.home-board-form {
+  display: grid;
+  gap: 9px;
+}
+
+.home-board-label {
+  color: #9f947f;
+
+  font-family: "Cinzel", serif;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.home-board-form textarea {
+  box-sizing: border-box;
+
+  width: 100%;
+  min-height: 78px;
+
+  resize: vertical;
+  outline: 0;
+
+  border: 1px solid #373329;
+
+  background: #090a08;
+
+  padding: 11px 13px;
+
+  color: #eee2cc;
+
+  font: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.home-board-form textarea:focus {
+  border-color: #a86322;
+
+  box-shadow:
+    0 0 0 2px rgba(168, 99, 34, 0.14);
+}
+
+.home-board-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-board-count {
+  color: #7d735f;
+
+  font-size: 11px;
+}
+
+.home-board-form .home-auth-message {
+  min-height: 0;
+  margin: 0;
+}
+
+.home-board-inline-link {
+  border: 0;
+  background: none;
+
+  padding: 0;
+
+  color: #e0a14d;
+
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 161, 77, 0.45);
+  text-underline-offset: 3px;
+
+  cursor: pointer;
+}
+
+.home-board-inline-link:hover {
+  color: #ffbd62;
+}
+
+.home-board-list {
+  max-height: min(48vh, 440px);
+
+  margin: 18px 0 0;
+  padding: 0 8px 0 0;
+
+  overflow-y: auto;
+
+  list-style: none;
+}
+
+.home-board-post {
+  border-top: 1px solid rgba(188, 125, 49, 0.18);
+
+  padding: 13px 0;
+}
+
+.home-board-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+}
+
+.home-board-meta strong {
+  color: #f0e3cd;
+
+  font-family: "Cinzel", serif;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.home-board-meta span {
+  color: #7d735f;
+
+  font-size: 11px;
+}
+
+.home-board-delete {
+  margin-left: auto;
+
+  border: 0;
+  background: none;
+
+  padding: 0;
+
+  color: #8d7f69;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+.home-board-delete:hover {
+  color: #e07a4a;
+}
+
+.home-board-text {
+  margin: 6px 0 0;
+
+  color: #c4b9a5;
+
+  font-size: 13px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.home-board-status {
+  margin: 14px 0 0;
+
+  color: #9a8b75;
+
+  font-size: 12px;
+  text-align: center;
+}
+
+.home-board-status:empty {
+  display: none;
+}
+
+.home-board > .home-switch-auth {
+  display: block;
+
+  margin: 12px auto 0;
+}
+
+/* Four menu entries have to fit beside each other on a narrow phone. */
+@media (max-width: 420px) {
+  .home-top-nav {
+    gap: 9px;
+  }
+
+  .home-top-nav button {
+    letter-spacing: 0.1em;
+  }
+}
+
+/* ---------------------------------------------------------
    Rules
    --------------------------------------------------------- */
 

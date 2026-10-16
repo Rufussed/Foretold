@@ -4,6 +4,7 @@ import db from "./db/database.js";
 import { seedUsers } from "./db/seedUsers.js";
 import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
+import postRoutes from "./routes/posts.js";
 import jwt from "@fastify/jwt";
 import wizardRoutes from "./game/wizard/routes/wizardRoutes.js";
 import websocket from "@fastify/websocket";
@@ -95,6 +96,10 @@ await server.register(wizardRoutes, {
 
 await server.register(adminRoutes, {
   prefix: "/admin",
+});
+
+await server.register(postRoutes, {
+  prefix: "/posts",
 });
 
 // In production the built frontend (npm run build -> dist/) is served from

@@ -110,3 +110,16 @@ CREATE TABLE IF NOT EXISTS friend_requests (
   CHECK (status IN ('pending', 'accepted', 'rejected'))
 
 );
+
+-- The board on the home page. Text is stored already masked (see
+-- services/profanityFilter.ts), so the words never reach the database.
+-- A deleted account takes its posts with it.
+CREATE TABLE IF NOT EXISTS posts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id INTEGER NOT NULL,
+  text TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_posts_user_created ON posts(user_id, created_at);
