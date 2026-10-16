@@ -472,6 +472,17 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
+      Your data: when you sign up we store your username, last name, date
+      of birth, email address and a hashed form of your password that
+      nobody, including us, can turn back into the password. Other players only ever see your username. Your
+      last name and date of birth are kept solely as an account record, so
+      that if there is ever a question about who an account belongs to, we
+      can confirm it is yours. Only the site administrators can see them.
+      We do not share your data or use it for advertising. It is kept until
+      your account is deleted; to have it deleted, email ${MAIL_LINK}.
+    </p>
+
+    <p class="home-modal-copy">
       This project is made for educational and demonstration purposes.
       Rights holders who have questions about the materials used here
       should email ${MAIL_LINK} so the relevant content can be reviewed
@@ -505,6 +516,20 @@ const legal = {
       Verlagsrechte liegen bei den jeweiligen Entwicklern und Verlagen,
       darunter Mindscape und Starsphere Interactive. Wir beanspruchen
       keine Rechte an dieser Musik oder ihren Aufnahmen.
+    </p>
+
+    <p class="home-modal-copy">
+      Deine Daten: Bei der Anmeldung speichern wir deinen Benutzernamen,
+      Nachnamen, dein Geburtsdatum, deine E-Mail-Adresse und dein Passwort
+      nur als Hash, aus dem niemand, auch wir nicht, das Passwort
+      zurückgewinnen kann. Andere Spieler sehen
+      nur deinen Benutzernamen. Nachname und Geburtsdatum dienen
+      ausschließlich als Kontonachweis: Falls jemals unklar ist, wem ein
+      Konto gehört, können wir damit bestätigen, dass es deins ist. Nur die
+      Administratoren der Seite können sie sehen. Wir geben deine Daten
+      nicht weiter und nutzen sie nicht für Werbung. Sie bleiben
+      gespeichert, bis dein Konto gelöscht wird; dafür schreib einfach an
+      ${MAIL_LINK}.
     </p>
 
     <p class="home-modal-copy">

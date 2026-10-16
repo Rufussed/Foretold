@@ -2695,8 +2695,34 @@ button {
     box-shadow 180ms ease;
 }
 
-.home-auth-form input[type="date"] {
+.home-dob {
+  display: grid;
+  grid-template-columns: 1fr 2fr 1.4fr;
+  gap: 8px;
+  margin-top: 7px;
+}
+
+.home-dob select {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  outline: 0;
+  border: 1px solid #373329;
+  background: #090a08;
+  padding: 12px 8px;
+  color: #eee2cc;
+  font-size: 13px;
   color-scheme: dark;
+  text-transform: none;
+  letter-spacing: normal;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.home-dob select:focus {
+  border-color: #a86322;
+  box-shadow: 0 0 0 2px rgba(168, 99, 34, 0.14);
 }
 
 .home-auth-hint {
@@ -3315,6 +3341,7 @@ button {
   color: #fff;
 }
 .lobby-username {
+  border-radius: 4px; /* match the buttons beside it */
   white-space: nowrap;
   flex-shrink: 0;
   max-width: 120px;
