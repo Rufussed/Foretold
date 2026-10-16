@@ -84,7 +84,20 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             />
           </a>
 
-          <nav class="home-top-nav" aria-label="Main navigation">
+          <button
+            type="button"
+            class="home-menu-toggle"
+            id="home-menu-toggle"
+            aria-label="Menu"
+            aria-expanded="false"
+            aria-controls="home-top-nav"
+          >
+            <span></span>
+            <span></span>
+            <span></span>
+          </button>
+
+          <nav class="home-top-nav" id="home-top-nav" aria-label="Main navigation">
             <button type="button" data-panel="about">
               About
             </button>
@@ -817,6 +830,25 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
   }
 
   function attachHomeEvents(): void {
+    // On a phone the four entries live in a menu behind a button; picking one
+    // (its own handler below opens the panel), or tapping elsewhere, closes it.
+    const topbar = container.querySelector<HTMLElement>(".home-topbar");
+    const menuToggle = container.querySelector<HTMLButtonElement>("#home-menu-toggle");
+    const setMenu = (open: boolean) => {
+      topbar?.classList.toggle("is-menu-open", open);
+      menuToggle?.setAttribute("aria-expanded", String(open));
+    };
+    menuToggle?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      setMenu(!topbar?.classList.contains("is-menu-open"));
+    });
+    container
+      .querySelectorAll<HTMLButtonElement>(".home-top-nav [data-panel]")
+      .forEach((button) => button.addEventListener("click", () => setMenu(false)));
+    container.addEventListener("click", (event) => {
+      if (!(event.target as HTMLElement).closest(".home-top-nav")) setMenu(false);
+    });
+
     container
       .querySelectorAll<HTMLButtonElement>(
         "[data-panel]",

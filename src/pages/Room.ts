@@ -1,6 +1,7 @@
 import { API_BASE } from "../services/api";
 import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL } from "../../backend/src/game/wizard/botLevels";
+import { escapeHtml } from "../utils/escape-html";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
@@ -116,11 +117,11 @@ export async function renderRoomPage(
               </label>
 
               <label>
-                <span>NPC level</span>
+                <span>NPC skill level</span>
                 <select id="room-bot-level">
                   ${BOT_LEVELS.map(
                     ({ level, label }) =>
-                      `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${label}</option>`,
+                      `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${escapeHtml(label)}</option>`,
                   ).join("")}
                 </select>
               </label>
