@@ -11,6 +11,8 @@ import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import { normalizeGameOptions } from "../gameOptions.js";
+import { normalizeBotLevel } from "../botLevels.js";
+import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
 import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
@@ -28,6 +30,8 @@ interface CreateGameBody {
   // The rule variations (see gameOptions.ts); left out, the official ones.
   wizardWins?: "first" | "last";
   blindFirstRound?: boolean;
+  // How well the NPCs play (see botLevels.ts); left out, the Apprentice.
+  botLevel?: string;
 }
 
 interface PredictionBody {
@@ -817,6 +821,7 @@ export default async function wizardRoutes(
         }),
         room.turnTimeoutMs,
       );
+      assignBotPersonalities(game.players, normalizeBotLevel(body.botLevel));
 
       game.status = "playing";
 

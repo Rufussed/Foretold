@@ -1,5 +1,6 @@
 import type { AvatarId } from "./avatar.js";
 import type { Card, Suit } from "./card.js";
+import type { BotPersonality } from "../botLevels.js";
 import type { WizardGameOptions } from "../gameOptions.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
 
@@ -34,6 +35,9 @@ export interface GamePlayer {
   tricksWon: number;
   score: number;
   roundScores: RoundScore[];
+  // How a bot plays (see bots/). Humans have none, and so do bots in games
+  // saved before personalities existed; both are played as the Apprentice.
+  botPersonality?: BotPersonality;
 }
 
 // A played card retains its owner so the rules service can return a username
