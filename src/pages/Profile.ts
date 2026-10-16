@@ -21,6 +21,7 @@ import type {
   PlayerSearchResult,
 } from "../services/friends";
 import { renderNavbar } from "../components/Navbar";
+import { escapeHtml } from "../utils/escape-html";
 
 // About half the 400 points of a perfect three-player game, so short games
 // can earn a level too: 200 points stand in for one full game.
@@ -137,8 +138,8 @@ export async function renderProfilePage(
             (result) => `
               <div class="profile-search-result">
                 <div>
-                  <strong>${result.displayName || result.username}</strong>
-                  <span>@${result.username}</span>
+                  <strong>${escapeHtml(result.displayName || result.username)}</strong>
+                  <span>@${escapeHtml(result.username)}</span>
                 </div>
                 <a class="profile-action" href="#/profile/${result.id}">View Profile</a>
               </div>
@@ -157,12 +158,12 @@ export async function renderProfilePage(
           <div class="profile-identity-main">
             <p class="lobby-kicker">PLAYER PROFILE</p>
             <div class="profile-title-row">
-              <h1>${user.displayName || user.username}</h1>
+              <h1>${escapeHtml(user.displayName || user.username)}</h1>
               <span class="profile-level">
                 Wizard Player · ${playerLevel}
               </span>
             </div>
-            <p class="profile-subtitle">@${user.username}</p>
+            <p class="profile-subtitle">@${escapeHtml(user.username)}</p>
           </div>
           <div class="profile-heading-actions">
             ${
@@ -318,9 +319,9 @@ export async function renderProfilePage(
                                     href="#/profile/${friend.playerId}"
                                   >
                                     <span>
-                                      ${friend.displayName || friend.username}
+                                      ${escapeHtml(friend.displayName || friend.username)}
                                     </span>
-                                    <small>@${friend.username}</small>
+                                    <small>@${escapeHtml(friend.username)}</small>
                                   </a>
                                 `,
                               )
@@ -355,11 +356,13 @@ export async function renderProfilePage(
                                     >
                                       <span>
                                         ${
-                                          request.senderDisplayName ||
-                                          request.senderUsername
+                                          escapeHtml(
+                                            request.senderDisplayName ||
+                                              request.senderUsername,
+                                          )
                                         }
                                       </span>
-                                      <small>@${request.senderUsername}</small>
+                                      <small>@${escapeHtml(request.senderUsername)}</small>
                                     </a>
 
                                     <div class="profile-action-group">
@@ -452,8 +455,8 @@ export async function renderProfilePage(
                             ${
                               opponent.opponentType === "user" &&
                               opponent.opponentId !== null
-                                ? `<a class="opponent-player-link" href="#/profile/${opponent.opponentId}">${opponent.opponentName}</a>`
-                                : `<strong>${opponent.opponentName}</strong>`
+                                ? `<a class="opponent-player-link" href="#/profile/${opponent.opponentId}">${escapeHtml(opponent.opponentName)}</a>`
+                                : `<strong>${escapeHtml(opponent.opponentName)}</strong>`
                             }
                           </div>
 

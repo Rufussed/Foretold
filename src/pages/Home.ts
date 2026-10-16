@@ -5,6 +5,7 @@ import {
   logout,
   register,
 } from "../services/auth";
+import { escapeHtml } from "../utils/escape-html";
 
 type Panel = "login" | "signup" | "about" | "rules" | "news" | "contact" | "legal" | null;
 
@@ -47,7 +48,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     const name = currentUser?.displayName || currentUser?.username;
 
     return name
-      ? `Welcome, ${name.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)}`
+      ? `Welcome, ${escapeHtml(name)}`
       : "Welcome";
   }
 
@@ -94,7 +95,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button"
                     href="#/profile"
                   >
-                    ${currentUser?.displayName || currentUser?.username}
+                    ${escapeHtml(currentUser?.displayName || currentUser?.username || "")}
                   </a>
 
                   <button
@@ -624,6 +625,10 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 name="username"
                 type="text"
                 autocomplete="username"
+                minlength="3"
+                maxlength="20"
+                pattern="[A-Za-z0-9_\-]+"
+                title="3-20 letters, numbers, _ or -"
                 required
               />
             </label>
@@ -633,6 +638,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               <input
                 name="displayName"
                 type="text"
+                maxlength="30"
                 required
               />
             </label>

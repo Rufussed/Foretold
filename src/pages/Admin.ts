@@ -10,10 +10,7 @@ import {
   type AdminUser,
 } from "../services/admin";
 import { formatDateTime } from "../utils/format-date-time";
-
-function escapeHtml(text: string): string {
-  return text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
-}
+import { escapeHtml } from "../utils/escape-html";
 
 // Rooms and users in the live database, each with a Delete button. Only
 // accounts in the server's ADMIN_USERNAMES get the lists.

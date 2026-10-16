@@ -9,6 +9,7 @@ import {
   createGameSocket,
   type GameSocketMessage,
 } from "../services/gameSocket";
+import { escapeHtml } from "../utils/escape-html";
 
 
 interface Card {
@@ -394,7 +395,7 @@ function renderGame(
 
   const phaseDescription =
     game.phase === "trump-selection"
-      ? `${currentPlayer.username} must choose the trump suit`
+      ? `${escapeHtml(currentPlayer.username)} must choose the trump suit`
       : game.phase === "predictions"
         ? `${predictionsSubmitted} / ${game.players.length} predictions submitted`
         : game.phase === "playing"
@@ -439,7 +440,7 @@ function renderGame(
 
           <div class="status-box">
             <span class="status-label">CURRENT TURN</span>
-            <strong>${currentPlayer.username}</strong>
+            <strong>${escapeHtml(currentPlayer.username)}</strong>
           </div>
 
           <div class="status-box">
@@ -485,7 +486,7 @@ function renderGame(
                   </span>
 
                   <span class="seat-name">
-                    ${player.username}
+                    ${escapeHtml(player.username)}
                     ${isYou ? " (You)" : ""}
                   </span>
 
@@ -545,7 +546,7 @@ function renderGame(
                     </span>
 
                     <span>
-                      ${player.username}
+                      ${escapeHtml(player.username)}
                       ${
                         player.username === username
                           ? " (You)"
@@ -644,7 +645,7 @@ function renderGame(
                 <div class="trick-row">
 
                   <span class="trick-player">
-                    ${player.username}
+                    ${escapeHtml(player.username)}
                   </span>
 
                   <span class="trick-card">
@@ -668,7 +669,7 @@ function renderGame(
               <div class="trick-winner">
                 Winner:
                 <strong>
-                  ${game.currentTrick.winnerUsername}
+                  ${escapeHtml(game.currentTrick.winnerUsername)}
                 </strong>
               </div>
             `
@@ -705,7 +706,7 @@ function renderGame(
                   (player) => `
                     <tr>
                       <td>
-                        ${player.username}
+                        ${escapeHtml(player.username)}
                         ${player.username === username ? " (You)" : ""}
                       </td>
 
@@ -782,13 +783,13 @@ function renderGame(
             game.phase === "predictions"
               ? isYourTurn
                 ? "It is your turn to submit a prediction."
-                : `Waiting for ${currentPlayer.username} to submit a prediction.`
+                : `Waiting for ${escapeHtml(currentPlayer.username)} to submit a prediction.`
               : game.phase === "playing"
                 ? isTrickComplete
                   ? "Trick complete. Waiting for the result..."
                   : isYourTurn
                     ? "It is your turn to play a card."
-                    : `Waiting for ${currentPlayer.username}.`
+                    : `Waiting for ${escapeHtml(currentPlayer.username)}.`
                 : "The game has finished."
           }
         </p>

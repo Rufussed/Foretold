@@ -3,6 +3,7 @@ import { displayName } from "../utils/display-name";
 import { renderNavbar } from "../components/Navbar";
 import { getCurrentUser } from "../services/auth";
 import { formatDateTime } from "../utils/format-date-time";
+import { escapeHtml } from "../utils/escape-html";
 
 interface LobbyRoom {
   id: number;
@@ -25,7 +26,7 @@ type LobbyData = {
 
 // A guest's username is a generated id, so they are listed as a stranger.
 function playerLabel(username: string): string {
-  return displayName(username).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+  return escapeHtml(displayName(username));
 }
 
 export async function renderLobbyPage(
@@ -357,7 +358,7 @@ export async function renderLobbyPage(
           return `
             <article class="room-row">
               <strong class="room-name">
-                ${room.name}
+                ${escapeHtml(room.name)}
               </strong>
 
               <div class="room-created">
@@ -450,7 +451,7 @@ export async function renderLobbyPage(
                           type="button"
                           class="room-delete-button"
                           data-delete-room-id="${room.id}"
-                          aria-label="Delete ${room.name}"
+                          aria-label="Delete ${escapeHtml(room.name)}"
                         >
                           Delete
                         </button>
