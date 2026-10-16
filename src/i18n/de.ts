@@ -68,6 +68,7 @@ export const de: Record<MessageKey, string> = {
   "board.label": "Auf die Pinnwand schreiben",
   "board.placeholder": "Suchst du heute Abend eine Runde? Sag Hallo.",
   "board.post": "Posten",
+  "board.cancel": "Abbrechen",
   "board.readOnly": "Die Pinnwand kann jeder lesen. {login}, um etwas zu schreiben.",
   "board.readOnlyLogin": "Melde dich an",
   "board.loading": "Wird geladen…",

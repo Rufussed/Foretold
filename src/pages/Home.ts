@@ -346,28 +346,52 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         t("board.kicker"),
         `
           <div class="home-board">
+            <ol id="home-board-list" class="home-board-list"></ol>
+            <p id="home-board-status" class="home-board-status">${t("board.loading")}</p>
+            <button
+              type="button"
+              id="home-board-more"
+              class="home-switch-auth"
+              hidden
+            >
+              ${t("board.older")}
+            </button>
+
+            <div class="home-board-compose">
             ${
               isLoggedIn
                 ? `
-                  <form id="home-board-form" class="home-board-form">
-                    <label for="home-board-text" class="home-board-label">
-                      ${t("board.label")}
-                    </label>
+                  <button
+                    type="button"
+                    id="home-board-open"
+                    class="home-board-open"
+                    aria-expanded="false"
+                    aria-controls="home-board-form"
+                  >
+                    ${t("board.label")}
+                  </button>
+                  <form id="home-board-form" class="home-board-form" hidden>
                     <textarea
                       id="home-board-text"
                       name="text"
                       rows="3"
                       maxlength="${POST_MAX_LENGTH}"
                       placeholder="${t("board.placeholder")}"
+                      aria-label="${t("board.label")}"
                       required
                     ></textarea>
                     <div class="home-board-form-row">
                       <span id="home-board-count" class="home-board-count">
                         0 / ${POST_MAX_LENGTH}
                       </span>
-                      <button type="submit" class="home-modal-primary">
-                        ${t("board.post")}
-                      </button>
+                      <span class="home-board-actions">
+                        <button type="button" id="home-board-cancel" class="home-switch-auth">
+                          ${t("board.cancel")}
+                        </button>
+                        <button type="submit" class="home-modal-primary">
+                          ${t("board.post")}
+                        </button>
+                      </span>
                     </div>
                     <p
                       id="home-board-message"
@@ -388,17 +412,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                   </p>
                 `
             }
-
-            <ol id="home-board-list" class="home-board-list"></ol>
-            <p id="home-board-status" class="home-board-status">${t("board.loading")}</p>
-            <button
-              type="button"
-              id="home-board-more"
-              class="home-switch-auth"
-              hidden
-            >
-              ${t("board.older")}
-            </button>
+            </div>
           </div>
         `,
       );
@@ -879,7 +893,25 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     const count = document.querySelector<HTMLSpanElement>("#home-board-count");
     const message = document.querySelector<HTMLParagraphElement>("#home-board-message");
 
-    if (!form || !textArea) return;
+    const openButton = document.querySelector<HTMLButtonElement>("#home-board-open");
+
+    if (!form || !textArea || !openButton) return;
+
+    // The composer stays folded away so the posts are what the panel shows.
+    const setComposerOpen = (open: boolean) => {
+      form.hidden = !open;
+      openButton.hidden = open;
+      openButton.setAttribute("aria-expanded", String(open));
+      if (open) textArea.focus();
+    };
+
+    openButton.addEventListener("click", () => setComposerOpen(true));
+    document
+      .querySelector<HTMLButtonElement>("#home-board-cancel")
+      ?.addEventListener("click", () => {
+        if (message) message.textContent = "";
+        setComposerOpen(false);
+      });
 
     textArea.addEventListener("input", () => {
       if (count) count.textContent = `${textArea.value.length} / ${POST_MAX_LENGTH}`;
@@ -899,6 +931,8 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         status.textContent = "";
         textArea.value = "";
         if (count) count.textContent = `0 / ${POST_MAX_LENGTH}`;
+        setComposerOpen(false);
+        list.scrollTop = 0;
       } catch (error) {
         if (message) {
           message.textContent = error instanceof Error ? error.message : t("board.postFailed");

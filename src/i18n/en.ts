@@ -67,6 +67,7 @@ export const en = {
   "board.label": "Write on the board",
   "board.placeholder": "Looking for a game tonight? Say hello.",
   "board.post": "Post",
+  "board.cancel": "Cancel",
   "board.readOnly": "Anyone can read the board. {login} to write on it.",
   "board.readOnlyLogin": "Log in",
   "board.loading": "Loading…",
