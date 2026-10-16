@@ -135,6 +135,17 @@ export const CAMERA = {
   // (straight away if there isn't one), so the authored move plays first.
   orbitControls: false,
 
+  // The view never gets narrower than the table top, edge to edge, as seen
+  // from the camera's normal view. A narrower window widens the vertical
+  // field of view instead of cropping the table. This multiplies the width
+  // that must show: 1 puts the edges at the screen's edges, above 1 leaves room,
+  // below 1 crops the table's edges a little. 0.955 is 0.936 (the old 1.04 less 10%) plus 2%.
+  tableFitMargin: 0.955,
+
+  // How long the field of view takes to reach the width the table needs, in
+  // seconds, easing in and out.
+  reframeSeconds: 1.2,
+
   // Fallback orbit target if the table can't be found; normally the target is
   // placed on the camera's line of sight so taking control doesn't jump.
   target: [0, 1, 0] as [number, number, number],
@@ -151,9 +162,13 @@ export const CAMERA = {
 export const CAMERA_FOLLOW = {
   enabled: true,
 
-  // How far to turn, 0 not at all to 1 looking straight at them, putting the
-  // active player in the centre of the view.
+  // How far to turn, 0 not at all to 1 facing them, putting the active
+  // player's root in the centre of the view. Only about the vertical axis.
   amount: 1,
+
+  // The camera aims at a point this far out from a player's root along its
+  // local +Z (the way they face), in scene units, not at the root itself.
+  aimOutLength: 1.5,
 
   // How long a turn takes, in seconds, easing in and out.
   turnSeconds: 3,
@@ -161,10 +176,20 @@ export const CAMERA_FOLLOW = {
   // Pause before the camera starts turning, in seconds. The table director
   // already waits for cards to land, so the turn starts with its announcement.
   delaySeconds: 0,
+};
 
-  // Aim this far above the middle of the player's card set, in scene units:
-  // raise it to centre on their face rather than their cards.
-  lookHeight: 0.4,
+// ══════════════════════════════════════════════════════════════════════════
+// PORTRAIT CAMERA  (see portrait-camera.ts)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const PORTRAIT_CAMERA = {
+  // While a card flies to the cards in play, the camera pans back to the
+  // middle, taking this many times as long as the flight (OPPONENT_PLAYS), so
+  // it settles a little behind the card...
+  centrePanLength: 1.25,
+  // ...and stays there this long after the card lands, so it can be seen,
+  // before the camera goes back to following the game.
+  centreHoldSeconds: 1,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -783,6 +808,13 @@ export const ANNOUNCER = {
   resultRevealSeconds: 1,
   // ...and once every card is showing, they all stay up this long.
   resultHoldSeconds: 10,
+  // A line about a player sits a little toward their side of the table, as a
+  // percentage of the table's width as drawn on screen (negative is left): the
+  // inner seats 20% from the middle, the outer ones 40%. Seat 6 is you; lines about no one stay centred.
+  // The banner stays this far, in pixels, inside the screen's edges however
+  // far its offset would take it. It may still lie over the HUD panels.
+  edgePaddingPx: 16,
+  seatOffsetPercent: { 2: -20, 3: 20, 4: -40, 5: 40, 6: 0 } as Record<number, number>,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

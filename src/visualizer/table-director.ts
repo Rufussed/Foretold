@@ -27,7 +27,11 @@ export interface TableDirectorOptions {
   // Whether the card table is dealing right now.
   dealing(): boolean;
   // Turn the camera to a player (null: the normal view); done on arrival.
-  lookAt(username: string | null, done: () => void): void;
+  lookAt(username: string | null, done: () => void, seconds?: number): void;
+  // In portrait the camera must show the cards in play while one lands:
+  // how fast it pans back to the middle and how long it stays after the card
+  // has landed. Null where it need not (landscape).
+  centreForPlays?(): { panSeconds: number; holdSeconds: number } | null;
   // Done once every announcement has had its time.
   whenAnnouncerIdle(done: () => void): void;
   // Announces which suit is trumps, as the round's cards finish dealing.
@@ -88,7 +92,8 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
   // step timeout above is not scaled: it is a guard against a step that never
   // reports back, not a beat.
   const wait = (seconds: number) => step((done) => window.setTimeout(done, paced(seconds) * 1000));
-  const camera = (username: string | null) => step((done) => options.lookAt(username, done));
+  const camera = (username: string | null, seconds?: number) =>
+    step((done) => options.lookAt(username, done, seconds));
   const announcer = () => step((done) => options.whenAnnouncerIdle(done));
 
   const showTable = (state: PublicWizardGameState) => {
@@ -158,8 +163,12 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       return;
     }
 
+    const centre = options.centreForPlays?.() ?? null;
+
     if (trickComplete(next) && !trickComplete(previous)) {
       showTable(next);
+      // Portrait: back to the middle so the last card is seen landing.
+      if (centre) void camera(null, centre.panSeconds);
       // The last card lands and the finished trick stays a moment.
       await wait(TRICK_REWARD.startDelaySeconds + TRICK_REWARD.winnerHoldSeconds);
       const winner = next.currentTrick.winnerUsername;
@@ -181,7 +190,10 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
     // Your own drops land where you put them; everyone else's cards fly,
     // including your NPC's when you're watching, and yours in a blind round.
     if (playedBy && (playedBy !== options.localUsername || isBotName(playedBy) || next.blindRound)) {
-      await wait(OPPONENT_PLAYS.liftSeconds + OPPONENT_PLAYS.travelSeconds);
+      // Portrait: the camera pans back to the middle as the card flies and
+      // stays a moment after it lands, so the card played is seen.
+      if (centre) void camera(null, centre.panSeconds);
+      await wait(OPPONENT_PLAYS.liftSeconds + OPPONENT_PLAYS.travelSeconds + (centre?.holdSeconds ?? 0));
     }
     showHud(next); // a prediction or trump choice
     await announcer();

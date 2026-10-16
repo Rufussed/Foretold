@@ -1539,19 +1539,28 @@ button {
 
 /* What's going on, top centre (see hud/announcer.ts). */
 .visualizer-page .hud-announcer {
+  /* A big, soft shadow falling below the box: a wide faint spread under a
+     tighter, darker one, both pushed down and feathered with a large blur. */
+  --announcer-shadow:
+    0 80px 130px -10px rgba(0, 0, 0, 0.8),
+    0 30px 60px -6px rgba(0, 0, 0, 0.65);
   position: absolute;
   top: 16px;
   /* Centred in the page by auto margins between its two edges, with no
      transform to disagree with the entrance animation. */
-  right: 0;
-  left: 0;
+  /* --announce-offset (set in hud/announcer.ts) shifts it sideways by moving
+     both edges the same way. */
+  right: calc(0px - var(--announce-offset, 0px));
+  left: var(--announce-offset, 0px);
   /* Announcements, the round's score cards and the winner sit over every
      other part of the game screen. Only the guest sign-up prompt (which
      follows the winner and must stay clickable) and the rotate-your-phone
      cover go above. */
   z-index: 15;
   width: max-content;
-  max-width: min(560px, calc(100% - 560px));
+  /* Wide enough to take a long line on a few rows, never narrower than a
+     readable column and never wider than the screen. */
+  max-width: min(calc(100% - 32px), max(280px, min(560px, calc(100% - 560px))));
   margin: 0 auto;
   /* Tighter as the window shrinks (see visualizer/hud-scale.ts). */
   padding: calc(13px * var(--hud-scale)) calc(19px * var(--hud-scale));
@@ -1564,7 +1573,7 @@ button {
   background: var(--ui-bg);
   border: var(--ui-edge);
   border-radius: 4px;
-  box-shadow: var(--ui-shadow);
+  box-shadow: var(--announcer-shadow);
   transform: none;
   backdrop-filter: var(--ui-blur);
 }
@@ -1689,7 +1698,9 @@ button {
 }
 
 .visualizer-page .hud-announcer.is-ingame {
-  box-shadow: 0 0 14px var(--border-glow);
+  box-shadow:
+    0 0 14px var(--border-glow),
+    var(--announcer-shadow);
 }
 
 .visualizer-page .hud-announcer.is-ingame::before {
@@ -1904,7 +1915,7 @@ button {
    full width. */
 @media (max-width: 1100px) {
   .visualizer-page .hud-announcer {
-    max-width: calc(100% - 380px);
+    max-width: min(calc(100% - 32px), max(280px, calc(100% - 380px)));
     font-size: 15px;
   }
 
@@ -4283,6 +4294,13 @@ button {
   grid-template-rows: auto;
   align-items: stretch;
   width: 100%;
+}
+
+/* Portrait screens: two rows of three, so each portrait gets room to be seen. */
+@media (orientation: portrait) {
+  .room-avatar-picker .avatar-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* No reserved height: empty, this takes no room under the portraits,

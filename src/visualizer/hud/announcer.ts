@@ -1,10 +1,9 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
-import { displayName } from "../../utils/display-name";
 import { ANNOUNCER } from "../config";
 import { paced } from "../pace";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer, characterForUsername } from "../seat-mapping";
-import { eventMessages, roundResults, statusMessage, statusSubject } from "./announcements";
+import { announcedName, eventMessages, roundResults, statusMessage, statusSubject } from "./announcements";
 import { createGameWinner } from "./game-winner";
 import { createResultsBoard, type ResultCard, type ResultsBoard } from "./round-results-board";
 import type { HudPart } from "./hud-part";
@@ -62,6 +61,10 @@ export interface AnnouncerOptions {
   // While true, the standing "whose move" line stays hidden (the table
   // director shows it when the camera starts turning to that player).
   statusBlocked?(): boolean;
+  // The table seat a player sits in, to shift a line about them toward their side.
+  seatOf?(username: string): number | null;
+  // The table's width on screen, in pixels, which the seat offsets are a share of.
+  tableWidthPx?(): number;
 }
 
 export function createAnnouncer(
@@ -97,12 +100,30 @@ export function createAnnouncer(
     waiters.forEach((done) => done());
   };
 
+  // Shifts the banner toward its player's side, but never so far that it runs
+  // off the screen or within the edge padding. It may still lie over the HUD.
+  let wantedOffset = 0;
+  const placeBanner = () => {
+    const room = (root.clientWidth - banner.offsetWidth) / 2 - ANNOUNCER.edgePaddingPx;
+    const limit = Math.max(0, room);
+    const offset = Math.max(-limit, Math.min(limit, wantedOffset));
+    banner.style.setProperty("--announce-offset", `${offset.toFixed(1)}px`);
+  };
+
   // The border's colour follows the character of the player an announcement is about.
   const setBorderCharacter = (username: string | undefined) => {
     const player = username ? game.state()?.players.find((candidate) => candidate.username === username) : undefined;
+    const seat = username ? options.seatOf?.(username) : null;
+    const percent = seat == null ? 0 : (ANNOUNCER.seatOffsetPercent[seat] ?? 0);
+    wantedOffset = (percent / 100) * (options.tableWidthPx?.() ?? 0);
+    placeBanner();
     if (username) banner.dataset.character = player ? characterForPlayer(player) : characterForUsername(username);
     else delete banner.dataset.character;
   };
+
+  // The offset is a share of the table's width on screen, which a resize changes.
+  const onResize = () => setBorderCharacter(shown?.username);
+  window.addEventListener("resize", onResize);
 
   const show = (next: Announcement | null) => {
     if (!next?.text && !next?.results) return;
@@ -144,6 +165,8 @@ export function createAnnouncer(
         scores.revealScore(card.username, card.points),
       );
     }
+    // The content decides how wide the banner is, so place it now.
+    placeBanner();
     const state = game.state();
     // A gold border for what's going on in a round, not for results or the end of the game.
     banner.classList.toggle("is-ingame", !next.results && state?.phase !== "finished");
@@ -212,7 +235,7 @@ export function createAnnouncer(
             const player = state.players.find((candidate) => candidate.username === result.username);
             return {
               username: result.username,
-              name: displayName(result.username),
+              name: announcedName(result.username),
               character: player ? characterForPlayer(player) : characterForUsername(result.username),
               lines: result.lines,
               points: result.points,
@@ -261,6 +284,7 @@ export function createAnnouncer(
 
     dispose() {
       window.clearTimeout(timer);
+      window.removeEventListener("resize", onResize);
       idleWaiters = [];
       banner.remove();
     },
