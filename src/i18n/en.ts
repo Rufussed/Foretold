@@ -8,6 +8,7 @@ export const en = {
   "common.close": "Close",
 
   "nav.main": "Main navigation",
+  "nav.menu": "Menu",
   "nav.about": "About",
   "nav.rules": "Rules",
   "nav.board": "Board",

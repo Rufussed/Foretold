@@ -11,12 +11,12 @@ export type BotLevel = BotPersonality | "mixed";
 export const BOT_PERSONALITIES: readonly BotPersonality[] = ["apprentice", "adept"];
 
 export const BOT_LEVELS: readonly { level: BotLevel; label: string }[] = [
-  { level: "apprentice", label: "Apprentice: plays by instinct" },
-  { level: "adept", label: "Adept: plays to its prediction" },
-  { level: "mixed", label: "Mixed: a bit of both" },
+  { level: "apprentice", label: "All Apprentices" },
+  { level: "adept", label: "All Adepts" },
+  { level: "mixed", label: "A mix of Apprentices & Adepts" },
 ];
 
-export const DEFAULT_BOT_LEVEL: BotLevel = "apprentice";
+export const DEFAULT_BOT_LEVEL: BotLevel = "mixed";
 
 // The level to use, given whatever a client sent.
 export const normalizeBotLevel = (value: unknown): BotLevel =>

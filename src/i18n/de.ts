@@ -9,6 +9,7 @@ export const de: Record<MessageKey, string> = {
   "common.close": "Schließen",
 
   "nav.main": "Hauptmenü",
+  "nav.menu": "Menü",
   "nav.about": "Über uns",
   "nav.rules": "Regeln",
   "nav.board": "Pinnwand",

@@ -5779,6 +5779,91 @@ body.has-two-system-buttons .lobby-header {
   padding-right: calc(clamp(24px, 5vw, 80px) + 86px);
 }
 
+/* Home menu on phones: the four entries (About, Rules, Board, News) go behind
+   a button beside the logo and drop down as a list, instead of crowding the
+   top bar and running over the logo and the account buttons. */
+.home-menu-toggle {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .home-topbar {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .home-menu-toggle {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 4px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: rgba(10, 10, 8, 0.44);
+    border: 1px solid rgba(214, 154, 64, 0.58);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .home-menu-toggle span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #d9c9ac;
+    border-radius: 1px;
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .home-topbar.is-menu-open .home-menu-toggle span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .home-topbar.is-menu-open .home-menu-toggle span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .home-topbar.is-menu-open .home-menu-toggle span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  .home-top-nav {
+    position: absolute;
+    top: 100%;
+    left: 18px;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 180px;
+    margin: 0;
+    padding: 6px;
+    background: var(--ui-bg-solid);
+    border: var(--ui-edge-strong);
+    border-radius: 4px;
+    box-shadow: var(--ui-shadow);
+    transform: none;
+  }
+
+  .home-topbar.is-menu-open .home-top-nav {
+    display: flex;
+  }
+
+  .home-top-nav button {
+    padding: 13px 12px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-align: left;
+  }
+
+  .home-top-nav span {
+    display: none;
+  }
+}
+
 /* =========================================================
    ADMIN PAGE
    ========================================================= */
