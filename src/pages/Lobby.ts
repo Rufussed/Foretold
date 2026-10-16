@@ -4,6 +4,7 @@ import { renderNavbar } from "../components/Navbar";
 import { getCurrentUser } from "../services/auth";
 import { formatDateTime } from "../utils/format-date-time";
 import { escapeHtml } from "../utils/escape-html";
+import { t } from "../i18n";
 
 interface LobbyRoom {
   id: number;
@@ -48,7 +49,7 @@ export async function renderLobbyPage(
         <div class="lobby-title-row">
           <div>
 
-            <h1>The Glade</h1>
+            <h1>${t("nav.glade")}</h1>
 
           </div>
 
@@ -58,21 +59,21 @@ export async function renderLobbyPage(
             id="create-room-button"
           >
             <span>+</span>
-            Create Room
+            ${t("lobby.createRoom")}
           </button>
         </div>
 
         <section class="rooms-panel">
           <div class="rooms-heading">
-            <span>Room</span>
-            <span>Created</span>
-            <span>Players</span>
-            <span>Action</span>
+            <span>${t("lobby.colRoom")}</span>
+            <span>${t("lobby.colCreated")}</span>
+            <span>${t("lobby.colPlayers")}</span>
+            <span>${t("lobby.colAction")}</span>
           </div>
 
           <div id="room-list">
             <div class="rooms-loading">
-              Loading rooms...
+              ${t("lobby.loading")}
             </div>
           </div>
         </section>
@@ -93,48 +94,48 @@ export async function renderLobbyPage(
             type="button"
             class="room-modal-close"
             id="close-create-room"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             ×
           </button>
 
-          <p class="lobby-kicker">NEW TABLE</p>
+          <p class="lobby-kicker">${t("lobby.newTable")}</p>
 
           <h2 id="create-room-title">
-            Create Room
+            ${t("lobby.createRoom")}
           </h2>
 
           <p class="room-modal-description">
-            Prepare a table for your next Wizard game.
+            ${t("lobby.modalDescription")}
           </p>
 
           <form id="create-room-form">
             <label class="room-form-field">
-              <span>Room name</span>
+              <span>${t("lobby.roomName")}</span>
 
               <input
                 name="roomName"
                 type="text"
                 maxlength="40"
                 autocomplete="off"
-                placeholder="Enter a room name"
+                placeholder="${t("lobby.roomNamePlaceholder")}"
                 required
               />
             </label>
 
             <label class="room-form-field" for="roomVisibility">
-              <span>Room visibility</span>
+              <span>${t("lobby.visibility")}</span>
               <select
                 class="room-visibility-select"
                 id="roomVisibility"
                 name="isPublic"
               >
-              <option value="true" selected>Public</option>
-              <option value="false">Private — friends only</option>
+              <option value="true" selected>${t("lobby.public")}</option>
+              <option value="false">${t("lobby.private")}</option>
             </select>
             </label>
             <fieldset class="room-form-field">
-              <legend>Maximum players</legend>
+              <legend>${t("lobby.maxPlayers")}</legend>
 
               <div class="player-count-options">
                 <label>
@@ -182,14 +183,14 @@ export async function renderLobbyPage(
                 class="secondary-action"
                 id="cancel-create-room"
               >
-                Cancel
+                ${t("common.cancel")}
               </button>
 
               <button
                 type="submit"
                 class="create-room-submit"
               >
-                Create Room
+                ${t("lobby.createRoom")}
               </button>
             </div>
           </form>
@@ -318,9 +319,9 @@ export async function renderLobbyPage(
       if (!data.rooms || data.rooms.length === 0) {
         roomList.innerHTML = `
           <div class="rooms-empty">
-            <h3>No rooms available</h3>
+            <h3>${t("lobby.empty")}</h3>
             <p>
-              Create the first table and start a game.
+              ${t("lobby.emptyHint")}
             </p>
 
             <button
@@ -328,7 +329,7 @@ export async function renderLobbyPage(
               class="rooms-empty-button"
               id="empty-create-room"
             >
-              Create Room
+              ${t("lobby.createRoom")}
             </button>
           </div>
         `;
@@ -367,7 +368,7 @@ export async function renderLobbyPage(
                 </span>
 
                 <span class="room-creator">
-                  by ${playerLabel(room.createdByUsername)}
+                  ${t("lobby.createdBy", { name: playerLabel(room.createdByUsername) })}
                 </span>
               </div>
 
@@ -393,7 +394,7 @@ export async function renderLobbyPage(
                           data-room-id="${room.id}"
                           data-room-action="open-game"
                         >
-                          Return to Game
+                          ${t("lobby.returnToGame")}
                         </button>
                       `
                       : `
@@ -402,7 +403,7 @@ export async function renderLobbyPage(
                           class="room-action-button"
                           disabled
                         >
-                          Game in Progress
+                          ${t("lobby.inProgress")}
                         </button>
                       `
                     : isMember
@@ -413,7 +414,7 @@ export async function renderLobbyPage(
                           data-room-id="${room.id}"
                           data-room-action="open"
                         >
-                          Open Room
+                          ${t("lobby.openRoom")}
                         </button>
                         ${
                           room.createdBy !== currentUser.id
@@ -424,7 +425,7 @@ export async function renderLobbyPage(
                                 data-room-id="${room.id}"
                                 data-room-action="unjoin"
                               >
-                                Leave
+                                ${t("lobby.leave")}
                               </button>
                             `
                             : ""
@@ -437,7 +438,7 @@ export async function renderLobbyPage(
                           data-room-id="${room.id}"
                           data-room-action="join"
                         >
-                          Join
+                          ${t("lobby.join")}
                         </button>
                       `
                 }
@@ -451,9 +452,9 @@ export async function renderLobbyPage(
                           type="button"
                           class="room-delete-button"
                           data-delete-room-id="${room.id}"
-                          aria-label="Delete ${escapeHtml(room.name)}"
+                          aria-label="${t("lobby.deleteRoom", { name: escapeHtml(room.name) })}"
                         >
-                          Delete
+                          ${t("common.delete")}
                         </button>
                       `
                       : ""
@@ -474,9 +475,9 @@ export async function renderLobbyPage(
 
       roomList.innerHTML = `
         <div class="rooms-error">
-          <h3>Could not load rooms</h3>
+          <h3>${t("lobby.loadFailed")}</h3>
           <p>
-            Please try again.
+            ${t("lobby.loadFailedHint")}
           </p>
 
           <button
@@ -484,7 +485,7 @@ export async function renderLobbyPage(
             class="rooms-empty-button"
             id="retry-load-rooms"
           >
-            Try Again
+            ${t("common.tryAgain")}
           </button>
         </div>
       `;
@@ -533,7 +534,7 @@ export async function renderLobbyPage(
 
             if (action === "unjoin") {
               const confirmed = window.confirm(
-                "Are you sure you want to leave this room?",
+                t("lobby.confirmLeave"),
               );
 
               if (!confirmed) {
@@ -559,7 +560,7 @@ export async function renderLobbyPage(
 
                 if (!response.ok) {
                   throw new Error(
-                    data.error ?? "Could not leave room",
+                    data.error ?? t("lobby.leaveFailed"),
                   );
                 }
 
@@ -570,7 +571,7 @@ export async function renderLobbyPage(
                 alert(
                   error instanceof Error
                     ? error.message
-                    : "Could not leave room",
+                    : t("lobby.leaveFailed"),
                 );
 
                 button.disabled = false;
@@ -628,7 +629,7 @@ export async function renderLobbyPage(
 
             const confirmed =
               window.confirm(
-                "Are you sure you want to delete this room?",
+                t("lobby.confirmDelete"),
               );
 
             if (!confirmed) {
@@ -658,7 +659,7 @@ export async function renderLobbyPage(
               if (!response.ok) {
                 throw new Error(
                   data.error ??
-                    "Could not delete room",
+                    t("lobby.deleteFailed"),
                 );
               }
 
@@ -672,7 +673,7 @@ export async function renderLobbyPage(
               alert(
                 error instanceof Error
                   ? error.message
-                  : "Could not delete room",
+                  : t("lobby.deleteFailed"),
               );
 
               button.disabled = false;
@@ -743,7 +744,7 @@ export async function renderLobbyPage(
         if (!response.ok) {
           throw new Error(
             data.error ??
-              "Could not create room",
+              t("lobby.createFailed"),
           );
         }
 
@@ -760,7 +761,7 @@ export async function renderLobbyPage(
         alert(
           error instanceof Error
             ? error.message
-            : "Could not create room",
+            : t("lobby.createFailed"),
         );
       } finally {
         if (submitButton) {

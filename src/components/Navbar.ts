@@ -1,5 +1,6 @@
 import type { User } from "../types/auth";
 import { escapeHtml } from "../utils/escape-html";
+import { getLanguage, setLanguage, t } from "../i18n";
 
 export function renderNavbar(
   container: HTMLElement,
@@ -13,11 +14,20 @@ export function renderNavbar(
         <img src="/wizardLogo.webp" alt="Wizard" />
       </a>
 
-      <nav class="lobby-nav" aria-label="Main navigation">
-        ${isLobbyPage ? "" : '<a href="#/lobby">The Glade</a>'}
+      <nav class="lobby-nav" aria-label="${t("nav.main")}">
+        ${isLobbyPage ? "" : `<a href="#/lobby">${t("nav.glade")}</a>`}
       </nav>
 
       <div class="lobby-account">
+        <button
+          type="button"
+          id="navbar-language"
+          class="lobby-account-button lobby-language-button"
+          aria-label="${t("language.switchLabel")}"
+        >
+          ${t("language.switchTo")}
+        </button>
+
         <a class="lobby-username" href="#/profile">
           ${escapeHtml(currentUser.displayName || currentUser.username)}
         </a>
@@ -27,11 +37,19 @@ export function renderNavbar(
           id="navbar-logout"
           class="lobby-account-button"
         >
-          Log out
+          ${t("account.logout")}
         </button>
       </div>
     </header>
   `;
+
+  // Redraws the page in the other language. The game pages have no Navbar,
+  // so a game in progress is never torn down by it.
+  container
+    .querySelector<HTMLButtonElement>("#navbar-language")
+    ?.addEventListener("click", () => {
+      setLanguage(getLanguage() === "de" ? "en" : "de");
+    });
 
   const logoutButton =
     container.querySelector<HTMLButtonElement>("#navbar-logout");

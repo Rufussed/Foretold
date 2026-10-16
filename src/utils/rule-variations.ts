@@ -1,13 +1,15 @@
 import type { WizardGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import type { TurnTimeoutMs } from "../../backend/src/game/wizard/turnTimeout";
+import { t } from "../i18n";
 
 // "45 seconds" or "1 minute"; null is no limit.
 const describeTurnTimeout = (turnTimeoutMs: TurnTimeoutMs) => {
-  if (turnTimeoutMs === null) return "No time limit";
+  if (turnTimeoutMs === null) return t("rules.noTimeLimit");
   const seconds = turnTimeoutMs / 1000;
+  if (seconds === 60) return t("rules.oneMinutePerMove");
   return seconds % 60 === 0
-    ? `${seconds / 60} minute${seconds === 60 ? "" : "s"} per move`
-    : `${seconds} seconds per move`;
+    ? t("rules.minutesPerMove", { count: String(seconds / 60) })
+    : t("rules.secondsPerMove", { count: String(seconds) });
 };
 
 // One line naming the rule variations in play, in the order the room setup
@@ -17,12 +19,12 @@ export function describeRuleVariations(
   turnTimeoutMs: TurnTimeoutMs,
 ): string {
   const chosen = [
-    options.blindFirstRound ? "Blind first round" : null,
-    options.wizardWins === "last" ? "Last Wizard wins" : null,
+    options.blindFirstRound ? t("rules.blindFirstRound") : null,
+    options.wizardWins === "last" ? t("rules.lastWizardWins") : null,
   ].filter((variation): variation is string => variation !== null);
 
   const rules = chosen.length
-    ? `Rule variations: ${chosen.join(" · ")}`
-    : "Rule variations: none, official rules";
+    ? t("rules.variations", { list: chosen.join(" · ") })
+    : t("rules.official");
   return `${rules} · ${describeTurnTimeout(turnTimeoutMs)}`;
 }
