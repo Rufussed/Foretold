@@ -9,6 +9,8 @@
 //    ignores the manifest's landscape orientation.
 // Android and iPad never see either: they have real fullscreen.
 
+import { t } from "../i18n";
+
 const HINT_DISMISSED_KEY = "wizard.iphoneInstallHintDismissed";
 
 export const isIPhone = (): boolean => /iPhone|iPod/.test(navigator.userAgent);
@@ -31,14 +33,14 @@ export function createIPhoneAppPrompts(root: HTMLElement): { dispose(): void } |
   const el = document.createElement("div");
   if (isInstalled()) {
     el.className = "rotate-cover";
-    el.textContent = "Turn your phone sideways to play";
+    el.textContent = t("game.rotate");
   } else if (!wasDismissed()) {
     el.className = "install-hint";
     const text = document.createElement("span");
-    text.textContent = "For fullscreen: tap Share, then Add to Home Screen.";
+    text.textContent = t("game.iosFullscreen");
     const close = document.createElement("button");
     close.type = "button";
-    close.setAttribute("aria-label", "Dismiss");
+    close.setAttribute("aria-label", t("game.dismiss"));
     close.textContent = "×";
     close.addEventListener("click", () => {
       try {

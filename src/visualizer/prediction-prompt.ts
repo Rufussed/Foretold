@@ -1,5 +1,6 @@
 import { forbiddenPrediction } from "../../backend/src/game/wizard/gameplayRules";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
+import { t } from "../i18n";
 
 export interface PredictionPrompt {
   // Call after every game-state update; opens or closes the prompt.
@@ -30,7 +31,7 @@ export function createPredictionPrompt(
   modal.setAttribute("aria-labelledby", "prediction-title");
   modal.hidden = true;
   modal.innerHTML = `
-    <h2 id="prediction-title">Your Prediction?</h2>
+    <h2 id="prediction-title">${t("game.yourPrediction")}</h2>
     <p class="prediction-round"></p>
     <div class="prediction-options"></div>
     <p class="prediction-error" role="alert"></p>
@@ -72,7 +73,7 @@ export function createPredictionPrompt(
 
     errorEl.textContent = "";
     if (!game.send({ type: "submit_prediction", prediction: Number(button.dataset.prediction) })) {
-      errorEl.textContent = "Not connected to the game.";
+      errorEl.textContent = t("game.notConnected");
       return;
     }
     sending = true;
@@ -104,7 +105,11 @@ export function createPredictionPrompt(
       const cardsDealt = state.currentRound;
       const forbidden = forbiddenPrediction(state.players, cardsDealt);
       if (builtFor !== `${cardsDealt}:${forbidden}`) buildOptions(cardsDealt, forbidden);
-      roundEl.textContent = `Round ${state.currentRound} of ${state.totalRounds} · ${cardsDealt} ${cardsDealt === 1 ? "card" : "cards"}`;
+      roundEl.textContent = t(cardsDealt === 1 ? "game.roundOneCard" : "game.roundCards", {
+        round: String(state.currentRound),
+        total: String(state.totalRounds),
+        count: String(cardsDealt),
+      });
       if (sending) return;
       setButtonsEnabled(true);
       modal.hidden = false;

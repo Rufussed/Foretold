@@ -12,6 +12,8 @@ import {
   listPosts,
   type BoardPost,
 } from "../services/posts";
+import { getLanguage, setLanguage, t } from "../i18n";
+import { aboutHtml, legalHtml, rulesHtml } from "../i18n/long-texts";
 import { escapeHtml } from "../utils/escape-html";
 
 type Panel =
@@ -58,14 +60,14 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
   // "Stranger".
   function welcomeMessage(): string {
     if (!isLoggedIn) {
-      return "Welcome, Stranger";
+      return t("home.welcomeStranger");
     }
 
     const name = currentUser?.displayName || currentUser?.username;
 
     return name
-      ? `Welcome, ${escapeHtml(name)}`
-      : "Welcome";
+      ? t("home.welcomeName", { name: escapeHtml(name) })
+      : t("home.welcome");
   }
 
   function render(): void {
@@ -88,7 +90,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-menu-toggle"
             id="home-menu-toggle"
-            aria-label="Menu"
+            aria-label="${t("nav.menu")}"
             aria-expanded="false"
             aria-controls="home-top-nav"
           >
@@ -97,32 +99,41 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             <span></span>
           </button>
 
-          <nav class="home-top-nav" id="home-top-nav" aria-label="Main navigation">
+          <nav class="home-top-nav" id="home-top-nav" aria-label="${t("nav.main")}">
             <button type="button" data-panel="about">
-              About
+              ${t("nav.about")}
             </button>
 
             <span></span>
 
             <button type="button" data-panel="rules">
-              Rules
+              ${t("nav.rules")}
             </button>
 
             <span></span>
 
             <button type="button" data-panel="board">
-              Board
+              ${t("nav.board")}
             </button>
 
             <span></span>
 
             <button type="button" data-panel="news">
-              News
+              ${t("nav.news")}
             </button>
 
           </nav>
 
           <div class="home-account-actions">
+            <button
+              type="button"
+              class="home-account-button home-language-button"
+              id="home-language-button"
+              aria-label="${t("language.switchLabel")}"
+            >
+              ${t("language.switchTo")}
+            </button>
+
             ${
               isLoggedIn
                 ? `
@@ -138,7 +149,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button home-signup-button"
                     id="home-logout-button"
                   >
-                    Log out
+                    ${t("account.logout")}
                   </button>
                 `
                 : `
@@ -147,7 +158,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button"
                     data-panel="login"
                   >
-                    Log in
+                    ${t("account.login")}
                   </button>
 
                   <button
@@ -155,7 +166,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button home-signup-button"
                     data-panel="signup"
                   >
-                    Sign up
+                    ${t("account.signup")}
                   </button>
                 `
             }
@@ -171,18 +182,18 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             id="home-play-button"
           >
             <span class="home-button-flare"></span>
-            <span>Play Now</span>
+            <span>${t("home.play")}</span>
           </button>
         </section>
 
         <footer class="home-footer">
           <p>Wizard Platform</p>
           <button type="button" data-panel="legal">
-            Copyright & Legal
+            ${t("home.legal")}
           </button>
 
           <button type="button" data-panel="contact">
-            Contact
+            ${t("home.contact")}
           </button>
         </footer>
 
@@ -243,22 +254,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "about") {
       panelContainer.innerHTML = renderInfoPanel(
-        "About",
-        "Built by players, for players.",
-        `
-          <p class="home-modal-copy">
-            We are two software development students, game lovers, and longtime
-            fans of Wizard. We created this platform because we wanted a better
-            way to play the game online with friends.
-          </p>
-
-          <p class="home-modal-copy">
-            Wizard is a brilliant game of prediction, risk, and surprises, but
-            the online experience we found did not live up to the tabletop one.
-            So we decided to build the game we wanted to play: a welcoming
-            place to gather, compete, and enjoy Wizard together.
-          </p>
-        `,
+        t("about.title"),
+        t("about.kicker"),
+        aboutHtml(),
       );
       attachCloseEvent();
       return;
@@ -266,206 +264,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "rules") {
       panelContainer.innerHTML = renderInfoPanel(
-        "Rules",
-        "Learn the rules of Wizard.",
-        `
-          <div class="home-rules-content">
-
-            <section class="home-rules-section">
-              <h3>Materials</h3>
-              <p>
-                Wizard is played with a 60-card deck containing four coloured
-                suits, numbered cards, Wizards, and Jesters.
-                Wizards are the highest-ranking special cards, while Jesters
-                are the lowest. The game also uses a score pad.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Object of the Game</h3>
-              <p>
-                Predict how many tricks you will win in each round.
-                Earn points by predicting correctly and avoid penalties
-                by estimating your tricks accurately. The player with
-                the highest total score at the end of the game wins.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Rounds and Dealing</h3>
-              <p>
-                Each round determines how many cards each player receives.
-                In Round 1, each player receives one card. In Round 2,
-                each receives two cards, and so on.
-              </p>
-              <p>
-                The maximum number of rounds depends on the number of players:
-              </p>
-              <ul>
-                <li>3 players: 20 rounds</li>
-                <li>4 players: 15 rounds</li>
-                <li>5 players: 12 rounds</li>
-                <li>6 players: 10 rounds</li>
-              </ul>
-              <p>
-                The dealer rotates after each round. After the cards are
-                dealt, the next card is revealed to determine the trump suit,
-                except in the final round, when there is no trump suit.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Predictions</h3>
-              <p>
-                Before playing, each player predicts how many tricks they
-                expect to win during the round. Your prediction can range
-                from zero to the number of cards in your hand.
-              </p>
-              <p>
-                <strong>Special rule:</strong> The last player to predict
-                cannot choose the number that would make everyone's
-                predictions add up to the number of tricks in the round. For
-                example, with three cards each, if the other players have
-                predicted one trick between them, the last player cannot
-                predict two.
-              </p>
-              <p>
-                So the predictions never match the tricks available, and at
-                least one player must miss.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Tricks and Player Rotation</h3>
-              <p>
-                A trick consists of every player playing one card. The
-                winner takes the trick, and the number of tricks you win
-                during a round is your trick count.
-              </p>
-              <p>
-                The starting player rotates each round. The designated
-                starting player leads the first trick, and the winner
-                of each trick leads the next one.
-              </p>
-              <p>
-                For example, in Round 3, each player receives three cards,
-                so three tricks are played.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Playing Cards and Winning Tricks</h3>
-              <p>
-                The first card played determines the lead suit. Players
-                must follow that suit whenever possible. If you have no
-                cards of the lead suit, you may play any card, including
-                a trump card, Wizard, or Jester.
-              </p>
-              <ol>
-                <li>The highest-numbered card of the lead suit normally wins.</li>
-                <li>A trump card beats cards of the lead suit.</li>
-                <li>If multiple trump cards are played, the highest-numbered
-                  trump card wins, unless a Wizard determines the winner.</li>
-                <li>Wizards and Jesters follow their special rules.</li>
-              </ol>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Trump Suit</h3>
-              <p>
-                In every round except the final round, a card is revealed
-                after dealing to determine the trump suit. Trump is stronger
-                than the other coloured suits.
-              </p>
-              <p>
-                You may play a trump card when the lead suit is trump or
-                when you cannot follow the lead suit. If several trump
-                cards are played, the highest-numbered trump card wins,
-                unless a Wizard determines the winner.
-              </p>
-              <p>
-                <strong>If the revealed card is a Wizard:</strong>
-                The player leading the first trick chooses the trump suit.
-                A coloured rim around the Wizard displays the chosen suit
-                throughout the round.
-              </p>
-              <p>
-                <strong>If the revealed card is a Jester:</strong>
-                There is no trump suit for that round. The rim remains white.
-              </p>
-              <p>
-                <strong>Final round:</strong> No trump card is revealed,
-                and there is no trump suit.
-              </p>
-              <p>
-                <strong>Blind first round (rule variation):</strong> In the
-                first round each player holds their one card facing outwards,
-                so you can see everyone's card except your own. Predict, then
-                play your card without ever seeing it.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Wizards and Jesters</h3>
-
-              <p>
-                <strong>Wizards:</strong> Wizards can be played at any time,
-                regardless of the lead suit. Normally, the first Wizard
-                played wins the trick, even if other Wizards are played later.
-              </p>
-              <p>
-                <strong>Rule variation:</strong> The host can choose
-                <em>Last Wizard wins</em> in the game's Rule Variations, so
-                the last Wizard played takes the trick instead of the first.
-              </p>
-              <p>
-                <strong>Strategy tip:</strong> When the first Wizard wins,
-                playing a Wizard after another player has already played one
-                gets rid of your Wizard without winning the trick.
-              </p>
-              <p>
-                <strong>Jesters:</strong> Jesters are the lowest-ranking
-                cards and normally lose tricks. They can be played at any
-                time and are useful when you want to avoid winning a trick.
-                If only Jesters are played, the first Jester wins.
-              </p>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Scoring</h3>
-              <p>
-                Your score depends on how accurately you predict your tricks.
-              </p>
-              <ul>
-                <li>Predict zero and win zero: +20 points.</li>
-                <li>Predict one or more tricks correctly: +10 points
-                  per predicted trick.</li>
-                <li>Miss your prediction: −10 points for each trick
-                  of difference.</li>
-              </ul>
-
-              <div class="home-scoring-example">
-                <strong>Examples</strong>
-                <p>
-                  Predict 0 and win 0: +20 points.<br>
-                  Predict 2 and win 2: +20 points.<br>
-                  Predict 3 and win 3: +30 points.<br>
-                  Predict 2 and win 1: −10 points.<br>
-                  Predict 2 and win 0: −20 points.
-                </p>
-              </div>
-            </section>
-
-            <section class="home-rules-section">
-              <h3>Winning the Game</h3>
-              <p>
-                After all rounds are completed, the player with the
-                highest total score wins.
-              </p>
-            </section>
-
-          </div>
-        `,
+        t("rules.title"),
+        t("rules.kicker"),
+        rulesHtml(),
       );
 
       attachCloseEvent();
@@ -473,11 +274,11 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     }
     if (activePanel === "news") {
       panelContainer.innerHTML = renderInfoPanel(
-        "News",
-        "Wizard Platform updates.",
+        t("news.title"),
+        t("news.kicker"),
         `
           <p class="home-modal-copy">
-            News and game updates will appear here.
+            ${t("news.empty")}
           </p>
         `,
       );
@@ -487,8 +288,8 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "board") {
       panelContainer.innerHTML = renderInfoPanel(
-        "Board",
-        "Words from the table",
+        t("board.title"),
+        t("board.kicker"),
         `
           <div class="home-board">
             ${
@@ -496,14 +297,14 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 ? `
                   <form id="home-board-form" class="home-board-form">
                     <label for="home-board-text" class="home-board-label">
-                      Write on the board
+                      ${t("board.label")}
                     </label>
                     <textarea
                       id="home-board-text"
                       name="text"
                       rows="3"
                       maxlength="${POST_MAX_LENGTH}"
-                      placeholder="Looking for a game tonight? Say hello."
+                      placeholder="${t("board.placeholder")}"
                       required
                     ></textarea>
                     <div class="home-board-form-row">
@@ -511,7 +312,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                         0 / ${POST_MAX_LENGTH}
                       </span>
                       <button type="submit" class="home-modal-primary">
-                        Post
+                        ${t("board.post")}
                       </button>
                     </div>
                     <p
@@ -523,28 +324,26 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 `
                 : `
                   <p class="home-modal-copy">
-                    Anyone can read the board.
-                    <button
-                      type="button"
-                      class="home-board-inline-link"
-                      id="home-board-login"
-                    >
-                      Log in
-                    </button>
-                    to write on it.
+                    ${t("board.readOnly", {
+                      login: `<button
+                        type="button"
+                        class="home-board-inline-link"
+                        id="home-board-login"
+                      >${t("board.readOnlyLogin")}</button>`,
+                    })}
                   </p>
                 `
             }
 
             <ol id="home-board-list" class="home-board-list"></ol>
-            <p id="home-board-status" class="home-board-status">Loading…</p>
+            <p id="home-board-status" class="home-board-status">${t("board.loading")}</p>
             <button
               type="button"
               id="home-board-more"
               class="home-switch-auth"
               hidden
             >
-              Show older posts
+              ${t("board.older")}
             </button>
           </div>
         `,
@@ -555,15 +354,15 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "contact") {
       panelContainer.innerHTML = renderInfoPanel(
-        "Contact",
-        "Reach the team",
+        t("contact.title"),
+        t("contact.kicker"),
         `
           <p class="home-modal-copy">
-            Questions, feedback, suggestions, or copyright concerns?
+            ${t("contact.question")}
           </p>
 
           <p class="home-modal-copy">
-            Email us at
+            ${t("contact.emailUs")}
             <a
               class="home-modal-link"
               href="mailto:wizard.platform@gmail.com"
@@ -579,51 +378,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "legal") {
       panelContainer.innerHTML = renderInfoPanel(
-        "Copyright & Legal",
-        "Third-party content notice",
-        `
-          <p class="home-modal-copy">
-            Wizard Platform is a public, non-commercial educational project
-            created by Carlos Denegri and Rufus Lane.
-          </p>
-
-          <p class="home-modal-copy">
-            Wizard is an existing tabletop card game created by Ken Fisher,
-            with art by Franz Vohwinkel and published by AMIGO. Wizard existed
-            before this website and builds on familiar playing-card traditions.
-            Wizard Platform is an independent student-made digital project and
-            is not affiliated with or endorsed by AMIGO or the original game
-            creators.
-          </p>
-
-          <p class="home-modal-copy">
-            The card images and related game artwork are from or based on the
-            original Wizard game. We do not claim ownership of those images,
-            names, or related game materials.
-          </p>
-
-          <p class="home-modal-copy">
-            The soundtrack includes original music from Chessmaster II,
-            including music associated with the PlayStation release and Joseph
-            Kolkovich. Copyright and publishing rights belong to the relevant
-            original developers and publishers, including Mindscape and
-            Starsphere Interactive. We do not claim ownership of that music or
-            its recording.
-          </p>
-
-          <p class="home-modal-copy">
-            This project is made for educational and demonstration purposes.
-            Rights holders who have questions about the materials used here
-            should email
-            <a
-              class="home-modal-link"
-              href="mailto:wizard.platform@gmail.com"
-            >
-              wizard.platform@gmail.com
-            </a>
-            so the relevant content can be reviewed or removed.
-          </p>
-        `,
+        t("legal.title"),
+        t("legal.kicker"),
+        legalHtml(),
       );
       attachCloseEvent();
     }
@@ -642,19 +399,19 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-close-button"
             id="home-close-button"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             <span></span>
             <span></span>
           </button>
 
-          <p class="home-modal-kicker">Welcome back</p>
+          <p class="home-modal-kicker">${t("login.kicker")}</p>
 
-          <h2 id="home-login-title">Log in</h2>
+          <h2 id="home-login-title">${t("login.title")}</h2>
 
           <form id="home-login-form" class="home-auth-form">
             <label>
-              Username
+              ${t("login.username")}
               <input
                 name="username"
                 type="text"
@@ -664,7 +421,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              Password
+              ${t("login.password")}
               <input
                 name="password"
                 type="password"
@@ -677,7 +434,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               type="submit"
               class="home-modal-primary"
             >
-              Log in
+              ${t("login.submit")}
             </button>
           </form>
 
@@ -691,7 +448,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             class="home-switch-auth"
             id="home-switch-to-signup"
           >
-            Need an account? Sign up
+            ${t("login.toSignup")}
           </button>
         </section>
       </div>
@@ -711,19 +468,19 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-close-button"
             id="home-close-button"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             <span></span>
             <span></span>
           </button>
 
-          <p class="home-modal-kicker">Join the table</p>
+          <p class="home-modal-kicker">${t("signup.kicker")}</p>
 
-          <h2 id="home-signup-title">Create account</h2>
+          <h2 id="home-signup-title">${t("signup.title")}</h2>
 
           <form id="home-signup-form" class="home-auth-form">
             <label>
-              Username
+              ${t("signup.username")}
               <input
                 name="username"
                 type="text"
@@ -731,13 +488,13 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 minlength="3"
                 maxlength="20"
                 pattern="[A-Za-z0-9_\-]+"
-                title="3-20 letters, numbers, _ or -"
+                title="${t("signup.usernameHint")}"
                 required
               />
             </label>
 
             <label>
-              Display name
+              ${t("signup.displayName")}
               <input
                 name="displayName"
                 type="text"
@@ -747,7 +504,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              Email
+              ${t("signup.email")}
               <input
                 name="email"
                 type="email"
@@ -757,7 +514,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              Password
+              ${t("signup.password")}
               <input
                 name="password"
                 type="password"
@@ -771,7 +528,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               type="submit"
               class="home-modal-primary"
             >
-              Sign up
+              ${t("signup.submit")}
             </button>
           </form>
 
@@ -785,7 +542,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             class="home-switch-auth"
             id="home-switch-to-login"
           >
-            Already have an account? Log in
+            ${t("signup.toLogin")}
           </button>
         </section>
       </div>
@@ -809,7 +566,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-close-button"
             id="home-close-button"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             <span></span>
             <span></span>
@@ -862,6 +619,12 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         });
       });
 
+    document
+      .querySelector<HTMLButtonElement>("#home-language-button")
+      ?.addEventListener("click", () => {
+        setLanguage(getLanguage() === "de" ? "en" : "de");
+      });
+
     const playButton =
       document.querySelector<HTMLButtonElement>(
         "#home-play-button",
@@ -882,7 +645,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         alert(
           error instanceof Error
             ? error.message
-            : "Could not start guest game",
+            : t("home.guestGameFailed"),
         );
         playButton.disabled = false;
       }
@@ -947,7 +710,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     return Number.isNaN(date.getTime())
       ? ""
-      : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      : date.toLocaleString(getLanguage(), { dateStyle: "medium", timeStyle: "short" });
   }
 
   // Built from DOM nodes with textContent, so whatever a player wrote is
@@ -971,9 +734,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "home-board-delete";
-      remove.textContent = "Delete";
+      remove.textContent = t("board.delete");
       remove.addEventListener("click", async () => {
-        if (!window.confirm("Delete this post?")) return;
+        if (!window.confirm(t("board.confirmDelete"))) return;
 
         remove.disabled = true;
 
@@ -982,7 +745,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           item.remove();
         } catch (error) {
           remove.disabled = false;
-          alert(error instanceof Error ? error.message : "Could not delete the post");
+          alert(error instanceof Error ? error.message : t("board.deleteFailed"));
         }
       });
       meta.append(remove);
@@ -1019,10 +782,10 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         list!.append(...page.posts.map(renderBoardPost));
         oldestId = page.posts.at(-1)?.id ?? oldestId;
         moreButton!.hidden = !page.hasMore;
-        status!.textContent = list!.children.length ? "" : "Nothing here yet. Be the first!";
+        status!.textContent = list!.children.length ? "" : t("board.empty");
       } catch (error) {
         status!.textContent =
-          error instanceof Error ? error.message : "Could not load the board";
+          error instanceof Error ? error.message : t("board.loadFailed");
       } finally {
         moreButton!.disabled = false;
       }
@@ -1065,7 +828,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         if (count) count.textContent = `0 / ${POST_MAX_LENGTH}`;
       } catch (error) {
         if (message) {
-          message.textContent = error instanceof Error ? error.message : "Could not post";
+          message.textContent = error instanceof Error ? error.message : t("board.postFailed");
         }
       } finally {
         if (submit) submit.disabled = false;
@@ -1123,7 +886,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           message.textContent =
             error instanceof Error
               ? error.message
-              : "Login failed";
+              : t("login.failed");
         }
       }
     });
@@ -1182,7 +945,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         );
 
         closePanel();
-        showToast("You are signed up");
+        showToast(t("signup.done"));
 
         window.location.hash = "#/home";
         window.dispatchEvent(
@@ -1193,7 +956,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           message.textContent =
             error instanceof Error
               ? error.message
-              : "Registration failed";
+              : t("signup.failed");
         }
       }
     });

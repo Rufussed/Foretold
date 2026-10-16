@@ -1,7 +1,8 @@
 import { displayName } from "../../utils/display-name";
 import { gameWinners } from "./game-winner";
 import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
-import type { Card } from "../../../backend/src/game/wizard/models/card";
+import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
+import { t } from "../../i18n";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
 // and no timing: announcer.ts decides when each line shows.
@@ -29,20 +30,24 @@ export interface RoundResult {
 export const announcedName = (username: string): string =>
   displayName(username).replace(/ NPC$/, "");
 
-const nameOf = (username: string, local: string) => (username === local ? "You" : announcedName(username));
+const nameOf = (username: string, local: string) => (username === local ? t("ann.you") : announcedName(username));
+
+export const suitName = (suit: Suit): string => t(`suit.${suit}`);
 
 export function cardName(card: Card): string {
-  if (card.value === 14) return "Wizard";
-  if (card.value === 0) return "Jester";
-  return `${card.suit} ${card.value}`;
+  if (card.value === 14) return t("card.wizard");
+  if (card.value === 0) return t("card.jester");
+  return t("card.suitValue", { suit: suitName(card.suit), value: String(card.value) });
 }
+
+// "A Wizard was turned up for trumps", or a Jester.
+export const turnedUpMessage = (card: Card | null) =>
+  t(card?.value === 14 ? "game.wizardTurnedUp" : "game.jesterTurnedUp");
 
 // After the server refuses a card: the follow-suit rule, with the suit led.
 export function followSuitMessage(state: PublicWizardGameState): string {
   const led = state.currentTrick.playedCards.find(({ card }) => card.value !== 0)?.card.suit;
-  return led
-    ? `${led} was led: play ${led} if you can, or a Wizard or Jester.`
-    : "Follow the suit led if you can; Wizards and Jesters can be played any time.";
+  return led ? t("ann.followSuit", { suit: suitName(led) }) : t("ann.followSuitAny");
 }
 
 // The player the standing line is about, whose colour its border takes: whoever's
@@ -58,34 +63,41 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
   switch (state.phase) {
     case "trump-selection": {
       if (!current) return null;
-      const turnedUp = `${state.trumpCard?.value === 14 ? "A Wizard" : "A Jester"} was turned up for trumps`;
-      return current === local ? `${turnedUp}: choose the trump suit.` : `${turnedUp}: ${announcedName(current)} is choosing the suit.`;
+      const turnedUp = turnedUpMessage(state.trumpCard);
+      return current === local
+        ? t("ann.chooseTrump", { turnedUp })
+        : t("ann.othersChoosing", { turnedUp, name: announcedName(current) });
     }
     case "predictions": {
       if (!current) return null;
       // Predictions go in dealing order: first, next, ..., last.
       const made = state.players.filter((player) => player.prediction !== null).length;
       const order = made === 0 ? "first" : made === state.players.length - 1 ? "last" : "next";
-      return `${nameOf(current, local)} ${current === local ? "Predict" : "Predicts"} ${order}`;
+      const when = t(`ann.order.${order}`);
+      return current === local
+        ? t("ann.youPredictOrder", { order: when })
+        : t("ann.predictsOrder", { name: announcedName(current), order: when });
     }
     case "playing":
       // A finished trick keeps its own announcement until the next one starts.
       if (!current || state.currentTrick.winnerUsername) return null;
       // The first card of each trick: that player leads.
       if (state.currentTrick.playedCards.length === 0) {
-        return current === local ? "You lead" : `${announcedName(current)} leads`;
+        return current === local ? t("ann.youLead") : t("ann.leads", { name: announcedName(current) });
       }
-      return current === local ? "Your Turn." : `${announcedName(current)}'s turn.`;
+      return current === local ? t("ann.yourTurn") : t("ann.turn", { name: announcedName(current) });
     case "finished": {
       const winners = gameWinners(state);
       const winner = winners[0];
-      if (!winner) return "Game over.";
+      if (!winner) return t("ann.gameOver");
       if (winners.length > 1) {
         const names = winners.map((player) => nameOf(player.username, local));
-        const listed = `${names.slice(0, -1).join(", ")} and ${names.at(-1)}`;
-        return `${listed} tie for the Game!`;
+        const listed = t("ann.and", { names: names.slice(0, -1).join(", "), last: names.at(-1)! });
+        return t("ann.tie", { names: listed });
       }
-      return `${nameOf(winner.username, local)} ${winner.username === local ? "Win" : "Wins"} the Game!`;
+      return winner.username === local
+        ? t("ann.youWin")
+        : t("ann.wins", { name: announcedName(winner.username) });
     }
   }
 }
@@ -95,9 +107,9 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
 // choosing), so it says nothing here; the last round has no trump card at all.
 export function trumpMessage(state: PublicWizardGameState): string | null {
   const card = state.trumpCard;
-  if (!card) return "No Trump Colour this round";
+  if (!card) return t("ann.noTrump");
   if (card.value === 14 || card.value === 0) return null;
-  return state.trumpSuit ? `Trump Colour is ${state.trumpSuit}` : null;
+  return state.trumpSuit ? t("ann.trumpIs", { suit: suitName(state.trumpSuit) }) : null;
 }
 
 // A one-off announcement, and the player it's about.
@@ -115,10 +127,13 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     for (const player of next.players) {
       const before = previous.players.find((p) => p.username === player.username);
       if (before?.prediction === null && player.prediction !== null) {
-        const tricks = player.prediction === 1 ? "Trick" : "Tricks";
-        const predicts = player.username === local ? "Predict" : "Predicts";
+        const one = player.prediction === 1;
+        const values = { name: announcedName(player.username), count: String(player.prediction) };
         messages.push({
-          text: `${nameOf(player.username, local)} ${predicts} ${player.prediction} ${tricks}`,
+          text:
+            player.username === local
+              ? t(one ? "ann.youPredictOne" : "ann.youPredictMany", values)
+              : t(one ? "ann.predictsOne" : "ann.predictsMany", values),
           username: player.username,
         });
       }
@@ -132,15 +147,29 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   if (special && next.trumpSuit && newlyChosen) {
     // The round's first player chooses.
     const chooser = next.players[next.startingPlayerIndex]?.username;
-    if (chooser) messages.push({ text: `${nameOf(chooser, local)} chose ${next.trumpSuit} as trumps.`, username: chooser });
+    if (chooser) {
+      const suit = suitName(next.trumpSuit);
+      messages.push({
+        text: chooser === local ? t("ann.youChose", { suit }) : t("ann.chose", { name: announcedName(chooser), suit }),
+        username: chooser,
+      });
+    }
   }
 
   const winner = next.currentTrick.winnerUsername;
   if (winner && previous.currentTrick.winnerUsername !== winner) {
     const played = next.currentTrick.playedCards.find((entry) => entry.username === winner);
-    const wins = winner === local ? "Win" : "Wins";
+    const wins = winner === local ? t("ann.youWinTrick") : t("ann.winsTrick", { name: announcedName(winner) });
+    const card = played?.card;
+    const withCard = !card
+      ? ""
+      : card.value === 14
+        ? t("ann.withWizard")
+        : card.value === 0
+          ? t("ann.withJester")
+          : t("ann.withCard", { card: cardName(card) });
     messages.push({
-      text: `${nameOf(winner, local)} ${wins} the Trick${played ? ` with ${cardName(played.card)}` : ""}`,
+      text: `${wins}${withCard}`,
       username: winner,
     });
   }
@@ -170,11 +199,11 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
     const lines: RoundResultLine[] =
       prediction === tricksWon
         ? [
-            { label: "Bonus", value: "+20" },
-            { label: "Tricks", value: signed(tricksWon * 10) },
+            { label: t("ann.bonus"), value: "+20" },
+            { label: t("ann.tricks"), value: signed(tricksWon * 10) },
           ]
-        : [{ label: `Off by ${off}`, value: "" }];
-    const summary = `Predicted ${prediction} \u00b7 Won ${tricksWon}`;
+        : [{ label: t("ann.offBy", { off: String(off) }), value: "" }];
+    const summary = t("ann.predictedWon", { prediction: String(prediction), won: String(tricksWon) });
     return {
       username: player.username,
       summary,

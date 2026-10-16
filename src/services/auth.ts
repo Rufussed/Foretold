@@ -6,6 +6,7 @@ import type {
   RegistrationResponse,
   User,
 } from "../types/auth";
+import { serverError } from "../i18n/server-error";
 
 const TOKEN_KEY = "wizardToken";
 const GUEST_TOKEN_KEY = "wizardGuestToken";
@@ -33,10 +34,12 @@ export async function login(
 
   const data = (await response.json()) as LoginResponse & {
     error?: string;
+    code?: string;
+    values?: Record<string, string>;
   };
 
   if (!response.ok || !data.token) {
-    throw new Error(data.error ?? "Login failed");
+    throw new Error(serverError(data, "login.failed"));
   }
 
   localStorage.setItem(TOKEN_KEY, data.token);
@@ -65,10 +68,12 @@ export async function register(
 
   const data = (await response.json()) as RegistrationResponse & {
     error?: string;
+    code?: string;
+    values?: Record<string, string>;
   };
 
   if (!response.ok || !data.token) {
-    throw new Error(data.error ?? "Registration failed");
+    throw new Error(serverError(data, "signup.failed"));
   }
 
   // A new account is signed straight in.
@@ -104,10 +109,12 @@ export async function createGuestGame(): Promise<GuestGameResponse> {
 
   const data = (await response.json()) as GuestGameResponse & {
     error?: string;
+    code?: string;
+    values?: Record<string, string>;
   };
 
   if (!response.ok || !data.token || !data.roomId || !data.username) {
-    throw new Error(data.error ?? "Could not start guest game");
+    throw new Error(serverError(data, "home.guestGameFailed"));
   }
 
   sessionStorage.setItem(GUEST_TOKEN_KEY, data.token);

@@ -1,4 +1,5 @@
 import { displayName } from "../utils/display-name";
+import { t } from "../i18n";
 
 // A guest has just finished a game. Offers them a place in the records, with a
 // button that takes them to the sign-up form. Shown once; it keeps out of the
@@ -29,20 +30,20 @@ export function createGuestSignupPrompt(root: HTMLElement, username: string): Gu
     box = document.createElement("section");
     box.className = "guest-signup";
     box.setAttribute("role", "dialog");
-    box.setAttribute("aria-label", "Sign up");
+    box.setAttribute("aria-label", t("game.signupLabel"));
 
     const question = document.createElement("p");
     question.className = "guest-signup-question";
-    question.textContent = `${displayName(username)}, do you want your Deeds\nrecorded in the Histories?\nBattle real Wizards!`;
+    question.textContent = t("game.signupQuestion", { name: displayName(username) });
 
     const invitation = document.createElement("p");
     invitation.className = "guest-signup-invitation";
-    invitation.textContent = "Add your name to the Lore.";
+    invitation.textContent = t("game.signupInvitation");
 
     const signUp = document.createElement("button");
     signUp.type = "button";
     signUp.className = "guest-signup-button";
-    signUp.textContent = "Sign Up";
+    signUp.textContent = t("game.signup");
     signUp.addEventListener("click", () => {
       try {
         sessionStorage.setItem(OPEN_SIGNUP_KEY, "1");
@@ -55,7 +56,7 @@ export function createGuestSignupPrompt(root: HTMLElement, username: string): Gu
     const dismiss = document.createElement("button");
     dismiss.type = "button";
     dismiss.className = "guest-signup-dismiss";
-    dismiss.textContent = "Not now";
+    dismiss.textContent = t("game.notNow");
     dismiss.addEventListener("click", close);
 
     box.append(question, invitation, signUp, dismiss);

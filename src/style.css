@@ -2287,6 +2287,13 @@ button {
   color: #ffbd62;
 }
 
+/* The other language, shown quietly beside the account buttons. */
+.home-language-button {
+  padding-inline: 10px;
+
+  color: #9a8b75;
+}
+
 .home-signup-button {
   border: 1px solid rgba(214, 154, 64, 0.58);
 
@@ -3322,6 +3329,11 @@ button {
   text-decoration: none;
 
   padding: 6px 10px;
+}
+
+/* The other language, quieter than the account buttons, as on Home. */
+.lobby-account .lobby-language-button {
+  color: #9a8b75;
 }
 
 /* ---------------------------------------------------------

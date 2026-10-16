@@ -1,5 +1,6 @@
 import type { BackgroundMusic, MusicSource } from "./background-music";
 import { MUSIC } from "./config";
+import { t } from "../i18n";
 
 const NOTE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/></svg>`;
 const NOTE_OFF = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 18V5l11-2v13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><circle cx="6" cy="18" r="3" fill="currentColor"/><circle cx="17" cy="16" r="3" fill="currentColor"/><path d="M3 3l18 18" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>`;
@@ -13,10 +14,10 @@ export interface MusicToggle {
 export function createMusicToggle(root: HTMLElement, music: BackgroundMusic): MusicToggle {
   const source = document.createElement("select");
   source.className = "music-source-toggle";
-  source.setAttribute("aria-label", "Music source");
+  source.setAttribute("aria-label", t("game.musicSource"));
   source.innerHTML = `
-    <option value="stream">Music: Live stream</option>
-    <option value="tracks">Music: Wizardy vibe</option>
+    <option value="stream">${t("game.musicStream")}</option>
+    <option value="tracks">${t("game.musicTracks")}</option>
   `;
   source.value = music.source;
   source.disabled = MUSIC.streams.length === 0;
@@ -28,14 +29,14 @@ export function createMusicToggle(root: HTMLElement, music: BackgroundMusic): Mu
 
   const render = () => {
     button.innerHTML = music.muted ? NOTE_OFF : NOTE;
-    const label = music.muted ? "Play music" : "Mute music";
+    const label = t(music.muted ? "game.playMusic" : "game.muteMusic");
     button.title = label;
     button.setAttribute("aria-label", label);
     button.setAttribute("aria-pressed", String(music.muted));
     source.title =
       music.source === "stream" && MUSIC.streams.length
         ? MUSIC.streamCredit
-        : "Play music from stored MP3 tracks";
+        : t("game.musicTracksTitle");
   };
 
   source.addEventListener("change", () => {

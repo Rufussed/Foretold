@@ -22,15 +22,16 @@ import type {
 } from "../services/friends";
 import { renderNavbar } from "../components/Navbar";
 import { escapeHtml } from "../utils/escape-html";
+import { t, type MessageKey } from "../i18n";
 
 // About half the 400 points of a perfect three-player game, so short games
 // can earn a level too: 200 points stand in for one full game.
 const POINTS_PER_FULL_GAME = 200;
 
-const PLAYER_LEVELS = [
-  { name: "Expert", fullGames: 75 },
-  { name: "Advanced", fullGames: 30 },
-  { name: "Intermediate", fullGames: 10 },
+const PLAYER_LEVELS: { name: MessageKey; fullGames: number }[] = [
+  { name: "profile.level.expert", fullGames: 75 },
+  { name: "profile.level.advanced", fullGames: 30 },
+  { name: "profile.level.intermediate", fullGames: 10 },
 ];
 
 // Reached by full games or by the highest total points ever held, whichever
@@ -45,7 +46,7 @@ function getPlayerLevel(
       peakTotalPoints >= fullGames * POINTS_PER_FULL_GAME,
   );
 
-  return level?.name ?? "Novice";
+  return t(level?.name ?? "profile.level.novice");
 }
 
 export async function renderProfilePage(
@@ -132,7 +133,7 @@ export async function renderProfilePage(
 
   const renderSearchResults = (results: PlayerSearchResult[]): string =>
     results.length === 0
-      ? `<p class="profile-empty">No players found.</p>`
+      ? `<p class="profile-empty">${t("profile.noResults")}</p>`
       : results
           .map(
             (result) => `
@@ -141,7 +142,7 @@ export async function renderProfilePage(
                   <strong>${escapeHtml(result.displayName || result.username)}</strong>
                   <span>@${escapeHtml(result.username)}</span>
                 </div>
-                <a class="profile-action" href="#/profile/${result.id}">View Profile</a>
+                <a class="profile-action" href="#/profile/${result.id}">${t("profile.view")}</a>
               </div>
             `,
           )
@@ -156,11 +157,11 @@ export async function renderProfilePage(
 
         <div class="profile-heading">
           <div class="profile-identity-main">
-            <p class="lobby-kicker">PLAYER PROFILE</p>
+            <p class="lobby-kicker">${t("profile.kicker")}</p>
             <div class="profile-title-row">
               <h1>${escapeHtml(user.displayName || user.username)}</h1>
               <span class="profile-level">
-                Wizard Player · ${playerLevel}
+                ${t("profile.levelLine", { level: playerLevel })}
               </span>
             </div>
             <p class="profile-subtitle">@${escapeHtml(user.username)}</p>
@@ -174,7 +175,7 @@ export async function renderProfilePage(
                     type="button"
                     data-toggle-player-search
                   >
-                    Find Players
+                    ${t("profile.findPlayers")}
                   </button>
 
                   <button
@@ -182,7 +183,7 @@ export async function renderProfilePage(
                     type="button"
                     data-scroll-friend-requests
                   >
-                    Friend Requests
+                    ${t("profile.friendRequests")}
                     ${
                       friendRequests.length > 0
                         ? `<span class="profile-action-count">${friendRequests.length}</span>`
@@ -191,7 +192,7 @@ export async function renderProfilePage(
                   </button>
                 `
                 : friendStatus === "pending"
-                  ? `<span class="profile-action profile-action-sent">Friend request sent</span>`
+                  ? `<span class="profile-action profile-action-sent">${t("profile.requestSent")}</span>`
                   : `
                   <button
                     class="profile-action"
@@ -199,43 +200,43 @@ export async function renderProfilePage(
                     data-friend-action="${user.id}"
                     ${friendStatus === "friend" ? "data-remove=true" : ""}
                   >
-                    ${friendStatus === "friend" ? "Remove Friend" : "Add Friend"}
+                    ${t(friendStatus === "friend" ? "profile.removeFriend" : "profile.addFriend")}
                   </button>
                 `
             }
           </div>
         </div>
 
-        <section class="profile-highlights" aria-label="Profile highlights">
+        <section class="profile-highlights" aria-label="${t("profile.highlights")}">
 
           <div class="profile-highlight profile-highlight-primary">
-            <span>Full games</span>
+            <span>${t("profile.fullGames")}</span>
             <strong>${stats.fullGamesFinished}</strong>
-            <small>Played to the last round</small>
+            <small>${t("profile.fullGamesHint")}</small>
           </div>
 
           <div class="profile-highlight">
-            <span>Full games won</span>
+            <span>${t("profile.fullGamesWon")}</span>
             <strong>${stats.fullGamesWon}</strong>
-            <small>Victories</small>
+            <small>${t("profile.victories")}</small>
           </div>
 
           <div class="profile-highlight">
-            <span>Full game win rate</span>
+            <span>${t("profile.winRate")}</span>
             <strong>${fullWinRate.toFixed(1)}%</strong>
-            <small>${stats.fullGamesWon} of ${stats.fullGamesFinished}</small>
+            <small>${t("profile.winRateHint", { won: String(stats.fullGamesWon), total: String(stats.fullGamesFinished) })}</small>
           </div>
 
           <div class="profile-highlight">
-            <span>Highest total</span>
+            <span>${t("profile.peak")}</span>
             <strong>${stats.peakTotalPoints}</strong>
-            <small>Best total points ever, sets the level</small>
+            <small>${t("profile.peakHint")}</small>
           </div>
 
           <div class="profile-highlight">
-            <span>Total points</span>
+            <span>${t("profile.totalPoints")}</span>
             <strong>${stats.totalPoints}</strong>
-            <small>Overall score now</small>
+            <small>${t("profile.totalPointsHint")}</small>
           </div>
 
         </section>
@@ -245,8 +246,8 @@ export async function renderProfilePage(
           <article class="profile-card">
             <div class="profile-section-heading">
               <div>
-                <p class="profile-card-kicker">RECORD</p>
-                <h2>Wizard Skills</h2>
+                <p class="profile-card-kicker">${t("profile.record")}</p>
+                <h2>${t("profile.skills")}</h2>
               </div>
 
               <span class="profile-rank">${playerLevel}</span>
@@ -255,32 +256,32 @@ export async function renderProfilePage(
             <div class="profile-record-grid">
 
               <div class="profile-record-item">
-                <span>Short games</span>
+                <span>${t("profile.shortGames")}</span>
                 <strong>${shortGamesFinished}</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Short games won</span>
+                <span>${t("profile.shortGamesWon")}</span>
                 <strong>${shortGamesWon}</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Rounds played</span>
+                <span>${t("profile.rounds")}</span>
                 <strong>${roundsPlayed}</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Exact predictions</span>
+                <span>${t("profile.exact")}</span>
                 <strong>${stats.exactPredictions}</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Prediction accuracy</span>
+                <span>${t("profile.accuracy")}</span>
                 <strong>${exactPredictionRate.toFixed(1)}%</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Reliability</span>
+                <span>${t("profile.reliability")}</span>
                 <strong>${reliability.toFixed(1)}%</strong>
               </div>
 
@@ -294,20 +295,20 @@ export async function renderProfilePage(
 
                   <div class="profile-section-heading">
                     <div>
-                      <p class="profile-card-kicker">SOCIAL</p>
-                      <h2>Players</h2>
+                      <p class="profile-card-kicker">${t("profile.social")}</p>
+                      <h2>${t("profile.players")}</h2>
                     </div>
                   </div>
 
                   <div class="profile-social-summary-section">
                     <div class="profile-social-summary-heading">
-                      <span>Friends</span>
+                      <span>${t("profile.friends")}</span>
                       <strong>${friends.length}</strong>
                     </div>
 
                     ${
                       friends.length === 0
-                        ? `<p class="profile-empty">No friends yet.</p>`
+                        ? `<p class="profile-empty">${t("profile.noFriends")}</p>`
                         : `
                           <div class="profile-mini-list">
                             ${friends
@@ -336,13 +337,13 @@ export async function renderProfilePage(
                     id="profile-friend-requests"
                   >
                     <div class="profile-social-summary-heading">
-                      <span>Friend requests</span>
+                      <span>${t("profile.requests")}</span>
                       <strong>${friendRequests.length}</strong>
                     </div>
 
                     ${
                       friendRequests.length === 0
-                        ? `<p class="profile-empty">No pending requests.</p>`
+                        ? `<p class="profile-empty">${t("profile.noRequests")}</p>`
                         : `
                           <div class="profile-mini-list">
                             ${friendRequests
@@ -371,7 +372,7 @@ export async function renderProfilePage(
                                         type="button"
                                         data-accept-request="${request.id}"
                                       >
-                                        Accept
+                                        ${t("profile.accept")}
                                       </button>
 
                                       <button
@@ -379,7 +380,7 @@ export async function renderProfilePage(
                                         type="button"
                                         data-reject-request="${request.id}"
                                       >
-                                        Reject
+                                        ${t("profile.reject")}
                                       </button>
                                     </div>
                                   </div>
@@ -408,19 +409,19 @@ export async function renderProfilePage(
         >
           <div class="profile-section-heading">
             <div>
-              <p class="profile-card-kicker">SOCIAL</p>
-              <h2>Find Players</h2>
+              <p class="profile-card-kicker">${t("profile.social")}</p>
+              <h2>${t("profile.findPlayers")}</h2>
             </div>
           </div>
           <form class="profile-search-form" id="profile-player-search-form">
-            <label class="profile-search-label" for="profile-player-search-input">Search username</label>
+            <label class="profile-search-label" for="profile-player-search-input">${t("profile.searchLabel")}</label>
             <div class="profile-search-controls">
-              <input id="profile-player-search-input" name="query" type="search" minlength="2" placeholder="Search username..." autocomplete="off" />
-              <button class="profile-action" type="submit">Search</button>
+              <input id="profile-player-search-input" name="query" type="search" minlength="2" placeholder="${t("profile.searchPlaceholder")}" autocomplete="off" />
+              <button class="profile-action" type="submit">${t("profile.search")}</button>
             </div>
           </form>
           <div class="profile-search-results" data-search-results>
-            <p class="profile-empty">Search for a username to find players.</p>
+            <p class="profile-empty">${t("profile.searchHint")}</p>
           </div>
         </section>
 
@@ -431,18 +432,18 @@ export async function renderProfilePage(
         <section class="profile-card profile-opponents">
           <div class="profile-section-heading">
             <div>
-              <p class="profile-card-kicker">HISTORY</p>
-              <h2>Recent opponents</h2>
+              <p class="profile-card-kicker">${t("profile.history")}</p>
+              <h2>${t("profile.opponents")}</h2>
             </div>
 
-            <span class="profile-opponent-count">${opponents.length} / 100 remembered</span>
+            <span class="profile-opponent-count">${t("profile.remembered", { count: String(opponents.length) })}</span>
           </div>
 
           ${
             opponents.length === 0
               ? `
                 <p class="profile-empty">
-                  No games played yet.
+                  ${t("profile.noGames")}
                 </p>
               `
               : `
@@ -461,12 +462,12 @@ export async function renderProfilePage(
                           </div>
 
                           <strong class="opponent-games">
-                            ${opponent.gamesPlayed}
-                            ${
+                            ${t(
                               opponent.gamesPlayed === 1
-                                ? "game"
-                                : "games"
-                            }
+                                ? "profile.oneGame"
+                                : "profile.games",
+                              { count: String(opponent.gamesPlayed) },
+                            )}
                           </strong>
                         </div>
                       `,
@@ -481,7 +482,7 @@ export async function renderProfilePage(
 
       <footer class="profile-footer">
         <span>Wizard Platform</span>
-        <span>Player Profile</span>
+        <span>${t("profile.title")}</span>
       </footer>
 
     </main>
@@ -512,7 +513,7 @@ export async function renderProfilePage(
     if (!searchResults || query.length < 2) {
       if (searchResults) {
         searchResults.innerHTML =
-          '<p class="profile-empty">Enter at least 2 characters.</p>';
+          `<p class="profile-empty">${t("profile.tooShort")}</p>`;
       }
       return;
     }
@@ -524,15 +525,16 @@ export async function renderProfilePage(
       submitButton.disabled = true;
     }
     searchResults.innerHTML =
-      '<p class="profile-empty">Searching players...</p>';
+      `<p class="profile-empty">${t("profile.searching")}</p>`;
 
     try {
       searchResults.innerHTML = renderSearchResults(
         await searchPlayers(query),
       );
     } catch (error) {
+      // The server's message is not ours, so it is escaped like a name.
       searchResults.innerHTML = `<p class="profile-empty">${
-        error instanceof Error ? error.message : "Could not search players"
+        error instanceof Error ? escapeHtml(error.message) : t("profile.searchFailed")
       }</p>`;
     } finally {
       if (submitButton) {
@@ -588,7 +590,7 @@ export async function renderProfilePage(
           await reloadProfile();
         } catch (error) {
           button.disabled = false;
-          window.alert(error instanceof Error ? error.message : "Could not remove friend");
+          window.alert(error instanceof Error ? error.message : t("profile.removeFailed"));
         }
       });
     },
@@ -603,7 +605,7 @@ export async function renderProfilePage(
           await reloadProfile();
         } catch (error) {
           button.disabled = false;
-          window.alert(error instanceof Error ? error.message : "Could not accept request");
+          window.alert(error instanceof Error ? error.message : t("profile.acceptFailed"));
         }
       });
     },
@@ -618,7 +620,7 @@ export async function renderProfilePage(
           await reloadProfile();
         } catch (error) {
           button.disabled = false;
-          window.alert(error instanceof Error ? error.message : "Could not reject request");
+          window.alert(error instanceof Error ? error.message : t("profile.rejectFailed"));
         }
       });
     },
@@ -648,7 +650,7 @@ export async function renderProfilePage(
         // Keep the original error when the status check also fails.
       }
       window.alert(
-        error instanceof Error ? error.message : "Could not update friendship",
+        error instanceof Error ? error.message : t("profile.updateFailed"),
       );
     }
   });

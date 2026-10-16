@@ -7,6 +7,8 @@ export interface GameSocketMessage {
 	username?: string;
 	state?: unknown;
 	error?: string;
+	code?: string;
+	values?: Record<string, string>;
 	emote?: string;
 }
 

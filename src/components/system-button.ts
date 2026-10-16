@@ -14,6 +14,7 @@ import {
   onInstallChange,
   promptInstall,
 } from "../utils/pwa-install";
+import { t } from "../i18n";
 
 // Small buttons at the top right of every screen outside a game, so the whole
 // screen is on offer from the first page rather than only at the table:
@@ -48,27 +49,28 @@ export function mountSystemButton(): SystemButton {
   };
 
   const fullscreen = fullscreenAvailable(document.documentElement) ? makeButton() : null;
+  // Also drawn again on every page change, as that is when the language may
+  // have changed.
+  const drawFullscreen = () => {
+    if (!fullscreen) return;
+    const on = isFullscreen();
+    fullscreen.innerHTML = on ? COLLAPSE : EXPAND;
+    const label = t(on ? "system.leaveFullscreen" : "system.fullscreen");
+    fullscreen.title = label;
+    fullscreen.setAttribute("aria-label", label);
+  };
   if (fullscreen) {
-    const render = () => {
-      const on = isFullscreen();
-      fullscreen.innerHTML = on ? COLLAPSE : EXPAND;
-      const label = on ? "Leave fullscreen" : "Fullscreen";
-      fullscreen.title = label;
-      fullscreen.setAttribute("aria-label", label);
-    };
     fullscreen.addEventListener("click", () => {
-      void toggleFullscreen(document.documentElement).then(render);
+      void toggleFullscreen(document.documentElement).then(drawFullscreen);
     });
-    onFullscreenChange(render);
-    render();
+    onFullscreenChange(drawFullscreen);
+    drawFullscreen();
   }
 
   const install = makeButton();
   // Second from the corner when the fullscreen button is there too.
   install.classList.toggle("is-second", Boolean(fullscreen));
   install.innerHTML = INSTALL_ICON;
-  install.title = "Install as an app";
-  install.setAttribute("aria-label", "Install as an app");
   install.addEventListener("click", async () => {
     if (hint) {
       closeHint();
@@ -85,6 +87,9 @@ export function mountSystemButton(): SystemButton {
   // Install comes and goes (the browser's offer arrives late, and ends once
   // used), so what shows is worked out again each time.
   const render = () => {
+    drawFullscreen();
+    install.title = t("system.install");
+    install.setAttribute("aria-label", t("system.install"));
     const offered = installOffered();
     if (fullscreen) fullscreen.hidden = !visible;
     install.hidden = !visible || !offered;

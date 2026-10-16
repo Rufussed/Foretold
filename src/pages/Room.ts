@@ -1,7 +1,7 @@
 import { API_BASE } from "../services/api";
 import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL } from "../../backend/src/game/wizard/botLevels";
-import { escapeHtml } from "../utils/escape-html";
+import { t } from "../i18n";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
@@ -16,6 +16,7 @@ import {
   getActiveGameToken,
   getGuestUsername,
 } from "../services/auth";
+import { serverError, type ServerError } from "../i18n/server-error";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -63,7 +64,7 @@ export async function renderRoomPage(
       ? {
           id: 0,
           username: guestUsername,
-          displayName: "Stranger",
+          displayName: t("common.stranger"),
           email: "",
         }
       : await getCurrentUser();
@@ -80,9 +81,9 @@ export async function renderRoomPage(
       <main class="room-content">
 
         <section class="room-title-row">
-          <a href="#/lobby" class="room-back-button">Back</a>
+          <a href="#/lobby" class="room-back-button">${t("common.back")}</a>
 
-          <h1 id="room-intro" class="room-intro">Welcome</h1>
+          <h1 id="room-intro" class="room-intro">${t("room.welcome")}</h1>
         </section>
 
         <section class="room-main-panel">
@@ -114,22 +115,22 @@ export async function renderRoomPage(
               <div class="room-start-column">
                 <div class="room-start-pair">
                   <label>
-                    <span>NPCs</span>
+                    <span>${t("room.bots")}</span>
                     <select id="room-bots"></select>
                   </label>
 
                   <label>
-                    <span>Rounds</span>
+                    <span>${t("room.rounds")}</span>
                     <select id="room-rounds"></select>
                   </label>
                 </div>
 
                 <label>
-                  <span>NPC skill</span>
+                  <span>${t("room.botLevel")}</span>
                   <select id="room-bot-level">
                     ${BOT_LEVELS.map(
-                      ({ level, label }) =>
-                        `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${escapeHtml(label)}</option>`,
+                      ({ level }) =>
+                        `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${t(`room.botLevel.${level}`)}</option>`,
                     ).join("")}
                   </select>
                 </label>
@@ -137,43 +138,43 @@ export async function renderRoomPage(
 
               <div class="room-start-column">
                 <label>
-                  <span>Game Speed</span>
+                  <span>${t("room.pace")}</span>
                   <select id="room-pace">
-                    <option value="1">Slow</option>
-                    <option value="1.5" selected>Normal</option>
-                    <option value="2">Fast</option>
-                    <option value="3">Very fast</option>
+                    <option value="1">${t("room.pace.slow")}</option>
+                    <option value="1.5" selected>${t("room.pace.normal")}</option>
+                    <option value="2">${t("room.pace.fast")}</option>
+                    <option value="3">${t("room.pace.veryFast")}</option>
                   </select>
                 </label>
 
                 <label>
-                  <span>Time per turn</span>
+                  <span>${t("room.turnTimeout")}</span>
                   <select id="room-turn-timeout">
-                    <option value="15000">15 seconds</option>
-                    <option value="30000" selected>30 seconds</option>
-                    <option value="45000">45 seconds</option>
-                    <option value="60000">1 minute</option>
-                    <option value="none">No limit</option>
+                    <option value="15000">${t("room.seconds", { count: "15" })}</option>
+                    <option value="30000" selected>${t("room.seconds", { count: "30" })}</option>
+                    <option value="45000">${t("room.seconds", { count: "45" })}</option>
+                    <option value="60000">${t("room.oneMinute")}</option>
+                    <option value="none">${t("room.noLimit")}</option>
                   </select>
                 </label>
               </div>
 
               <details class="room-variations">
-                <summary>Rule Variations</summary>
+                <summary>${t("room.variations")}</summary>
                 <div class="room-variations-controls">
                   <label>
-                    <span>First round</span>
+                    <span>${t("room.firstRound")}</span>
                     <select id="room-blind-first-round">
-                      <option value="false">See your own card</option>
-                      <option value="true" selected>Blind: see everyone else's card</option>
+                      <option value="false">${t("room.firstRound.own")}</option>
+                      <option value="true" selected>${t("room.firstRound.blind")}</option>
                     </select>
                   </label>
 
                   <label>
-                    <span>Two or more Wizards</span>
+                    <span>${t("room.wizardWins")}</span>
                     <select id="room-wizard-wins">
-                      <option value="first">First Wizard wins</option>
-                      <option value="last" selected>Last Wizard wins</option>
+                      <option value="first">${t("room.wizardWins.first")}</option>
+                      <option value="last" selected>${t("room.wizardWins.last")}</option>
                     </select>
                   </label>
 
@@ -185,7 +186,7 @@ export async function renderRoomPage(
                 id="room-start-button"
                 class="room-start-button"
               >
-                Start game
+                ${t("room.start")}
               </button>
 
             </div>
@@ -202,7 +203,7 @@ export async function renderRoomPage(
             class="room-waiting"
             hidden
           >
-            Waiting for the host to start the game…
+            ${t("room.waiting")}
           </p>
 
         </section>
@@ -229,7 +230,7 @@ export async function renderRoomPage(
   const introEl = element<HTMLHeadingElement>("#room-intro");
   const messageEl = element<HTMLParagraphElement>("#room-message");
   // A guest's username is a generated id, so they are greeted as a stranger.
-  const greeting = guestUsername !== null ? "Stranger" : user.username;
+  const greeting = guestUsername !== null ? t("common.stranger") : user.username;
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
@@ -264,7 +265,7 @@ export async function renderRoomPage(
     if (current.join() === values.join()) return;
     const selected = roundsEl.value;
     roundsEl.replaceChildren(
-      ...values.map((value, index) => new Option(index === 0 ? `Full game (${value})` : value, value)),
+      ...values.map((value, index) => new Option(index === 0 ? t("room.fullGame", { count: value }) : value, value)),
     );
     // A guest's game starts at 8 rounds; a longer or shorter choice stands.
     const preferred = selected || (guestUsername !== null ? "8" : "");
@@ -294,11 +295,16 @@ export async function renderRoomPage(
 
     // The server names a guest's room after their generated username.
     const roomName =
-      guestUsername !== null ? room.name.replace(guestUsername, "Stranger") : room.name;
+      guestUsername !== null ? room.name.replace(guestUsername, t("common.stranger")) : room.name;
     // A guest plays against NPCs alone, so the head count means nothing to them.
     const present =
-      guestUsername !== null ? "" : ` ${room.players.length}/${room.maxPlayers} players present.`;
-    introEl.textContent = `Welcome to ${roomName}.${present} ${greeting}, choose your Avatar:`;
+      guestUsername !== null
+        ? ""
+        : t("room.present", {
+            count: String(room.players.length),
+            max: String(room.maxPlayers),
+          });
+    introEl.textContent = `${t("room.intro", { room: roomName })}${present} ${t("room.chooseAvatar", { name: greeting })}`;
 
     const claims = new Map<AvatarId, string>();
 
@@ -336,7 +342,7 @@ export async function renderRoomPage(
     }
 
     if (!isHost) {
-      waitingEl.textContent = "Waiting for the game creator to start the game…";
+      waitingEl.textContent = t("room.waiting");
     }
 
     if (isHost) {
@@ -356,7 +362,7 @@ export async function renderRoomPage(
         const selected = botsEl.value;
         botsEl.replaceChildren(
           ...options.map((value) =>
-            new Option(Number(value) > freeSeats ? `${value} (watch your NPC)` : value, value),
+            new Option(Number(value) > freeSeats ? t("room.botsWatch", { count: value }) : value, value),
           ),
         );
         // Every free seat filled, unless the host already chose.
@@ -403,7 +409,7 @@ export async function renderRoomPage(
           },
         );
 
-        const data = (await response.json()) as Room & { error?: string };
+        const data = (await response.json()) as Room & ServerError;
 
         if (destroyed) {
           return;
@@ -412,13 +418,13 @@ export async function renderRoomPage(
         if (response.ok) {
           room = data;
         } else if (claim === latestClaim) {
-          showMessage(data.error ?? "Could not choose that avatar");
+          showMessage(serverError(data, "room.avatarFailed"));
         }
       } catch (error) {
         console.warn("[room] avatar claim failed:", error);
 
         if (claim === latestClaim) {
-          showMessage("Could not reach the server");
+          showMessage(t("common.noServer"));
         }
       }
 
@@ -442,7 +448,7 @@ export async function renderRoomPage(
       }
 
       if (response.status === 404) {
-        showMessage("This room no longer exists.");
+        showMessage(t("room.gone"));
         return;
       }
 
@@ -461,7 +467,7 @@ export async function renderRoomPage(
           if (isMember) {
             window.location.hash = `#/game/${roomId}/visualizer`;
           } else {
-            showMessage("This game has already started.");
+            showMessage(t("room.alreadyStarted"));
           }
           return;
         }
@@ -495,8 +501,8 @@ export async function renderRoomPage(
           body: JSON.stringify(options),
         });
         if (!response.ok) {
-          const data = (await response.json()) as { error?: string };
-          showMessage(data.error ?? "Could not save the rule variations");
+          const data = (await response.json()) as ServerError;
+          showMessage(serverError(data, "room.saveFailed"));
         }
       } catch (error) {
         console.warn("[room] saving rule variations failed:", error);
@@ -532,17 +538,17 @@ export async function renderRoomPage(
         }),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as ServerError;
 
       // 409 means the game already exists, which is where we're headed anyway.
       if (!response.ok && response.status !== 409) {
-        throw new Error(data.error ?? "Could not start game");
+        throw new Error(serverError(data, "room.startFailed"));
       }
 
       window.location.hash = `#/game/${roomId}/visualizer`;
     } catch (error) {
       showMessage(
-        error instanceof Error ? error.message : "Could not start game",
+        error instanceof Error ? error.message : t("room.startFailed"),
       );
       startButton.disabled = false;
     }
@@ -581,8 +587,8 @@ export async function renderRoomPage(
       }
 
       if (!joined.ok) {
-        const data = (await joined.json()) as { error?: string };
-        showMessage(data.error ?? "Could not join this room");
+        const data = (await joined.json()) as ServerError;
+        showMessage(serverError(data, "room.joinFailed"));
         return;
       }
     }

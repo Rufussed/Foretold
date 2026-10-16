@@ -1,4 +1,5 @@
 import { API_BASE } from "./api";
+import { serverError, type ServerError } from "../i18n/server-error";
 
 export interface Friend {
   playerId: number;
@@ -50,8 +51,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   }
 
   if (!response.ok) {
-    const error = (data as { error?: string } | null)?.error;
-    throw new Error(error ?? "Friend request failed");
+    // The body may be plain text rather than JSON.
+    const body = typeof data === "object" ? (data as ServerError | null) : null;
+    throw new Error(serverError(body, "profile.updateFailed"));
   }
 
   return data as T;

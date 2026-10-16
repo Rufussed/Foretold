@@ -7,15 +7,7 @@ import {
 } from "./character-assets";
 import { ANIMATION, AVATAR_PICKER } from "./config";
 import { frameCharacter } from "./portrait";
-
-export const CHARACTER_LABELS: Record<CharacterId, string> = {
-  "forest-elf": "Forest Elf",
-  "blind-wizard": "Blind Wizard",
-  "black-witch": "Black Witch",
-  "kungfu-girl": "Kung Fu Girl",
-  goatman: "Goatman",
-  demon: "Demon",
-};
+import { t } from "../i18n";
 
 export interface AvatarPickerOptions {
   onSelect(avatar: CharacterId): void;
@@ -58,7 +50,7 @@ export function createAvatarPicker(
         (character) => `
           <button type="button" class="avatar-cell" data-avatar="${character}" aria-pressed="false">
             <span class="avatar-view"></span>
-            <span class="avatar-name">${CHARACTER_LABELS[character]}</span>
+            <span class="avatar-name">${t(`avatar.${character}`)}</span>
             <span class="avatar-owner"></span>
           </button>
         `,
@@ -201,7 +193,7 @@ export function createAvatarPicker(
         portrait.button.classList.toggle("is-taken", taken);
         portrait.button.disabled = taken;
         portrait.button.setAttribute("aria-pressed", String(mine));
-        portrait.owner.textContent = mine ? "You" : taken ? holder : "";
+        portrait.owner.textContent = mine ? t("avatar.you") : taken ? holder : "";
 
         const brightness = taken ? AVATAR_PICKER.takenBrightness : 1;
         portrait.key.intensity = AVATAR_PICKER.keyLightIntensity * brightness;

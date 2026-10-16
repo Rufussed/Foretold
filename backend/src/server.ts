@@ -18,6 +18,7 @@ import { wizardGameRepository } from "./game/wizard/services/wizardGameRepositor
 import { wizardGameCompletionService } from "./game/wizard/services/wizardGameCompletionService.js";
 import { wizardSessionManager } from "./game/wizard/services/wizardSessionManager.js";
 import { cleanUpGuests, deleteGuestUser } from "./game/wizard/services/guestCleanup.js";
+import { withErrorCode } from "./errorCodes.js";
 
 // A rejection nobody handled ends the Node process, which on single-process
 // hosting takes every live game and the site itself down with it. One room's
@@ -73,6 +74,12 @@ const host = process.env.HOST || (process.env.PORT ? "0.0.0.0" : "127.0.0.1");
 const corsOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
   : ["http://localhost:5173", "http://127.0.0.1:5173"];
+
+// Every error a player can meet goes out with a code beside its English
+// message, so the frontend can show it in the player's language.
+server.addHook("preSerialization", async (_request, _reply, payload) =>
+  withErrorCode(payload),
+);
 
 await server.register(cors, {
   origin: corsOrigins,

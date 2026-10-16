@@ -2,6 +2,8 @@ import type { Suit } from "../../backend/src/game/wizard/models/card";
 import { trumpColor } from "./card-textures";
 import { CARDS } from "./config";
 import { canAct, isLocalTurn, type GameConnection } from "./game-connection";
+import { t } from "../i18n";
+import { suitName, turnedUpMessage } from "./hud/announcements";
 
 export interface TrumpPrompt {
   // Call after every game-state update; opens or closes the prompt.
@@ -31,7 +33,7 @@ export function createTrumpPrompt(
   modal.setAttribute("aria-labelledby", "trump-title");
   modal.hidden = true;
   modal.innerHTML = `
-    <h2 id="trump-title">Choose Trumps</h2>
+    <h2 id="trump-title">${t("game.chooseTrumps")}</h2>
     <p class="prediction-round"></p>
     <div class="trump-options"></div>
     <p class="prediction-error" role="alert"></p>
@@ -48,12 +50,12 @@ export function createTrumpPrompt(
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.suit = suit;
-      button.setAttribute("aria-label", suit);
+      button.setAttribute("aria-label", suitName(suit as Suit));
       const swatch = document.createElement("span");
       swatch.className = "trump-swatch";
       swatch.style.background = trumpColor(suit);
       const name = document.createElement("span");
-      name.textContent = suit;
+      name.textContent = suitName(suit as Suit);
       button.append(swatch, name);
       return button;
     }),
@@ -70,7 +72,7 @@ export function createTrumpPrompt(
 
     errorEl.textContent = "";
     if (!game.send({ type: "choose_trump", suit: button.dataset.suit as Suit })) {
-      errorEl.textContent = "Not connected to the game.";
+      errorEl.textContent = t("game.notConnected");
       return;
     }
     sending = true;
@@ -91,8 +93,7 @@ export function createTrumpPrompt(
         return;
       }
 
-      const turnedUp = state.trumpCard?.value === 14 ? "A Wizard" : "A Jester";
-      reasonEl.textContent = `${turnedUp} was turned up for trumps: pick the suit.`;
+      reasonEl.textContent = t("game.pickSuit", { turnedUp: turnedUpMessage(state.trumpCard) });
       if (!sending) setButtonsEnabled(true);
       modal.hidden = false;
     },

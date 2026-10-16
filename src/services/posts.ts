@@ -1,5 +1,7 @@
 import { API_BASE } from "./api";
 import { getToken } from "./auth";
+import { serverError, type ServerError } from "../i18n/server-error";
+import type { MessageKey } from "../i18n";
 
 export const POST_MAX_LENGTH = 500;
 
@@ -22,9 +24,9 @@ function authHeaders(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {};
 }
 
-async function errorFrom(response: Response, fallback: string): Promise<Error> {
-  const data = (await response.json().catch(() => ({}))) as { error?: string };
-  return new Error(data.error ?? fallback);
+async function errorFrom(response: Response, fallback: MessageKey): Promise<Error> {
+  const data = (await response.json().catch(() => ({}))) as ServerError;
+  return new Error(serverError(data, fallback));
 }
 
 // Anyone can read the board; a token only adds the delete buttons.
@@ -35,7 +37,7 @@ export async function listPosts(beforeId?: number): Promise<BoardPage> {
   });
 
   if (!response.ok) {
-    throw await errorFrom(response, "Could not load the board");
+    throw await errorFrom(response, "board.loadFailed");
   }
 
   return response.json() as Promise<BoardPage>;
@@ -49,7 +51,7 @@ export async function createPost(text: string): Promise<BoardPost> {
   });
 
   if (!response.ok) {
-    throw await errorFrom(response, "Could not post");
+    throw await errorFrom(response, "board.postFailed");
   }
 
   return response.json() as Promise<BoardPost>;
@@ -62,6 +64,6 @@ export async function deletePost(postId: number): Promise<void> {
   });
 
   if (!response.ok) {
-    throw await errorFrom(response, "Could not delete the post");
+    throw await errorFrom(response, "board.deleteFailed");
   }
 }
