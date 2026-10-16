@@ -56,6 +56,7 @@ import { centreForPlays } from "../visualizer/portrait-camera";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type SceneView, type WizardSceneHandle } from "../visualizer/three-scene";
 import { t, type MessageKey } from "../i18n";
+import { serverError } from "../i18n/server-error";
 
 // Each emote button shows a drawn emoticon; the name is its tooltip and
 // accessible label.
@@ -596,8 +597,9 @@ export async function renderVisualizerPage(
         // follow: the card returns to your hand.
         console.warn("[visualizer] server refused:", message.error);
         cardTable?.refused();
-        predictionPrompt?.refused(message.error ?? t("game.refused"));
-        trumpPrompt?.refused(message.error ?? t("game.refused"));
+        const refusal = serverError(message, "game.refused");
+        predictionPrompt?.refused(refusal);
+        trumpPrompt?.refused(refusal);
         gameHud?.refused(message.error ?? "");
       }
       },

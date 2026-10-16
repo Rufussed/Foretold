@@ -7,6 +7,7 @@ import { SUITS, type Suit } from "../models/card.js";
 import { isBotName, seatNameFor } from "../models/bot.js";
 import { isEmote } from "../models/emote.js";
 import { guestTableEmptied, guestTableJoined } from "../services/guestCleanup.js";
+import { withErrorCode } from "../../../errorCodes.js";
 
 interface SocketQuery {
 	token?: string;
@@ -38,9 +39,10 @@ const connections = new Map<number, Set<RoomConnection>>();
 
 // Keep WebSocket payload formatting in one place so every event uses the same
 // JSON serialization and only sends to open connections.
+// An error goes with its code, as from the HTTP routes (errorCodes.ts).
 function sendJson(socket: WebSocket, message: unknown): void {
 	if (socket.readyState === socket.OPEN) {
-		socket.send(JSON.stringify(message));
+		socket.send(JSON.stringify(withErrorCode(message)));
 	}
 }
 

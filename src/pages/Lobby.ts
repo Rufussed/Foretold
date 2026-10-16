@@ -5,6 +5,7 @@ import { getCurrentUser } from "../services/auth";
 import { formatDateTime } from "../utils/format-date-time";
 import { escapeHtml } from "../utils/escape-html";
 import { t } from "../i18n";
+import { serverError, type ServerError } from "../i18n/server-error";
 
 interface LobbyRoom {
   id: number;
@@ -554,13 +555,11 @@ export async function renderLobbyPage(
                   },
                 );
 
-                const data = (await response.json()) as {
-                  error?: string;
-                };
+                const data = (await response.json()) as ServerError;
 
                 if (!response.ok) {
                   throw new Error(
-                    data.error ?? t("lobby.leaveFailed"),
+                    serverError(data, "lobby.leaveFailed"),
                   );
                 }
 
@@ -652,14 +651,11 @@ export async function renderLobbyPage(
                 );
 
               const data =
-                (await response.json()) as {
-                  error?: string;
-                };
+                (await response.json()) as ServerError;
 
               if (!response.ok) {
                 throw new Error(
-                  data.error ??
-                    t("lobby.deleteFailed"),
+                  serverError(data, "lobby.deleteFailed"),
                 );
               }
 
@@ -737,14 +733,11 @@ export async function renderLobbyPage(
           );
 
         const data =
-          (await response.json()) as {
-            error?: string;
-          };
+          (await response.json()) as ServerError;
 
         if (!response.ok) {
           throw new Error(
-            data.error ??
-              t("lobby.createFailed"),
+            serverError(data, "lobby.createFailed"),
           );
         }
 

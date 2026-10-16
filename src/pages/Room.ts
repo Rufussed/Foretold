@@ -16,6 +16,7 @@ import {
   getActiveGameToken,
   getGuestUsername,
 } from "../services/auth";
+import { serverError, type ServerError } from "../i18n/server-error";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -402,7 +403,7 @@ export async function renderRoomPage(
           },
         );
 
-        const data = (await response.json()) as Room & { error?: string };
+        const data = (await response.json()) as Room & ServerError;
 
         if (destroyed) {
           return;
@@ -411,7 +412,7 @@ export async function renderRoomPage(
         if (response.ok) {
           room = data;
         } else if (claim === latestClaim) {
-          showMessage(data.error ?? t("room.avatarFailed"));
+          showMessage(serverError(data, "room.avatarFailed"));
         }
       } catch (error) {
         console.warn("[room] avatar claim failed:", error);
@@ -494,8 +495,8 @@ export async function renderRoomPage(
           body: JSON.stringify(options),
         });
         if (!response.ok) {
-          const data = (await response.json()) as { error?: string };
-          showMessage(data.error ?? t("room.saveFailed"));
+          const data = (await response.json()) as ServerError;
+          showMessage(serverError(data, "room.saveFailed"));
         }
       } catch (error) {
         console.warn("[room] saving rule variations failed:", error);
@@ -531,11 +532,11 @@ export async function renderRoomPage(
         }),
       });
 
-      const data = (await response.json()) as { error?: string };
+      const data = (await response.json()) as ServerError;
 
       // 409 means the game already exists, which is where we're headed anyway.
       if (!response.ok && response.status !== 409) {
-        throw new Error(data.error ?? t("room.startFailed"));
+        throw new Error(serverError(data, "room.startFailed"));
       }
 
       window.location.hash = `#/game/${roomId}/visualizer`;
@@ -580,8 +581,8 @@ export async function renderRoomPage(
       }
 
       if (!joined.ok) {
-        const data = (await joined.json()) as { error?: string };
-        showMessage(data.error ?? t("room.joinFailed"));
+        const data = (await joined.json()) as ServerError;
+        showMessage(serverError(data, "room.joinFailed"));
         return;
       }
     }
