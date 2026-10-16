@@ -12,6 +12,7 @@ import {
   listPosts,
   type BoardPost,
 } from "../services/posts";
+import { getLanguage, setLanguage, t } from "../i18n";
 import { escapeHtml } from "../utils/escape-html";
 
 type Panel =
@@ -58,14 +59,14 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
   // "Stranger".
   function welcomeMessage(): string {
     if (!isLoggedIn) {
-      return "Welcome, Stranger";
+      return t("home.welcomeStranger");
     }
 
     const name = currentUser?.displayName || currentUser?.username;
 
     return name
-      ? `Welcome, ${escapeHtml(name)}`
-      : "Welcome";
+      ? t("home.welcomeName", { name: escapeHtml(name) })
+      : t("home.welcome");
   }
 
   function render(): void {
@@ -84,32 +85,41 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             />
           </a>
 
-          <nav class="home-top-nav" aria-label="Main navigation">
+          <nav class="home-top-nav" aria-label="${t("nav.main")}">
             <button type="button" data-panel="about">
-              About
+              ${t("nav.about")}
             </button>
 
             <span></span>
 
             <button type="button" data-panel="rules">
-              Rules
+              ${t("nav.rules")}
             </button>
 
             <span></span>
 
             <button type="button" data-panel="board">
-              Board
+              ${t("nav.board")}
             </button>
 
             <span></span>
 
             <button type="button" data-panel="news">
-              News
+              ${t("nav.news")}
             </button>
 
           </nav>
 
           <div class="home-account-actions">
+            <button
+              type="button"
+              class="home-account-button home-language-button"
+              id="home-language-button"
+              aria-label="${t("language.switchLabel")}"
+            >
+              ${t("language.switchTo")}
+            </button>
+
             ${
               isLoggedIn
                 ? `
@@ -125,7 +135,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button home-signup-button"
                     id="home-logout-button"
                   >
-                    Log out
+                    ${t("account.logout")}
                   </button>
                 `
                 : `
@@ -134,7 +144,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button"
                     data-panel="login"
                   >
-                    Log in
+                    ${t("account.login")}
                   </button>
 
                   <button
@@ -142,7 +152,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button home-signup-button"
                     data-panel="signup"
                   >
-                    Sign up
+                    ${t("account.signup")}
                   </button>
                 `
             }
@@ -158,18 +168,18 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             id="home-play-button"
           >
             <span class="home-button-flare"></span>
-            <span>Play Now</span>
+            <span>${t("home.play")}</span>
           </button>
         </section>
 
         <footer class="home-footer">
           <p>Wizard Platform</p>
           <button type="button" data-panel="legal">
-            Copyright & Legal
+            ${t("home.legal")}
           </button>
 
           <button type="button" data-panel="contact">
-            Contact
+            ${t("home.contact")}
           </button>
         </footer>
 
@@ -460,11 +470,11 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     }
     if (activePanel === "news") {
       panelContainer.innerHTML = renderInfoPanel(
-        "News",
-        "Wizard Platform updates.",
+        t("news.title"),
+        t("news.kicker"),
         `
           <p class="home-modal-copy">
-            News and game updates will appear here.
+            ${t("news.empty")}
           </p>
         `,
       );
@@ -474,8 +484,8 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "board") {
       panelContainer.innerHTML = renderInfoPanel(
-        "Board",
-        "Words from the table",
+        t("board.title"),
+        t("board.kicker"),
         `
           <div class="home-board">
             ${
@@ -483,14 +493,14 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 ? `
                   <form id="home-board-form" class="home-board-form">
                     <label for="home-board-text" class="home-board-label">
-                      Write on the board
+                      ${t("board.label")}
                     </label>
                     <textarea
                       id="home-board-text"
                       name="text"
                       rows="3"
                       maxlength="${POST_MAX_LENGTH}"
-                      placeholder="Looking for a game tonight? Say hello."
+                      placeholder="${t("board.placeholder")}"
                       required
                     ></textarea>
                     <div class="home-board-form-row">
@@ -498,7 +508,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                         0 / ${POST_MAX_LENGTH}
                       </span>
                       <button type="submit" class="home-modal-primary">
-                        Post
+                        ${t("board.post")}
                       </button>
                     </div>
                     <p
@@ -510,28 +520,26 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 `
                 : `
                   <p class="home-modal-copy">
-                    Anyone can read the board.
-                    <button
-                      type="button"
-                      class="home-board-inline-link"
-                      id="home-board-login"
-                    >
-                      Log in
-                    </button>
-                    to write on it.
+                    ${t("board.readOnly", {
+                      login: `<button
+                        type="button"
+                        class="home-board-inline-link"
+                        id="home-board-login"
+                      >${t("board.readOnlyLogin")}</button>`,
+                    })}
                   </p>
                 `
             }
 
             <ol id="home-board-list" class="home-board-list"></ol>
-            <p id="home-board-status" class="home-board-status">Loading…</p>
+            <p id="home-board-status" class="home-board-status">${t("board.loading")}</p>
             <button
               type="button"
               id="home-board-more"
               class="home-switch-auth"
               hidden
             >
-              Show older posts
+              ${t("board.older")}
             </button>
           </div>
         `,
@@ -542,15 +550,15 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel === "contact") {
       panelContainer.innerHTML = renderInfoPanel(
-        "Contact",
-        "Reach the team",
+        t("contact.title"),
+        t("contact.kicker"),
         `
           <p class="home-modal-copy">
-            Questions, feedback, suggestions, or copyright concerns?
+            ${t("contact.question")}
           </p>
 
           <p class="home-modal-copy">
-            Email us at
+            ${t("contact.emailUs")}
             <a
               class="home-modal-link"
               href="mailto:wizard.platform@gmail.com"
@@ -629,19 +637,19 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-close-button"
             id="home-close-button"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             <span></span>
             <span></span>
           </button>
 
-          <p class="home-modal-kicker">Welcome back</p>
+          <p class="home-modal-kicker">${t("login.kicker")}</p>
 
-          <h2 id="home-login-title">Log in</h2>
+          <h2 id="home-login-title">${t("login.title")}</h2>
 
           <form id="home-login-form" class="home-auth-form">
             <label>
-              Username
+              ${t("login.username")}
               <input
                 name="username"
                 type="text"
@@ -651,7 +659,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              Password
+              ${t("login.password")}
               <input
                 name="password"
                 type="password"
@@ -664,7 +672,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               type="submit"
               class="home-modal-primary"
             >
-              Log in
+              ${t("login.submit")}
             </button>
           </form>
 
@@ -678,7 +686,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             class="home-switch-auth"
             id="home-switch-to-signup"
           >
-            Need an account? Sign up
+            ${t("login.toSignup")}
           </button>
         </section>
       </div>
@@ -698,19 +706,19 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-close-button"
             id="home-close-button"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             <span></span>
             <span></span>
           </button>
 
-          <p class="home-modal-kicker">Join the table</p>
+          <p class="home-modal-kicker">${t("signup.kicker")}</p>
 
-          <h2 id="home-signup-title">Create account</h2>
+          <h2 id="home-signup-title">${t("signup.title")}</h2>
 
           <form id="home-signup-form" class="home-auth-form">
             <label>
-              Username
+              ${t("signup.username")}
               <input
                 name="username"
                 type="text"
@@ -718,13 +726,13 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 minlength="3"
                 maxlength="20"
                 pattern="[A-Za-z0-9_\-]+"
-                title="3-20 letters, numbers, _ or -"
+                title="${t("signup.usernameHint")}"
                 required
               />
             </label>
 
             <label>
-              Display name
+              ${t("signup.displayName")}
               <input
                 name="displayName"
                 type="text"
@@ -734,7 +742,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              Email
+              ${t("signup.email")}
               <input
                 name="email"
                 type="email"
@@ -744,7 +752,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              Password
+              ${t("signup.password")}
               <input
                 name="password"
                 type="password"
@@ -758,7 +766,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               type="submit"
               class="home-modal-primary"
             >
-              Sign up
+              ${t("signup.submit")}
             </button>
           </form>
 
@@ -772,7 +780,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             class="home-switch-auth"
             id="home-switch-to-login"
           >
-            Already have an account? Log in
+            ${t("signup.toLogin")}
           </button>
         </section>
       </div>
@@ -796,7 +804,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             type="button"
             class="home-close-button"
             id="home-close-button"
-            aria-label="Close"
+            aria-label="${t("common.close")}"
           >
             <span></span>
             <span></span>
@@ -830,6 +838,12 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         });
       });
 
+    document
+      .querySelector<HTMLButtonElement>("#home-language-button")
+      ?.addEventListener("click", () => {
+        setLanguage(getLanguage() === "de" ? "en" : "de");
+      });
+
     const playButton =
       document.querySelector<HTMLButtonElement>(
         "#home-play-button",
@@ -850,7 +864,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         alert(
           error instanceof Error
             ? error.message
-            : "Could not start guest game",
+            : t("home.guestGameFailed"),
         );
         playButton.disabled = false;
       }
@@ -915,7 +929,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     return Number.isNaN(date.getTime())
       ? ""
-      : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+      : date.toLocaleString(getLanguage(), { dateStyle: "medium", timeStyle: "short" });
   }
 
   // Built from DOM nodes with textContent, so whatever a player wrote is
@@ -939,9 +953,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       const remove = document.createElement("button");
       remove.type = "button";
       remove.className = "home-board-delete";
-      remove.textContent = "Delete";
+      remove.textContent = t("board.delete");
       remove.addEventListener("click", async () => {
-        if (!window.confirm("Delete this post?")) return;
+        if (!window.confirm(t("board.confirmDelete"))) return;
 
         remove.disabled = true;
 
@@ -950,7 +964,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           item.remove();
         } catch (error) {
           remove.disabled = false;
-          alert(error instanceof Error ? error.message : "Could not delete the post");
+          alert(error instanceof Error ? error.message : t("board.deleteFailed"));
         }
       });
       meta.append(remove);
@@ -987,10 +1001,10 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         list!.append(...page.posts.map(renderBoardPost));
         oldestId = page.posts.at(-1)?.id ?? oldestId;
         moreButton!.hidden = !page.hasMore;
-        status!.textContent = list!.children.length ? "" : "Nothing here yet. Be the first!";
+        status!.textContent = list!.children.length ? "" : t("board.empty");
       } catch (error) {
         status!.textContent =
-          error instanceof Error ? error.message : "Could not load the board";
+          error instanceof Error ? error.message : t("board.loadFailed");
       } finally {
         moreButton!.disabled = false;
       }
@@ -1033,7 +1047,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         if (count) count.textContent = `0 / ${POST_MAX_LENGTH}`;
       } catch (error) {
         if (message) {
-          message.textContent = error instanceof Error ? error.message : "Could not post";
+          message.textContent = error instanceof Error ? error.message : t("board.postFailed");
         }
       } finally {
         if (submit) submit.disabled = false;
@@ -1091,7 +1105,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           message.textContent =
             error instanceof Error
               ? error.message
-              : "Login failed";
+              : t("login.failed");
         }
       }
     });
@@ -1150,7 +1164,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         );
 
         closePanel();
-        showToast("You are signed up");
+        showToast(t("signup.done"));
 
         window.location.hash = "#/home";
         window.dispatchEvent(
@@ -1161,7 +1175,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           message.textContent =
             error instanceof Error
               ? error.message
-              : "Registration failed";
+              : t("signup.failed");
         }
       }
     });
