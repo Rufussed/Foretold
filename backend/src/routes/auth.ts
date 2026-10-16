@@ -6,6 +6,9 @@ import { playerStatsRepository } from "../game/wizard/services/playerStatsReposi
 import { playerOpponentRepository } from "../game/wizard/services/playerOpponentRepository.js";
 import { friendService } from "../game/wizard/services/friendService.js";
 
+const USERNAME_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
+const DISPLAY_NAME_MAX_LENGTH = 30;
+
 interface RegisterBody {
   username: string;
   password: string;
@@ -47,6 +50,21 @@ export default async function authRoutes(
       if (!username || !password || !displayName || !email) {
         return reply.status(400).send({
           error: "All fields are required",
+        });
+      }
+
+      // Names are shown on other players' screens, so they are kept to plain
+      // characters. Existing accounts are not affected.
+      if (!USERNAME_PATTERN.test(username)) {
+        return reply.status(400).send({
+          error:
+            "Username must be 3-20 letters, numbers, _ or -",
+        });
+      }
+
+      if (displayName.trim().length > DISPLAY_NAME_MAX_LENGTH) {
+        return reply.status(400).send({
+          error: `Display name can be at most ${DISPLAY_NAME_MAX_LENGTH} characters`,
         });
       }
 

@@ -1,5 +1,6 @@
 import { API_BASE } from "../services/api";
 import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
+import { BOT_LEVELS, DEFAULT_BOT_LEVEL } from "../../backend/src/game/wizard/botLevels";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
@@ -115,6 +116,16 @@ export async function renderRoomPage(
               </label>
 
               <label>
+                <span>NPC level</span>
+                <select id="room-bot-level">
+                  ${BOT_LEVELS.map(
+                    ({ level, label }) =>
+                      `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${label}</option>`,
+                  ).join("")}
+                </select>
+              </label>
+
+              <label>
                 <span>Number Rounds</span>
                 <select id="room-rounds"></select>
               </label>
@@ -215,6 +226,8 @@ export async function renderRoomPage(
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
+  // How well the NPCs play. See botLevels.ts.
+  const botLevelEl = element<HTMLSelectElement>("#room-bot-level");
   // How fast the game plays out, for everyone in it: the server's pauses and
   // the table's animations both scale by it. See gameplayPace.ts.
   const paceEl = element<HTMLSelectElement>("#room-pace");
@@ -507,6 +520,7 @@ export async function renderRoomPage(
           botCount: Number(botsEl.value),
           maxRounds: Number(roundsEl.value),
           pace: Number(paceEl.value),
+          botLevel: botLevelEl.value,
           ...rules,
         }),
       });

@@ -5,8 +5,25 @@ import {
   logout,
   register,
 } from "../services/auth";
+import {
+  POST_MAX_LENGTH,
+  createPost,
+  deletePost,
+  listPosts,
+  type BoardPost,
+} from "../services/posts";
+import { escapeHtml } from "../utils/escape-html";
 
-type Panel = "login" | "signup" | "about" | "rules" | "news" | "contact" | "legal" | null;
+type Panel =
+  | "login"
+  | "signup"
+  | "about"
+  | "rules"
+  | "news"
+  | "board"
+  | "contact"
+  | "legal"
+  | null;
 
 export async function renderHomePage(container: HTMLElement): Promise<void> {
   // The page must come up whatever the server is doing: a cold or unreachable
@@ -47,7 +64,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     const name = currentUser?.displayName || currentUser?.username;
 
     return name
-      ? `Welcome, ${name.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`)}`
+      ? `Welcome, ${escapeHtml(name)}`
       : "Welcome";
   }
 
@@ -80,6 +97,12 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
             <span></span>
 
+            <button type="button" data-panel="board">
+              Board
+            </button>
+
+            <span></span>
+
             <button type="button" data-panel="news">
               News
             </button>
@@ -94,7 +117,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                     class="home-account-button"
                     href="#/profile"
                   >
-                    ${currentUser?.displayName || currentUser?.username}
+                    ${escapeHtml(currentUser?.displayName || currentUser?.username || "")}
                   </a>
 
                   <button
@@ -449,6 +472,74 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       return;
     }
 
+    if (activePanel === "board") {
+      panelContainer.innerHTML = renderInfoPanel(
+        "Board",
+        "Words from the table",
+        `
+          <div class="home-board">
+            ${
+              isLoggedIn
+                ? `
+                  <form id="home-board-form" class="home-board-form">
+                    <label for="home-board-text" class="home-board-label">
+                      Write on the board
+                    </label>
+                    <textarea
+                      id="home-board-text"
+                      name="text"
+                      rows="3"
+                      maxlength="${POST_MAX_LENGTH}"
+                      placeholder="Looking for a game tonight? Say hello."
+                      required
+                    ></textarea>
+                    <div class="home-board-form-row">
+                      <span id="home-board-count" class="home-board-count">
+                        0 / ${POST_MAX_LENGTH}
+                      </span>
+                      <button type="submit" class="home-modal-primary">
+                        Post
+                      </button>
+                    </div>
+                    <p
+                      id="home-board-message"
+                      class="home-auth-message"
+                      role="status"
+                    ></p>
+                  </form>
+                `
+                : `
+                  <p class="home-modal-copy">
+                    Anyone can read the board.
+                    <button
+                      type="button"
+                      class="home-board-inline-link"
+                      id="home-board-login"
+                    >
+                      Log in
+                    </button>
+                    to write on it.
+                  </p>
+                `
+            }
+
+            <ol id="home-board-list" class="home-board-list"></ol>
+            <p id="home-board-status" class="home-board-status">Loading…</p>
+            <button
+              type="button"
+              id="home-board-more"
+              class="home-switch-auth"
+              hidden
+            >
+              Show older posts
+            </button>
+          </div>
+        `,
+      );
+      attachBoardEvents();
+      return;
+    }
+
     if (activePanel === "contact") {
       panelContainer.innerHTML = renderInfoPanel(
         "Contact",
@@ -624,6 +715,10 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 name="username"
                 type="text"
                 autocomplete="username"
+                minlength="3"
+                maxlength="20"
+                pattern="[A-Za-z0-9_\-]+"
+                title="3-20 letters, numbers, _ or -"
                 required
               />
             </label>
@@ -633,6 +728,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
               <input
                 name="displayName"
                 type="text"
+                maxlength="30"
                 required
               />
             </label>
@@ -811,6 +907,138 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       panelContainer.hidden = true;
       panelContainer.innerHTML = "";
     }
+  }
+
+  // Server times are UTC without a zone ("2026-10-16 11:00:00").
+  function formatPostTime(createdAt: string): string {
+    const date = new Date(`${createdAt.replace(" ", "T")}Z`);
+
+    return Number.isNaN(date.getTime())
+      ? ""
+      : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+  }
+
+  // Built from DOM nodes with textContent, so whatever a player wrote is
+  // shown as text and never read as HTML.
+  function renderBoardPost(post: BoardPost): HTMLLIElement {
+    const item = document.createElement("li");
+    item.className = "home-board-post";
+
+    const meta = document.createElement("div");
+    meta.className = "home-board-meta";
+
+    const name = document.createElement("strong");
+    name.textContent = post.displayName || post.username;
+
+    const detail = document.createElement("span");
+    detail.textContent = `@${post.username} · ${formatPostTime(post.createdAt)}`;
+
+    meta.append(name, detail);
+
+    if (post.canDelete) {
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "home-board-delete";
+      remove.textContent = "Delete";
+      remove.addEventListener("click", async () => {
+        if (!window.confirm("Delete this post?")) return;
+
+        remove.disabled = true;
+
+        try {
+          await deletePost(post.id);
+          item.remove();
+        } catch (error) {
+          remove.disabled = false;
+          alert(error instanceof Error ? error.message : "Could not delete the post");
+        }
+      });
+      meta.append(remove);
+    }
+
+    const text = document.createElement("p");
+    text.className = "home-board-text";
+    text.textContent = post.text;
+
+    item.append(meta, text);
+    return item;
+  }
+
+  function attachBoardEvents(): void {
+    attachCloseEvent();
+
+    const list = document.querySelector<HTMLOListElement>("#home-board-list");
+    const status = document.querySelector<HTMLParagraphElement>("#home-board-status");
+    const moreButton = document.querySelector<HTMLButtonElement>("#home-board-more");
+
+    if (!list || !status || !moreButton) return;
+
+    let oldestId: number | undefined;
+
+    async function loadPage(): Promise<void> {
+      moreButton!.disabled = true;
+
+      try {
+        const page = await listPosts(oldestId);
+
+        // The panel may have been closed while the page was on its way.
+        if (!list!.isConnected) return;
+
+        list!.append(...page.posts.map(renderBoardPost));
+        oldestId = page.posts.at(-1)?.id ?? oldestId;
+        moreButton!.hidden = !page.hasMore;
+        status!.textContent = list!.children.length ? "" : "Nothing here yet. Be the first!";
+      } catch (error) {
+        status!.textContent =
+          error instanceof Error ? error.message : "Could not load the board";
+      } finally {
+        moreButton!.disabled = false;
+      }
+    }
+
+    moreButton.addEventListener("click", () => void loadPage());
+    void loadPage();
+
+    document
+      .querySelector<HTMLButtonElement>("#home-board-login")
+      ?.addEventListener("click", () => {
+        activePanel = "login";
+        renderPanel();
+      });
+
+    const form = document.querySelector<HTMLFormElement>("#home-board-form");
+    const textArea = document.querySelector<HTMLTextAreaElement>("#home-board-text");
+    const count = document.querySelector<HTMLSpanElement>("#home-board-count");
+    const message = document.querySelector<HTMLParagraphElement>("#home-board-message");
+
+    if (!form || !textArea) return;
+
+    textArea.addEventListener("input", () => {
+      if (count) count.textContent = `${textArea.value.length} / ${POST_MAX_LENGTH}`;
+    });
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const submit = form.querySelector<HTMLButtonElement>("button[type=submit]");
+      if (submit) submit.disabled = true;
+      if (message) message.textContent = "";
+
+      try {
+        const post = await createPost(textArea.value);
+
+        list.prepend(renderBoardPost(post));
+        status.textContent = "";
+        textArea.value = "";
+        if (count) count.textContent = `0 / ${POST_MAX_LENGTH}`;
+      } catch (error) {
+        if (message) {
+          message.textContent = error instanceof Error ? error.message : "Could not post";
+        }
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
   }
 
   function attachLoginEvents(): void {

@@ -1,5 +1,6 @@
 import db, { transaction } from "../../../db/database.js";
 import { isBotName } from "../models/bot.js";
+import { fullRoundCount } from "../models/rounds.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { playerOpponentRepository } from "./playerOpponentRepository.js";
 import { playerStatsRepository } from "./playerStatsRepository.js";
@@ -49,6 +50,11 @@ class WizardGameCompletionService {
         )
       : null;
 
+    // Bots take seats too, so they count towards the game's full length.
+    const fullRounds = fullRoundCount(game.players.length);
+    const fullGame =
+      fullRounds !== undefined && game.totalRounds >= fullRounds;
+
     transaction(() => {
       for (const player of room.isGuest ? [] : game.players) {
         if (isBotName(player.username)) {
@@ -75,6 +81,7 @@ class WizardGameCompletionService {
             (round) => round.prediction === round.tricksWon,
           ).length,
           room.createdBy === roomPlayer.userId ? 1 : 0,
+          fullGame,
         );
 
         for (const opponent of game.players) {

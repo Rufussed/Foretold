@@ -1,4 +1,5 @@
 import type { User } from "../types/auth";
+import { escapeHtml } from "../utils/escape-html";
 
 export function renderNavbar(
   container: HTMLElement,
@@ -18,7 +19,7 @@ export function renderNavbar(
 
       <div class="lobby-account">
         <a class="lobby-username" href="#/profile">
-          ${currentUser.displayName || currentUser.username}
+          ${escapeHtml(currentUser.displayName || currentUser.username)}
         </a>
 
         <button

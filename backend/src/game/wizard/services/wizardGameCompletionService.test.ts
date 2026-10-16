@@ -188,10 +188,15 @@ describe("WizardGameCompletionService", () => {
         predictions_made: number;
         exact_predictions: number;
         games_created_finished: number;
+        full_games_finished: number;
+        full_games_won: number;
       };
 
       expect(creatorStats.games_finished).toBe(1);
       expect(creatorStats.games_won).toBe(1);
+      // One round of a 20-round game for three players.
+      expect(creatorStats.full_games_finished).toBe(0);
+      expect(creatorStats.full_games_won).toBe(0);
       expect(creatorStats.total_points).toBe(50);
       expect(creatorStats.tricks_won).toBe(3);
       expect(creatorStats.predictions_made).toBe(1);
@@ -234,6 +239,97 @@ describe("WizardGameCompletionService", () => {
         DELETE FROM users
         WHERE id IN (?, ?, ?)
       `).run(creatorId, player2Id, player3Id);
+    }
+  });
+
+  it("counts a game played to its full length as a full game", () => {
+    const winnerId = createTestUser(
+      "full-game-completion-winner",
+      "Winner",
+    );
+    const loserId = createTestUser(
+      "full-game-completion-loser",
+      "Loser",
+    );
+
+    const room = db.prepare(`
+      INSERT INTO rooms (
+        name,
+        created_by,
+        max_players,
+        status
+      )
+      VALUES (?, ?, ?, 'playing')
+    `).run(
+      "Full Game Completion Room",
+      winnerId,
+      3,
+    );
+
+    const roomId = Number(room.lastInsertRowid);
+
+    for (const [userId, username] of [
+      [winnerId, "full-game-completion-winner"],
+      [loserId, "full-game-completion-loser"],
+    ] as const) {
+      db.prepare(`
+        INSERT INTO room_players (
+          room_id,
+          user_id,
+          username
+        )
+        VALUES (?, ?, ?)
+      `).run(roomId, userId, username);
+    }
+
+    // The bot fills the third seat, so a full game is 20 rounds.
+    const game = {
+      ...createTestGame(
+        roomId,
+        "full-game-completion-winner",
+        "full-game-completion-loser",
+        "Morgana NPC",
+      ),
+      totalRounds: 20,
+    };
+
+    const fullGameStats = (userId: number) => db.prepare(`
+      SELECT
+        games_finished,
+        full_games_finished,
+        full_games_won
+      FROM player_stats
+      WHERE user_id = ?
+    `).get(userId);
+
+    try {
+      wizardGameCompletionService.completeGame(game);
+
+      expect(fullGameStats(winnerId)).toEqual({
+        games_finished: 1,
+        full_games_finished: 1,
+        full_games_won: 1,
+      });
+      expect(fullGameStats(loserId)).toEqual({
+        games_finished: 1,
+        full_games_finished: 1,
+        full_games_won: 0,
+      });
+    } finally {
+      db.prepare(`
+        DELETE FROM player_opponents
+        WHERE player_id IN (?, ?)
+      `).run(winnerId, loserId);
+
+      db.prepare(`
+        DELETE FROM player_stats
+        WHERE user_id IN (?, ?)
+      `).run(winnerId, loserId);
+
+      db.prepare(`
+        DELETE FROM users
+        WHERE id IN (?, ?)
+      `).run(winnerId, loserId);
     }
   });
 
