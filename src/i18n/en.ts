@@ -324,6 +324,13 @@ export const en = {
   "ann.falsePrediction": "False Prediction",
   "ann.predictionOff": "Prediction Off By {times}",
   "ann.totalPoints": "Total Points",
+
+  "about.title": "About",
+  "about.kicker": "Built by players, for players.",
+  "rules.title": "Rules",
+  "rules.kicker": "Learn the rules of Wizard.",
+  "legal.title": "Copyright & Legal",
+  "legal.kicker": "Third-party content notice",
 };
 
 export type MessageKey = keyof typeof en;

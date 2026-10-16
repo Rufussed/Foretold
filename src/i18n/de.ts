@@ -325,4 +325,11 @@ export const de: Record<MessageKey, string> = {
   "ann.falsePrediction": "Ansage verfehlt",
   "ann.predictionOff": "Daneben um {times}",
   "ann.totalPoints": "Rundenpunkte",
+
+  "about.title": "Über uns",
+  "about.kicker": "Von Spielern, für Spieler.",
+  "rules.title": "Regeln",
+  "rules.kicker": "So wird Wizard gespielt.",
+  "legal.title": "Urheberrecht & Rechtliches",
+  "legal.kicker": "Hinweis zu Inhalten Dritter",
 };
