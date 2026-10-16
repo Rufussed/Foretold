@@ -6,7 +6,7 @@ import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
 import { describeRuleVariations } from "../utils/rule-variations";
-import { normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
+import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import {
   createAvatarPicker,
   type AvatarPicker,
@@ -112,46 +112,52 @@ export async function renderRoomPage(
             ></p>
             <div class="room-start-controls">
 
-              <label>
-                <span>${t("room.bots")}</span>
-                <select id="room-bots"></select>
-              </label>
+              <div class="room-start-column">
+                <div class="room-start-pair">
+                  <label>
+                    <span>${t("room.bots")}</span>
+                    <select id="room-bots"></select>
+                  </label>
 
-              <label>
-                <span>${t("room.botLevel")}</span>
-                <select id="room-bot-level">
-                  ${BOT_LEVELS.map(
-                    ({ level }) =>
-                      `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${t(`room.botLevel.${level}`)}</option>`,
-                  ).join("")}
-                </select>
-              </label>
+                  <label>
+                    <span>${t("room.rounds")}</span>
+                    <select id="room-rounds"></select>
+                  </label>
+                </div>
 
-              <label>
-                <span>${t("room.rounds")}</span>
-                <select id="room-rounds"></select>
-              </label>
+                <label>
+                  <span>${t("room.botLevel")}</span>
+                  <select id="room-bot-level">
+                    ${BOT_LEVELS.map(
+                      ({ level }) =>
+                        `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${t(`room.botLevel.${level}`)}</option>`,
+                    ).join("")}
+                  </select>
+                </label>
+              </div>
 
-              <label>
-                <span>${t("room.pace")}</span>
-                <select id="room-pace">
-                  <option value="1">${t("room.pace.slow")}</option>
-                  <option value="1.5" selected>${t("room.pace.normal")}</option>
-                  <option value="2">${t("room.pace.fast")}</option>
-                  <option value="3">${t("room.pace.veryFast")}</option>
-                </select>
-              </label>
+              <div class="room-start-column">
+                <label>
+                  <span>${t("room.pace")}</span>
+                  <select id="room-pace">
+                    <option value="1">${t("room.pace.slow")}</option>
+                    <option value="1.5" selected>${t("room.pace.normal")}</option>
+                    <option value="2">${t("room.pace.fast")}</option>
+                    <option value="3">${t("room.pace.veryFast")}</option>
+                  </select>
+                </label>
 
-              <label>
-                <span>${t("room.turnTimeout")}</span>
-                <select id="room-turn-timeout">
-                  <option value="15000">${t("room.seconds", { count: "15" })}</option>
-                  <option value="30000" selected>${t("room.seconds", { count: "30" })}</option>
-                  <option value="45000">${t("room.seconds", { count: "45" })}</option>
-                  <option value="60000">${t("room.oneMinute")}</option>
-                  <option value="none">${t("room.noLimit")}</option>
-                </select>
-              </label>
+                <label>
+                  <span>${t("room.turnTimeout")}</span>
+                  <select id="room-turn-timeout">
+                    <option value="15000">${t("room.seconds", { count: "15" })}</option>
+                    <option value="30000" selected>${t("room.seconds", { count: "30" })}</option>
+                    <option value="45000">${t("room.seconds", { count: "45" })}</option>
+                    <option value="60000">${t("room.oneMinute")}</option>
+                    <option value="none">${t("room.noLimit")}</option>
+                  </select>
+                </label>
+              </div>
 
               <details class="room-variations">
                 <summary>${t("room.variations")}</summary>
@@ -159,16 +165,16 @@ export async function renderRoomPage(
                   <label>
                     <span>${t("room.firstRound")}</span>
                     <select id="room-blind-first-round">
-                      <option value="false" selected>${t("room.firstRound.own")}</option>
-                      <option value="true">${t("room.firstRound.blind")}</option>
+                      <option value="false">${t("room.firstRound.own")}</option>
+                      <option value="true" selected>${t("room.firstRound.blind")}</option>
                     </select>
                   </label>
 
                   <label>
                     <span>${t("room.wizardWins")}</span>
                     <select id="room-wizard-wins">
-                      <option value="first" selected>${t("room.wizardWins.first")}</option>
-                      <option value="last">${t("room.wizardWins.last")}</option>
+                      <option value="first">${t("room.wizardWins.first")}</option>
+                      <option value="last" selected>${t("room.wizardWins.last")}</option>
                     </select>
                   </label>
 
@@ -325,7 +331,7 @@ export async function renderRoomPage(
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
 
-    const options = normalizeGameOptions(room.options);
+    const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
     variationsSummaryEl.hidden = isHost;
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {

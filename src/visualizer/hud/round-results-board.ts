@@ -6,7 +6,9 @@ export interface ResultCard {
   username: string;
   name: string; // shown under the headshot
   character: CharacterId;
-  lines: RoundResultLine[]; // label and signed value per line
+  summary: string; // "Predicted 2 · Won 2"
+  lines: RoundResultLine[]; // how the points came about
+
   points: number;
 }
 
@@ -55,20 +57,34 @@ export function createResultsBoard(
     name.textContent = card.name;
     face.append(image, name);
 
-    // Labels on the left, values in a column of their own so the signs align.
-    const lines = document.createElement("dl");
+    const summary = document.createElement("p");
+    summary.className = "hud-result-summary";
+    summary.textContent = card.summary;
+
+    // How the points came about: a bonus and tricks in green, or how far off.
+    const lines = document.createElement("p");
     lines.className = "hud-result-lines";
     for (const line of card.lines) {
-      const label = document.createElement("dt");
-      label.textContent = line.label;
-      const value = document.createElement("dd");
-      value.textContent = line.value;
-      // Signed values: a gain in green, a loss in red, "+0" as it is.
-      value.dataset.sign = line.value.startsWith("-") ? "negative" : line.value === "+0" ? "zero" : "positive";
-      lines.append(label, value);
+      const part = document.createElement("span");
+      part.append(`${line.label} `);
+      if (line.value) {
+        const value = document.createElement("b");
+        value.textContent = line.value;
+        // A gain in green, a loss in red, "+0" as it is.
+        value.dataset.sign = line.value.startsWith("-") ? "negative" : line.value === "+0" ? "zero" : "positive";
+        part.append(value);
+      }
+      lines.append(part);
     }
 
-    element.append(face, lines);
+    // The round's points as one number, green for a gain and red for a loss.
+    const total = document.createElement("p");
+    total.className = "hud-result-total";
+    const signed = card.points >= 0 ? `+${card.points}` : String(card.points);
+    total.textContent = signed;
+    total.dataset.sign = card.points < 0 ? "negative" : card.points === 0 ? "zero" : "positive";
+
+    element.append(face, summary, lines, total);
     headshotUrl(card.character)
       .then((url) => {
         if (!disposed) image.src = url;

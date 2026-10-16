@@ -10,7 +10,7 @@ import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
-import { normalizeGameOptions } from "../gameOptions.js";
+import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../gameOptions.js";
 import { BOT_LEVELS, normalizeBotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
@@ -503,7 +503,7 @@ export default async function wizardRoutes(
       });
     }
 
-    wizardLobbyManager.setRoomOptions(roomId, normalizeGameOptions(request.body));
+    wizardLobbyManager.setRoomOptions(roomId, normalizeGameOptions(request.body, DEFAULT_GAME_OPTIONS));
 
     const body = request.body as { turnTimeoutMs?: unknown };
     if ("turnTimeoutMs" in body && isTurnTimeoutMs(body.turnTimeoutMs)) {

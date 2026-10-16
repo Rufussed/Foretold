@@ -32,6 +32,10 @@ export interface TableDirectorOptions {
   // how fast it pans back to the middle and how long it stays after the card
   // has landed. Null where it need not (landscape).
   centreForPlays?(): { panSeconds: number; holdSeconds: number } | null;
+  // A blind round's first prediction is yours: the camera may tour the other
+  // players until the next snapshot (the prediction made, or the time up).
+  startBlindTour?(state: PublicWizardGameState): void;
+  stopBlindTour?(): void;
   // Done once every announcement has had its time.
   whenAnnouncerIdle(done: () => void): void;
   // Announces which suit is trumps, as the round's cards finish dealing.
@@ -124,6 +128,7 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
     const arrived = camera(current);
     options.applyHud();
     await arrived;
+    if (current === options.localUsername) options.startBlindTour?.(state);
   };
 
   const play = async (previous: PublicWizardGameState | null, next: PublicWizardGameState) => {
@@ -137,6 +142,7 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
     }
 
     hideTurn();
+    options.stopBlindTour?.();
 
     if (!previous) {
       showHud(next);
@@ -237,6 +243,7 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
     },
     dispose() {
       disposed = true;
+      options.stopBlindTour?.();
     },
   };
 }

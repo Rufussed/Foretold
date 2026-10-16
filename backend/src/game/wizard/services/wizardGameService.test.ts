@@ -1,6 +1,7 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { WizardGameService } from "./wizardGameService.js";
+import { LEGACY_GAME_OPTIONS } from "../gameOptions.js";
 
 
 describe("WizardGameService", () => {
@@ -39,9 +40,14 @@ describe("WizardGameService", () => {
   it("handles game creation and the first round", () => {
     // your existing test code here
     const service = new WizardGameService();
+    // The official, sighted first round: the default is now blind.
     const game = service.createGame(
       1,
       ["alice", "bob", "mike", "ana"],
+      new Map(),
+      undefined,
+      undefined,
+      LEGACY_GAME_OPTIONS,
     );
 
     const publicState = service.getPublicGameState(game, "alice");

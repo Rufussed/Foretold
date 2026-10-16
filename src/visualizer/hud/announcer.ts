@@ -237,6 +237,7 @@ export function createAnnouncer(
               username: result.username,
               name: announcedName(result.username),
               character: player ? characterForPlayer(player) : characterForUsername(result.username),
+              summary: result.summary,
               lines: result.lines,
               points: result.points,
             };

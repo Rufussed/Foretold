@@ -190,6 +190,12 @@ export const PORTRAIT_CAMERA = {
   // ...and stays there this long after the card lands, so it can be seen,
   // before the camera goes back to following the game.
   centreHoldSeconds: 1,
+
+  // A blind round's first prediction is made without seeing anyone's cards, so
+  // the camera looks round the other players in play order until it is made,
+  // turning at the usual pace (CAMERA_FOLLOW.turnSeconds) and staying on each
+  // this long once there.
+  tourDwellSeconds: 1,
 };
 
 // ══════════════════════════════════════════════════════════════════════════
