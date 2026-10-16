@@ -14,20 +14,33 @@ export interface WizardGameOptions {
   blindFirstRound: boolean;
 }
 
+// What a new room starts with: the variations room setup offers selected.
 export const DEFAULT_GAME_OPTIONS: WizardGameOptions = {
+  wizardWins: "last",
+  blindFirstRound: true,
+};
+
+// How the game was played before the variations existed: the official rules.
+// What an older saved game with no options recorded at all is read as, so a
+// game in progress never changes its rules when the defaults do.
+export const LEGACY_GAME_OPTIONS: WizardGameOptions = {
   wizardWins: "first",
   blindFirstRound: false,
 };
 
 // The options to actually use, given whatever arrived from a client or an
-// older saved game with no options recorded at all.
-export const normalizeGameOptions = (value: unknown): WizardGameOptions => {
+// older saved game with no options recorded at all. Anything not given is
+// taken from fallback.
+export const normalizeGameOptions = (
+  value: unknown,
+  fallback: WizardGameOptions = LEGACY_GAME_OPTIONS,
+): WizardGameOptions => {
   const raw = (typeof value === "object" && value !== null ? value : {}) as Partial<
     Record<keyof WizardGameOptions, unknown>
   >;
   return {
-    wizardWins: raw.wizardWins === "last" ? "last" : DEFAULT_GAME_OPTIONS.wizardWins,
-    blindFirstRound: raw.blindFirstRound === true,
+    wizardWins: raw.wizardWins === "last" || raw.wizardWins === "first" ? raw.wizardWins : fallback.wizardWins,
+    blindFirstRound: typeof raw.blindFirstRound === "boolean" ? raw.blindFirstRound : fallback.blindFirstRound,
   };
 };
 

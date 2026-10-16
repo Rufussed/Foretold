@@ -6,7 +6,7 @@ import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
 import { describeRuleVariations } from "../utils/rule-variations";
-import { normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
+import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import {
   createAvatarPicker,
   type AvatarPicker,
@@ -111,46 +111,52 @@ export async function renderRoomPage(
             ></p>
             <div class="room-start-controls">
 
-              <label>
-                <span>Number of NPCs</span>
-                <select id="room-bots"></select>
-              </label>
+              <div class="room-start-column">
+                <div class="room-start-pair">
+                  <label>
+                    <span>NPCs</span>
+                    <select id="room-bots"></select>
+                  </label>
 
-              <label>
-                <span>NPC skill level</span>
-                <select id="room-bot-level">
-                  ${BOT_LEVELS.map(
-                    ({ level, label }) =>
-                      `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${escapeHtml(label)}</option>`,
-                  ).join("")}
-                </select>
-              </label>
+                  <label>
+                    <span>Rounds</span>
+                    <select id="room-rounds"></select>
+                  </label>
+                </div>
 
-              <label>
-                <span>Number Rounds</span>
-                <select id="room-rounds"></select>
-              </label>
+                <label>
+                  <span>NPC skill</span>
+                  <select id="room-bot-level">
+                    ${BOT_LEVELS.map(
+                      ({ level, label }) =>
+                        `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${escapeHtml(label)}</option>`,
+                    ).join("")}
+                  </select>
+                </label>
+              </div>
 
-              <label>
-                <span>Game Speed</span>
-                <select id="room-pace">
-                  <option value="1">Slow</option>
-                  <option value="1.5" selected>Normal</option>
-                  <option value="2">Fast</option>
-                  <option value="3">Very fast</option>
-                </select>
-              </label>
+              <div class="room-start-column">
+                <label>
+                  <span>Game Speed</span>
+                  <select id="room-pace">
+                    <option value="1">Slow</option>
+                    <option value="1.5" selected>Normal</option>
+                    <option value="2">Fast</option>
+                    <option value="3">Very fast</option>
+                  </select>
+                </label>
 
-              <label>
-                <span>Time per move</span>
-                <select id="room-turn-timeout">
-                  <option value="15000">15 seconds</option>
-                  <option value="30000" selected>30 seconds</option>
-                  <option value="45000">45 seconds</option>
-                  <option value="60000">1 minute</option>
-                  <option value="none">No limit</option>
-                </select>
-              </label>
+                <label>
+                  <span>Time per turn</span>
+                  <select id="room-turn-timeout">
+                    <option value="15000">15 seconds</option>
+                    <option value="30000" selected>30 seconds</option>
+                    <option value="45000">45 seconds</option>
+                    <option value="60000">1 minute</option>
+                    <option value="none">No limit</option>
+                  </select>
+                </label>
+              </div>
 
               <details class="room-variations">
                 <summary>Rule Variations</summary>
@@ -158,16 +164,16 @@ export async function renderRoomPage(
                   <label>
                     <span>First round</span>
                     <select id="room-blind-first-round">
-                      <option value="false" selected>See your own card</option>
-                      <option value="true">Blind: see everyone else's card</option>
+                      <option value="false">See your own card</option>
+                      <option value="true" selected>Blind: see everyone else's card</option>
                     </select>
                   </label>
 
                   <label>
                     <span>Two or more Wizards</span>
                     <select id="room-wizard-wins">
-                      <option value="first" selected>First Wizard wins</option>
-                      <option value="last">Last Wizard wins</option>
+                      <option value="first">First Wizard wins</option>
+                      <option value="last" selected>Last Wizard wins</option>
                     </select>
                   </label>
 
@@ -319,7 +325,7 @@ export async function renderRoomPage(
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
 
-    const options = normalizeGameOptions(room.options);
+    const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
     variationsSummaryEl.hidden = isHost;
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {

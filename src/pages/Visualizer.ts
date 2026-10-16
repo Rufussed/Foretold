@@ -52,7 +52,7 @@ import { createTurnHourglass, type TurnHourglass } from "../visualizer/turn-hour
 import { createTurnTimeoutNotice, type TurnTimeoutNotice } from "../visualizer/turn-timeout-notice";
 import { createTurnReadySignal, type TurnReadySignal } from "../visualizer/turn-ready-signal";
 import { createTableLayout } from "../visualizer/table-layout";
-import { centreForPlays } from "../visualizer/portrait-camera";
+import { centreForPlays, createBlindTour } from "../visualizer/portrait-camera";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
 import { createWizardScene, type SceneView, type WizardSceneHandle } from "../visualizer/three-scene";
 
@@ -313,6 +313,9 @@ export async function renderVisualizerPage(
   // announcements, the trick reward, the deal), each starting when the one
   // before is done; see table-director.ts. The card table and the HUD follow
   // what it has shown so far.
+  const blindTour = createBlindTour(localUsername ?? "", (username, done) =>
+    turnCamera ? turnCamera.lookAt(username, done) : done(),
+  );
   const director = createTableDirector({
     initial: null,
     localUsername: localUsername ?? "",
@@ -342,6 +345,8 @@ export async function renderVisualizerPage(
     lookAt: (username, done, seconds) =>
       turnCamera ? turnCamera.lookAt(username, done, seconds) : done(),
     centreForPlays,
+    startBlindTour: (state) => blindTour.start(state),
+    stopBlindTour: () => blindTour.stop(),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
     announceTrump: (state) => gameHud?.announceTrump(state),
     playTrickReward: (done) => {

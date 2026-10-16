@@ -44,6 +44,26 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
 
   // const nameOf = (username: string) => (username === game.localUsername ? "You" : username);
   const nameOf = (username: string) => displayName(username);
+  // A name too long for its column is cut at the last letter that fits and
+  // ends in a dash. Done by measuring rather than by CSS ellipsis, which
+  // takes a wider mark and gives up more letters than it needs to.
+  const fitName = (cell: HTMLElement, full: string) => {
+    cell.textContent = full;
+    if (!cell.clientWidth || cell.scrollWidth <= cell.clientWidth) return;
+    // A bot's " NPC" goes before any letters of its name do: "Merlin", not
+    // "Merlin NP-".
+    const bare = full.replace(/ NPC$/, "");
+    if (bare !== full) {
+      cell.textContent = bare;
+      if (cell.scrollWidth <= cell.clientWidth) return;
+      full = bare;
+    }
+    for (let length = full.length - 1; length > 0; length--) {
+      cell.textContent = `${full.slice(0, length).trimEnd()}-`;
+      if (cell.scrollWidth <= cell.clientWidth) return;
+    }
+  };
+
   const applyState = () => {
     const state = game.state();
     if (!state) {
@@ -73,6 +93,7 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
         player.username === state.players[state.currentPlayerIndex]?.username,
       );
       entry.name.textContent = nameOf(player.username);
+      entry.name.dataset.full = nameOf(player.username);
       entry.score.textContent = String(shown(player));
     }
     // Moving a row restarts its flash, so rows only move when the order changes.
@@ -83,6 +104,8 @@ export function createGameStatusPanel(root: HTMLElement, game: GameConnection): 
     }
 
     panel.hidden = false;
+    // Measured once the rows are in place and the panel is showing.
+    for (const { name } of rows.values()) fitName(name, name.dataset.full ?? "");
   };
 
   return {

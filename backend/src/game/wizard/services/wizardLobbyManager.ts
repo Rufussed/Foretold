@@ -1,7 +1,7 @@
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
-import { normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
+import { DEFAULT_GAME_OPTIONS, normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_EXPIRATION_MS } from "./wizardGameRepository.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
 import {
@@ -34,9 +34,9 @@ type JoinRoomResult =
 class WizardLobbyManager {
   private parseOptions(json: string | null): WizardGameOptions {
     try {
-      return normalizeGameOptions(json ? JSON.parse(json) : null);
+      return normalizeGameOptions(json ? JSON.parse(json) : null, DEFAULT_GAME_OPTIONS);
     } catch {
-      return normalizeGameOptions(null);
+      return normalizeGameOptions(null, DEFAULT_GAME_OPTIONS);
     }
   }
 

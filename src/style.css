@@ -65,7 +65,7 @@ form {
 label {
   display: grid;
   gap: 6px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* Dark fields, the same as the create-account panel's, so no control falls
@@ -107,6 +107,24 @@ optgroup {
   font: inherit;
 }
 
+/* No bold anywhere in the interface: the elements a browser draws bold by
+   default (headings, strong, table headings, option group labels) are set to
+   regular, and every font-weight below is 400. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+b,
+strong,
+th,
+optgroup,
+legend,
+dt {
+  font-weight: 400;
+}
+
 /* The brand button, from the sign-up button: brown fill, copper edge, and a
    gold edge and text when hovered. Everything below inherits these, so a
    button no one has styled still matches. */
@@ -142,7 +160,7 @@ button {
 
 #backend-status {
   color: #176b43;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 #login-message {
@@ -195,7 +213,7 @@ button {
   margin-left: auto;
   padding: 10px 16px;
   color: white;
-  font-weight: 600;
+  font-weight: 400;
   text-decoration: none;
   background: #2457a6;
   border-radius: 4px;
@@ -216,7 +234,7 @@ button {
   margin: 0 0 6px;
   color: #6b778c;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 1.5px;
 }
 
@@ -265,7 +283,7 @@ button {
   margin-bottom: 6px;
   color: #6b778c;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 1px;
 }
 
@@ -334,12 +352,12 @@ button {
   border: 1px solid #cbd4e0;
   border-radius: 50%;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .seat-name {
   overflow: hidden;
-  font-weight: 600;
+  font-weight: 400;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -349,7 +367,7 @@ button {
   margin-left: auto;
   color: #2457a6;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 
@@ -386,7 +404,7 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .player-number {
@@ -408,11 +426,11 @@ button {
   background: #dce9ff;
   border-radius: 4px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .prediction-value {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .prediction-submitted {
@@ -431,7 +449,7 @@ button {
   background: #f2f8f5;
   border: 1px solid #c9e4d6;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 
@@ -456,12 +474,12 @@ button {
 }
 
 .trick-player {
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .trick-card {
   color: #2457a6;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .trick-winner {
@@ -498,7 +516,7 @@ button {
   background: #f5f7fa;
   border-bottom: 1px solid #d9e0ea;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.5px;
   text-transform: uppercase;
 }
@@ -520,7 +538,7 @@ button {
 
 .player-current {
   background: #eef4ff;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 
@@ -542,7 +560,7 @@ button {
   background: white;
   border: 2px solid #cbd4e0;
   border-radius: 8px;
-  font-weight: 600;
+  font-weight: 400;
   transition:
     transform 0.1s ease,
     border-color 0.1s ease,
@@ -568,7 +586,7 @@ button {
   min-height: 24px;
   margin-bottom: 0;
   color: #6b778c;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 
@@ -681,7 +699,7 @@ button {
   border-radius: 4px;
   text-decoration: none;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   backdrop-filter: var(--ui-blur);
@@ -767,7 +785,7 @@ button {
 
   color: rgba(221, 177, 110, 0.9);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 400;
   text-align: center;
 }
 
@@ -1048,7 +1066,7 @@ button {
   color: rgba(248, 240, 224, 0.96);
   font-family: Georgia, "Times New Roman", serif;
   font-size: 24px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .prediction-round {
@@ -1073,7 +1091,7 @@ button {
   border: 1px solid rgba(191, 125, 47, 0.32);
   border-radius: 4px;
   font-size: 18px;
-  font-weight: 700;
+  font-weight: 400;
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -1100,7 +1118,7 @@ button {
 .prediction-error {
   margin: 6px 0 0;
   color: #e0a14d;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 /* No reason to show: take no space, so the bottom padding matches the top. */
@@ -1125,7 +1143,7 @@ button {
   padding: 8px 4px;
   color: white;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 400;
   background: transparent;
   border: 1px solid rgba(191, 125, 47, 0.32);
   border-radius: 4px;
@@ -1170,36 +1188,58 @@ button {
   display: none;
 }
 
-/* Top right: the whole game. */
+/* Top right: the whole game. One width for everything in the column: the
+   music selector, the four buttons (sized from it) and the score box. Wide
+   enough for the longest NPC name in full ("Nostradamus NPC"). */
+.visualizer-page {
+  --hud-column-width: 152px;
+  /* Four buttons and three 2px gaps fill the column exactly. */
+  --hud-button: calc((var(--hud-column-width) - 6px) / 4);
+}
+
 .visualizer-page .hud-status {
-  top: 16px;
+  /* Under the toolbar (.hud-toolbar: top 16px, then the 26px selector, a 6px
+     gap and a row of buttons) with a gap. The buttons are not part of this
+     box: it holds the round and the scores. */
+  top: calc(16px + 26px + 6px + var(--hud-button) + 8px);
   right: 16px;
-  /* As narrow as the player panel bottom left. */
-  width: 168px;
-  /* The buttons sit over the top, in two rows at this width (the music
-     source, then the three buttons), with a little room under them. */
-  padding: 90px 10px 8px;
+  /* The same width as the toolbar above it: the music selector, the row of
+     four buttons and this box all line up (see --hud-column-width). */
+  width: var(--hud-column-width);
+  box-sizing: border-box;
+  padding: 8px 6px;
 }
 
 .hud-round {
   margin: 0;
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 400;
   white-space: nowrap;
 }
 
 .hud-scores {
-  width: 100%;
   margin-top: 1.2em; /* a line's gap below the round, where the column titles were */
-  table-layout: fixed;
-  border-collapse: collapse;
+  /* A grid: the names take what the box leaves after the score column, which
+     sits at the box's right edge (visualizer/hud/game-status-panel.ts cuts a
+     name that does not fit). */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: 6px;
+}
+
+.hud-scores thead,
+.hud-scores tbody,
+.hud-scores tr {
+  display: contents;
 }
 
 .hud-scores th:first-child,
 .hud-scores td:first-child {
   width: auto;
   overflow: hidden;
-  text-overflow: ellipsis;
+  /* Long names are cut with a dash by visualizer/hud/game-status-panel.ts;
+     this is only the backstop. */
+  text-overflow: clip;
   white-space: nowrap;
 }
 
@@ -1207,7 +1247,7 @@ button {
   padding: 2px 1px;
   color: rgba(221, 177, 110, 0.78);
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 400;
   text-align: left;
   text-transform: uppercase;
   white-space: nowrap;
@@ -1217,9 +1257,6 @@ button {
 .hud-scores td:not(:first-child) {
   text-align: right;
 }
-.hud-scores td:last-child {
-  width: 40px;
-}
 
 .hud-scores td {
   padding: 3px 1px;
@@ -1227,7 +1264,7 @@ button {
 
 .hud-scores tr.is-you td {
   color: #ffd54f;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 /* A labelled count: this round's prediction or tricks won. */
@@ -1247,7 +1284,7 @@ button {
 
 .hud-stat-value {
   font-size: 20px;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 /* Bottom left: every player, you included, one compact line each. Tighter than the
@@ -1298,7 +1335,7 @@ button {
 .hud-opponent-face figcaption {
   max-width: 96px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   line-height: 1.2;
   text-align: center;
   overflow-wrap: anywhere;
@@ -1437,33 +1474,25 @@ button {
   color: rgb(214 52 48);
 }
 
-/* Narrow screens: a narrower panel. */
-@media (max-width: 640px) {
-  .visualizer-page .hud-status {
-    top: 60px;
-    /* The two-row button block starts above the panel here, so it needs less. */
-    padding-top: 40px;
-  }
-}
-
-/* The row of buttons at the top of the score panel (.hud-status: top 16px,
-   right 16px, 10px padding): music, all sound, then fullscreen at the corner.
-   A row of their own, so a button a browser cannot offer leaves no gap. */
+/* The music selector and the row of buttons above the score panel: music,
+   all sound, install, then fullscreen at the corner. A row of their own, so a
+   button a browser cannot offer leaves no gap. */
 .visualizer-page .hud-toolbar {
   position: absolute;
-  top: 24px;
-  right: 26px;
+  top: 16px;
+  right: 16px;
   z-index: 3;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  /* Two rows inside the narrow status panel: the music source, then buttons. */
-  width: 150px;
+  /* Two rows: the music source, then the buttons. Four 30px buttons with 2px
+     between them fill the second row exactly, so the selector, the buttons and
+     the score box below share one width. */
+  width: var(--hud-column-width);
   box-sizing: border-box;
-  /* 4px across: four 32px buttons fit the second row. */
-  gap: 6px 4px;
+  gap: 6px 2px;
   place-items: center;
-  padding: 3px 4px;
+  padding: 0;
   color: rgba(244, 235, 217, 0.9);
 }
 
@@ -1474,8 +1503,8 @@ button {
 .visualizer-page .fullscreen-toggle {
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: var(--hud-button);
+  height: var(--hud-button);
   padding: 0;
   color: rgba(244, 235, 217, 0.9);
   background: var(--ui-bg);
@@ -1512,8 +1541,9 @@ button {
 .visualizer-page .effects-toggle svg,
 .visualizer-page .install-toggle svg,
 .visualizer-page .fullscreen-toggle svg {
-  width: 20px;
-  height: 20px;
+  /* Grows with the buttons. */
+  width: calc(var(--hud-button) * 0.6);
+  height: calc(var(--hud-button) * 0.6);
 }
 
 .visualizer-page .install-toggle[hidden] {
@@ -1539,11 +1569,12 @@ button {
 
 /* What's going on, top centre (see hud/announcer.ts). */
 .visualizer-page .hud-announcer {
-  /* A big, soft shadow falling below the box: a wide faint spread under a
-     tighter, darker one, both pushed down and feathered with a large blur. */
-  --announcer-shadow:
-    0 80px 130px -10px rgba(0, 0, 0, 0.8),
-    0 30px 60px -6px rgba(0, 0, 0, 0.65);
+  /* A dark feathered shadow reaching 15px out from the box: solid at 80% for
+     the first 7px or so, then fading to nothing over the rest (an 11px spread
+     with an 8px blur centred on its edge). The box sits above the music
+     selector and the buttons, so this darkens whatever lies beneath it,
+     around its own coloured border. */
+  --announcer-shadow: 0 0 8px 11px rgba(0, 0, 0, 0.8);
   position: absolute;
   top: 16px;
   /* Centred in the page by auto margins between its two edges, with no
@@ -1566,7 +1597,7 @@ button {
   padding: calc(13px * var(--hud-scale)) calc(19px * var(--hud-scale));
   color: rgba(244, 235, 217, 0.92);
   font-size: 17px;
-  font-weight: 600;
+  font-weight: 600; /* the one place bold is kept: the announcement box */
   line-height: 1.35;
   text-align: center;
   /* The same box as the HUD panels (.hud-panel). */
@@ -1745,6 +1776,8 @@ button {
    the top. (Phones: below the score panel instead, see announcer.ts.) */
 /* The cards carry their own boxes, so the banner itself has none. */
 .visualizer-page .hud-announcer.has-results {
+  /* The results cards are not the announcement box: regular weight. */
+  font-weight: 400;
   width: max-content;
   max-width: calc(100% - 32px);
   padding: 0;
@@ -1757,7 +1790,7 @@ button {
 
 /* Up to three equal cards to a row; a shorter last row is centred. */
 .hud-results {
-  --card-width: 200px;
+  --card-width: 150px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
@@ -1808,7 +1841,7 @@ button {
   border-color: rgba(221, 177, 110, 0.8);
 }
 
-.hud-result.is-winner .hud-result-lines dd:last-of-type {
+.hud-result.is-winner .hud-result-total {
   color: #ffd54f;
 }
 
@@ -1854,34 +1887,49 @@ button {
 
 
 
-.hud-result-lines {
-  display: grid;
-  text-align: left;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: end;
-  column-gap: 8px;
+.hud-result-summary {
   margin: 0;
+  color: rgba(244, 235, 217, 0.8);
   font-size: 12px;
   line-height: 1.35;
-}
-
-.hud-result-lines dt {
-  margin: 0;
-}
-
-.hud-result-lines dd {
-  margin: 0;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
   text-align: left;
-  white-space: nowrap;
 }
 
-.hud-result-lines dd[data-sign="positive"] {
+/* How the points came about, on one line: the bonus and the tricks, or how
+   far off the prediction was. */
+.hud-result-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0;
+  color: rgba(244, 235, 217, 0.62);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.hud-result-lines b {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The round's points as one number. */
+.hud-result-total {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.hud-result-lines [data-sign="positive"],
+.hud-result-total[data-sign="positive"] {
   color: #4caf50;
 }
 
-.hud-result-lines dd[data-sign="negative"] {
+.hud-result-lines [data-sign="negative"],
+.hud-result-total[data-sign="negative"] {
   color: #ef5350;
 }
 
@@ -1954,7 +2002,7 @@ button {
 
 .visualizer-diagnostics-title {
   margin: 0 28px 6px 0;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .visualizer-diagnostics pre {
@@ -2177,7 +2225,7 @@ button {
 .home-brand strong {
   font-family: "Cinzel", serif;
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -2222,7 +2270,7 @@ button {
   color: inherit;
   font-family: "Cinzel", serif;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-decoration: none;
   text-transform: uppercase;
@@ -2272,7 +2320,7 @@ button {
   color: #c9b99f;
   font-family: "Cinzel", serif;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 
@@ -2363,7 +2411,7 @@ button {
   color: #f6e7cf;
   font-family: "Cinzel", serif;
   font-size: 16.5px;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.25em;
   text-transform: uppercase;
 
@@ -2521,7 +2569,7 @@ button {
 
   font-family: "Cinzel", serif;
   font-size: 9px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.36em;
   text-transform: uppercase;
 }
@@ -2533,7 +2581,7 @@ button {
 
   font-family: "Cinzel", serif;
   font-size: 28px;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .home-modal-copy {
@@ -2662,7 +2710,7 @@ button {
 
   font-family: "Cinzel", serif;
   font-size: 10px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.16em;
   text-align: center;
   text-transform: uppercase;
@@ -2830,7 +2878,7 @@ button {
 
   font-family: "Cinzel", serif;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .home-board-meta span {
@@ -2971,7 +3019,7 @@ button {
 
   font-family: "Cinzel", serif;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -3190,7 +3238,7 @@ button {
   color: rgba(244, 234, 216, 0.76);
 
   font-size: 0.82rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: none;
 
@@ -3269,7 +3317,7 @@ button {
 
   color: #e0a14d;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.06em;
   text-decoration: none;
 
@@ -3310,7 +3358,7 @@ button {
   color: #c88735;
 
   font-size: 0.72rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.22em;
   text-transform: uppercase;
 }
@@ -3322,7 +3370,7 @@ button {
 
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(2.4rem, 5vw, 4.4rem);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 0.95;
   letter-spacing: 0.025em;
 
@@ -3367,7 +3415,7 @@ button {
   color: #f0d6a5;
 
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 
@@ -3461,7 +3509,7 @@ button {
   color: rgba(224, 161, 77, 0.55);
 
   font-size: 0.66rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -3514,7 +3562,7 @@ button {
 
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.2rem;
-  font-weight: 500;
+  font-weight: 400;
 
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -3539,7 +3587,7 @@ button {
   color: rgba(205, 151, 82, 0.62);
 
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .room-creator {
@@ -3583,7 +3631,7 @@ button {
   color: #e1c18d;
 
   font-size: 0.95rem;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .access-badge {
@@ -3605,7 +3653,7 @@ button {
   color: rgba(218, 170, 102, 0.75);
 
   font-size: 0.58rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.12em;
 }
 
@@ -3648,7 +3696,7 @@ button {
   padding: 0 12px;
 
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 
@@ -3733,7 +3781,7 @@ button {
 
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.35rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .rooms-empty p,
@@ -3761,7 +3809,7 @@ button {
   color: #dfb16b;
 
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 
@@ -3908,7 +3956,7 @@ button {
 
   font-family: Georgia, "Times New Roman", serif;
   font-size: 2rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .room-modal-description {
@@ -3980,7 +4028,7 @@ button {
   color: rgba(224, 161, 77, 0.72);
 
   font-size: 0.65rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.13em;
   text-transform: uppercase;
 }
@@ -4049,7 +4097,7 @@ button {
   color: rgba(244, 234, 216, 0.55);
 
   font-size: 0.8rem;
-  font-weight: 600;
+  font-weight: 400;
 
   transition:
     border-color 160ms ease,
@@ -4101,7 +4149,7 @@ button {
   color: rgba(244, 234, 216, 0.36);
 
   font-size: 0.58rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -4141,7 +4189,7 @@ button {
   padding: 0 18px;
 
   font-size: 0.67rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 
@@ -4447,7 +4495,7 @@ button {
   color: rgba(248, 240, 224, 0.96);
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(1rem, 1.6vw, 1.35rem);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.02em;
 }
 
@@ -4543,9 +4591,23 @@ button {
 .room-start-controls {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(4, max-content);
-  align-items: end;
+  /* Two columns: the NPC and round choices on the left, the game's speed and
+     time per turn on the right. */
+  grid-template-columns: repeat(2, max-content);
+  align-items: start;
   justify-content: center;
+  gap: 12px 24px;
+}
+
+.room-start-column {
+  display: grid;
+  gap: 12px;
+}
+
+/* Two small choices side by side inside a column. */
+.room-start-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
 }
 
@@ -4558,6 +4620,8 @@ button {
 .room-variations {
   grid-column: 1 / -1;
   justify-self: center;
+  /* Room above, from the choices, and below, from the Start button. */
+  margin: 14px 0;
   color: rgba(244, 235, 217, 0.64);
   font-size: 0.72rem;
   letter-spacing: 0.12em;
@@ -4576,7 +4640,7 @@ button {
   margin: 12px 0 0;
   color: rgba(221, 177, 110, 0.9);
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-align: center;
   text-transform: uppercase;
@@ -4597,8 +4661,11 @@ button {
   min-width: 130px;
   color: rgba(244, 235, 217, 0.64);
   font-size: 0.72rem;
+  /* Plain, not the bold every label gets: the titles and, through the
+     selects, the options. */
+  font-weight: 400;
   letter-spacing: 0.12em;
-  text-align: center;
+  text-align: left;
   text-transform: uppercase;
 }
 
@@ -4619,7 +4686,7 @@ button {
   color: rgba(248, 240, 224, 0.94);
   font-family: inherit;
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -4651,7 +4718,7 @@ button {
 
   color: rgba(221, 177, 110, 0.9);
   font-size: 0.85rem;
-  font-weight: 600;
+  font-weight: 400;
   text-align: center;
 }
 /* Footer */
@@ -4792,7 +4859,7 @@ button {
   color: #f4ebd9;
   font-family: Georgia, "Times New Roman", serif;
   font-size: clamp(2rem, 4vw, 3.4rem);
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -4811,7 +4878,7 @@ button {
   margin: 0 0 5px;
   color: rgba(244, 235, 217, 0.7);
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   text-align: right;
@@ -4821,7 +4888,7 @@ button {
   color: #e0a14d;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 2rem;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0;
 }
 
@@ -4856,7 +4923,7 @@ button {
   margin: 8px 0 2px;
   color: #e0a14d;
   font-size: clamp(1.6rem, 3vw, 2.3rem);
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1;
 }
 
@@ -4899,7 +4966,7 @@ button {
   margin: 0 0 5px;
   color: #b97a2d;
   font-size: 0.62rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.16em;
 }
 
@@ -4908,7 +4975,7 @@ button {
   color: #f4ebd9;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.3rem;
-  font-weight: 500;
+  font-weight: 400;
   letter-spacing: 0.04em;
 }
 
@@ -4934,7 +5001,7 @@ button {
   border: 1px solid rgba(191, 125, 47, 0.42);
   color: #e0a14d;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
@@ -4966,7 +5033,7 @@ button {
 .profile-info-row strong {
   color: rgba(244, 235, 217, 0.9);
   font-size: 0.88rem;
-  font-weight: 500;
+  font-weight: 400;
   text-align: right;
 }
 
@@ -4994,7 +5061,7 @@ button {
 .profile-stat strong {
   color: #e0a14d;
   font-size: 1rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .profile-opponents {
@@ -5070,7 +5137,7 @@ button {
 .profile-search-result strong {
   color: #f4ebd9;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .profile-search-result span {
@@ -5130,7 +5197,7 @@ button {
 .opponent-row strong {
   color: #f4ebd9;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .opponent-row span {
@@ -5356,7 +5423,7 @@ button {
   background: rgba(191, 125, 47, 0.08);
   color: #e0a14d;
   font-size: 0.66rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.1em;
   text-transform: uppercase;
 }
@@ -5382,7 +5449,7 @@ button {
   background: #b97a2d;
   color: #0c0d0b;
   font-size: 0.58rem;
-  font-weight: 700;
+  font-weight: 400;
 }
 
 /* New record + social layout */
@@ -5419,7 +5486,7 @@ button {
 .profile-record-item strong {
   color: #e0a14d;
   font-size: 1.05rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .profile-social-summary {
@@ -5444,7 +5511,7 @@ button {
   margin-bottom: 8px;
   color: rgba(244, 235, 217, 0.7);
   font-size: 0.7rem;
-  font-weight: 700;
+  font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -5689,7 +5756,7 @@ button {
   margin: 0 0 6px;
   color: var(--button-gold-text);
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 400;
 }
 
 .guest-signup-button {
@@ -5875,7 +5942,7 @@ body.has-two-system-buttons .lobby-header {
 .admin-content h1 {
   margin: 0 0 8px;
   font-family: Georgia, "Times New Roman", serif;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .admin-message {
@@ -5896,7 +5963,7 @@ body.has-two-system-buttons .lobby-header {
   margin: 0 0 4px;
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.2rem;
-  font-weight: 500;
+  font-weight: 400;
 }
 
 .admin-panel h2 span,

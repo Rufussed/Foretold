@@ -13,7 +13,10 @@ export interface RoundResultLine {
 
 export interface RoundResult {
   username: string;
-  // The breakdown: prediction, tricks, total, each a label and a signed value.
+  // What was predicted against what was won: "Predicted 2 · Won 2".
+  summary: string;
+  // How the points came about, a label and a signed value each (a hit: the
+  // bonus and the tricks; a miss: how far off, with no value of its own).
   lines: RoundResultLine[];
   // The same as plain text, one line each.
   text: string;
@@ -155,8 +158,6 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
   if (!scored.length) return [];
 
   const last = (player: PublicGamePlayer) => player.roundScores[player.roundScores.length - 1]!;
-  // "2 * 10" with non-breaking spaces, so a label wraps before it, not inside it.
-  const times = (count: number) => `${count}\u00a0*\u00a010`;
   // Every value carries its sign, so the signs line up in a column.
   const signed = (points: number) => (points >= 0 ? `+${points}` : String(points));
   const ordered = [...scored].sort(
@@ -166,22 +167,19 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
   return ordered.map((player) => {
     const { prediction, tricksWon, score } = last(player);
     const off = Math.abs(prediction - tricksWon);
-    const lines: RoundResultLine[] = [
-      ...(prediction === tricksWon
+    const lines: RoundResultLine[] =
+      prediction === tricksWon
         ? [
-            { label: "Prediction Bonus", value: "+20" },
-            { label: `Trick Bonus ${times(tricksWon)}`, value: signed(tricksWon * 10) },
+            { label: "Bonus", value: "+20" },
+            { label: "Tricks", value: signed(tricksWon * 10) },
           ]
-        : [
-            { label: "False Prediction", value: "+0" },
-            { label: `Prediction Off By ${times(off)}`, value: signed(-off * 10) },
-          ]),
-      { label: "Total Points", value: signed(score) },
-    ];
+        : [{ label: `Off by ${off}`, value: "" }];
+    const summary = `Predicted ${prediction} \u00b7 Won ${tricksWon}`;
     return {
       username: player.username,
+      summary,
       lines,
-      text: lines.map((line) => `${line.label} ${line.value}`).join("\n"),
+      text: [summary, lines.map((line) => `${line.label} ${line.value}`.trim()).join(" \u00b7 "), signed(score)].join("\n"),
       points: score,
       total: player.score,
     };
