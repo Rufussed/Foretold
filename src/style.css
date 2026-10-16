@@ -2291,6 +2291,20 @@ button {
   color: #ffbd62;
 }
 
+/* Keep "Log out" and the rest on one line; a long username gives way. */
+.home-account-actions > .home-account-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.home-account-actions > a.home-account-button {
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* The other language, shown quietly beside the account buttons. */
 .home-language-button {
   padding-inline: 10px;
