@@ -11,7 +11,7 @@ import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import { normalizeGameOptions } from "../gameOptions.js";
-import { normalizeBotLevel } from "../botLevels.js";
+import { BOT_LEVELS, normalizeBotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
 import db from "../../../db/database.js";
@@ -711,6 +711,10 @@ export default async function wizardRoutes(
             },
             blindFirstRound: {
               type: "boolean"
+            },
+            botLevel: {
+              type: "string",
+              enum: BOT_LEVELS.map(({ level }) => level)
             }
           }
         }
