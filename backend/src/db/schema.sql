@@ -49,7 +49,13 @@ CREATE TABLE IF NOT EXISTS player_stats (
 
   games_won INTEGER NOT NULL DEFAULT 0,
 
+  -- Games played to the full length for their number of players.
+  full_games_finished INTEGER NOT NULL DEFAULT 0,
+  full_games_won INTEGER NOT NULL DEFAULT 0,
+
   total_points INTEGER NOT NULL DEFAULT 0,
+  -- Highest total_points ever reached; the level never drops below it.
+  peak_total_points INTEGER NOT NULL DEFAULT 0,
   tricks_won INTEGER NOT NULL DEFAULT 0,
 
   predictions_made INTEGER NOT NULL DEFAULT 0,

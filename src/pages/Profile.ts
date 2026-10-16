@@ -22,23 +22,29 @@ import type {
 } from "../services/friends";
 import { renderNavbar } from "../components/Navbar";
 
+// About half the 400 points of a perfect three-player game, so short games
+// can earn a level too: 200 points stand in for one full game.
+const POINTS_PER_FULL_GAME = 200;
+
+const PLAYER_LEVELS = [
+  { name: "Expert", fullGames: 75 },
+  { name: "Advanced", fullGames: 30 },
+  { name: "Intermediate", fullGames: 10 },
+];
+
+// Reached by full games or by the highest total points ever held, whichever
+// gets there first. Neither goes down, so neither does the level.
 function getPlayerLevel(
-  gamesFinished: number,
-  gamesWon: number,
+  fullGamesFinished: number,
+  peakTotalPoints: number,
 ): string {
-  if (gamesFinished >= 75 && gamesWon >= 30) {
-    return "Expert";
-  }
+  const level = PLAYER_LEVELS.find(
+    ({ fullGames }) =>
+      fullGamesFinished >= fullGames ||
+      peakTotalPoints >= fullGames * POINTS_PER_FULL_GAME,
+  );
 
-  if (gamesFinished >= 30 && gamesWon >= 12) {
-    return "Advanced";
-  }
-
-  if (gamesFinished >= 10 && gamesWon >= 3) {
-    return "Intermediate";
-  }
-
-  return "Novice";
+  return level?.name ?? "Novice";
 }
 
 export async function renderProfilePage(
@@ -96,10 +102,17 @@ export async function renderProfilePage(
   const stats = profile.stats;
   const opponents = profile.opponents;
 
-  const winRate =
-    stats.gamesFinished > 0
-      ? (stats.gamesWon / stats.gamesFinished) * 100
+  const shortGamesFinished = stats.gamesFinished - stats.fullGamesFinished;
+  const shortGamesWon = stats.gamesWon - stats.fullGamesWon;
+
+  const fullWinRate =
+    stats.fullGamesFinished > 0
+      ? (stats.fullGamesWon / stats.fullGamesFinished) * 100
       : 0;
+
+  // One prediction is made per round, so this is every round played in a
+  // finished game.
+  const roundsPlayed = stats.predictionsMade;
 
   const exactPredictionRate =
     stats.predictionsMade > 0
@@ -112,8 +125,8 @@ export async function renderProfilePage(
       : 0;
 
   const playerLevel = getPlayerLevel(
-    stats.gamesFinished,
-    stats.gamesWon,
+    stats.fullGamesFinished,
+    stats.peakTotalPoints,
   );
 
   const renderSearchResults = (results: PlayerSearchResult[]): string =>
@@ -195,27 +208,33 @@ export async function renderProfilePage(
         <section class="profile-highlights" aria-label="Profile highlights">
 
           <div class="profile-highlight profile-highlight-primary">
-            <span>Games finished</span>
-            <strong>${stats.gamesFinished}</strong>
-            <small>Completed games</small>
+            <span>Full games</span>
+            <strong>${stats.fullGamesFinished}</strong>
+            <small>Played to the last round</small>
           </div>
 
           <div class="profile-highlight">
-            <span>Games won</span>
-            <strong>${stats.gamesWon}</strong>
+            <span>Full games won</span>
+            <strong>${stats.fullGamesWon}</strong>
             <small>Victories</small>
           </div>
 
           <div class="profile-highlight">
-            <span>Win rate</span>
-            <strong>${winRate.toFixed(1)}%</strong>
-            <small>${stats.gamesWon} wins</small>
+            <span>Full game win rate</span>
+            <strong>${fullWinRate.toFixed(1)}%</strong>
+            <small>${stats.fullGamesWon} of ${stats.fullGamesFinished}</small>
+          </div>
+
+          <div class="profile-highlight">
+            <span>Highest total</span>
+            <strong>${stats.peakTotalPoints}</strong>
+            <small>Best total points ever, sets the level</small>
           </div>
 
           <div class="profile-highlight">
             <span>Total points</span>
             <strong>${stats.totalPoints}</strong>
-            <small>Overall score</small>
+            <small>Overall score now</small>
           </div>
 
         </section>
@@ -235,18 +254,18 @@ export async function renderProfilePage(
             <div class="profile-record-grid">
 
               <div class="profile-record-item">
-                <span>Games finished</span>
-                <strong>${stats.gamesFinished}</strong>
+                <span>Short games</span>
+                <strong>${shortGamesFinished}</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Games won</span>
-                <strong>${stats.gamesWon}</strong>
+                <span>Short games won</span>
+                <strong>${shortGamesWon}</strong>
               </div>
 
               <div class="profile-record-item">
-                <span>Predictions made</span>
-                <strong>${stats.predictionsMade}</strong>
+                <span>Rounds played</span>
+                <strong>${roundsPlayed}</strong>
               </div>
 
               <div class="profile-record-item">

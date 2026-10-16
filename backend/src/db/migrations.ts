@@ -165,6 +165,45 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 9,
+    description: "count full-length games apart from shorter ones",
+    up(db) {
+      // Games finished before this have no record of their length, so they
+      // stay counted as short ones.
+      if (!hasColumn(db, "player_stats", "full_games_finished")) {
+        db.exec(`
+          ALTER TABLE player_stats
+          ADD COLUMN full_games_finished INTEGER NOT NULL DEFAULT 0
+        `);
+      }
+
+      if (!hasColumn(db, "player_stats", "full_games_won")) {
+        db.exec(`
+          ALTER TABLE player_stats
+          ADD COLUMN full_games_won INTEGER NOT NULL DEFAULT 0
+        `);
+      }
+    },
+  },
+  {
+    version: 10,
+    description: "remember each player's highest total points",
+    up(db) {
+      // The level is earned from the highest total ever reached, so a bad game
+      // that takes points away cannot lower it.
+      if (!hasColumn(db, "player_stats", "peak_total_points")) {
+        db.exec(`
+          ALTER TABLE player_stats
+          ADD COLUMN peak_total_points INTEGER NOT NULL DEFAULT 0
+        `);
+        db.exec(`
+          UPDATE player_stats
+          SET peak_total_points = MAX(total_points, 0)
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

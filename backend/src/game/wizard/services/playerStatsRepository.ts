@@ -5,7 +5,10 @@ export interface PlayerStats {
   gamesPlayed: number;
   gamesFinished: number;
   gamesWon: number;
+  fullGamesFinished: number;
+  fullGamesWon: number;
   totalPoints: number;
+  peakTotalPoints: number;
   tricksWon: number;
   predictionsMade: number;
   exactPredictions: number;
@@ -53,13 +56,20 @@ class PlayerStatsRepository {
     predictionsMade: number,
     exactPredictions: number,
     gamesCreatedFinished: number,
+    fullGame: boolean,
   ): void {
+    const fullGamesFinished = fullGame ? 1 : 0;
+    const fullGamesWon = fullGame ? gamesWon : 0;
+
     db.prepare(`
       UPDATE player_stats
       SET
         games_finished = games_finished + 1,
         games_won = games_won + ?,
+        full_games_finished = full_games_finished + ?,
+        full_games_won = full_games_won + ?,
         total_points = total_points + ?,
+        peak_total_points = MAX(peak_total_points, total_points + ?),
         tricks_won = tricks_won + ?,
         predictions_made = predictions_made + ?,
         exact_predictions = exact_predictions + ?,
@@ -67,6 +77,9 @@ class PlayerStatsRepository {
       WHERE user_id = ?
     `).run(
       gamesWon,
+      fullGamesFinished,
+      fullGamesWon,
+      totalPoints,
       totalPoints,
       tricksWon,
       predictionsMade,
@@ -83,7 +96,10 @@ class PlayerStatsRepository {
         games_played AS gamesPlayed,
         games_finished AS gamesFinished,
         games_won AS gamesWon,
+        full_games_finished AS fullGamesFinished,
+        full_games_won AS fullGamesWon,
         total_points AS totalPoints,
+        peak_total_points AS peakTotalPoints,
         tricks_won AS tricksWon,
         predictions_made AS predictionsMade,
         exact_predictions AS exactPredictions,
