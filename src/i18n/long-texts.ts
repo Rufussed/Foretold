@@ -49,8 +49,9 @@ const rules = {
       <section class="home-rules-section">
         <h3>Materials</h3>
         <p>
-          Wizard is played with a 60-card deck containing four coloured
-          suits, numbered cards, Wizards, and Jesters.
+          Foretold is played with a 60-card deck containing four elemental
+          suits (Fire, Earth, Water, and Air), numbered cards, Wizards, and
+          Jesters.
           Wizards are the highest-ranking special cards, while Jesters
           are the lowest. The game also uses a score pad.
         </p>
@@ -150,7 +151,7 @@ const rules = {
         <p>
           In every round except the final round, a card is revealed
           after dealing to determine the trump suit. Trump is stronger
-          than the other coloured suits.
+          than the other suits.
         </p>
         <p>
           You may play a trump card when the lead suit is trump or
@@ -248,8 +249,8 @@ const rules = {
       <section class="home-rules-section">
         <h3>Spielmaterial</h3>
         <p>
-          Wizard wird mit 60 Karten gespielt: vier Farben mit Zahlenkarten,
-          dazu Zauberer und Narren. Die Zauberer sind die höchsten
+          Foretold wird mit 60 Karten gespielt: vier Elemente (Feuer, Erde,
+          Wasser, Luft) mit Zahlenkarten, dazu Zauberer und Narren. Die Zauberer sind die höchsten
           Sonderkarten, die Narren die niedrigsten. Außerdem braucht
           man einen Block für die Punkte.
         </p>
