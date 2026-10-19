@@ -3320,9 +3320,14 @@ button {
   display: flex;
   align-items: center;
 
-  width: 120px;
+  min-width: 120px;
 
   text-decoration: none;
+}
+
+.lobby-title {
+  color: #f8ecd4;
+  font-size: 30px;
 }
 
 .lobby-brand img {
@@ -4382,7 +4387,12 @@ button {
     width: auto;
   }
 
-  .lobby-brand img {
+  .lobby-title {
+  color: #f8ecd4;
+  font-size: 30px;
+}
+
+.lobby-brand img {
     height: 60px;
   }
 

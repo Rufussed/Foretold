@@ -11,7 +11,7 @@ export function renderNavbar(
   container.innerHTML = `
     <header class="lobby-header">
       <a class="lobby-brand" href="#/home">
-        <img src="/wizardLogo.webp" alt="Wizard" />
+        <span class="home-title lobby-title">Foretold</span>
       </a>
 
       <nav class="lobby-nav" aria-label="${t("nav.main")}">

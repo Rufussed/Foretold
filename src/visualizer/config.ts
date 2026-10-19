@@ -621,6 +621,9 @@ export const CARDS = {
     air: "#f3e6c4",
   } as Record<string, string>,
 
+  // The J and W on Jesters and Wizards, which belong to no suit.
+  specialColor: "#f5c518",
+
   // Trump card colour when there's no trump suit: a Jester was turned up, or a
   // Wizard whose suit hasn't been chosen yet.
   noTrumpColor: "#8a8a8a",
@@ -688,6 +691,21 @@ export const CARDS = {
     iconOutline: 0.008,
     iconFeather: 0.012,
   },
+
+  // Art that is still a stand-in shared between elements gets a wash of its
+  // element's colour so the cards tell apart. Listed by file name; take a card
+  // off the list once it has art of its own. `tintStrength` is how much of the
+  // colour shows, 0 to 1.
+  tintedCards: [
+    "air-jester",
+    "earth-jester",
+    "fire-jester",
+    "water-jester",
+    "air-wizard",
+    "fire-wizard",
+    "water-wizard",
+  ],
+  tintStrength: 0.3,
 
   // Handled-card wear: a vignette of this colour creeping in from the edges,
   // broken up by noise. `width` is how far it reaches, `roughness` how far the

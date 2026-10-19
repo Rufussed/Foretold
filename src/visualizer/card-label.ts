@@ -12,6 +12,10 @@ export function cardLabel(card: Card): string {
   return String(card.value);
 }
 
+// Jesters and Wizards belong to no suit, so they carry a letter in their own
+// colour and no element icon.
+export const isSpecialCard = (card: Card): boolean => card.value === 0 || card.value === 14;
+
 // The element a card is drawn as; its art, icon and number colour follow.
 export function cardElement(card: Card): string {
   const element = CARDS.suitElements[card.suit];

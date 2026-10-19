@@ -721,7 +721,7 @@ export async function renderProfilePage(
       </section>
 
       <footer class="profile-footer">
-        <span>Wizard Platform</span>
+        <span>Foretold</span>
         <span>${t("profile.title")}</span>
       </footer>
 

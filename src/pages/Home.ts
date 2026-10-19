@@ -237,7 +237,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         </section>
 
         <footer class="home-footer">
-          <p>Wizard Platform</p>
+          <p>Foretold</p>
           <button type="button" data-panel="legal">
             ${t("home.legal")}
           </button>
