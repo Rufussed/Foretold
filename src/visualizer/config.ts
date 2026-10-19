@@ -1104,8 +1104,13 @@ export const SPARKS = {
   enabled: true,
   perTorchPerSecond: 3, // how many sparks each torch gives off
   maxParticles: 300, // most alive at once, across all torches; new ones wait for room
-  emitOffsetY: -0.35, // start this far below the torch's light, inside the flame
-  emitRadius: 0.1, // scatter of each spark's starting point
+  // Sparks are born anywhere up the top emitFlameFraction of the flame's
+  // height (1 is all of it, 0.5 the top half), measured from the flame mesh.
+  emitFlameFraction: 2 / 3,
+  // Used only for a torch whose flame mesh can't be found: start this far
+  // below its light, with a vertical scatter of emitRadius.
+  emitOffsetY: -0.35,
+  emitRadius: 0.1, // sideways scatter of each spark's starting point
 
   lifeMinSeconds: 10, // each spark lives a random time between these
   lifeMaxSeconds: 20,

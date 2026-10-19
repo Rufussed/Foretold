@@ -112,11 +112,33 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
   const across = new THREE.Vector3();
   const UP = new THREE.Vector3(0, 1, 0);
 
-  const emitters = flames.map(() => ({ owed: Math.random() }));
+  // Where up each flame sparks may be born, as heights above the flame's
+  // light, from the flame's own mesh: its light sits at the flame's top, so
+  // these are mostly below it. A torch with no flame mesh falls back to a
+  // small scatter at emitOffsetY.
+  environment.updateMatrixWorld(true);
+  const flameBox = new THREE.Box3();
+  const corner = new THREE.Vector3();
+  const lightPosition = new THREE.Vector3();
+  const emitters = flames.map((flame) => {
+    // The flame is three meshes, so it loads as a group named after the node.
+    const mesh = flame.parent?.children.find((child) => child !== flame && /flame/i.test(child.name));
+    if (!mesh) {
+      const around = SPARKS.emitOffsetY;
+      return { owed: Math.random(), low: around - SPARKS.emitRadius / 2, high: around + SPARKS.emitRadius / 2 };
+    }
+    flameBox.setFromObject(mesh);
+    flame.getWorldPosition(lightPosition);
+    const lightY = environment.worldToLocal(lightPosition).y;
+    const low = environment.worldToLocal(corner.set(0, flameBox.min.y, 0)).y - lightY;
+    const high = environment.worldToLocal(corner.set(0, flameBox.max.y, 0)).y - lightY;
+    // Only the top share of the flame's height, not its base.
+    return { owed: Math.random(), low: high - (high - low) * SPARKS.emitFlameFraction, high };
+  });
   const flamePosition = new THREE.Vector3();
   let next = 0;
 
-  const spawn = (origin: THREE.Vector3) => {
+  const spawn = (origin: THREE.Vector3, low: number, high: number) => {
     // Reuse the next dead slot, if any.
     for (let tries = 0; tries < max; tries++) {
       const i = (next + tries) % max;
@@ -127,7 +149,7 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
       const angle = Math.random() * Math.PI * 2;
       const radius = Math.sqrt(Math.random()) * SPARKS.emitRadius;
       base[i * 3] = origin.x + Math.cos(angle) * radius;
-      base[i * 3 + 1] = origin.y + SPARKS.emitOffsetY + (Math.random() - 0.5) * SPARKS.emitRadius;
+      base[i * 3 + 1] = origin.y + low + Math.random() * (high - low);
       base[i * 3 + 2] = origin.z + Math.sin(angle) * radius;
       velocity[i] = SPARKS.speedMin + Math.random() * (SPARKS.speedMax - SPARKS.speedMin);
       age[i] = 0;
@@ -170,7 +192,7 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
         environment.worldToLocal(flamePosition);
         while (emitter.owed >= 1) {
           emitter.owed -= 1;
-          spawn(flamePosition);
+          spawn(flamePosition, emitter.low, emitter.high);
         }
       });
 
