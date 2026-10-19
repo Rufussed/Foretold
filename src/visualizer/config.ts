@@ -588,12 +588,13 @@ export const TURN_HOURGLASS = {
 // ══════════════════════════════════════════════════════════════════════════
 
 export const CARDS = {
-  // Face colour for each suit, as CSS colours.
+  // Colour for each suit, as CSS colours: its element's colour (see
+  // elementColors), used for the trump chooser and the trump marker.
   suitColors: {
-    Red: "#c62828",
-    Green: "#2e7d32",
-    Blue: "#1565c0",
-    Yellow: "#f9a825",
+    Red: "#e92223",
+    Green: "#4ca450",
+    Blue: "#018bf6",
+    Yellow: "#f3e6c4",
   } as Record<string, string>,
 
   // The element each suit is drawn as: it names the card art's folder and
@@ -683,11 +684,11 @@ export const CARDS = {
     // when the file was made), the space it leaves at the top left black.
     ringCenterY: 0.5405,
     // The ring's radius, measured to the middle of its line.
-    ringRadius: 0.311,
+    ringRadius: 0.268,
     // The element at each cardinal point of the ring, clockwise from the top.
     ringElements: ["air", "fire", "water", "earth"],
     // Icon size, and its black outline and feather, as for the corner icons.
-    iconSize: 0.15,
+    iconSize: 0.18,
     iconOutline: 0.008,
     iconFeather: 0.012,
   },

@@ -25,9 +25,9 @@ import { renderNavbar } from "../components/Navbar";
 import { escapeHtml } from "../utils/escape-html";
 import { t, type MessageKey } from "../i18n";
 
-// About half the 400 points of a perfect three-player game, so short games
-// can earn a level too: 200 points stand in for one full game.
-const POINTS_PER_FULL_GAME = 200;
+// About half the 40 points of a perfect three-player game, so short games can
+// earn a level too: 20 points stand in for one full game.
+const POINTS_PER_FULL_GAME = 20;
 
 const PLAYER_LEVELS: { name: MessageKey; fullGames: number }[] = [
   { name: "profile.level.expert", fullGames: 75 },

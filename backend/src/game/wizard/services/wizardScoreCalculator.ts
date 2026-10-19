@@ -1,17 +1,22 @@
 import type { WizardGameState } from "../models/wizardGame.js";
+import {
+  EXACT_PREDICTION_BONUS,
+  MISS_PENALTY_PER_TRICK,
+  POINTS_PER_TRICK,
+} from "../scoringRules.js";
 
 export class ScoreCalculator {
-  // Wizard rewards an exact bid with a base bonus; misses lose ten points per
-  // trick of difference.
+  // An exact bid earns a base bonus plus points per trick won; a miss loses
+  // points per trick of difference (see scoringRules.ts).
   calculateRoundScore(
     prediction: number,
     actualTricks: number,
   ): number {
     if (prediction === actualTricks) {
-      return 20 + actualTricks * 10;
+      return EXACT_PREDICTION_BONUS + actualTricks * POINTS_PER_TRICK;
     }
 
-    return Math.abs(prediction - actualTricks) * -10;
+    return -Math.abs(prediction - actualTricks) * MISS_PENALTY_PER_TRICK;
   }
 
   // Record both the round result and the cumulative score for every player.

@@ -1,4 +1,5 @@
 import type { Suit } from "../../backend/src/game/wizard/models/card";
+import { cardFile } from "./card-art-files";
 import { trumpColor } from "./card-textures";
 import { CARDS } from "./config";
 import { canAct, isLocalTurn, type GameConnection } from "./game-connection";
@@ -19,8 +20,8 @@ export interface TrumpPromptOptions {
 }
 
 // "Choose Trumps": when the card turned up for trump is a Wizard or a Jester,
-// the round's first player picks the suit from four swatches in the suit
-// colours. The choice goes to the server as `choose_trump`. Sits where the
+// the round's first player picks the suit from four swatches, each the
+// suit's element icon ringed in its colour. The choice goes to the server as `choose_trump`. Sits where the
 // prediction prompt does, which follows it.
 export function createTrumpPrompt(
   root: HTMLElement,
@@ -53,7 +54,11 @@ export function createTrumpPrompt(
       button.setAttribute("aria-label", suitName(suit as Suit));
       const swatch = document.createElement("span");
       swatch.className = "trump-swatch";
-      swatch.style.background = trumpColor(suit);
+      swatch.style.borderColor = trumpColor(suit);
+      const icon = document.createElement("img");
+      icon.src = cardFile(`icons/${CARDS.suitElements[suit]}.webp`);
+      icon.alt = "";
+      swatch.append(icon);
       const name = document.createElement("span");
       name.textContent = suitName(suit as Suit);
       button.append(swatch, name);

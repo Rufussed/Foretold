@@ -3,13 +3,14 @@ import { gameWinners } from "./game-winner";
 import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
 import { t } from "../../i18n";
+import { EXACT_PREDICTION_BONUS, POINTS_PER_TRICK } from "../../../backend/src/game/wizard/scoringRules";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
 // and no timing: announcer.ts decides when each line shows.
 
 export interface RoundResultLine {
   label: string;
-  value: string; // signed, e.g. "+20" or "-10"
+  value: string; // signed, e.g. "+2" or "-1"
 }
 
 export interface RoundResult {
@@ -199,8 +200,8 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
     const lines: RoundResultLine[] =
       prediction === tricksWon
         ? [
-            { label: t("ann.bonus"), value: "+20" },
-            { label: t("ann.tricks"), value: signed(tricksWon * 10) },
+            { label: t("ann.bonus"), value: signed(EXACT_PREDICTION_BONUS) },
+            { label: t("ann.tricks"), value: signed(tricksWon * POINTS_PER_TRICK) },
           ]
         : [{ label: t("ann.offBy", { off: String(off) }), value: "" }];
     const summary = t("ann.predictedWon", { prediction: String(prediction), won: String(tricksWon) });

@@ -1153,11 +1153,21 @@ button {
   border-radius: 4px;
 }
 
+/* The element's icon on a dark card, ringed in the element's colour (set in
+   trump-prompt.ts). */
 .trump-swatch {
+  display: grid;
+  place-items: center;
   width: 56px;
   aspect-ratio: 5 / 7;
+  background: #0e0d0a;
   border: 2px solid rgba(191, 125, 47, 0.55);
   border-radius: 6px;
+}
+
+.trump-swatch img {
+  width: 70%;
+  height: auto;
 }
 
 .visualizer-page .trump-options button:hover:not(:disabled),
@@ -1703,33 +1713,34 @@ button {
   --emoticon-tint: #4a2488;
 }
 
-/* The trump colour announcement: the border in the suit's own colour. */
+/* The trump announcement: the border in the suit's element colour (red is
+   fire, green earth, blue water, yellow air; the names are the rules' own). */
 .visualizer-page .hud-announcer[data-suit="red"] {
   --border-dark: #6b1414;
-  --border-mid: #e53935;
+  --border-mid: #e92223;
   --border-glint: #ffc9c4;
-  --border-glow: rgb(229 57 53 / 35%);
+  --border-glow: rgb(233 34 35 / 35%);
 }
 
 .visualizer-page .hud-announcer[data-suit="green"] {
-  --border-dark: #14501f;
-  --border-mid: #43a047;
+  --border-dark: #1c4a20;
+  --border-mid: #4ca450;
   --border-glint: #d6ffd0;
-  --border-glow: rgb(67 160 71 / 35%);
+  --border-glow: rgb(76 164 80 / 35%);
 }
 
 .visualizer-page .hud-announcer[data-suit="blue"] {
-  --border-dark: #0d3a78;
-  --border-mid: #1e88e5;
+  --border-dark: #0a3f73;
+  --border-mid: #018bf6;
   --border-glint: #cfe6ff;
-  --border-glow: rgb(30 136 229 / 35%);
+  --border-glow: rgb(1 139 246 / 35%);
 }
 
 .visualizer-page .hud-announcer[data-suit="yellow"] {
-  --border-dark: #8a5d12;
-  --border-mid: #ffd54f;
-  --border-glint: #fff3b0;
-  --border-glow: rgb(255 196 64 / 35%);
+  --border-dark: #6e6448;
+  --border-mid: #f3e6c4;
+  --border-glint: #fffaf0;
+  --border-glow: rgb(243 230 196 / 35%);
 }
 
 .visualizer-page .hud-announcer.is-ingame {

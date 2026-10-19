@@ -10,6 +10,7 @@ import {
   type GameSocketMessage,
 } from "../services/gameSocket";
 import { escapeHtml } from "../utils/escape-html";
+import { t } from "../i18n";
 
 
 interface Card {
@@ -447,7 +448,7 @@ function renderGame(
             <span class="status-label">TRUMP</span>
             <strong>${formatCard(game.trumpCard)}
                     <div class="trump-suit">
-                      Trump Suit: ${game.trumpSuit ?? "None"}</div>
+                      Trump Suit: ${game.trumpSuit ? t(`suit.${game.trumpSuit}`) : "None"}</div>
             </strong>
           </div>
 
@@ -604,10 +605,10 @@ function renderGame(
                 <p>The turned card is a Jester. Choose the trump suit for this round.</p>
 
                 <div class="trump-suit-buttons">
-                  <button type="button" data-trump-suit="Blue">Blue</button>
-                  <button type="button" data-trump-suit="Red">Red</button>
-                  <button type="button" data-trump-suit="Yellow">Yellow</button>
-                  <button type="button" data-trump-suit="Green">Green</button>
+                  <button type="button" data-trump-suit="Blue">${t("suit.Blue")}</button>
+                  <button type="button" data-trump-suit="Red">${t("suit.Red")}</button>
+                  <button type="button" data-trump-suit="Yellow">${t("suit.Yellow")}</button>
+                  <button type="button" data-trump-suit="Green">${t("suit.Green")}</button>
                 </div>
               </section>
             `
@@ -1052,14 +1053,14 @@ function formatCard(
   }
 
   if (card.value === 14) {
-    return `Wizard of ${card.suit}`;
+    return `Wizard of ${t(`suit.${card.suit as Suit}`)}`;
   }
 
   if (card.value === 0) {
-    return `Jester of ${card.suit}`;
+    return `Jester of ${t(`suit.${card.suit as Suit}`)}`;
   }
 
-  return `${card.value} of ${card.suit}`;
+  return `${card.value} of ${t(`suit.${card.suit as Suit}`)}`;
 }
 
 function getErrorMessage(

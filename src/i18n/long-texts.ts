@@ -212,20 +212,20 @@ const rules = {
           Your score depends on how accurately you predict your tricks.
         </p>
         <ul>
-          <li>Predict correctly: +20 points, plus 10 points for
+          <li>Predict correctly: +2 points, plus 1 point for
             each trick you won.</li>
-          <li>Miss your prediction: −10 points for each trick
+          <li>Miss your prediction: −1 point for each trick
             of difference.</li>
         </ul>
 
         <div class="home-scoring-example">
           <strong>Examples</strong>
           <p>
-            Predict 0 and win 0: +20 points.<br>
-            Predict 2 and win 2: +40 points.<br>
-            Predict 3 and win 3: +50 points.<br>
-            Predict 2 and win 1: −10 points.<br>
-            Predict 2 and win 0: −20 points.
+            Predict 0 and win 0: +2 points.<br>
+            Predict 2 and win 2: +4 points.<br>
+            Predict 3 and win 3: +5 points.<br>
+            Predict 2 and win 1: −1 point.<br>
+            Predict 2 and win 0: −2 points.
           </p>
         </div>
       </section>
@@ -412,19 +412,19 @@ const rules = {
           Deine Punkte hängen davon ab, wie genau deine Ansage war.
         </p>
         <ul>
-          <li>Ansage getroffen: 20 Punkte, dazu 10 Punkte für jeden
+          <li>Ansage getroffen: 2 Punkte, dazu 1 Punkt für jeden
             gewonnenen Stich.</li>
-          <li>Ansage verfehlt: −10 Punkte für jeden Stich Unterschied.</li>
+          <li>Ansage verfehlt: −1 Punkt für jeden Stich Unterschied.</li>
         </ul>
 
         <div class="home-scoring-example">
           <strong>Beispiele</strong>
           <p>
-            0 angesagt, 0 gewonnen: +20 Punkte.<br>
-            2 angesagt, 2 gewonnen: +40 Punkte.<br>
-            3 angesagt, 3 gewonnen: +50 Punkte.<br>
-            2 angesagt, 1 gewonnen: −10 Punkte.<br>
-            2 angesagt, 0 gewonnen: −20 Punkte.
+            0 angesagt, 0 gewonnen: +2 Punkte.<br>
+            2 angesagt, 2 gewonnen: +4 Punkte.<br>
+            3 angesagt, 3 gewonnen: +5 Punkte.<br>
+            2 angesagt, 1 gewonnen: −1 Punkt.<br>
+            2 angesagt, 0 gewonnen: −2 Punkte.
           </p>
         </div>
       </section>
