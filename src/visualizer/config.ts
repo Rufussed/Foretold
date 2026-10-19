@@ -736,6 +736,11 @@ export const CARDS = {
 // ══════════════════════════════════════════════════════════════════════════
 
 export const CARD_HANDLING = {
+  // How far your own hand sits closer to the camera than the table's hand
+  // targets, in metres (scene units): straight out from the table's middle.
+  // Other players' hands are not moved.
+  handTowardCameraMetres: 0.2,
+
   // Outline around the card under the pointer, or being dragged.
   outlineColor: "#ffd54f",
 

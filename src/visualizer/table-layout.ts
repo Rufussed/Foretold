@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { CARD_HANDLING } from "./config";
 import { SEAT_IDS, type SeatId } from "./player-characters";
 import { numberedNodes, placementOf, type Placement } from "./placement";
 
@@ -45,7 +46,21 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
     return nodes.map((node) => placementOf(node, environment));
   };
 
-  const localHand = targets(/^card(\d+)$/);
+  // The targets as modelled: the other seats' hands are turned copies of these.
+  const modelledHand = targets(/^card(\d+)$/);
+  // Your own hand sits a little closer to the camera, straight out from the
+  // table's middle along the line to your seat.
+  const outward = modelledHand
+    .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
+    .setY(0)
+    .normalize();
+  const environmentScale = environment.getWorldScale(new THREE.Vector3()).x || 1;
+  const toCamera = outward.multiplyScalar(CARD_HANDLING.handTowardCameraMetres / environmentScale);
+  const localHand = modelledHand.map((slot) => ({
+    position: slot.position.clone().add(toCamera),
+    quaternion: slot.quaternion.clone(),
+    scale: slot.scale.clone(),
+  }));
   const played = targets(/^played-card-(\d+)$/);
   const stack = targets(/^stack-card-(\d+)$/);
   const trumpNode = environment.getObjectByName("trump-card") ?? null;
@@ -53,9 +68,9 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
   const trump = trumpNode ? placementOf(trumpNode, environment) : null;
 
   // Your seat has no target of its own; your hand set shows where it is.
-  const handCentre = localHand
+  const handCentre = modelledHand
     .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
-    .divideScalar(Math.max(localHand.length, 1));
+    .divideScalar(Math.max(modelledHand.length, 1));
   const localAngle = angleOf(handCentre);
 
   const seatAngles = new Map<SeatId, number>();
@@ -87,7 +102,7 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
           UP,
           (seatAngles.get(seat) ?? localAngle) - localAngle,
         );
-        hand = localHand.map((slot) => ({
+        hand = modelledHand.map((slot) => ({
           position: slot.position.clone().applyQuaternion(turn),
           quaternion: turn.clone().multiply(slot.quaternion),
           scale: slot.scale.clone(),
