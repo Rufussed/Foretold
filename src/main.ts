@@ -1,3 +1,4 @@
+import "@fontsource/uncial-antiqua/latin-400.css";
 import "./style.css";
 import { renderApp } from "./app";
 import { captureInstallPrompt } from "./utils/pwa-install";

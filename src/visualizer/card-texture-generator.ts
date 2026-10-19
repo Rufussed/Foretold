@@ -1,10 +1,11 @@
 import * as THREE from "three";
 import type { Card } from "../../backend/src/game/wizard/models/card";
 import { CARDS } from "./config";
+import { cardLabel, drawCardPrint } from "./card-label";
 
 // Card faces drawn in code: the suit colour with the value in both top
 // corners, black with a white outline. These were the placeholders the table
-// ran on before the scanned artwork in public/cards replaced them.
+// ran on before the scanned artwork in src/assets/cards replaced them.
 //
 // Nothing imports this at runtime any more. It is kept, and kept compiling,
 // because it is the way to put a number on a card without an artist: if we
@@ -16,13 +17,6 @@ export interface CardFaceOptions {
   color?: string;
   // Draw this in the corners instead of the card's value; "" leaves them blank.
   label?: string;
-}
-
-// In the game rules Jesters are value 0 and Wizards 14.
-export function cardLabel(card: Card): string {
-  if (card.value === 0) return "J";
-  if (card.value === 14) return "W";
-  return String(card.value);
 }
 
 const textures = new Map<string, THREE.CanvasTexture>();
@@ -57,29 +51,7 @@ export function generatedCardTexture(card: Card, options: CardFaceOptions = {}):
   }
   context.fillRect(0, 0, width, height);
 
-  const size = Math.round(width * CARDS.labelSize);
-  context.font = `900 ${size}px system-ui, sans-serif`;
-  context.textAlign = "left";
-  context.textBaseline = "alphabetic";
-  context.lineJoin = "round";
-  context.lineWidth = size * CARDS.outlineWidth;
-  context.strokeStyle = "#ffffff";
-  context.fillStyle = "#000000";
-
-  // Place by the glyphs' measured edges rather than the font's line box, which
-  // pads above the digits, so the gap is the same from the top and the sides.
-  // The gap runs to the outside of the outline.
-  const glyphs = context.measureText(label);
-  const inset = size * CARDS.labelMargin + context.lineWidth / 2;
-  const top = inset + glyphs.actualBoundingBoxAscent;
-  const left = inset + glyphs.actualBoundingBoxLeft;
-  const right = width - inset - glyphs.actualBoundingBoxRight;
-
-  for (const x of [left, right]) {
-    // Outline first, so the fill sits on top of its inner half.
-    context.strokeText(label, x, top);
-    context.fillText(label, x, top);
-  }
+  drawCardPrint(context, width, { label, color: "#ffffff" });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;

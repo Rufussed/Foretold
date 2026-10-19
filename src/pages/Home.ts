@@ -133,11 +133,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
         <header class="home-topbar">
           <a class="home-brand" href="#/home">
-            <img
-              class="home-logo"
-              src="/wizardLogo.webp"
-              alt="Wizard"
-            />
+            <span class="home-title">Foretold</span>
           </a>
 
           <button

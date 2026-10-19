@@ -4,7 +4,7 @@ import { CARDS } from "./config";
 import { cardArtTexture, cardBackTexture } from "./card-texture-loader";
 
 // The one place the table asks for a card's look. Faces are the scanned
-// artwork in public/cards; card-texture-generator.ts holds the drawn-in-code
+// artwork in src/assets/cards; card-texture-generator.ts holds the drawn-in-code
 // faces this replaced, kept for numbering a deck of our own later.
 
 export const cardKey = (card: Card): string => `${card.suit}-${card.value}`;

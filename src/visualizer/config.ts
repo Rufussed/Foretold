@@ -584,7 +584,7 @@ export const TURN_HOURGLASS = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
-// CARDS  (code-generated faces, until handmade textures replace them)
+// CARDS  (element art with the number printed on in code)
 // ══════════════════════════════════════════════════════════════════════════
 
 export const CARDS = {
@@ -594,6 +594,31 @@ export const CARDS = {
     Green: "#2e7d32",
     Blue: "#1565c0",
     Yellow: "#f9a825",
+  } as Record<string, string>,
+
+  // The element each suit is drawn as: it names the card art's folder and
+  // files (src/assets/cards/fire/fire-7.webp). The rules still know the suits
+  // by colour.
+  suitElements: {
+    Red: "fire",
+    Green: "earth",
+    Blue: "water",
+    Yellow: "air",
+  } as Record<string, string>,
+
+  // Each element's colour, from its icon: the number on its cards is filled
+  // with this.
+  elementColors: {
+    fire: "#e92223",
+    earth: "#4ca450",
+    water: "#018bf6",
+    air: "#f3e6c4",
+  } as Record<string, string>,
+
+  // Multiplied into an icon that is drawn white, so it matches its number;
+  // the other icons already carry their colour.
+  iconTints: {
+    air: "#f3e6c4",
   } as Record<string, string>,
 
   // Trump card colour when there's no trump suit: a Jester was turned up, or a
@@ -615,12 +640,67 @@ export const CARDS = {
   labelSize: 0.18,
 
   // White outline around the label, as a fraction of the label height.
-  outlineWidth: 0.08,
+  outlineWidth: 0.11,
+
+  // How far the black outline fades out past its edge, as a fraction of the
+  // label height. 0 is a hard edge.
+  outlineFeather: 0.1,
+
+  // The element icon under each number: its width as a fraction of the label
+  // height (a tall icon is shrunk to fit the same height), the gap above it as
+  // a fraction of the label height, and its black outline as a fraction of the
+  // number's outline.
+  iconSize: 0.8,
+  iconGap: 0.3,
+  iconOutline: 0.6,
 
   // Gap from the card's top and side edges to the outlined number, as a
-  // fraction of the label height. The mesh's corners are rounded to about
-  // 0.25 of the label height, so much below 0.1 starts to clip.
-  labelMargin: 0.12,
+  // fraction of the label height. 0 puts the outline's edge on the card's;
+  // the mesh's corners are rounded to about 0.25 of the label height, so low
+  // values can clip the corner of the first digit.
+  labelMargin: 0,
+
+  // Extra gap above the number, on top of labelMargin, as a fraction of the
+  // label height: it moves the numbers and icons down without moving them in
+  // from the sides.
+  labelTopMargin: 0.3,
+
+  // The card back's print, over the art's gold ring. Sizes are fractions of the
+  // card's width; the ring's own place was measured off the art, whose circle
+  // is centred on the card.
+  back: {
+    title: "Foretold",
+    titleColor: "#d4af37",
+    // The title's width, and the gap from its bottom to the top of the ring's
+    // icon.
+    titleWidth: 0.76,
+    titleGap: 0.13,
+    // Where the ring's centre sits down the card, as a fraction of its height:
+    // the art's circle is moved down this far from the middle (29px of 716,
+    // when the file was made), the space it leaves at the top left black.
+    ringCenterY: 0.5405,
+    // The ring's radius, measured to the middle of its line.
+    ringRadius: 0.311,
+    // The element at each cardinal point of the ring, clockwise from the top.
+    ringElements: ["air", "fire", "water", "earth"],
+    // Icon size, and its black outline and feather, as for the corner icons.
+    iconSize: 0.15,
+    iconOutline: 0.008,
+    iconFeather: 0.012,
+  },
+
+  // Handled-card wear: a vignette of this colour creeping in from the edges,
+  // broken up by noise. `width` is how far it reaches, `roughness` how far the
+  // noise pulls that edge in and out, and `grain` how speckled it is, all as
+  // fractions of the card width; `strength` is how opaque it gets at the very
+  // edge, 0 for none.
+  wear: {
+    color: "#e8dcb8",
+    width: 0.054,
+    roughness: 0.03,
+    grain: 0.35,
+    strength: 0.65,
+  },
 
   // How much the scanned card art is sharpened as it loads, 0 for none. The
   // art is shrunk to about 200 pixels, which softens it; this lifts the edges
