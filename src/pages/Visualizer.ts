@@ -400,9 +400,11 @@ export async function renderVisualizerPage(
       tableWidthPx: () => canvas.clientWidth * (sceneView?.tableWidthFraction() ?? 1),
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
-      // A Seer or Trickster changed a prediction: the falling chime, as for a
-      // red tesseract.
-      onPredictionChanged: () => cardTable?.playChime("lose"),
+      // A Seer or Trickster changed a prediction. Your own Seer's change gets the
+      // bright chime and a gold burst, as for a tesseract on target; an opponent's
+      // Trickster the falling chime and a red burst on its target's head.
+      onPredictionChanged: (byOther) => cardTable?.playChime(byOther ? "lose" : "win"),
+      onPredictionEffect: (username, byOther) => cardTable?.burstOnPlayer(username, byOther),
     });
 
     // Your move's countdown starts once your table has shown you your turn.

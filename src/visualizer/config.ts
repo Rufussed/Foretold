@@ -728,11 +728,20 @@ export const CARDS = {
     iconFeather: 0.012,
   },
 
-  // Art that is still a stand-in shared between elements gets a wash of its
-  // element's colour so the cards tell apart. Listed by file name; take a card
-  // off the list once it has art of its own. `tintStrength` is how much of the
-  // colour shows, 0 to 1.
-  tintedCards: [] as string[],
+  // Cards given a wash of their element's colour, listed by file name: all of
+  // air's thirteen ranks, to warm the pale sky into the same dark cream as its
+  // numbers and symbols, and the Fool, whose pale sky is too white too. The
+  // Wizards are left as drawn.
+  // `tintStrength` is how much of the colour shows, 0 to 1.
+  tintedCards: [
+    ...Array.from({ length: 13 }, (_, i) => `air-${i + 1}`),
+    "air-jester",
+    "earth-jester",
+    "fire-jester",
+    "water-jester",
+  ],
+  // The Fool's wash, the same dark cream as air's, on all four of them.
+  foolTint: "#e2c98a",
   tintStrength: 0.3,
 
   // Handled-card wear: a vignette of this colour creeping in from the edges,

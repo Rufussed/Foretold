@@ -84,6 +84,8 @@ function tintArt(context: CanvasRenderingContext2D, width: number, height: numbe
 function cardTint(card: Card): string | null {
   const element = cardElement(card);
   if (!CARDS.tintedCards.includes(`${element}-${cardArtName(card)}`)) return null;
+  // The Fool is one painting shared by all four, so it takes one colour.
+  if (card.value === 0) return CARDS.foolTint;
   return CARDS.elementColors[element] ?? null;
 }
 

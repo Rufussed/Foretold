@@ -133,6 +133,9 @@ export interface EventMessage {
   // A player whose prediction this announcement is about (a Seer or Trickster
   // changed it): the bottom-left list swaps in the new number as it is read out.
   changes?: string;
+  // A Trickster at work: someone else's prediction was changed, not the
+  // player's own.
+  byOther?: boolean;
 }
 
 // What a resolved power did, for the banner. A power left alone just says so,
@@ -209,7 +212,7 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     messages.push({
       text: powerMessage(power, local),
       username: power.username,
-      ...(power.target ? { changes: power.target } : {}),
+      ...(power.target ? { changes: power.target, byOther: power.target !== power.username } : {}),
     });
   }
 

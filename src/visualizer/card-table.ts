@@ -10,7 +10,7 @@ import { createCardSound } from "./card-sound";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
 import { cardKey, cardTexture } from "./card-textures";
-import { CARD_HANDLING } from "./config";
+import { BURST, CARD_HANDLING } from "./config";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
@@ -72,6 +72,10 @@ export interface CardTable {
   // The chime that goes with a burst: bright for "win", the falling one for
   // "lose" (the red tesseract's).
   playChime(outcome: "win" | "lose"): void;
+  // A burst of rays on a player, as when a tesseract dives into them: on their
+  // head, or in front of the camera if it is you. Red when an opponent changed
+  // their prediction, gold when they changed their own.
+  burstOnPlayer(username: string, byOther: boolean): void;
   update(deltaSeconds: number): void;
   dispose(): void;
 }
@@ -505,6 +509,19 @@ export function createCardTable({
     },
     playChime(outcome) {
       chime.play(outcome);
+    },
+
+    burstOnPlayer(username, byOther) {
+      const color = byOther ? BURST.overColor : BURST.color;
+      if (game && username === game.localUsername) {
+        const eye = view.camera.getWorldPosition(new THREE.Vector3());
+        const forward = view.camera.getWorldDirection(new THREE.Vector3());
+        burst.spawn(environment.worldToLocal(eye.addScaledVector(forward, BURST.cameraDistance)), color);
+        return;
+      }
+      const seat = seatOf(username);
+      const head = seat === null ? null : headOf(seat);
+      if (head) burst.spawn(environment.worldToLocal(head.clone()), color);
     },
 
     dispose() {

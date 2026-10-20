@@ -15,7 +15,10 @@ export interface GameHudOptions extends AnnouncerOptions {
   // Whether the current move's player has been announced; see player-list.ts.
   turnShown?(): boolean;
   // A prediction already made was changed, as it is announced; see player-list.ts.
-  onPredictionChanged?(): void;
+  onPredictionChanged?(byOther: boolean): void;
+  // The same moment, for the burst on that player: red if an opponent's
+  // Trickster changed it, gold if the player's own Seer did.
+  onPredictionEffect?(username: string, byOther: boolean): void;
 }
 
 export interface GameHud extends HudPart {
@@ -42,7 +45,10 @@ export function createGameHud(
   // After the panel, so a round's scores are held back before it redraws.
   const announcer = createAnnouncer(root, game, statusPanel, {
     ...options,
-    onPredictionChange: (username) => playerList.revealPrediction(username),
+    onPredictionChange: (username, byOther) => {
+      playerList.revealPrediction(username, byOther);
+      options.onPredictionEffect?.(username, byOther);
+    },
   });
   const playerList = createPlayerList(root, game, options);
   // The list before the announcer, so a change is waiting in it by the time the

@@ -44,14 +44,15 @@ export interface PlayerListOptions {
   turnShown?(): boolean;
   // Called when a prediction already made is changed, whether by its player's
   // Seer or an opponent's Trickster, just as the new number swells and flashes.
-  onPredictionChanged?(): void;
+  // byOther: it was an opponent's Trickster, not the player's own Seer.
+  onPredictionChanged?(byOther: boolean): void;
 }
 
 // The list, with a way to bring a changed prediction on show.
 export interface PlayerListPart extends HudPart {
   // The announcement of a prediction being changed is up: show the player's new
   // number, swelling and flashing, until now still the old one.
-  revealPrediction(username: string): void;
+  revealPrediction(username: string, byOther?: boolean): void;
 }
 
 // A changed prediction is shown as it is announced. If the announcement never
@@ -102,7 +103,7 @@ export function createPlayerList(
   // keeps its old number until revealPrediction brings the new one on show.
   const pendingChanges = new Map<string, { from: number; to: number; timer: number }>();
 
-  const reveal = (username: string) => {
+  const reveal = (username: string, byOther = false) => {
     const pending = pendingChanges.get(username);
     if (!pending) return;
     window.clearTimeout(pending.timer);
@@ -113,7 +114,7 @@ export function createPlayerList(
       row.prediction.set(pending.to);
       row.prediction.flash();
     }
-    options.onPredictionChanged?.();
+    options.onPredictionChanged?.(byOther);
   };
 
   // A round's end settles anything still waiting, without the fuss.
