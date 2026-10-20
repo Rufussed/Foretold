@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
-import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
+import { CARD_HANDLING, OPPONENT_PLAYS, PLAYED_CARDS } from "./config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
 import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
@@ -149,6 +149,34 @@ export function createTableCards(
   // per frame.
   let inUse = centredPlayedSlots(playerCount);
   const playedSlotsInUse = () => inUse;
+
+  // The played slots as they are drawn when `count` cards are in play. The
+  // first card goes to the middle and the rest spread out about it as they
+  // arrive: with `count` cards they take the middle `count` slots, so the group
+  // stays centred on the full set. The fewer cards, the bigger (see
+  // PLAYED_CARDS), with the spacing spread by the same amount to keep the gaps,
+  // and raised by half the extra height so a card grows upward from where its
+  // bottom edge was. Built once per count.
+  const scaledPlayed = new Map<number, readonly Placement[]>();
+  const playedSlotsFor = (count: number): readonly Placement[] => {
+    const shown = Math.max(1, Math.min(count, playerCount));
+    const cached = scaledPlayed.get(shown);
+    if (cached) return cached;
+
+    // The biggest with one card, smaller for each more, never below authored.
+    const factor = Math.max(1, PLAYED_CARDS.oneCard - PLAYED_CARDS.stepPerCard * (shown - 1));
+    const middle = centroid(playedSlots);
+    const slots = centredPlayedSlots(shown).map((slot) => ({
+      position: middle
+        .clone()
+        .add(slot.position.clone().sub(middle).multiplyScalar(factor))
+        .addScaledVector(up, ((factor - 1) / 2) * factory.length * slot.scale.z),
+      quaternion: slot.quaternion,
+      scale: slot.scale.clone().multiplyScalar(factor),
+    }));
+    scaledPlayed.set(shown, slots);
+    return slots;
+  };
   const trumpSlot = layout.trump;
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
   const liftFor = (slot: Placement) => CARD_HANDLING.raiseLengths * factory.length * slot.scale.z;
@@ -279,9 +307,16 @@ export function createTableCards(
   const targetOf = (entry: TableCard): { slot: Placement; lift: number } | null => {
     if (visibleHand().includes(entry.key)) {
       const slot = handSlotFor(entry.key);
-      return slot ? { slot, lift: entry.raised ? liftFor(slot) : 0 } : null;
+      if (!slot) return null;
+      if (!entry.raised) return { slot, lift: 0 };
+      // A raised card rises and grows to be read; the scale eases with the rest.
+      const raised = { ...slot, scale: slot.scale.clone().multiplyScalar(CARD_HANDLING.raisedScale) };
+      return { slot: raised, lift: liftFor(slot) };
     }
-    const inPlay = playedSlotsInUse();
+    // A card being played counts as in play already, so the others settle into
+    // their new size as it arrives.
+    const arriving = pending && !trickOrder.includes(pending.key) ? 1 : 0;
+    const inPlay = playedSlotsFor(trickOrder.length + arriving);
     if (pending?.key === entry.key) {
       const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
@@ -318,6 +353,7 @@ export function createTableCards(
       if (wanted === playerCount) return;
       playerCount = wanted;
       inUse = centredPlayedSlots(playerCount);
+      scaledPlayed.clear();
     },
 
     setTrump(card, trumpSuit) {

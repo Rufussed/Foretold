@@ -795,6 +795,9 @@ export const CARD_HANDLING = {
   // How far a clicked card rises, in card lengths.
   raiseLengths: 0.5,
 
+  // How much bigger a raised card is than in the hand, so it can be read.
+  raisedScale: 1.5,
+
   // How far above the hand a dragged card must be dropped to play it, in card
   // lengths. Separate from raiseLengths, so a small raise doesn't make cards
   // easy to play by accident.
@@ -845,6 +848,18 @@ export const DEALING = {
 // ══════════════════════════════════════════════════════════════════════════
 // OTHER PLAYERS' PLAYS  (bots' pacing is set in the backend: wizardTiming.ts)
 // ══════════════════════════════════════════════════════════════════════════
+
+// How big the cards in play are. With the table full (a card on each of the six
+// slots) they are the size they were authored at; with fewer they are larger,
+// easier to read on a small screen: oneCard times as big with a single card,
+// then smaller by stepPerCard (a fraction of the authored size) for every card
+// added, which brings six cards back to 1. The first card goes to the
+// middle and the others spread out about it as they arrive, with their spacing
+// growing with them so they never overlap.
+export const PLAYED_CARDS = {
+  oneCard: 1.4,
+  stepPerCard: 0.08,
+};
 
 export const OPPONENT_PLAYS = {
   // How far a played card rises out of its player's hand first, in card lengths.
