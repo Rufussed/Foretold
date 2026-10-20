@@ -658,6 +658,16 @@ export const CARDS = {
   iconGap: 0.3,
   iconOutline: 0.6,
 
+  // The card's title across its middle: its size as a fraction of the card's
+  // width (the numbers' size, 0.18, is a good match) and the widest share of
+  // the card it may take before it is shrunk to fit.
+  nameSize: 0.15,
+  nameMaxWidth: 0.78,
+
+  // The S or T above the number on a Seer or Trickster: the gap between it and
+  // the number, as a fraction of the label height.
+  badgeGap: 0.12,
+
   // Gap from the card's top and side edges to the outlined number, as a
   // fraction of the label height. 0 puts the outline's edge on the card's;
   // the mesh's corners are rounded to about 0.25 of the label height, so low

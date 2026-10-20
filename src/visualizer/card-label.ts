@@ -5,9 +5,9 @@ import { CARDS } from "./config";
 // colour with a black outline, and the element's icon under it. The art itself
 // carries neither.
 
-// In the game rules Jesters are value 0 and Wizards 14.
+// In the game rules the Fool (the Jester) is value 0 and the Wizard 14.
 export function cardLabel(card: Card): string {
-  if (card.value === 0) return "J";
+  if (card.value === 0) return "F";
   if (card.value === 14) return "W";
   return String(card.value);
 }
@@ -27,7 +27,14 @@ export function cardElement(card: Card): string {
 // uses it, and a canvas drawn before then falls back to a system face, so card
 // faces wait on this before printing.
 export const CARD_FONT = '"Uncial Antiqua"';
-export const cardFontReady = (): Promise<unknown> => document.fonts.load(`1em ${CARD_FONT}`);
+// The card's title across the middle is set in its own face.
+export const NAME_FONT = '"Merienda"';
+const NAME_WEIGHT = 700;
+export const cardFontReady = (): Promise<unknown> =>
+  Promise.all([
+    document.fonts.load(`1em ${CARD_FONT}`),
+    document.fonts.load(`${NAME_WEIGHT} 1em ${NAME_FONT}`),
+  ]);
 
 export interface CardPrint {
   label: string;
@@ -35,12 +42,31 @@ export interface CardPrint {
   color: string;
   // Drawn centred under the number, when there is one.
   icon?: HTMLImageElement | HTMLCanvasElement;
+  // A letter above the number in the special colour (S for a Seer, T for a
+  // Trickster); it pushes the number and the icon down a row.
+  badge?: string;
+  // The card's title in the hierarchy, printed across the middle of the card.
+  name?: string;
 }
 
-// Draws the print onto a face `width` pixels wide, which is what its size and
-// margins are measured against.
-export function drawCardPrint(context: CanvasRenderingContext2D, width: number, print: CardPrint): void {
-  const { label, color, icon } = print;
+// An outlined, feathered line of text: the black outline first, so the fill
+// sits on top of its inner half. Stroked twice because a shadow is faint on
+// its own: the second pass thickens the fade.
+function inkText(context: CanvasRenderingContext2D, text: string, x: number, y: number, fill: string, feather: number): void {
+  context.fillStyle = fill;
+  context.shadowColor = "#000000";
+  context.shadowBlur = feather;
+  context.strokeText(text, x, y);
+  context.strokeText(text, x, y);
+  context.shadowColor = "transparent";
+  context.shadowBlur = 0;
+  context.fillText(text, x, y);
+}
+
+// Draws the print onto a face `width` pixels wide and `height` tall, which is
+// what its size and margins are measured against.
+export function drawCardPrint(context: CanvasRenderingContext2D, width: number, height: number, print: CardPrint): void {
+  const { label, color, icon, badge, name } = print;
   if (!label) return;
 
   const size = Math.round(width * CARDS.labelSize);
@@ -69,26 +95,57 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   const penOffset = (glyphs.actualBoundingBoxRight - glyphs.actualBoundingBoxLeft) / 2;
 
   const feather = size * CARDS.outlineFeather;
+  // With a badge, the number drops a row below it.
+  const rowStep = badge ? wide.actualBoundingBoxAscent + context.lineWidth + size * CARDS.badgeGap : 0;
+  const numberTop = top + rowStep;
+  const badgeInk = badge ? context.measureText(badge) : null;
 
   for (const center of [centerOffset, width - centerOffset]) {
-    const x = center - penOffset;
-    // Outline first, so the fill sits on top of its inner half. Stroked twice
-    // because a shadow is faint on its own: the second pass thickens the fade.
-    context.shadowColor = "#000000";
-    context.shadowBlur = feather;
-    context.strokeText(label, x, top);
-    context.strokeText(label, x, top);
-    context.shadowColor = "transparent";
-    context.shadowBlur = 0;
-    context.fillText(label, x, top);
+    if (badge && badgeInk) {
+      const badgePen = (badgeInk.actualBoundingBoxRight - badgeInk.actualBoundingBoxLeft) / 2;
+      inkText(context, badge, center - badgePen, top, CARDS.specialColor, feather);
+    }
+
+    inkText(context, label, center - penOffset, numberTop, color, feather);
+
     if (icon) {
-      drawIcon(context, icon, center, top + context.lineWidth / 2 + size * CARDS.iconGap, {
+      drawIcon(context, icon, center, numberTop + context.lineWidth / 2 + size * CARDS.iconGap, {
         box: size * CARDS.iconSize,
         outline: (size * CARDS.outlineWidth * CARDS.iconOutline) / 2,
         feather: size * CARDS.outlineFeather,
       });
     }
   }
+
+  // A Seer or Trickster's title is yellow like its letter; the rest take the
+  // number's colour.
+  if (name) drawName(context, width, height, name, badge ? CARDS.specialColor : color);
+}
+
+// The card's title across its middle, in the number's font and outline.
+// It is as large as the numbers unless that would run wider than the share of
+// the card allowed, and then it is shrunk to fit.
+function drawName(context: CanvasRenderingContext2D, width: number, height: number, name: string, color: string): void {
+  let size = Math.round(width * CARDS.nameSize);
+  context.font = `${NAME_WEIGHT} ${size}px ${NAME_FONT}, serif`;
+  const measured = context.measureText(name).width;
+  const room = width * CARDS.nameMaxWidth;
+  if (measured > room) {
+    size = Math.round((size * room) / measured);
+    context.font = `${NAME_WEIGHT} ${size}px ${NAME_FONT}, serif`;
+  }
+
+  context.textAlign = "center";
+  context.textBaseline = "alphabetic";
+  context.lineJoin = "round";
+  context.lineWidth = size * CARDS.outlineWidth;
+  context.strokeStyle = "#000000";
+
+  // Centred on the card's middle by the ink's own height, not the line box.
+  const ink = context.measureText(name);
+  const baseline = height / 2 + (ink.actualBoundingBoxAscent - ink.actualBoundingBoxDescent) / 2;
+  inkText(context, name, width / 2, baseline, color, size * CARDS.outlineFeather);
+  context.textAlign = "left";
 }
 
 export interface IconStyle {

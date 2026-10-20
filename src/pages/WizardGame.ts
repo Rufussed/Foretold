@@ -1057,7 +1057,7 @@ function formatCard(
   }
 
   if (card.value === 0) {
-    return `Jester of ${t(`suit.${card.suit as Suit}`)}`;
+    return `Fool of ${t(`suit.${card.suit as Suit}`)}`;
   }
 
   return `${card.value} of ${t(`suit.${card.suit as Suit}`)}`;

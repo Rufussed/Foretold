@@ -2,6 +2,9 @@
 export interface RoundStat {
   element: HTMLElement;
   set(value: number | null): void;
+  // Swells the number and flashes it for a second, to draw the eye to a
+  // change it did not make itself (see .is-flashing in the stylesheet).
+  flash(): void;
 }
 
 export interface RoundStatOptions {
@@ -27,6 +30,14 @@ export function createRoundStat(label: string, options: RoundStatOptions = {}): 
     element,
     set(value) {
       valueEl.textContent = value === null ? "–" : String(value);
+    },
+
+    flash() {
+      // Restarts the animation if one is still running.
+      valueEl.classList.remove("is-flashing");
+      void valueEl.offsetWidth;
+      valueEl.classList.add("is-flashing");
+      valueEl.addEventListener("animationend", () => valueEl.classList.remove("is-flashing"), { once: true });
     },
   };
 }

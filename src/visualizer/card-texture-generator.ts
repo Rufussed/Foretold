@@ -51,7 +51,7 @@ export function generatedCardTexture(card: Card, options: CardFaceOptions = {}):
   }
   context.fillRect(0, 0, width, height);
 
-  drawCardPrint(context, width, { label, color: "#ffffff" });
+  drawCardPrint(context, width, height, { label, color: "#ffffff" });
 
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;

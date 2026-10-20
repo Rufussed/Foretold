@@ -42,6 +42,9 @@ export interface PlayerListOptions {
   // Whether the current move's player has been announced. The highlight moves
   // to them then, not when their turn begins on the server.
   turnShown?(): boolean;
+  // Called once whenever a prediction already made is changed, whether by its
+  // player's Seer or an opponent's Trickster; the number has just flashed.
+  onPredictionChanged?(): void;
 }
 
 // Bottom left: every player, you included, in the order they predict this
@@ -80,6 +83,10 @@ export function createPlayerList(
   headings.append(tricksHeading, predictionsHeading, orderHeading);
 
   const rows = new Map<string, Row>();
+  // Each player's prediction as last shown, and the round it was for, to tell
+  // a prediction being changed from one being made.
+  const shownPredictions = new Map<string, number | null>();
+  let shownRound: number | undefined;
   let order = "";
   // Who is highlighted: the player whose move was last announced.
   let highlighted: string | undefined;
@@ -166,6 +173,8 @@ export function createPlayerList(
       }
       const current = highlighted;
 
+      let changed = false;
+
       for (const player of players) {
         const row = rows.get(player.username)!;
         row.element.classList.toggle("is-you", player.username === game.localUsername);
@@ -174,6 +183,16 @@ export function createPlayerList(
         const prediction = played ? played.prediction : player.prediction;
         const tricksWon = played ? played.tricksWon : player.tricksWon;
         row.prediction.set(prediction);
+
+        // A prediction already made, now a different number in the same round:
+        // a Seer or a Trickster at work. It swells and flashes.
+        const before = shownPredictions.get(player.username);
+        if (!holding && shownRound === state.currentRound && before != null && player.prediction !== null && player.prediction !== before) {
+          row.prediction.flash();
+          changed = true;
+        }
+        if (!holding) shownPredictions.set(player.username, player.prediction);
+
         row.won.set(tricksWon);
         row.won.element.dataset.standing = standing(tricksWon, prediction);
 
@@ -188,6 +207,9 @@ export function createPlayerList(
             .catch((error) => console.warn(`[hud] no headshot for ${character}:`, error));
         }
       }
+
+      if (!holding) shownRound = state.currentRound;
+      if (changed) options.onPredictionChanged?.();
 
       grid.hidden = players.length === 0;
       guides.update();

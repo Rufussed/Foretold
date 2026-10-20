@@ -1119,6 +1119,57 @@ button {
   opacity: 0.5;
 }
 
+/* Seer / Trickster prompt: the same buttons as the prediction prompt, for the
+   numbers on offer and for the players the Trickster can change. */
+.power-targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.power-targets:empty,
+.power-actions:empty,
+.prediction-options:empty {
+  display: none;
+}
+
+.visualizer-page .power-targets button,
+.visualizer-page .power-actions button {
+  padding: 10px 14px;
+  color: rgba(244, 235, 217, 0.9);
+  background: rgba(10, 10, 8, 0.45);
+  border: 1px solid rgba(191, 125, 47, 0.32);
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.visualizer-page .power-targets button:hover:not(:disabled),
+.visualizer-page .power-actions button:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(191, 125, 47, 0.12);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+.power-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.visualizer-page .power-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: rgba(244, 235, 217, 0.62);
+}
+
+/* The number already held: choosing it changes nothing. */
+.visualizer-page .prediction-options button.is-current {
+  border-style: dashed;
+}
+
 .prediction-error {
   margin: 6px 0 0;
   color: #e0a14d;
@@ -1299,6 +1350,50 @@ button {
 .hud-stat-value {
   font-size: 20px;
   font-weight: 400;
+  /* So it can be scaled: a transform has no effect on an inline box. */
+  display: inline-block;
+}
+
+/* A prediction changed by a Seer or Trickster: the number swells by 60% and
+   flashes for a second, then settles back. */
+.hud-stat-value.is-flashing {
+  animation:
+    stat-swell 1s ease-out,
+    stat-flash 1s linear;
+}
+
+@keyframes stat-swell {
+  0% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.6);
+  }
+  85% {
+    transform: scale(1.6);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes stat-flash {
+  0%,
+  40%,
+  80%,
+  100% {
+    filter: none;
+  }
+  20%,
+  60% {
+    filter: brightness(2.4) drop-shadow(0 0 6px #fff);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-stat-value.is-flashing {
+    animation: stat-flash 1s linear;
+  }
 }
 
 /* Bottom left: every player, you included, one compact line each. Tighter than the

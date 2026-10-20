@@ -6,6 +6,8 @@ import { sharpenImage } from "./card-sharpen";
 import { wearCard } from "./card-wear";
 import { prepareCardBack, type FacePrint } from "./card-back";
 import { cardElement, cardFontReady, cardLabel, drawCardPrint, isSpecialCard } from "./card-label";
+import { t, type MessageKey } from "../i18n";
+import { powerOf } from "../../backend/src/game/wizard/models/card";
 import { CARDS } from "./config";
 
 // Loads the card art from src/assets/cards. One file per card, plus the single
@@ -26,7 +28,8 @@ export function cardArtUrl(card: Card): string {
 }
 
 // What a card's face needs printed on it: its number in its element's colour,
-// and the element's icon. Jesters and Wizards have no suit, so they get their
+// the element's icon and its title across the middle (a Seer or Trickster also
+// carries a letter above the number). Jesters and Wizards have no suit, so they get their
 // letter in the special colour and no icon. The font and the icon are fetched
 // on first use, so a face waits on both; if either fails the face still gets
 // what did arrive.
@@ -38,8 +41,23 @@ async function cardPrint(card: Card): Promise<FacePrint> {
     cardFontReady().catch(() => {}),
   ]);
   const color = special ? CARDS.specialColor : CARDS.elementColors[element] ?? "#ffffff";
-  const print = { label: cardLabel(card), color, icon };
-  return (context, width) => drawCardPrint(context, width, print);
+  const print = { label: cardLabel(card), color, icon, badge: cardBadge(card), name: cardTitle(card) };
+  return (context, width, height) => drawCardPrint(context, width, height, print);
+}
+
+// The Seer carries an S and the Trickster a T, until each has a symbol of its
+// own.
+function cardBadge(card: Card): string | undefined {
+  const power = powerOf(card);
+  return power === "seer" ? "S" : power === "trickster" ? "T" : undefined;
+}
+
+// The card's title, in the language being played: its rank in the hierarchy,
+// or Fool and Wizard for the two outside it.
+function cardTitle(card: Card): string {
+  if (card.value === 0) return t("card.jester");
+  if (card.value === 14) return t("card.wizard");
+  return t(`rank.${card.value}` as MessageKey);
 }
 
 // Washes the art with a colour, keeping its light and dark: the "color" blend
@@ -145,7 +163,8 @@ function load(
 
 // Cards sharing a file can still differ in number and tint, so both are part of
 // what tells their textures apart.
-const faceId = (card: Card): string => `${cardLabel(card)}${cardTint(card) ?? ""}`;
+// A title in another language is another face, so the title is part of it too.
+const faceId = (card: Card): string => `${cardLabel(card)}${cardTint(card) ?? ""}${cardTitle(card) ?? ""}`;
 
 export const cardArtTexture = (card: Card): THREE.Texture =>
   load(cardArtUrl(card), faceId(card), () => cardPrint(card), cardTint(card));

@@ -14,6 +14,8 @@ export interface GameHudOptions extends AnnouncerOptions {
   tableRound?(): number | undefined;
   // Whether the current move's player has been announced; see player-list.ts.
   turnShown?(): boolean;
+  // A prediction already made was changed; see player-list.ts.
+  onPredictionChanged?(): void;
 }
 
 export interface GameHud extends HudPart {

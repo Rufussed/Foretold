@@ -20,6 +20,7 @@
     "typescript": "~6.0.2"
   },
   "dependencies": {
+    "@fontsource/merienda": "^5.3.0",
     "@fontsource/uncial-antiqua": "^5.3.0",
     "@types/three": "^0.186.0",
     "qrcode": "^1.5.4",

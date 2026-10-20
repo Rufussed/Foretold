@@ -1,8 +1,8 @@
 import { displayName } from "../../utils/display-name";
 import { gameWinners } from "./game-winner";
-import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
-import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
-import { t } from "../../i18n";
+import type { PublicGamePlayer, PublicWizardGameState, TrickPower } from "../../../backend/src/game/wizard/models/wizardGame";
+import type { Card, CardPower, Suit } from "../../../backend/src/game/wizard/models/card";
+import { t, type MessageKey } from "../../i18n";
 import { EXACT_PREDICTION_BONUS, POINTS_PER_TRICK } from "../../../backend/src/game/wizard/scoringRules";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
@@ -38,8 +38,12 @@ export const suitName = (suit: Suit): string => t(`suit.${suit}`);
 export function cardName(card: Card): string {
   if (card.value === 14) return t("card.wizard");
   if (card.value === 0) return t("card.jester");
-  return t("card.suitValue", { suit: suitName(card.suit), value: String(card.value) });
+  // Named by its rank in the hierarchy: "Fire Monarch".
+  return t("card.suitRank", { suit: suitName(card.suit), rank: t(`rank.${card.value}` as MessageKey) });
 }
+
+// "Seer" or "Trickster".
+export const powerName = (kind: CardPower): string => t(kind === "seer" ? "rank.8" : "rank.7");
 
 // "A Wizard was turned up for trumps", or a Jester.
 export const turnedUpMessage = (card: Card | null) =>
@@ -78,6 +82,15 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       return current === local
         ? t("ann.youPredictOrder", { order: when })
         : t("ann.predictsOrder", { name: announcedName(current), order: when });
+    }
+    case "power": {
+      // The winner of a trick with a Seer or Trickster decides how to use it.
+      const power = state.currentTrick.power;
+      if (!current || !power) return null;
+      const name = powerName(power.kind);
+      return current === local
+        ? t("ann.usePower", { power: name })
+        : t("ann.usingPower", { name: announcedName(current), power: name });
     }
     case "playing":
       // A finished trick keeps its own announcement until the next one starts.
@@ -119,6 +132,36 @@ export interface EventMessage {
   username: string;
 }
 
+// What a resolved power did, for the banner. A power left alone just says so,
+// with no target named.
+function powerMessage(power: TrickPower, local: string): string {
+  const mine = power.username === local;
+  const kind = powerName(power.kind);
+
+  if (power.target === null || power.from === null || power.to === null) {
+    return mine
+      ? t("ann.youPowerUnused", { power: kind })
+      : t("ann.powerUnused", { name: announcedName(power.username), power: kind });
+  }
+
+  const change = { from: String(power.from), to: String(power.to) };
+
+  if (power.kind === "seer") {
+    return mine
+      ? t("ann.youSeerUsed", change)
+      : t("ann.seerUsed", { name: announcedName(power.username), ...change });
+  }
+
+  if (power.target === local) {
+    return t("ann.tricksterUsedOnYou", { name: announcedName(power.username), ...change });
+  }
+
+  const target = announcedName(power.target);
+  return mine
+    ? t("ann.youTricksterUsed", { target, ...change })
+    : t("ann.tricksterUsed", { name: announcedName(power.username), target, ...change });
+}
+
 // One-off events between two snapshots, in the order they happened: new
 // predictions, then a trick being won.
 export function eventMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
@@ -155,6 +198,12 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
         username: chooser,
       });
     }
+  }
+
+  // A Seer or Trickster's power just used, or passed on.
+  const power = next.currentTrick.power;
+  if (power?.resolved && !previous.currentTrick.power?.resolved) {
+    messages.push({ text: powerMessage(power, local), username: power.username });
   }
 
   const winner = next.currentTrick.winnerUsername;

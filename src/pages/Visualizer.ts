@@ -43,6 +43,7 @@ import { createTableDirector, type TableDirector } from "../visualizer/table-dir
 import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
+import { createPowerPrompt, type PowerPrompt } from "../visualizer/power-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
@@ -91,6 +92,7 @@ export async function renderVisualizerPage(
   let cardTable: CardTable | null = null;
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
+  let powerPrompt: PowerPrompt | null = null;
   let gameHud: GameHud | null = null;
   let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
@@ -126,6 +128,7 @@ export async function renderVisualizerPage(
     tableDirector?.dispose();
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
+    powerPrompt?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
     timeoutNotice?.dispose();
@@ -329,6 +332,7 @@ export async function renderVisualizerPage(
     applyHud: () => {
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
+      powerPrompt?.applyState();
       gameHud?.applyState();
       hourglassTurns?.applyState();
       timeoutNotice?.applyState();
@@ -384,6 +388,10 @@ export async function renderVisualizerPage(
     trumpPrompt = createTrumpPrompt(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
+    // Winning a trick with a Seer or Trickster: its winner chooses how to use it.
+    powerPrompt = createPowerPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
+    });
     // The banner's gameplay lines wait until every card, trump included, has landed.
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
@@ -392,6 +400,9 @@ export async function renderVisualizerPage(
       tableWidthPx: () => canvas.clientWidth * (sceneView?.tableWidthFraction() ?? 1),
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
+      // A Seer or Trickster changed a prediction: the falling chime, as for a
+      // red tesseract.
+      onPredictionChanged: () => cardTable?.playChime("lose"),
     });
 
     // Your move's countdown starts once your table has shown you your turn.
@@ -412,6 +423,7 @@ export async function renderVisualizerPage(
       onTimedOut: () => {
         predictionPrompt?.applyState();
         trumpPrompt?.applyState();
+        powerPrompt?.applyState();
       },
     });
 
@@ -605,6 +617,7 @@ export async function renderVisualizerPage(
         const refusal = serverError(message, "game.refused");
         predictionPrompt?.refused(refusal);
         trumpPrompt?.refused(refusal);
+        powerPrompt?.refused(refusal);
         gameHud?.refused(message.error ?? "");
       }
       },

@@ -69,6 +69,9 @@ export interface CardTable {
   // Demo table: play the trick reward to a random player (you included); the
   // round-end version also gathers the trump and takes its colour.
   playTestReward(roundOver: boolean): void;
+  // The chime that goes with a burst: bright for "win", the falling one for
+  // "lose" (the red tesseract's).
+  playChime(outcome: "win" | "lose"): void;
   update(deltaSeconds: number): void;
   dispose(): void;
 }
@@ -500,6 +503,10 @@ export function createCardTable({
       burst.update(deltaSeconds);
       // crown.update(deltaSeconds);
     },
+    playChime(outcome) {
+      chime.play(outcome);
+    },
+
     dispose() {
       controls.dispose();
       blindControls.dispose();

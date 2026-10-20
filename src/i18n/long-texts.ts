@@ -51,8 +51,8 @@ const rules = {
         <p>
           Foretold is played with a 60-card deck containing four elemental
           suits (Fire, Earth, Water, and Air), numbered cards, Wizards, and
-          Jesters.
-          Wizards are the highest-ranking special cards, while Jesters
+          Fools.
+          Wizards are the highest-ranking special cards, while Fools
           are the lowest. The game also uses a score pad.
         </p>
       </section>
@@ -135,14 +135,14 @@ const rules = {
           The first card played determines the lead suit. Players
           must follow that suit whenever possible. If you have no
           cards of the lead suit, you may play any card, including
-          a trump card, Wizard, or Jester.
+          a trump card, Wizard, or Fool.
         </p>
         <ol>
           <li>The highest-numbered card of the lead suit normally wins.</li>
           <li>A trump card beats cards of the lead suit.</li>
           <li>If multiple trump cards are played, the highest-numbered
             trump card wins, unless a Wizard determines the winner.</li>
-          <li>Wizards and Jesters follow their special rules.</li>
+          <li>Wizards and Fools follow their special rules.</li>
         </ol>
       </section>
 
@@ -166,7 +166,7 @@ const rules = {
           throughout the round.
         </p>
         <p>
-          <strong>If the revealed card is a Jester:</strong>
+          <strong>If the revealed card is a Fool:</strong>
           There is no trump suit for that round. The rim remains white.
         </p>
         <p>
@@ -182,7 +182,7 @@ const rules = {
       </section>
 
       <section class="home-rules-section">
-        <h3>Wizards and Jesters</h3>
+        <h3>Wizards and Fools</h3>
 
         <p>
           <strong>Wizards:</strong> Wizards can be played at any time,
@@ -200,10 +200,38 @@ const rules = {
           gets rid of your Wizard without winning the trick.
         </p>
         <p>
-          <strong>Jesters:</strong> Jesters are the lowest-ranking
+          <strong>Fools:</strong> Fools are the lowest-ranking
           cards and normally lose tricks. They can be played at any
           time and are useful when you want to avoid winning a trick.
-          If only Jesters are played, the first Jester wins.
+          If only Fools are played, the first Fool wins.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Ranks and Powers</h3>
+        <p>
+          Each element has thirteen ranks, from lowest to highest:
+          Peasant, Farmer, Citizen, Soldier, Merchant, Priest,
+          Trickster, Seer, Noble, General, Heir, Consort and Monarch.
+          Each card shows its rank's title across the middle.
+        </p>
+        <p>
+          The Trickster and the Seer are ordinary cards that follow suit
+          and rank like any other, but win a trick with one and you may
+          change a prediction by one, up or down. The new prediction must
+          stay between 0 and the number of the round. Choosing the number
+          already there changes nothing.
+        </p>
+        <ul>
+          <li><strong>Seer:</strong> change your own prediction.</li>
+          <li><strong>Trickster:</strong> choose an opponent and change
+            theirs.</li>
+        </ul>
+        <p>
+          The power works in any round, including the last trick, and
+          only for the player who wins the trick with the card. If a
+          Wizard wins the trick, or a higher card beats the Seer or
+          Trickster, there is no power.
         </p>
       </section>
 
@@ -404,6 +432,34 @@ const rules = {
           und verlieren normalerweise den Stich. Du darfst sie immer
           spielen, praktisch, wenn du einen Stich nicht gewinnen willst.
           Liegen nur Narren im Stich, gewinnt der erste.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Ränge und Kräfte</h3>
+        <p>
+          Jedes Element hat dreizehn Ränge, vom niedrigsten zum höchsten:
+          Bauer, Landwirt, Bürger, Soldat, Händler, Priester, Trickser,
+          Seher, Adel, General, Erbe, Konsort und Monarch. Jede Karte
+          trägt den Titel ihres Rangs in der Mitte.
+        </p>
+        <p>
+          Trickser und Seher sind normale Karten, die Farbe bedienen und
+          wie alle anderen eingeordnet werden. Wer aber einen Stich mit
+          einer von ihnen gewinnt, darf eine Ansage um eins erhöhen oder
+          senken. Die neue Ansage bleibt zwischen 0 und der Rundennummer.
+          Bleibt die Zahl gleich, ändert sich nichts.
+        </p>
+        <ul>
+          <li><strong>Seher:</strong> ändert die eigene Ansage.</li>
+          <li><strong>Trickser:</strong> ändert die Ansage eines
+            Mitspielers deiner Wahl.</li>
+        </ul>
+        <p>
+          Die Kraft gilt in jeder Runde, auch im letzten Stich, und nur
+          für wen den Stich mit der Karte gewinnt. Gewinnt ein Zauberer
+          den Stich oder eine höhere Karte schlägt Seher oder Trickser,
+          gibt es keine Kraft.
         </p>
       </section>
 
