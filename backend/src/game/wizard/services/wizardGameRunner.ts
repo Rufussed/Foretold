@@ -68,14 +68,32 @@ export class WizardGameRunner {
             game.players.length
         ) {
           // Keep the completed trick visible briefly before clearing it and
-          // moving the winner into the lead position.
-          await this.wait(WIZARD_TIMING.trickHoldMs, pace);
+          // moving the winner into the lead position. A trick won with a Seer
+          // or Trickster is held for its winner's power first; once that has
+          // been used, only a short hold is left.
+          const powerUsed = !!game.currentTrick.power?.resolved;
+          await this.wait(
+            powerUsed ? WIZARD_TIMING.afterPowerHoldMs : WIZARD_TIMING.trickHoldMs,
+            pace,
+          );
 
           const currentGame =
             wizardSessionManager.getGame(roomId);
 
           if (!currentGame) {
             return;
+          }
+
+          if (this.gameService.hasPendingPower(currentGame)) {
+            // The winner chooses next: the same turn machinery as any move,
+            // with the winner already the current player.
+            this.gameService.beginPower(currentGame);
+            currentGame.turnDeadlineAt = null;
+            wizardSessionManager.saveGame(currentGame);
+            this.broadcast(roomId);
+
+            await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+            continue;
           }
 
           this.gameService.advanceAfterTrick(currentGame);
@@ -203,6 +221,48 @@ export class WizardGameRunner {
         // If a human timed out, clear the deadline before making the
         // decision so the next turn can receive its own deadline.
         
+        // --------------------------------------------------
+        // SEER / TRICKSTER POWER
+        // --------------------------------------------------
+
+        if (decisionGame.phase === "power") {
+          // A bot is seen to think about it; a human whose time ran out
+          // leaves it alone.
+          if (!timedOutHuman) {
+            await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
+          }
+
+          const stillDeciding = wizardSessionManager.getGame(roomId);
+          if (
+            !stillDeciding ||
+            stillDeciding.phase !== "power" ||
+            stillDeciding.turnDeadlineAt !== decisionGame.turnDeadlineAt ||
+            stillDeciding.players[stillDeciding.currentPlayerIndex]?.username !== decisionPlayer.username
+          ) {
+            continue;
+          }
+
+          if (timedOutHuman) {
+            this.gameService.skipPower(stillDeciding, decisionPlayer.username);
+          } else {
+            const choice = this.botService.chooseCardPower(stillDeciding);
+
+            // A Trickster with nobody worth changing is left unused.
+            if (stillDeciding.currentTrick.power?.kind === "trickster" && choice.target === null) {
+              this.gameService.skipPower(stillDeciding, decisionPlayer.username);
+            } else {
+              this.gameService.usePower(stillDeciding, decisionPlayer.username, choice);
+            }
+          }
+
+          stillDeciding.turnDeadlineAt = null;
+          wizardSessionManager.saveGame(stillDeciding);
+          this.broadcast(roomId);
+
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+          continue;
+        }
+
         // --------------------------------------------------
         // BOT TRUMP SELECTION
         if (decisionGame.phase === "trump-selection") {

@@ -1,14 +1,17 @@
 import type { Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { isBlindRound, normalizeGameOptions } from "../gameOptions.js";
+import type { PowerChoice } from "./powers.js";
 
-// The three decisions a bot makes, each for the player whose turn it is.
+// The decisions a bot makes, each for the player whose turn it is.
 export interface BotStrategy {
   chooseTrumpSuit(game: WizardGameState): Suit;
   // How many tricks it will take; the caller keeps it off a forbidden number.
   estimatePrediction(game: WizardGameState): number;
   // An index into the current player's hand, of a card it may legally play.
   chooseCardIndex(game: WizardGameState): number;
+  // What to do with the Seer or Trickster it has just won a trick with.
+  choosePower(game: WizardGameState): PowerChoice;
 }
 
 export function currentPlayer(game: WizardGameState) {

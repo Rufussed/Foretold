@@ -6,6 +6,12 @@ export const GAMEPLAY_RULES = {
   // player must miss. false lets them choose anything.
   lastPredictionCannotMatchTricks: true,
 
+  // The Seer and the Trickster (ranks 8 and 7) are ordinary cards with a power
+  // for whoever wins a trick with one: the Seer moves the winner's own
+  // prediction, the Trickster an opponent's, by one either way. false makes
+  // them plain cards.
+  cardPowersEnabled: true,
+
   // When an NPC would choose that forbidden number, how often it goes one lower
   // instead (the rest of the time it goes one higher). Where only one of those
   // is possible (0 has no lower, the round's tricks no higher), it takes that.

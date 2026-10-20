@@ -1,44 +1,14 @@
 import type { Card, Suit } from "../models/card.js";
-import { isJester, isWizard } from "../models/card.js";
+import { isJester, isWizard, powerOf } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { normalizeGameOptions } from "../gameOptions.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
+import { crowdFactor, strength, trickChance } from "./handStrength.js";
+import { expectedSeerChoice, expectedTricksterChoice } from "./powerReasoning.js";
 
 const rules = new WizardRules();
-
-// The chance a card takes a trick, against two opponents. Trumps beat every
-// other suit, so even a middling one often wins; outside trumps only the top
-// cards do.
-function trickChance(card: Card, trumpSuit: Suit | null): number {
-  if (isWizard(card)) return 1;
-  if (isJester(card)) return 0;
-
-  if (card.suit === trumpSuit) {
-    if (card.value >= 12) return 0.9;
-    if (card.value >= 9) return 0.65;
-    if (card.value >= 5) return 0.4;
-    return 0.2;
-  }
-
-  if (card.value === 13) return 0.7;
-  if (card.value === 12) return 0.5;
-  if (card.value === 11) return 0.3;
-  return 0;
-}
-
-// Every extra opponent is another chance of a higher card, so a card that is
-// not a Wizard is worth less the more players there are.
-const crowdFactor = (playerCount: number): number => 1 - 0.12 * (playerCount - 3);
-
-// How good a card is to hold: Wizards above trumps above other suits, Jesters
-// below everything.
-function strength(card: Card, trumpSuit: Suit | null): number {
-  if (isWizard(card)) return 100;
-  if (isJester(card)) return -1;
-  return (card.suit === trumpSuit ? 20 : 0) + card.value;
-}
 
 // The second bot: it bids on the chance each card has of winning, counting
 // trumps and the number of opponents, then plays to make that bid exactly.
@@ -103,19 +73,42 @@ export const adept: BotStrategy = {
     const losers = legal.filter((play) => !winsNow(play));
     const playsLast = played.length === game.players.length - 1;
 
+    // A winner that carries a power: a Seer or a Trickster that takes the
+    // trick pays off on top of the trick itself.
+    const withPower = (plays: typeof winners, kind: "seer" | "trickster") =>
+      plays.filter(({ card }) => powerOf(card) === kind);
+
     if (wantsTricks) {
       if (winners.length === 0) return weakest(legal).index;
-      // Last, the cheapest winner is enough. Earlier, a strong one stands a
-      // better chance against the players still to come, but a Wizard is
-      // only spent when nothing else wins.
-      if (playsLast) return weakest(winners).index;
+      // Last, the cheapest winner is enough, but one that carries a power is
+      // free value: the Trickster knocks back a rival, the Seer can still mend
+      // its own bid. Earlier, a strong one stands a better chance against the
+      // players still to come, but a Wizard is only spent when nothing else wins.
+      if (playsLast) {
+        const powered = [...withPower(winners, "trickster"), ...withPower(winners, "seer")];
+        return (powered.length > 0 ? weakest(powered) : weakest(winners)).index;
+      }
       const notWizards = winners.filter(({ card }) => !isWizard(card));
       return strongest(notWizards.length > 0 ? notWizards : winners).index;
     }
 
     // Enough tricks: lose this one with the highest card that still loses,
-    // so it can't win a trick later; if every card wins, the weakest.
+    // so it can't win a trick later.
     if (losers.length > 0) return strongest(losers).index;
+
+    // Every card wins, so the bid is about to be overshot. A Seer takes the
+    // trick and raises the bid to match, so the extra win costs nothing (if
+    // the round allows a higher bid); a Trickster at least makes use of it.
+    const seers = (player.prediction ?? 0) + 1 <= game.currentRound ? withPower(winners, "seer") : [];
+    if (seers.length > 0) return weakest(seers).index;
+    const tricksters = withPower(winners, "trickster");
+    if (tricksters.length > 0) return weakest(tricksters).index;
     return weakest(winners).index;
+  },
+
+  choosePower(game) {
+    return game.currentTrick.power?.kind === "seer"
+      ? expectedSeerChoice(game)
+      : expectedTricksterChoice(game);
   },
 };

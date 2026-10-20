@@ -8,7 +8,8 @@ import {
   normalizeGameOptions,
   type WizardGameOptions,
 } from "../gameOptions.js";
-import { isJester, isWizard } from "../models/card.js";
+import { isJester, isWizard, powerOf } from "../models/card.js";
+import { GAMEPLAY_RULES } from "../gameplayRulesConfig.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
 
@@ -16,6 +17,7 @@ import type {
   GamePlayer,
   PlayedCard,
   PublicWizardGameState,
+  TrickPower,
   TrickState,
   WizardGameState,
 } from "../models/wizardGame.js";
@@ -306,7 +308,117 @@ export class WizardGameService {
     game.currentTrick.winnerUsername = winnerUsername;
     game.currentPlayerIndex = winnerIndex;
 
+    // Winning with a Seer or a Trickster earns its power, to be used before the
+    // trick is cleared (see beginPower and usePower).
+    const winningCard = game.currentTrick.playedCards.find(
+      (played) => played.username === winnerUsername,
+    )?.card;
+    const kind = winningCard ? powerOf(winningCard) : null;
+
+    if (kind && GAMEPLAY_RULES.cardPowersEnabled) {
+      game.currentTrick.power = {
+        kind,
+        username: winnerUsername,
+        resolved: false,
+        target: null,
+        from: null,
+        to: null,
+      };
+    }
+
     return winnerUsername;
+  }
+
+  // Whether a won trick is waiting on its winner to use, or pass on, a power.
+  hasPendingPower(game: WizardGameState): boolean {
+    const power = game.currentTrick.power;
+
+    return !!power && !power.resolved;
+  }
+
+  // The power waiting on this player to use it, or an error saying why not.
+  private pendingPowerOf(game: WizardGameState, username: string): TrickPower {
+    const power = game.currentTrick.power;
+
+    if (game.phase !== "power" || !power || power.resolved) {
+      throw new Error("There is no power to use right now");
+    }
+
+    if (power.username !== username) {
+      throw new Error("It is not your power to use");
+    }
+
+    return power;
+  }
+
+  // The finished trick has been shown; now the winner decides. The winner is
+  // already the current player, so the turn machinery (timer, prompts) applies.
+  beginPower(game: WizardGameState): void {
+    if (!this.hasPendingPower(game) || game.phase !== "playing") {
+      throw new Error("There is no power to use");
+    }
+
+    game.phase = "power";
+  }
+
+  // The winner's choice. A Seer changes the winner's own prediction; a
+  // Trickster an opponent's. The new number is the old one, one more or one
+  // less, within 0 to the round number; the same number changes nothing, and
+  // then no target is recorded. Resolving hands the game back to "playing", with
+  // the finished trick still on the table for the runner to clear.
+  usePower(
+    game: WizardGameState,
+    username: string,
+    choice: { target?: string | null; prediction: number },
+  ): void {
+    const power = this.pendingPowerOf(game, username);
+
+    if (!Number.isInteger(choice.prediction)) {
+      throw new Error("Prediction must be a whole number");
+    }
+
+    if (choice.prediction < 0 || choice.prediction > game.currentRound) {
+      throw new Error(`Prediction must be between 0 and ${game.currentRound}`);
+    }
+
+    const targetName = power.kind === "seer" ? username : choice.target;
+    const target = game.players.find((player) => player.username === targetName);
+
+    if (!target) {
+      throw new Error("Choose a player to change");
+    }
+
+    if (power.kind === "trickster" && target.username === username) {
+      throw new Error("The Trickster changes an opponent's prediction");
+    }
+
+    const from = target.prediction;
+
+    if (from === null) {
+      throw new Error("That player has no prediction to change");
+    }
+
+    if (Math.abs(choice.prediction - from) > 1) {
+      throw new Error("A prediction can only change by one");
+    }
+
+    if (choice.prediction !== from) {
+      target.prediction = choice.prediction;
+      power.target = target.username;
+      power.from = from;
+      power.to = choice.prediction;
+    }
+
+    power.resolved = true;
+    game.phase = "playing";
+  }
+
+  // The winner left it alone, or ran out of time.
+  skipPower(game: WizardGameState, username: string): void {
+    const power = this.pendingPowerOf(game, username);
+
+    power.resolved = true;
+    game.phase = "playing";
   }
 
   startNextTrick(game: WizardGameState): void {
@@ -466,6 +578,10 @@ export class WizardGameService {
   }
 
   advanceAfterTrick(game: WizardGameState): void {
+    if (this.hasPendingPower(game)) {
+      throw new Error("The trick's power has not been used yet");
+    }
+
     const allHandsEmpty = game.players.every(
       (player) => player.hand.length === 0,
     );

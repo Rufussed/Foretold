@@ -19,6 +19,8 @@ interface SocketMessage {
 	cardIndex?: number;
 	suit?: string;
 	emote?: string;
+	// A Seer or Trickster's power: whose prediction, and what it becomes.
+	target?: string;
 }
 
 function isSuit(value: unknown): value is Suit {
@@ -268,6 +270,21 @@ export function registerWizardSocket(
 						}
 
 						gameService.playCard(currentGame, message.cardIndex);
+					} else if (message.type === "skip_power") {
+						gameService.skipPower(currentGame, username);
+					} else if (message.type === "use_power") {
+						if (
+							typeof message.prediction !== "number" ||
+							!Number.isInteger(message.prediction) ||
+							message.prediction < 0
+						) {
+							throw new Error("Invalid prediction");
+						}
+
+						gameService.usePower(currentGame, username, {
+							target: typeof message.target === "string" ? message.target : null,
+							prediction: message.prediction,
+						});
 					} else if (message.type === "choose_trump") {
 						if (!isSuit(message.suit)) {
 							throw new Error("Invalid suit");

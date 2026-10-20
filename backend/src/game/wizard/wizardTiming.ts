@@ -26,6 +26,10 @@ export const WIZARD_TIMING = {
   // tesseract through this, so the two are timed against each other.
   trickHoldMs: 2500,
 
+  // After a Seer or Trickster power has been used, before the trick is cleared,
+  // so the table can show and announce what it did.
+  afterPowerHoldMs: 2000,
+
   // After any move is broadcast, before the runner looks at the game again: a
   // beat for the table to show what just happened rather than the next move
   // landing on top of it.

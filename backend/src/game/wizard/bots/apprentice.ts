@@ -3,6 +3,7 @@ import { SUITS } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
+import { seerChoice } from "./powers.js";
 
 const rules = new WizardRules();
 
@@ -78,5 +79,12 @@ export const apprentice: BotStrategy = {
     }
 
     return playableIndex;
+  },
+
+  // It only mends its own prediction with the Seer, and leaves the Trickster.
+  choosePower(game) {
+    return game.currentTrick.power?.kind === "seer"
+      ? seerChoice(game)
+      : { target: null, prediction: currentPlayer(game).prediction ?? 0 };
   },
 };

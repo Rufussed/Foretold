@@ -4,6 +4,7 @@ import type { WizardGameState } from "../models/wizardGame.js";
 import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.js";
 import { strategyFor } from "../bots/index.js";
 import { currentPlayer } from "../bots/personality.js";
+import type { PowerChoice } from "../bots/powers.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 // Makes the moves of whoever's turn it is, as their bot personality would
@@ -37,5 +38,9 @@ export class WizardBotService {
 
   chooseCardIndex(game: WizardGameState): number {
     return strategyFor(currentPlayer(game)).chooseCardIndex(game);
+  }
+
+  chooseCardPower(game: WizardGameState): PowerChoice {
+    return strategyFor(currentPlayer(game)).choosePower(game);
   }
 }

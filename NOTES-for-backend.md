@@ -145,3 +145,93 @@ when the shape of a table has to change:
 inside the deployed tree. On shared hosting point it somewhere a deployment
 cannot reach, e.g. `DB_PATH=/home/<user>/wizard-data/wizard.sqlite`, and move the
 existing file there once. The directory is created if it is missing.
+
+## Seer and Trickster powers, scoring and elements (`foretold` branch, 2026-10)
+
+For Carlos: what changed on the backend, and why. Everything below is on the
+`foretold` branch; `master`, `Rufus` and `carlos` are untouched.
+
+**Rules**
+
+- Ranks 7 and 8 of every suit are now the **Trickster** (7) and the **Seer** (8).
+  They are ordinary cards: they follow suit and rank by number like any other,
+  and the deck is still 60 cards, so the rounds per player count are unchanged.
+  `models/card.ts` has `TRICKSTER_VALUE`, `SEER_VALUE`, `CardPower` and
+  `powerOf(card)`.
+- **Win a trick with one and its winner may change a prediction by one.** The
+  Seer changes the winner's own, the Trickster an opponent's. The new number is
+  the old one -1, +0 or +1, kept within 0 to the round number (the cards dealt).
+  Choosing the number already held means no change. There is no cap per round
+  and it works on the last trick (the score is worked out after it). If a Wizard
+  or a higher card wins the trick, nothing happens.
+- Switch: `GAMEPLAY_RULES.cardPowersEnabled` in `gameplayRulesConfig.ts`.
+
+**How it works**
+
+- `TrickState.power` (`models/wizardGame.ts`): `{ kind, username, resolved,
+  target, from, to }`. Set by `resolveTrick` when the winning card is a Seer or
+  Trickster. It is part of the public state, because the visualiser announces
+  from it. `target`, `from` and `to` stay `null` when nothing changed.
+- New game phase **`"power"`** (in `WizardGameState` and `PublicWizardGameState`).
+  The winner is already `currentPlayerIndex`, so the usual turn machinery
+  applies: the turn timer, `turn_ready`, and `turnDeadlineAt`.
+- `wizardGameService.ts`: `hasPendingPower`, `beginPower` (playing -> power),
+  `usePower` (validates, applies, power -> playing) and `skipPower`.
+  `advanceAfterTrick` refuses to clear a trick whose power is still pending.
+- `wizardGameRunner.ts`: after the finished trick has been held, a pending power
+  moves the game to `"power"` and waits for the winner. A bot decides after
+  `botTrumpDelayMs`; a human who runs out of time leaves it alone (`skipPower`).
+  After the power the trick is held for `WIZARD_TIMING.afterPowerHoldMs` and
+  then cleared as before.
+- New socket messages (`websocket/wizardSocket.ts`):
+  `{ "type": "use_power", "target"?: string, "prediction": number }` (target is
+  required for the Trickster and ignored for the Seer) and
+  `{ "type": "skip_power" }`.
+- Bots: `BotStrategy.choosePower` (`bots/personality.ts`).
+  - The **Apprentice** (`bots/powers.ts`) only mends its own prediction with a
+    Seer, when it can no longer come true, and never uses a Trickster.
+  - The **Adept** (`bots/powerReasoning.ts`) works out what each prediction is
+    worth. With `r` tricks left and `w` won, a player ends on `w + X`, X being
+    0 to r more wins; a prediction's worth is its expected round score over that
+    distribution of X (using the real scoring from `scoringRules.ts`). Its own
+    X comes from the cards it still holds (the Poisson binomial of each card's
+    chance of winning, as for its bidding); an opponent's, whose hand it can't
+    see, is chance with an extra pull towards the exact bid they are playing for.
+    - **Seer:** compare its own prediction with the one above and the one below,
+      and move only if the neighbour is worth clearly more (margin 0.05). On the
+      last trick nothing is left to chance, so it sets the prediction to the
+      tricks it has won, if that is within one.
+    - **Trickster:** for every opponent and each nudge (up or down, within 0 to
+      the round), the points that nudge costs them; take the biggest loss, counted
+      1.5 times as much against the leading opponent, and use it only if the loss is
+      at least 0.3. Otherwise it is left unused. It never nudges towards what
+      would help them.
+    - **Playing the cards** (`bots/adept.ts`): when it wants the trick and plays
+      last, a winning Trickster or Seer is chosen over the cheapest winner; when it
+      has what it bid for but every card wins, it plays a Seer (it can raise its
+      bid to match, so the extra trick costs nothing) and failing that a Trickster.
+    - In a 180-game test (3 players, seats rotated) an Adept with this reasoning
+      won 51% of games against Adepts using the simple rule (33% is even) and
+      averaged 15.6 points against 6.3; with 4 players 32% against 25%.
+- Tests: `services/cardPowers.test.ts` (rules, range, who may use it, scoring,
+  bots). A simulation of 400 all-NPC games also ran without a stuck state.
+
+**Scoring divided by ten** (earlier in the same branch)
+
+- An exact prediction is now 2 plus 1 per trick won; a miss is -1 per trick of
+  difference. The numbers live in the new `scoringRules.ts`, which the score
+  calculator and the visualiser's round results both read.
+- The profile level threshold in `src/pages/Profile.ts` moved from 200 to 20
+  points per full game to match. Points already stored in a database are not
+  converted.
+
+**Things to know**
+
+- The suits are still `Red`/`Green`/`Blue`/`Yellow` in the backend and the
+  database. Only the visualiser shows them as Fire/Earth/Water/Air
+  (`CARDS.suitElements`, and the `suit.*` strings in `src/i18n`).
+- The old text interface (`src/pages/WizardGame.ts`) has no prompt for the
+  `"power"` phase. A human there is left to the turn timer, which leaves the
+  power unused; with "No limit" the game would wait for ever.
+- German rank titles (`rank.*` in `src/i18n/de.ts`) are a first draft and want a
+  native speaker's eye.

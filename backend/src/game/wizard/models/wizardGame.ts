@@ -1,5 +1,5 @@
 import type { AvatarId } from "./avatar.js";
-import type { Card, Suit } from "./card.js";
+import type { Card, CardPower, Suit } from "./card.js";
 import type { BotPersonality } from "../botLevels.js";
 import type { WizardGameOptions } from "../gameOptions.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
@@ -47,9 +47,25 @@ export interface PlayedCard {
   card: Card;
 }
 
+// What winning a trick with a Seer or a Trickster did. It starts unresolved,
+// while the winner decides; resolving it fills in the rest.
+export interface TrickPower {
+  kind: CardPower;
+  // Who won the trick with the card, and so who uses the power.
+  username: string;
+  resolved: boolean;
+  // Whose prediction changed (the winner's own for a Seer), the number it was
+  // and the number it became. All null when the winner left it alone.
+  target: string | null;
+  from: number | null;
+  to: number | null;
+}
+
 export interface TrickState {
   playedCards: PlayedCard[];
   winnerUsername: string | null;
+  // Set when the winning card was a Seer or a Trickster.
+  power?: TrickPower;
 }
 
 export interface WizardGameState {
@@ -64,7 +80,7 @@ export interface WizardGameState {
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished" | "expired";
   deck: Card[];
-  phase: "trump-selection" | "predictions" | "playing" | "finished";
+  phase: "trump-selection" | "predictions" | "playing" | "power" | "finished";
   // How fast this game plays out; chosen in room setup. See gameplayPace.ts.
   // Games saved before the pace existed have none, so read it through
   // clampPace rather than trusting it.
@@ -101,7 +117,7 @@ export interface PublicWizardGameState {
   trumpSuit: Suit | null;
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
-  phase: "trump-selection" | "predictions" | "playing" | "finished";
+  phase: "trump-selection" | "predictions" | "playing" | "power" | "finished";
   deckCount: number;
   // The game's pace, so the visualiser scales its beats to match the server's.
   pace: number;
