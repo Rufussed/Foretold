@@ -42,10 +42,21 @@ export interface PlayerListOptions {
   // Whether the current move's player has been announced. The highlight moves
   // to them then, not when their turn begins on the server.
   turnShown?(): boolean;
-  // Called once whenever a prediction already made is changed, whether by its
-  // player's Seer or an opponent's Trickster; the number has just flashed.
+  // Called when a prediction already made is changed, whether by its player's
+  // Seer or an opponent's Trickster, just as the new number swells and flashes.
   onPredictionChanged?(): void;
 }
+
+// The list, with a way to bring a changed prediction on show.
+export interface PlayerListPart extends HudPart {
+  // The announcement of a prediction being changed is up: show the player's new
+  // number, swelling and flashing, until now still the old one.
+  revealPrediction(username: string): void;
+}
+
+// A changed prediction is shown as it is announced. If the announcement never
+// comes up, it shows anyway after this long.
+const REVEAL_FALLBACK_MS = 20_000;
 
 // Bottom left: every player, you included, in the order they predict this
 // round: the first to predict first, the second second, and so on. The first
@@ -57,7 +68,7 @@ export function createPlayerList(
   root: HTMLElement,
   game: GameConnection,
   options: PlayerListOptions = {},
-): HudPart {
+): PlayerListPart {
   const grid = document.createElement("section");
   grid.className = "hud-panel hud-opponents";
   grid.setAttribute("aria-label", t("game.players"));
@@ -87,6 +98,29 @@ export function createPlayerList(
   // a prediction being changed from one being made.
   const shownPredictions = new Map<string, number | null>();
   let shownRound: number | undefined;
+  // Changes the game state has made that have not been announced yet: the row
+  // keeps its old number until revealPrediction brings the new one on show.
+  const pendingChanges = new Map<string, { from: number; to: number; timer: number }>();
+
+  const reveal = (username: string) => {
+    const pending = pendingChanges.get(username);
+    if (!pending) return;
+    window.clearTimeout(pending.timer);
+    pendingChanges.delete(username);
+    shownPredictions.set(username, pending.to);
+    const row = rows.get(username);
+    if (row) {
+      row.prediction.set(pending.to);
+      row.prediction.flash();
+    }
+    options.onPredictionChanged?.();
+  };
+
+  // A round's end settles anything still waiting, without the fuss.
+  const settlePending = () => {
+    for (const pending of pendingChanges.values()) window.clearTimeout(pending.timer);
+    pendingChanges.clear();
+  };
   let order = "";
   // Who is highlighted: the player whose move was last announced.
   let highlighted: string | undefined;
@@ -173,26 +207,43 @@ export function createPlayerList(
       }
       const current = highlighted;
 
-      let changed = false;
+      if (holding || (shownRound !== undefined && shownRound !== state.currentRound)) settlePending();
 
       for (const player of players) {
         const row = rows.get(player.username)!;
         row.element.classList.toggle("is-you", player.username === game.localUsername);
         row.element.classList.toggle("is-current", player.username === current);
         const played = holding ? player.roundScores.at(-1) : undefined;
-        const prediction = played ? played.prediction : player.prediction;
+        let prediction = played ? played.prediction : player.prediction;
         const tricksWon = played ? played.tricksWon : player.tricksWon;
-        row.prediction.set(prediction);
 
         // A prediction already made, now a different number in the same round:
-        // a Seer or a Trickster at work. It swells and flashes.
-        const before = shownPredictions.get(player.username);
-        if (!holding && shownRound === state.currentRound && before != null && player.prediction !== null && player.prediction !== before) {
-          row.prediction.flash();
-          changed = true;
+        // a Seer or a Trickster at work. The old number stays until the change
+        // is announced (see revealPrediction).
+        if (!holding) {
+          const before = shownPredictions.get(player.username);
+          const waiting = pendingChanges.get(player.username);
+          if (waiting && player.prediction !== null) {
+            waiting.to = player.prediction;
+            prediction = waiting.from;
+          } else if (
+            shownRound === state.currentRound &&
+            before != null &&
+            player.prediction !== null &&
+            player.prediction !== before
+          ) {
+            pendingChanges.set(player.username, {
+              from: before,
+              to: player.prediction,
+              timer: window.setTimeout(() => reveal(player.username), REVEAL_FALLBACK_MS),
+            });
+            prediction = before;
+          } else {
+            shownPredictions.set(player.username, player.prediction);
+          }
         }
-        if (!holding) shownPredictions.set(player.username, player.prediction);
 
+        row.prediction.set(prediction);
         row.won.set(tricksWon);
         row.won.element.dataset.standing = standing(tricksWon, prediction);
 
@@ -209,13 +260,15 @@ export function createPlayerList(
       }
 
       if (!holding) shownRound = state.currentRound;
-      if (changed) options.onPredictionChanged?.();
 
       grid.hidden = players.length === 0;
       guides.update();
     },
 
+    revealPrediction: reveal,
+
     dispose() {
+      settlePending();
       guides.dispose();
       grid.remove();
     },

@@ -1833,7 +1833,7 @@ button {
 
 .visualizer-page .hud-announcer[data-suit="yellow"] {
   --border-dark: #6e6448;
-  --border-mid: #f3e6c4;
+  --border-mid: #e2c98a;
   --border-glint: #fffaf0;
   --border-glow: rgb(243 230 196 / 35%);
 }

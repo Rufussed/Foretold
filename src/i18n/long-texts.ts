@@ -213,25 +213,22 @@ const rules = {
           Each element has thirteen ranks, from lowest to highest:
           Peasant, Farmer, Citizen, Soldier, Merchant, Priest,
           Trickster, Seer, Noble, General, Heir, Consort and Monarch.
-          Each card shows its rank's title across the middle.
+          Each card shows its title across the middle.
         </p>
         <p>
-          The Trickster and the Seer are ordinary cards that follow suit
-          and rank like any other, but win a trick with one and you may
-          change a prediction by one, up or down. The new prediction must
-          stay between 0 and the number of the round. Choosing the number
-          already there changes nothing.
+          The <strong>Seer</strong> (an eye) and the <strong>Trickster</strong>
+          (a mask) follow suit and rank like any other card, but win the
+          trick with one and you may change a prediction by one, up or down:
         </p>
         <ul>
-          <li><strong>Seer:</strong> change your own prediction.</li>
-          <li><strong>Trickster:</strong> choose an opponent and change
-            theirs.</li>
+          <li><strong>Seer:</strong> your own prediction.</li>
+          <li><strong>Trickster:</strong> an opponent's prediction.</li>
         </ul>
         <p>
-          The power works in any round, including the last trick, and
-          only for the player who wins the trick with the card. If a
-          Wizard wins the trick, or a higher card beats the Seer or
-          Trickster, there is no power.
+          A prediction stays between 0 and the round's number, and keeping
+          it as it is uses no power. It works in any round, even the last
+          trick. If a Wizard or a higher card wins the trick, there is no
+          power.
         </p>
       </section>
 
@@ -441,25 +438,23 @@ const rules = {
           Jedes Element hat dreizehn Ränge, vom niedrigsten zum höchsten:
           Bauer, Landwirt, Bürger, Soldat, Händler, Priester, Trickser,
           Seher, Adel, General, Erbe, Konsort und Monarch. Jede Karte
-          trägt den Titel ihres Rangs in der Mitte.
+          trägt ihren Titel in der Mitte.
         </p>
         <p>
-          Trickser und Seher sind normale Karten, die Farbe bedienen und
-          wie alle anderen eingeordnet werden. Wer aber einen Stich mit
-          einer von ihnen gewinnt, darf eine Ansage um eins erhöhen oder
-          senken. Die neue Ansage bleibt zwischen 0 und der Rundennummer.
-          Bleibt die Zahl gleich, ändert sich nichts.
+          Der <strong>Seher</strong> (ein Auge) und der <strong>Trickser</strong>
+          (eine Maske) bedienen Farbe und zählen wie jede andere Karte. Wer
+          aber einen Stich mit einer von ihnen gewinnt, darf eine Ansage um
+          eins erhöhen oder senken:
         </p>
         <ul>
-          <li><strong>Seher:</strong> ändert die eigene Ansage.</li>
-          <li><strong>Trickser:</strong> ändert die Ansage eines
-            Mitspielers deiner Wahl.</li>
+          <li><strong>Seher:</strong> die eigene Ansage.</li>
+          <li><strong>Trickser:</strong> die Ansage eines Mitspielers.</li>
         </ul>
         <p>
-          Die Kraft gilt in jeder Runde, auch im letzten Stich, und nur
-          für wen den Stich mit der Karte gewinnt. Gewinnt ein Zauberer
-          den Stich oder eine höhere Karte schlägt Seher oder Trickser,
-          gibt es keine Kraft.
+          Eine Ansage bleibt zwischen 0 und der Rundennummer; bleibt sie
+          gleich, wird keine Kraft eingesetzt. Die Kraft gilt in jeder
+          Runde, auch im letzten Stich. Gewinnt ein Zauberer oder eine
+          höhere Karte den Stich, gibt es keine Kraft.
         </p>
       </section>
 

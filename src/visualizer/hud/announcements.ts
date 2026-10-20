@@ -130,6 +130,9 @@ export function trumpMessage(state: PublicWizardGameState): string | null {
 export interface EventMessage {
   text: string;
   username: string;
+  // A player whose prediction this announcement is about (a Seer or Trickster
+  // changed it): the bottom-left list swaps in the new number as it is read out.
+  changes?: string;
 }
 
 // What a resolved power did, for the banner. A power left alone just says so,
@@ -203,7 +206,11 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   // A Seer or Trickster's power just used, or passed on.
   const power = next.currentTrick.power;
   if (power?.resolved && !previous.currentTrick.power?.resolved) {
-    messages.push({ text: powerMessage(power, local), username: power.username });
+    messages.push({
+      text: powerMessage(power, local),
+      username: power.username,
+      ...(power.target ? { changes: power.target } : {}),
+    });
   }
 
   const winner = next.currentTrick.winnerUsername;

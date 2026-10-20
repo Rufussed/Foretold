@@ -65,6 +65,9 @@ export interface AnnouncerOptions {
   seatOf?(username: string): number | null;
   // The table's width on screen, in pixels, which the seat offsets are a share of.
   tableWidthPx?(): number;
+  // An announcement that a player's prediction was changed has just come up:
+  // the list swaps in the new number now (see player-list.ts).
+  onPredictionChange?(username: string): void;
 }
 
 export function createAnnouncer(
@@ -224,7 +227,9 @@ export function createAnnouncer(
       if (!state) return;
 
       if (previous) {
-        for (const message of eventMessages(previous, state, game.localUsername)) queue.push(message);
+        for (const { changes, ...message } of eventMessages(previous, state, game.localUsername)) {
+          queue.push(changes ? { ...message, onShow: () => options.onPredictionChange?.(changes) } : message);
+        }
 
         const results = roundResults(previous, state);
         if (results.length) {

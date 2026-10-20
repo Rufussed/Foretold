@@ -42,9 +42,15 @@ export interface CardPrint {
   color: string;
   // Drawn centred under the number, when there is one.
   icon?: HTMLImageElement | HTMLCanvasElement;
-  // A letter above the number in the special colour (S for a Seer, T for a
-  // Trickster); it pushes the number and the icon down a row.
-  badge?: string;
+  // A symbol in the special colour, in the top corner: under the number and the
+  // element icon on a Seer or Trickster, and on its own (no number) on a Fool
+  // or Wizard.
+  badge?: HTMLImageElement | HTMLCanvasElement;
+  // Scales the symbol, on top of CARDS.symbolSize; 1 if left out.
+  badgeScale?: number;
+  // The gap above the symbol, under the element icon, as a fraction of the
+  // label height; the default is CARDS.badgeGap.
+  badgeGap?: number;
   // The card's title in the hierarchy, printed across the middle of the card.
   name?: string;
 }
@@ -66,8 +72,8 @@ function inkText(context: CanvasRenderingContext2D, text: string, x: number, y: 
 // Draws the print onto a face `width` pixels wide and `height` tall, which is
 // what its size and margins are measured against.
 export function drawCardPrint(context: CanvasRenderingContext2D, width: number, height: number, print: CardPrint): void {
-  const { label, color, icon, badge, name } = print;
-  if (!label) return;
+  const { label, color, icon, badge, badgeScale = 1, badgeGap = CARDS.badgeGap, name } = print;
+  if (!label && !badge && !name) return;
 
   const size = Math.round(width * CARDS.labelSize);
   context.font = `${size}px ${CARD_FONT}, serif`;
@@ -95,30 +101,36 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   const penOffset = (glyphs.actualBoundingBoxRight - glyphs.actualBoundingBoxLeft) / 2;
 
   const feather = size * CARDS.outlineFeather;
-  // With a badge, the number drops a row below it.
-  const rowStep = badge ? wide.actualBoundingBoxAscent + context.lineWidth + size * CARDS.badgeGap : 0;
-  const numberTop = top + rowStep;
-  const badgeInk = badge ? context.measureText(badge) : null;
+  const iconStyle = {
+    box: size * CARDS.iconSize,
+    outline: (size * CARDS.outlineWidth * CARDS.iconOutline) / 2,
+    feather,
+  };
+  // On its own (no number beside it) the symbol is a little larger.
+  const symbolBox = size * CARDS.symbolSize * (label ? 1 : CARDS.soloSymbolScale) * badgeScale;
+  // The column runs number, element icon, then the symbol (on a Seer or
+  // Trickster); a Fool or Wizard has no number, so its symbol takes the top.
+  const iconTop = top + context.lineWidth / 2 + size * CARDS.iconGap;
+  const iconBottom = icon
+    ? iconTop + icon.height * Math.min(iconStyle.box / icon.width, iconStyle.box / icon.height)
+    : iconTop;
+  const symbolTop = label
+    ? iconBottom + context.lineWidth + size * badgeGap
+    : top - wide.actualBoundingBoxAscent;
 
-  for (const center of [centerOffset, width - centerOffset]) {
-    if (badge && badgeInk) {
-      const badgePen = (badgeInk.actualBoundingBoxRight - badgeInk.actualBoundingBoxLeft) / 2;
-      inkText(context, badge, center - badgePen, top, CARDS.specialColor, feather);
-    }
+  // The top right corner, and the top left as well if both are wanted.
+  const centres = CARDS.bothCorners ? [centerOffset, width - centerOffset] : [width - centerOffset];
 
-    inkText(context, label, center - penOffset, numberTop, color, feather);
+  for (const center of centres) {
+    if (label) inkText(context, label, center - penOffset, top, color, feather);
 
-    if (icon) {
-      drawIcon(context, icon, center, numberTop + context.lineWidth / 2 + size * CARDS.iconGap, {
-        box: size * CARDS.iconSize,
-        outline: (size * CARDS.outlineWidth * CARDS.iconOutline) / 2,
-        feather: size * CARDS.outlineFeather,
-      });
-    }
+    if (icon && label) drawIcon(context, icon, center, iconTop, iconStyle);
+
+    if (badge) drawIcon(context, badge, center, symbolTop, { ...iconStyle, box: symbolBox });
   }
 
-  // A Seer or Trickster's title is yellow like its letter; the rest take the
-  // number's colour.
+  // A card with a symbol has a yellow title like it; the rest take the number's
+  // colour.
   if (name) drawName(context, width, height, name, badge ? CARDS.specialColor : color);
 }
 

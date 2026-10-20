@@ -594,7 +594,7 @@ export const CARDS = {
     Red: "#e92223",
     Green: "#4ca450",
     Blue: "#018bf6",
-    Yellow: "#f3e6c4",
+    Yellow: "#e2c98a",
   } as Record<string, string>,
 
   // The element each suit is drawn as: it names the card art's folder and
@@ -613,13 +613,13 @@ export const CARDS = {
     fire: "#e92223",
     earth: "#4ca450",
     water: "#018bf6",
-    air: "#f3e6c4",
+    air: "#e2c98a",
   } as Record<string, string>,
 
   // Multiplied into an icon that is drawn white, so it matches its number;
   // the other icons already carry their colour.
   iconTints: {
-    air: "#f3e6c4",
+    air: "#e2c98a",
   } as Record<string, string>,
 
   // The J and W on Jesters and Wizards, which belong to no suit.
@@ -658,6 +658,10 @@ export const CARDS = {
   iconGap: 0.3,
   iconOutline: 0.6,
 
+  // Whether the number, symbol and icon are printed in both top corners, or only
+  // in the top right.
+  bothCorners: false,
+
   // The card's title across its middle: its size as a fraction of the card's
   // width (the numbers' size, 0.18, is a good match) and the widest share of
   // the card it may take before it is shrunk to fit.
@@ -668,9 +672,19 @@ export const CARDS = {
   // height; 0 is centred.
   nameDropFraction: 0.08,
 
-  // The S or T above the number on a Seer or Trickster: the gap between it and
-  // the number, as a fraction of the label height.
-  badgeGap: 0.12,
+  // The symbol on the Fool, Seer, Trickster and Wizard, in place of a letter:
+  // the square it is fitted into, as a fraction of the label height. On a Seer
+  // or Trickster it sits under the number and the element symbol, with the gap
+  // below (badgeGap, or tricksterBadgeGap), as a fraction of the label height.
+  symbolSize: 0.9,
+  // How much larger a symbol is on a Fool or Wizard, which has no number.
+  soloSymbolScale: 1.3,
+  // Extra scale for single symbols that read small beside the others.
+  symbolScales: { seer: 1.1, fool: 1.1 } as Record<string, number>,
+  badgeGap: 0.24,
+  // The gap above the Trickster's mask, which has a flat top and needs less than
+  // the Seer's round eye.
+  tricksterBadgeGap: 0.05,
 
   // Gap from the card's top and side edges to the outlined number, as a
   // fraction of the label height. 0 puts the outline's edge on the card's;
@@ -699,10 +713,17 @@ export const CARDS = {
     ringCenterY: 0.5405,
     // The ring's radius, measured to the middle of its line.
     ringRadius: 0.268,
-    // The element at each cardinal point of the ring, clockwise from the top.
-    ringElements: ["air", "fire", "water", "earth"],
+    // Colours for the elements on the back, where they differ from the faces':
+    // air is a darker cream here, so it stands apart from the white spirit.
+    elementTints: { air: "#e2c98a" } as Record<string, string>,
+    // What sits at each point of the pentagram, clockwise from the top: spirit
+    // above, then water, fire, earth and air, the order of the pentacle.
+    ringElements: ["spirit", "water", "fire", "earth", "air"],
+    // The Wizard's symbol in the middle of the ring, in the special yellow: its
+    // width as a fraction of the card's.
+    centerSymbolSize: 0.204,
     // Icon size, and its black outline and feather, as for the corner icons.
-    iconSize: 0.18,
+    iconSize: 0.1296,
     iconOutline: 0.008,
     iconFeather: 0.012,
   },
@@ -711,15 +732,7 @@ export const CARDS = {
   // element's colour so the cards tell apart. Listed by file name; take a card
   // off the list once it has art of its own. `tintStrength` is how much of the
   // colour shows, 0 to 1.
-  tintedCards: [
-    "air-jester",
-    "earth-jester",
-    "fire-jester",
-    "water-jester",
-    "air-wizard",
-    "fire-wizard",
-    "water-wizard",
-  ],
+  tintedCards: [] as string[],
   tintStrength: 0.3,
 
   // Handled-card wear: a vignette of this colour creeping in from the edges,
@@ -733,6 +746,13 @@ export const CARDS = {
     roughness: 0.03,
     grain: 0.35,
     strength: 0.65,
+    // A thin darker line on the very edge, over the wear: the colour, how thick
+    // it is as a fraction of the card's width, how opaque at the edge itself
+    // (0 for none), and how much the noise breaks it up, 0 to 1.
+    rim: { color: "#3b2e1a", width: 0.01, strength: 0.6, grain: 0.4 },
+    // The radius of the card's rounded corners, as a fraction of its width,
+    // measured off the card mesh in Wizard.glb so the wear follows the shape.
+    cornerRadius: 0.0513,
   },
 
   // How much the scanned card art is sharpened as it loads, 0 for none. The

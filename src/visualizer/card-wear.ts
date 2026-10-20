@@ -77,28 +77,55 @@ export function wearCard(context: CanvasRenderingContext2D, width: number, heigh
   const [r, g, b] = [1, 3, 5].map((i) => parseInt(wear.color.slice(i, i + 2), 16));
   const reach = wear.width * width;
   const rough = wear.roughness * width;
+  const rim = wear.rim;
+  const [rimR, rimG, rimB] = [1, 3, 5].map((i) => parseInt(rim.color.slice(i, i + 2), 16));
+  const rimReach = rim.width * width;
+  // The card's corners are rounded to this radius (measured off the mesh), so
+  // distance from the edge is taken from the rounded outline, not a rectangle.
+  const corner = wear.cornerRadius * width;
 
   const image = context.getImageData(0, 0, width, height);
   const data = image.data;
   for (let y = 0; y < height; y++) {
     const fromTopBottom = Math.min(y, height - 1 - y);
     for (let x = 0; x < width; x++) {
-      const edge = Math.min(fromTopBottom, x, width - 1 - x);
+      const fromSide = Math.min(x, width - 1 - x);
+      // In a corner, the distance in from the arc; elsewhere from the nearest side.
+      const edge =
+        fromSide < corner && fromTopBottom < corner
+          ? Math.max(0, corner - Math.hypot(corner - fromSide, corner - fromTopBottom))
+          : Math.min(fromTopBottom, fromSide);
       // Past the reach plus the most the noise can pull it back, nothing to do.
       if (edge > reach + rough) continue;
 
       const n = noise[((y + offsetY) & (TILE - 1)) * TILE + ((x + offsetX) & (TILE - 1))];
-      // Noise moves the edge's apparent distance, so the wear creeps in
-      // unevenly; grain then speckles it.
-      const distance = edge + (n - 0.5) * 2 * rough;
-      const amount = smoothstep(1 - distance / reach) * wear.strength * (1 - wear.grain + wear.grain * n * 2);
-      if (amount <= 0) continue;
-
       const at = (y * width + x) * 4;
-      data[at] += (r - data[at]) * amount;
-      data[at + 1] += (g - data[at + 1]) * amount;
-      data[at + 2] += (b - data[at + 2]) * amount;
+
+      // The cream wear first, then the dark rim over it on the very edge.
+      const worn = wearAmount(edge, n, reach, rough, wear.strength, wear.grain);
+      if (worn > 0) {
+        data[at] += (r - data[at]) * worn;
+        data[at + 1] += (g - data[at + 1]) * worn;
+        data[at + 2] += (b - data[at + 2]) * worn;
+      }
+
+      if (rim.strength > 0 && edge < rimReach) {
+        // Strongest at the edge itself, fading to nothing across its width, and
+        // broken up by the noise so it reads as handled edge, not a drawn line.
+        const rimAmount =
+          smoothstep(1 - edge / rimReach) * rim.strength * (1 - rim.grain + rim.grain * n * 2);
+        data[at] += (rimR - data[at]) * rimAmount;
+        data[at + 1] += (rimG - data[at + 1]) * rimAmount;
+        data[at + 2] += (rimB - data[at + 2]) * rimAmount;
+      }
     }
   }
   context.putImageData(image, 0, 0);
+}
+
+// How much of the wear colour a pixel takes: its distance from the edge, moved
+// about by the noise so the wear creeps in unevenly, then speckled by grain.
+function wearAmount(edge: number, n: number, reach: number, rough: number, strength: number, grain: number): number {
+  const distance = edge + (n - 0.5) * 2 * rough;
+  return Math.max(0, smoothstep(1 - distance / reach) * strength * (1 - grain + grain * n * 2));
 }

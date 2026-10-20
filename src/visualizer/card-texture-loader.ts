@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import type { Card } from "../../backend/src/game/wizard/models/card";
 import { cardFile } from "./card-art-files";
-import { elementIcon } from "./card-icons";
+import { elementIcon, powerSymbol, type PowerSymbol } from "./card-icons";
 import { sharpenImage } from "./card-sharpen";
 import { wearCard } from "./card-wear";
 import { prepareCardBack, type FacePrint } from "./card-back";
@@ -36,20 +36,29 @@ export function cardArtUrl(card: Card): string {
 async function cardPrint(card: Card): Promise<FacePrint> {
   const special = isSpecialCard(card);
   const element = cardElement(card);
-  const [icon] = await Promise.all([
+  const symbolName = cardSymbol(card);
+  const [icon, badge] = await Promise.all([
     special ? undefined : elementIcon(element).catch(() => undefined),
+    symbolName ? powerSymbol(symbolName).catch(() => undefined) : undefined,
     cardFontReady().catch(() => {}),
   ]);
   const color = special ? CARDS.specialColor : CARDS.elementColors[element] ?? "#ffffff";
-  const print = { label: cardLabel(card), color, icon, badge: cardBadge(card), name: cardTitle(card) };
+  // The Fool and Wizard are outside the ranks, so they have no number: just
+  // their symbol and title.
+  const label = special ? "" : cardLabel(card);
+  const badgeGap = symbolName === "trickster" ? CARDS.tricksterBadgeGap : CARDS.badgeGap;
+  const badgeScale = (symbolName && CARDS.symbolScales[symbolName]) || 1;
+  const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card) };
   return (context, width, height) => drawCardPrint(context, width, height, print);
 }
 
-// The Seer carries an S and the Trickster a T, until each has a symbol of its
-// own.
-function cardBadge(card: Card): string | undefined {
+// The symbol a card carries, if it is one of the four that have one: the Fool
+// and the Wizard, and the Seer and the Trickster among the ranks.
+function cardSymbol(card: Card): PowerSymbol | undefined {
+  if (card.value === 0) return "fool";
+  if (card.value === 14) return "wizard";
   const power = powerOf(card);
-  return power === "seer" ? "S" : power === "trickster" ? "T" : undefined;
+  return power ?? undefined;
 }
 
 // The card's title, in the language being played: its rank in the hierarchy,

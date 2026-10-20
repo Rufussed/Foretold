@@ -18,8 +18,8 @@ highest, plus the Fool (the Jester) and the Wizard, which belong to no element.
 | 11 | Heir | |
 | 12 | Consort | |
 | 13 | Monarch | |
-| 0 | Fool | Lowest card; belongs to no element. Prints an **F** and its title in yellow |
-| 14 | Wizard | Highest card; belongs to no element. Prints a **W** and its title in yellow |
+| 0 | Fool | Lowest card; belongs to no element. Prints its jester-hat symbol and its title in yellow |
+| 14 | Wizard | Highest card; belongs to no element. Prints its crook symbol and its title in yellow |
 
 All titles are gender neutral.
 
@@ -44,8 +44,13 @@ power only happens if you win the trick with it.
 
 ## On the cards
 
-- The hierarchy title is printed across the middle of the card, in the same
-  font, colour and outline as the number.
-- The Seer carries a yellow **S** and the Trickster a yellow **T** in the corner,
-  which pushes the number and the element symbol down; the number and symbol keep
-  the element's colour. They are placeholders until each has a proper symbol.
+- The hierarchy title is printed across the middle of the card, in Merienda,
+  with the same outline as the number.
+- The Fool, Seer, Trickster and Wizard each carry a symbol in yellow, with the
+  black outline: the Fool a jester's hat, the Seer an eye in a circle, the
+  Trickster a comedy mask and the Wizard a shepherd's crook. On the Seer and
+  Trickster it sits above the number and pushes the number and the element
+  symbol down; on the Fool and Wizard, which have no number, it is on its own in
+  the corner. The titles of these four are yellow too.
+- The symbols are small lossless WebPs in `src/assets/cards/symbols/`, drawn
+  white and tinted in code.
