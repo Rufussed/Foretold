@@ -141,9 +141,11 @@ function drawName(context: CanvasRenderingContext2D, width: number, height: numb
   context.lineWidth = size * CARDS.outlineWidth;
   context.strokeStyle = "#000000";
 
-  // Centred on the card's middle by the ink's own height, not the line box.
+  // Centred, a little below the card's middle, by the ink's own height, not the
+  // line box.
   const ink = context.measureText(name);
-  const baseline = height / 2 + (ink.actualBoundingBoxAscent - ink.actualBoundingBoxDescent) / 2;
+  const baseline =
+    height * (0.5 + CARDS.nameDropFraction) + (ink.actualBoundingBoxAscent - ink.actualBoundingBoxDescent) / 2;
   inkText(context, name, width / 2, baseline, color, size * CARDS.outlineFeather);
   context.textAlign = "left";
 }

@@ -661,8 +661,12 @@ export const CARDS = {
   // The card's title across its middle: its size as a fraction of the card's
   // width (the numbers' size, 0.18, is a good match) and the widest share of
   // the card it may take before it is shrunk to fit.
-  nameSize: 0.15,
-  nameMaxWidth: 0.78,
+  nameSize: 0.12,
+  nameMaxWidth: 0.624,
+
+  // How far below the card's middle the title sits, as a fraction of its
+  // height; 0 is centred.
+  nameDropFraction: 0.08,
 
   // The S or T above the number on a Seer or Trickster: the gap between it and
   // the number, as a fraction of the label height.
