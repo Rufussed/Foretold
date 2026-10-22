@@ -133,6 +133,11 @@ if (existsSync(frontendDist)) {
         "Cache-Control",
         hashed ? "public, max-age=31536000, immutable" : "no-cache",
       );
+      // The site is a private demo while it uses AMIGO's Wizard name and art,
+      // so search engines are told to leave out every file it serves - card
+      // art included, not just the page. Remove this (and the robots meta tag
+      // in index.html) when the site goes public as our own game.
+      response.header("X-Robots-Tag", "noindex, nofollow, noimageindex");
     },
   });
 }
