@@ -2215,6 +2215,9 @@ button {
 
   color: #f8ecd4;
   text-decoration: none;
+
+  /* Into the left margin, away from the Story button; the nav stays put. */
+  transform: translateX(calc(-1 * clamp(8px, 2.5vw, 40px)));
 }
 
 .home-brand > span {
@@ -3308,8 +3311,6 @@ button {
 
   width: auto;
   height: 72px;
-
-  mix-blend-mode: screen;
 }
 
 .lobby-nav {
@@ -6242,6 +6243,10 @@ body.has-two-system-buttons .lobby-header {
   .home-topbar {
     justify-content: flex-start;
     gap: 6px;
+  }
+
+  .home-brand {
+    transform: none;
   }
 
   .home-menu-toggle {

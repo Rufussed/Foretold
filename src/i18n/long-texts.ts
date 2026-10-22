@@ -13,101 +13,127 @@ const about = {
   en: `
     <div class="home-story">
       <p class="home-modal-copy">
-        Long, long ago, there was a great civilization. Its people had
-        learned to work together toward a single goal, and together
-        they could accomplish anything. Then they decided to build a
-        tower that would reach the skies: the fabled Tower of Babel.
+        Long, long ago, there was a great civilization. Its people
+        had learned to work together toward a single goal, and
+        together they could accomplish anything. Then they decided
+        to build a tower that would reach the skies: the fabled
+        Tower of Babel.
       </p>
 
       <p class="home-modal-copy">
-        The wise men of this forgotten civilization gathered to find a
-        way to pass their knowledge on to the generations to come.
-        They knew that statues, monuments and great architectural
-        wonders could be destroyed by time, war and enemies, and the
-        knowledge would be lost. Even writing could be burned, changed
-        or ruined. The wise men could not find a way, until they came
-        up with a GAME.
+        The wise men of this forgotten civilization gathered to
+        find a way to pass their knowledge on to the generations
+        to come. They knew that statues, monuments and great
+        architectural wonders could be destroyed by time, war and
+        enemies, and the knowledge would be lost. Even writing
+        could be burned, changed or ruined. The wise men could not
+        find a way, until they came up with a GAME.
+      </p>
+
+      <p class="home-modal-copy">
+        But the tower fell. Their one language was broken into
+        many, and the people were scattered across the earth.
+        Their cities were lost and their words forgotten, but the
+        game survived, because the people carried it with them.
+        Words could no longer be understood, but pictures could.
       </p>
 
       <p class="home-modal-copy">
         That game and its rules are forgotten too, all except its
-        cards. The cards have evolved and changed over time, but the
-        essence of their images, and of what they represent, has
-        somehow survived the fall of the Tower of Babel and the
-        diversity of the world.
+        cards. As they passed from people to people, the cards
+        changed, but the essence of their images, and of what they
+        represent, has somehow survived. Their hidden message was
+        never read, yet the game endured.
       </p>
 
       <p class="home-modal-copy">
         The hidden knowledge was studied deeply by the Magi of the
         city of Babylon. When some of these Magi began to acquire
-        great magical power, they fled Babylon and crossed the sea to
-        settle in a faraway land to the north.
+        great magical power, they fled Babylon and crossed the sea
+        to settle in a faraway land to the north.
       </p>
 
       <p class="home-modal-copy">
-        These Magi are said to be the founders of magic and the first
-        Wizards this world has ever seen.
+        These Magi are said to be the founders of magic and the
+        first Wizards this world has ever seen.
       </p>
 
       <p class="home-modal-copy">
-        They scattered to the four corners of that land, carrying with
-        them the cards of that ancient world.
+        They scattered to the four corners of that land, carrying
+        with them the cards of that ancient world.
       </p>
 
       <p class="home-modal-copy">
-        They used the cards to foretell who could become a good
-        apprentice, because the cards held some power to foretell the
-        future. That was the last message of that lost civilization.
+        The Magi discovered that the cards held a power: they
+        could foretell the future. With them, they could see who
+        would become a good apprentice. In time, people would call
+        these cards the Arcana, which means "the secrets".
       </p>
 
       <p class="home-modal-copy">
         The Magi created a game of prediction in which young
-        apprentices showed their ability to foresee the outcome. It
-        was also a test of intelligence, but in secret the Magi knew
-        that it was the cards that truly decided who the chosen
-        apprentice would be.
+        apprentices showed their ability to foresee the outcome.
+        It was also a test of intelligence, but in secret the Magi
+        knew that it was the cards that truly decided who the
+        chosen apprentice would be.
+      </p>
+
+      <p class="home-modal-copy">
+        The cards are here. And you too can foretell the future.
       </p>
     </div>
   `,
   de: `
     <div class="home-story">
       <p class="home-modal-copy">
-        Vor langer, langer Zeit gab es eine große Zivilisation. Ihre
-        Menschen hatten gelernt, gemeinsam auf ein einziges Ziel
-        hinzuarbeiten, und zusammen konnten sie alles erreichen. Dann
-        beschlossen sie, einen Turm zu bauen, der bis in den Himmel
-        reichen sollte: den sagenumwobenen Turm zu Babel.
+        Vor langer, langer Zeit gab es eine große Zivilisation.
+        Ihre Menschen hatten gelernt, gemeinsam auf ein einziges
+        Ziel hinzuarbeiten, und zusammen konnten sie alles
+        erreichen. Dann beschlossen sie, einen Turm zu bauen, der
+        bis in den Himmel reichen sollte: den sagenumwobenen Turm
+        zu Babel.
       </p>
 
       <p class="home-modal-copy">
-        Die Weisen dieser vergessenen Zivilisation kamen zusammen, um
-        einen Weg zu finden, ihr Wissen an die kommenden Generationen
-        weiterzugeben. Sie wussten, dass Statuen, Denkmäler und große
-        Bauwerke von der Zeit, von Kriegen und von Feinden zerstört
-        werden können, und mit ihnen das Wissen. Selbst Schriften
-        konnten verbrannt, verfälscht oder vernichtet werden. Die
-        Weisen fanden keinen Weg, bis sie auf die Idee kamen: ein
-        SPIEL.
+        Die Weisen dieser vergessenen Zivilisation kamen zusammen,
+        um einen Weg zu finden, ihr Wissen an die kommenden
+        Generationen weiterzugeben. Sie wussten, dass Statuen,
+        Denkmäler und große Bauwerke von der Zeit, von Kriegen und
+        von Feinden zerstört werden können, und mit ihnen das
+        Wissen. Selbst Schriften konnten verbrannt, verfälscht
+        oder vernichtet werden. Die Weisen fanden keinen Weg, bis
+        sie auf die Idee kamen: ein SPIEL.
+      </p>
+
+      <p class="home-modal-copy">
+        Doch der Turm fiel. Ihre eine Sprache zerbrach in viele,
+        und die Menschen wurden über die ganze Erde zerstreut.
+        Ihre Städte gingen verloren und ihre Worte wurden
+        vergessen, doch das Spiel überlebte, denn die Menschen
+        trugen es mit sich. Worte verstand man nicht mehr, Bilder
+        aber schon.
       </p>
 
       <p class="home-modal-copy">
         Auch dieses Spiel und seine Regeln sind vergessen, bis auf
-        seine Karten. Die Karten haben sich im Lauf der Zeit
-        weiterentwickelt und verändert, doch das Wesen ihrer Bilder
-        und dessen, wofür sie stehen, hat auf rätselhafte Weise den
-        Fall des Turms zu Babel und die Vielfalt der Welt überdauert.
+        seine Karten. Während sie von Volk zu Volk weitergegeben
+        wurden, veränderten sich die Karten, doch das Wesen ihrer
+        Bilder und dessen, wofür sie stehen, hat auf rätselhafte
+        Weise überdauert. Ihre verborgene Botschaft wurde nie
+        gelesen, und doch blieb das Spiel bestehen.
       </p>
 
       <p class="home-modal-copy">
-        Das verborgene Wissen wurde von den Magiern der Stadt Babylon
-        eingehend studiert. Als einige dieser Magier große magische
-        Kräfte erlangten, flohen sie aus Babylon, überquerten das Meer
-        und ließen sich in einem fernen Land im Norden nieder.
+        Das verborgene Wissen wurde von den Magiern der Stadt
+        Babylon eingehend studiert. Als einige dieser Magier große
+        magische Kräfte erlangten, flohen sie aus Babylon,
+        überquerten das Meer und ließen sich in einem fernen Land
+        im Norden nieder.
       </p>
 
       <p class="home-modal-copy">
-        Diese Magier gelten als die Begründer der Magie und als die
-        ersten Zauberer, die diese Welt je gesehen hat.
+        Diese Magier gelten als die Begründer der Magie und als
+        die ersten Zauberer, die diese Welt je gesehen hat.
       </p>
 
       <p class="home-modal-copy">
@@ -116,18 +142,24 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        Mit den Karten sagten sie voraus, wer ein guter Lehrling
-        werden könnte, denn die Karten besaßen eine gewisse Kraft, die
-        Zukunft vorherzusagen. Das war die letzte Botschaft jener
-        verlorenen Zivilisation.
+        Die Magier entdeckten, dass die Karten eine Kraft besaßen:
+        Mit ihnen ließ sich die Zukunft vorhersagen. So erkannten
+        sie, wer ein guter Lehrling werden würde. Mit der Zeit
+        nannte man diese Karten die Arkana, das heißt „die
+        Geheimnisse“.
       </p>
 
       <p class="home-modal-copy">
         Die Magier erfanden ein Spiel der Vorhersage, in dem junge
         Lehrlinge zeigten, wie gut sie den Ausgang vorhersehen
-        konnten. Es war auch eine Prüfung der Klugheit, doch insgeheim
-        wussten die Magier, dass in Wahrheit die Karten bestimmten,
-        wer der auserwählte Lehrling sein würde.
+        konnten. Es war auch eine Prüfung der Klugheit, doch
+        insgeheim wussten die Magier, dass in Wahrheit die Karten
+        bestimmten, wer der auserwählte Lehrling sein würde.
+      </p>
+
+      <p class="home-modal-copy">
+        Die Karten sind hier. Und auch du kannst die Zukunft
+        vorhersagen.
       </p>
     </div>
   `,
