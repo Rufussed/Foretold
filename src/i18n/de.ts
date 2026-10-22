@@ -10,7 +10,7 @@ export const de: Record<MessageKey, string> = {
 
   "nav.main": "Hauptmenü",
   "nav.menu": "Menü",
-  "nav.about": "Über uns",
+  "nav.about": "Geschichte",
   "nav.rules": "Regeln",
   "nav.board": "Pinnwand",
   "nav.news": "News",
@@ -27,7 +27,6 @@ export const de: Record<MessageKey, string> = {
   "home.legal": "Urheberrecht & Rechtliches",
   "home.contact": "Kontakt",
 
-  "login.kicker": "Willkommen zurück",
   "login.title": "Anmelden",
   "login.username": "Benutzername",
   "login.password": "Passwort",
@@ -35,7 +34,6 @@ export const de: Record<MessageKey, string> = {
   "login.toSignup": "Noch kein Konto? Registrieren",
   "login.failed": "Anmeldung fehlgeschlagen",
 
-  "signup.kicker": "Setz dich an den Tisch",
   "signup.title": "Konto erstellen",
   "signup.username": "Benutzername",
   "signup.usernameHint": "3–20 Buchstaben, Ziffern, _ oder -",
@@ -55,16 +53,13 @@ export const de: Record<MessageKey, string> = {
   "signup.failed": "Registrierung fehlgeschlagen",
 
   "news.title": "News",
-  "news.kicker": "Neues von Wizard Platform.",
   "news.empty": "Hier erscheinen Neuigkeiten und Spiel-Updates.",
 
   "contact.title": "Kontakt",
-  "contact.kicker": "Schreib dem Team",
   "contact.question": "Fragen, Feedback, Vorschläge oder Hinweise zum Urheberrecht?",
   "contact.emailUs": "Schreib uns an",
 
   "board.title": "Pinnwand",
-  "board.kicker": "Worte vom Spieltisch",
   "board.label": "Auf die Pinnwand schreiben",
   "board.placeholder": "Suchst du heute Abend eine Runde? Sag Hallo.",
   "board.post": "Posten",
@@ -345,12 +340,9 @@ export const de: Record<MessageKey, string> = {
   "ann.tricks": "Stiche",
   "ann.offBy": "Daneben um {off}",
 
-  "about.title": "Über uns",
-  "about.kicker": "Von Spielern, für Spieler.",
+  "about.title": "Geschichte",
   "rules.title": "Regeln",
-  "rules.kicker": "So wird Wizard gespielt.",
   "legal.title": "Urheberrecht & Rechtliches",
-  "legal.kicker": "Hinweis zu Inhalten Dritter",
 
   "error.invalidCredentials": "Benutzername oder Passwort ist falsch",
   "error.credentialsRequired": "Benutzername und Passwort sind nötig",

@@ -135,7 +135,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           <a class="home-brand" href="#/home">
             <img
               class="home-logo"
-              src="/wizardLogo.webp"
+              src="/newWizardForetold.webp"
               alt="Wizard"
             />
           </a>
@@ -309,7 +309,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "about") {
       panelContainer.innerHTML = renderInfoPanel(
         t("about.title"),
-        t("about.kicker"),
         aboutHtml(),
       );
       attachCloseEvent();
@@ -319,7 +318,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "rules") {
       panelContainer.innerHTML = renderInfoPanel(
         t("rules.title"),
-        t("rules.kicker"),
         rulesHtml(),
       );
 
@@ -329,7 +327,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "news") {
       panelContainer.innerHTML = renderInfoPanel(
         t("news.title"),
-        t("news.kicker"),
         `
           <p class="home-modal-copy">
             ${t("news.empty")}
@@ -343,7 +340,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "board") {
       panelContainer.innerHTML = renderInfoPanel(
         t("board.title"),
-        t("board.kicker"),
         `
           <div class="home-board">
             <ol id="home-board-list" class="home-board-list"></ol>
@@ -423,7 +419,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "contact") {
       panelContainer.innerHTML = renderInfoPanel(
         t("contact.title"),
-        t("contact.kicker"),
         `
           <p class="home-modal-copy">
             ${t("contact.question")}
@@ -447,7 +442,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "legal") {
       panelContainer.innerHTML = renderInfoPanel(
         t("legal.title"),
-        t("legal.kicker"),
         legalHtml(),
       );
       attachCloseEvent();
@@ -472,8 +466,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             <span></span>
             <span></span>
           </button>
-
-          <p class="home-modal-kicker">${t("login.kicker")}</p>
 
           <h2 id="home-login-title">${t("login.title")}</h2>
 
@@ -541,8 +533,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             <span></span>
             <span></span>
           </button>
-
-          <p class="home-modal-kicker">${t("signup.kicker")}</p>
 
           <h2 id="home-signup-title">${t("signup.title")}</h2>
 
@@ -638,7 +628,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
   function renderInfoPanel(
     title: string,
-    kicker: string,
     content: string,
   ): string {
     return `
@@ -658,10 +647,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             <span></span>
             <span></span>
           </button>
-
-          <p class="home-modal-kicker">
-            ${kicker}
-          </p>
 
           <h2 id="home-info-title">
             ${title}

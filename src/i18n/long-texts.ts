@@ -1,6 +1,6 @@
 import { getLanguage } from "./index";
 
-// The long Home panels (About, Rules, Legal) as whole pieces of markup, one
+// The long Home panels (Story, Rules, Legal) as whole pieces of markup, one
 // per language side by side, so a translation can be read against its source.
 // Their titles are in en.ts and de.ts like every other short text.
 
@@ -11,34 +11,125 @@ const MAIL_LINK = `<a
 
 const about = {
   en: `
-    <p class="home-modal-copy">
-      We are two software development students, game lovers, and longtime
-      fans of Wizard. We created this platform because we wanted a better
-      way to play the game online with friends.
-    </p>
+    <div class="home-story">
+      <p class="home-modal-copy">
+        Long, long ago, there was a great civilization. Its people had
+        learned to work together toward a single goal, and together
+        they could accomplish anything. Then they decided to build a
+        tower that would reach the skies: the fabled Tower of Babel.
+      </p>
 
-    <p class="home-modal-copy">
-      Wizard is a brilliant game of prediction, risk, and surprises, but
-      the online experience we found did not live up to the tabletop one.
-      So we decided to build the game we wanted to play: a welcoming
-      place to gather, compete, and enjoy Wizard together.
-    </p>
+      <p class="home-modal-copy">
+        The wise men of this forgotten civilization gathered to find a
+        way to pass their knowledge on to the generations to come.
+        They knew that statues, monuments and great architectural
+        wonders could be destroyed by time, war and enemies, and the
+        knowledge would be lost. Even writing could be burned, changed
+        or ruined. The wise men could not find a way, until they came
+        up with a GAME.
+      </p>
+
+      <p class="home-modal-copy">
+        That game and its rules are forgotten too, all except its
+        cards. The cards have evolved and changed over time, but the
+        essence of their images, and of what they represent, has
+        somehow survived the fall of the Tower of Babel and the
+        diversity of the world.
+      </p>
+
+      <p class="home-modal-copy">
+        The hidden knowledge was studied deeply by the Magi of the
+        city of Babylon. When some of these Magi began to acquire
+        great magical power, they fled Babylon and crossed the sea to
+        settle in a faraway land to the north.
+      </p>
+
+      <p class="home-modal-copy">
+        These Magi are said to be the founders of magic and the first
+        Wizards this world has ever seen.
+      </p>
+
+      <p class="home-modal-copy">
+        They scattered to the four corners of that land, carrying with
+        them the cards of that ancient world.
+      </p>
+
+      <p class="home-modal-copy">
+        They used the cards to foretell who could become a good
+        apprentice, because the cards held some power to foretell the
+        future. That was the last message of that lost civilization.
+      </p>
+
+      <p class="home-modal-copy">
+        The Magi created a game of prediction in which young
+        apprentices showed their ability to foresee the outcome. It
+        was also a test of intelligence, but in secret the Magi knew
+        that it was the cards that truly decided who the chosen
+        apprentice would be.
+      </p>
+    </div>
   `,
   de: `
-    <p class="home-modal-copy">
-      Wir sind zwei Studenten der Softwareentwicklung, begeisterte Spieler
-      und seit Langem Fans von Wizard. Wir haben diese Plattform gebaut,
-      weil wir uns eine bessere Möglichkeit gewünscht haben, online mit
-      Freunden zu spielen.
-    </p>
+    <div class="home-story">
+      <p class="home-modal-copy">
+        Vor langer, langer Zeit gab es eine große Zivilisation. Ihre
+        Menschen hatten gelernt, gemeinsam auf ein einziges Ziel
+        hinzuarbeiten, und zusammen konnten sie alles erreichen. Dann
+        beschlossen sie, einen Turm zu bauen, der bis in den Himmel
+        reichen sollte: den sagenumwobenen Turm zu Babel.
+      </p>
 
-    <p class="home-modal-copy">
-      Wizard ist ein großartiges Spiel aus Ansagen, Risiko und
-      Überraschungen, doch online kam nichts, was wir fanden, an das
-      Spiel am Tisch heran. Also haben wir das Spiel gebaut, das wir
-      selbst spielen wollten: einen einladenden Ort, um sich zu treffen,
-      sich zu messen und Wizard gemeinsam zu genießen.
-    </p>
+      <p class="home-modal-copy">
+        Die Weisen dieser vergessenen Zivilisation kamen zusammen, um
+        einen Weg zu finden, ihr Wissen an die kommenden Generationen
+        weiterzugeben. Sie wussten, dass Statuen, Denkmäler und große
+        Bauwerke von der Zeit, von Kriegen und von Feinden zerstört
+        werden können, und mit ihnen das Wissen. Selbst Schriften
+        konnten verbrannt, verfälscht oder vernichtet werden. Die
+        Weisen fanden keinen Weg, bis sie auf die Idee kamen: ein
+        SPIEL.
+      </p>
+
+      <p class="home-modal-copy">
+        Auch dieses Spiel und seine Regeln sind vergessen, bis auf
+        seine Karten. Die Karten haben sich im Lauf der Zeit
+        weiterentwickelt und verändert, doch das Wesen ihrer Bilder
+        und dessen, wofür sie stehen, hat auf rätselhafte Weise den
+        Fall des Turms zu Babel und die Vielfalt der Welt überdauert.
+      </p>
+
+      <p class="home-modal-copy">
+        Das verborgene Wissen wurde von den Magiern der Stadt Babylon
+        eingehend studiert. Als einige dieser Magier große magische
+        Kräfte erlangten, flohen sie aus Babylon, überquerten das Meer
+        und ließen sich in einem fernen Land im Norden nieder.
+      </p>
+
+      <p class="home-modal-copy">
+        Diese Magier gelten als die Begründer der Magie und als die
+        ersten Zauberer, die diese Welt je gesehen hat.
+      </p>
+
+      <p class="home-modal-copy">
+        Sie zerstreuten sich in alle vier Himmelsrichtungen jenes
+        Landes und trugen die Karten jener alten Welt bei sich.
+      </p>
+
+      <p class="home-modal-copy">
+        Mit den Karten sagten sie voraus, wer ein guter Lehrling
+        werden könnte, denn die Karten besaßen eine gewisse Kraft, die
+        Zukunft vorherzusagen. Das war die letzte Botschaft jener
+        verlorenen Zivilisation.
+      </p>
+
+      <p class="home-modal-copy">
+        Die Magier erfanden ein Spiel der Vorhersage, in dem junge
+        Lehrlinge zeigten, wie gut sie den Ausgang vorhersehen
+        konnten. Es war auch eine Prüfung der Klugheit, doch insgeheim
+        wussten die Magier, dass in Wahrheit die Karten bestimmten,
+        wer der auserwählte Lehrling sein würde.
+      </p>
+    </div>
   `,
 };
 

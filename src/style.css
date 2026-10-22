@@ -2553,68 +2553,38 @@ button {
 .home-modal {
   position: relative;
 
-  width: min(430px, calc(100vw - 48px));
+  width: min(520px, calc(100vw - 48px));
 
-  border: 1px solid rgba(188, 125, 49, 0.55);
+  /* See-through like the lobby panels, a bit darker for reading. */
+  background: rgba(12, 13, 11, 0.95);
 
-  background:
-    linear-gradient(
-      140deg,
-      rgba(255, 185, 84, 0.045),
-      transparent 1000%
-    ),
-    #11120f;
-
-  box-shadow:
-    0 28px 90px rgba(0, 0, 0, 0.75),
-    inset 0 0 45px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--ui-shadow);
 
   padding: 48px;
 
   text-align: center;
 
   animation: home-modal-in 240ms ease both;
-}
-
-.home-modal::before {
-  position: absolute;
-  inset: 2px;
-
-  border: 1px solid rgba(179, 112, 37, 0.16);
-
-  pointer-events: none;
-
-  content: "";
-}
-
-.home-modal-kicker {
-  margin: 0 0 10px;
-
-  color: #e09a38;
-
-  font-family: "Cinzel", serif;
-  font-size: 9px;
-  font-weight: 400;
-  letter-spacing: 0.36em;
-  text-transform: uppercase;
+  /* Denser than --ui-blur: the Home scene behind is busy. */
+  backdrop-filter: blur(12px);
 }
 
 .home-modal h2 {
   margin: 0 0 18px;
 
-  color: #f0e3cd;
+  color: #e09a38;
 
   font-family: "Cinzel", serif;
   font-size: 28px;
-  font-weight: 400;
+  font-weight: 700;
 }
 
 .home-modal-copy {
   margin: 0;
 
-  color: #aaa08e;
+  color: #e6dac4;
 
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.8;
 }
 
@@ -2684,7 +2654,7 @@ button {
   color: #9f947f;
 
   font-family: "Cinzel", serif;
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
 }
@@ -2706,7 +2676,7 @@ button {
 
   color: #eee2cc;
 
-  font-size: 13px;
+  font-size: 14px;
 
   transition:
     border-color 180ms ease,
@@ -2729,7 +2699,7 @@ button {
   background: #090a08;
   padding: 12px 8px;
   color: #eee2cc;
-  font-size: 13px;
+  font-size: 14px;
   color-scheme: dark;
   text-transform: none;
   letter-spacing: normal;
@@ -2748,7 +2718,7 @@ button {
   margin-top: 6px;
   color: rgba(159, 148, 127, 0.72);
   font-family: inherit;
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.04em;
   text-transform: none;
 }
@@ -2794,7 +2764,7 @@ button {
 
   color: #d69a40;
 
-  font-size: 12px;
+  font-size: 13px;
   line-height: 1.5;
 }
 
@@ -2820,7 +2790,7 @@ button {
    --------------------------------------------------------- */
 
 .home-modal:has(.home-board) {
-  width: min(560px, calc(100vw - 48px));
+  width: min(650px, calc(100vw - 48px));
 }
 
 .home-board {
@@ -2898,7 +2868,7 @@ button {
   color: #eee2cc;
 
   font: inherit;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1.5;
 
   transition:
@@ -2979,14 +2949,14 @@ button {
   color: #e0a14d; /* same gold as the "Log in" link */
 
   font-family: "Cinzel", serif;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 400;
 }
 
 .home-board-meta span {
   color: #7d735f;
 
-  font-size: 11px;
+  font-size: 12px;
 }
 
 .home-board-delete {
@@ -3011,9 +2981,9 @@ button {
 .home-board-text {
   margin: 6px 0 0;
 
-  color: #c4b9a5;
+  color: #e6dac4;
 
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -3024,7 +2994,7 @@ button {
 
   color: #9a8b75;
 
-  font-size: 12px;
+  font-size: 13px;
   text-align: center;
 }
 
@@ -3104,6 +3074,18 @@ button {
   text-align: left;
 }
 
+.home-story {
+  max-height: min(62vh, 560px);
+  margin-top: 25px;
+  padding-right: 10px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.home-story .home-modal-copy + .home-modal-copy {
+  margin-top: 16px;
+}
+
 .home-rules-section {
   border-top: 1px solid #2d2b24;
   padding: 16px 0 2px;
@@ -3120,16 +3102,16 @@ button {
   color: #e0a14d;
 
   font-family: "Cinzel", serif;
-  font-size: 12px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .home-rules-section p,
 .home-rules-section li {
-  color: #c9bca8;
-  font-size: 12px;
+  color: #e6dac4;
+  font-size: 15px;
   line-height: 1.65;
 }
 

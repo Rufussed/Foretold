@@ -9,7 +9,7 @@ export const en = {
 
   "nav.main": "Main navigation",
   "nav.menu": "Menu",
-  "nav.about": "About",
+  "nav.about": "Story",
   "nav.rules": "Rules",
   "nav.board": "Board",
   "nav.news": "News",
@@ -26,7 +26,6 @@ export const en = {
   "home.legal": "Copyright & Legal",
   "home.contact": "Contact",
 
-  "login.kicker": "Welcome back",
   "login.title": "Log in",
   "login.username": "Username",
   "login.password": "Password",
@@ -34,7 +33,6 @@ export const en = {
   "login.toSignup": "Need an account? Sign up",
   "login.failed": "Login failed",
 
-  "signup.kicker": "Join the table",
   "signup.title": "Create account",
   "signup.username": "Username",
   "signup.usernameHint": "3-20 letters, numbers, _ or -",
@@ -54,16 +52,13 @@ export const en = {
   "signup.failed": "Registration failed",
 
   "news.title": "News",
-  "news.kicker": "Wizard Platform updates.",
   "news.empty": "News and game updates will appear here.",
 
   "contact.title": "Contact",
-  "contact.kicker": "Reach the team",
   "contact.question": "Questions, feedback, suggestions, or copyright concerns?",
   "contact.emailUs": "Email us at",
 
   "board.title": "Board",
-  "board.kicker": "Words from the table",
   "board.label": "Write on the board",
   "board.placeholder": "Looking for a game tonight? Say hello.",
   "board.post": "Post",
@@ -344,12 +339,9 @@ export const en = {
   "ann.tricks": "Tricks",
   "ann.offBy": "Off by {off}",
 
-  "about.title": "About",
-  "about.kicker": "Built by players, for players.",
+  "about.title": "Story",
   "rules.title": "Rules",
-  "rules.kicker": "Learn the rules of Wizard.",
   "legal.title": "Copyright & Legal",
-  "legal.kicker": "Third-party content notice",
 
   "error.invalidCredentials": "Invalid username or password",
   "error.credentialsRequired": "Username and password are required",
