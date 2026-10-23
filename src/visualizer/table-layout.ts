@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { SEAT_IDS, type SeatId } from "./player-characters";
+import { CARD_HANDLING } from "./config";
 import { numberedNodes, placementOf, type Placement } from "./placement";
 
 export interface TableLayout {
@@ -45,7 +46,7 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
     return nodes.map((node) => placementOf(node, environment));
   };
 
-  const localHand = targets(/^card(\d+)$/);
+  const authoredHand = targets(/^card(\d+)$/);
   const played = targets(/^played-card-(\d+)$/);
   const stack = targets(/^stack-card-(\d+)$/);
   const trumpNode = environment.getObjectByName("trump-card") ?? null;
@@ -53,10 +54,17 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
   const trump = trumpNode ? placementOf(trumpNode, environment) : null;
 
   // Your seat has no target of its own; your hand set shows where it is.
-  const handCentre = localHand
+  const handCentre = authoredHand
     .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
-    .divideScalar(Math.max(localHand.length, 1));
+    .divideScalar(Math.max(authoredHand.length, 1));
   const localAngle = angleOf(handCentre);
+
+  // Your own hand, moved back towards you (see CARD_HANDLING.handPushOut).
+  const outward = new THREE.Vector3(handCentre.x, 0, handCentre.z).normalize();
+  const localHand = authoredHand.map((slot) => ({
+    ...slot,
+    position: slot.position.clone().addScaledVector(outward, CARD_HANDLING.handPushOut),
+  }));
 
   const seatAngles = new Map<SeatId, number>();
   for (const seat of SEAT_IDS) {
@@ -87,7 +95,7 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
           UP,
           (seatAngles.get(seat) ?? localAngle) - localAngle,
         );
-        hand = localHand.map((slot) => ({
+        hand = authoredHand.map((slot) => ({
           position: slot.position.clone().applyQuaternion(turn),
           quaternion: turn.clone().multiply(slot.quaternion),
           scale: slot.scale.clone(),

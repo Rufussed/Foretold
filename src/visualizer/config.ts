@@ -657,6 +657,13 @@ export const CARD_HANDLING = {
   // How far a clicked card rises, in card lengths.
   raiseLengths: 0.5,
 
+  // How far your hand sits back from its card01..card20 targets, towards you
+  // and away from the table's centre, in scene units (the hand is about 2.5
+  // from the centre). A wide hand's right end otherwise reaches into the table
+  // when the camera turns to the other seats. Other players' hands keep the
+  // authored targets.
+  handPushOut: 0.25,
+
   // How far above the hand a dragged card must be dropped to play it, in card
   // lengths. Separate from raiseLengths, so a small raise doesn't make cards
   // easy to play by accident.
