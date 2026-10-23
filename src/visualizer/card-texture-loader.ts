@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import type { Card } from "../../backend/src/game/wizard/models/card";
+import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import { sharpenImage } from "./card-sharpen";
 import { CARDS } from "./config";
 
@@ -28,12 +28,40 @@ function cardFile(path: string): string {
 
 const BACK_URL = cardFile("back/backCard.webp");
 
+// The Foretold faces in src/assets/foretold_cards, one gem per suit, named like
+// the scans (topaz01.webp … topazWizard.webp). They share the scans' back.
+// Set to false to go back to the scanned faces.
+const USE_FORETOLD_FACES = true;
+
+const FORETOLD_FILES = import.meta.glob("../assets/foretold_cards/**/*.webp", {
+  query: "?url",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const FORETOLD_GEMS: Record<Suit, string> = {
+  Blue: "topaz",
+  Green: "jade",
+  Yellow: "gold",
+  Red: "ruby",
+};
+
+function foretoldFile(path: string): string {
+  const url = FORETOLD_FILES[`../assets/foretold_cards/${path}`];
+  if (!url) throw new Error(`No Foretold card art at ${path}`);
+  return url;
+}
+
 // blue01.webp … blue13.webp, blueJester.webp, blueWizard.webp — Jesters are
 // value 0 and Wizards 14, matching the game rules.
 export function cardArtUrl(card: Card): string {
-  const suit = card.suit.toLowerCase();
   const name =
     card.value === 0 ? "Jester" : card.value === 14 ? "Wizard" : String(card.value).padStart(2, "0");
+  if (USE_FORETOLD_FACES) {
+    const gem = FORETOLD_GEMS[card.suit];
+    return foretoldFile(`${gem}/${gem}${name}.webp`);
+  }
+  const suit = card.suit.toLowerCase();
   return cardFile(`${suit}/${suit}${name}.webp`);
 }
 
