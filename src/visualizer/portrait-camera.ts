@@ -1,6 +1,6 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { OPPONENT_PLAYS, PORTRAIT_CAMERA } from "./config";
-import { isTouchDevice } from "./device-limits";
+import { isIPad, isTouchDevice } from "./device-limits";
 import { paced } from "./pace";
 
 // Camera behaviour for portrait screens only. The window is narrow there, so
@@ -24,7 +24,7 @@ export const centreForPlays = (): { panSeconds: number; holdSeconds: number } | 
 
 export interface BlindTour {
   // Starts the tour if this is a blind round's prediction, on your turn, in
-  // portrait or on a touch screen; otherwise does nothing.
+  // portrait or on a touch screen other than an iPad; otherwise does nothing.
   start(state: PublicWizardGameState): void;
   // Ends it (the prediction is made, or the turn ran out).
   stop(): void;
@@ -33,8 +33,10 @@ export interface BlindTour {
 // In a blind round you predict without seeing your own cards, only everyone
 // else's - and a portrait screen shows only the part of the table the camera
 // faces, while on a phone held landscape the HUD covers the two nearest
-// players. So until you have predicted the camera looks at each other player in
-// turn, in play order, a second on each, and starts the round again.
+// players. An iPad's landscape screen has room for the whole table, so there
+// it follows the laptop rule: portrait only. So until you have predicted the
+// camera looks at each other player in turn, in play order, a second on each,
+// and starts the round again.
 export function createBlindTour(
   localUsername: string,
   lookAt: (username: string | null, done: () => void) => void,
@@ -49,7 +51,7 @@ export function createBlindTour(
   return {
     start(state) {
       const current = state.players[state.currentPlayerIndex]?.username;
-      if (!(isPortraitView() || isTouchDevice()) || !state.blindRound || state.phase !== "predictions") return;
+      if (!(isPortraitView() || (isTouchDevice() && !isIPad())) || !state.blindRound || state.phase !== "predictions") return;
       if (current !== localUsername) return;
 
       // Play order from the player after you, all the way round.
