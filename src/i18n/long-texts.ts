@@ -566,23 +566,14 @@ const rules = {
 const legal = {
   en: `
     <p class="home-modal-copy">
-      Wizard Platform is a public, non-commercial educational project
+      Wizard Foretold is a public, non-commercial educational project
       created by Carlos Denegri and Rufus Lane.
     </p>
 
     <p class="home-modal-copy">
-      Wizard is an existing tabletop card game created by Ken Fisher,
-      with art by Franz Vohwinkel and published by AMIGO. Wizard existed
-      before this website and builds on familiar playing-card traditions.
-      Wizard Platform is an independent student-made digital project and
-      is not affiliated with or endorsed by AMIGO or the original game
-      creators.
-    </p>
-
-    <p class="home-modal-copy">
-      The card images and related game artwork are from or based on the
-      original Wizard game. We do not claim ownership of those images,
-      names, or related game materials.
+      Wizard Foretold was inspired by Wizard, the card game by Ken
+      Fisher. It is an independent project and is not affiliated with or
+      endorsed by AMIGO or the creators of Wizard.
     </p>
 
     <p class="home-modal-copy">
@@ -614,23 +605,15 @@ const legal = {
   `,
   de: `
     <p class="home-modal-copy">
-      Wizard Platform ist ein öffentliches, nicht kommerzielles
+      Wizard Foretold ist ein öffentliches, nicht kommerzielles
       Lernprojekt von Carlos Denegri und Rufus Lane.
     </p>
 
     <p class="home-modal-copy">
-      Wizard ist ein bestehendes Kartenspiel von Ken Fisher, illustriert
-      von Franz Vohwinkel und verlegt bei AMIGO. Wizard gab es schon vor
-      dieser Website, und es baut auf bekannten Kartenspieltraditionen
-      auf. Wizard Platform ist ein unabhängiges digitales Projekt von
-      Studierenden und steht in keiner Verbindung zu AMIGO oder den
-      Urhebern des Spiels und wird von ihnen nicht unterstützt.
-    </p>
-
-    <p class="home-modal-copy">
-      Die Kartenbilder und die zugehörigen Spielgrafiken stammen aus dem
-      Original-Wizard oder beruhen darauf. Wir beanspruchen keine Rechte
-      an diesen Bildern, Namen oder anderen Spielmaterialien.
+      Wizard Foretold ist vom Kartenspiel Wizard von Ken Fisher
+      inspiriert. Es ist ein unabhängiges Projekt und steht in keiner
+      Verbindung zu AMIGO oder den Urhebern von Wizard, die es auch nicht
+      unterstützen.
     </p>
 
     <p class="home-modal-copy">
