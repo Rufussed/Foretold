@@ -135,7 +135,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           <a class="home-brand" href="#/home">
             <img
               class="home-logo"
-              src="/newWizardForetold.webp"
+              src="/wizardForetold.webp"
               alt="Wizard"
             />
           </a>

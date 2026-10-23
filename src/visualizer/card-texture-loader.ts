@@ -26,12 +26,15 @@ function cardFile(path: string): string {
   return url;
 }
 
-const BACK_URL = cardFile("back/backCard.webp");
+const SCANNED_BACK_URL = cardFile("back/backCard.webp");
 
 // The Foretold faces in src/assets/foretold_cards, one gem per suit, named like
-// the scans (topaz01.webp … topazWizard.webp). They share the scans' back.
+// the scans (topaz01.webp … topazWizard.webp), with their own backs in back/.
 // Set to false to go back to the scanned faces.
 const USE_FORETOLD_FACES = true;
+// Which Foretold back face-down cards show: back/backBronzeLogo.webp or
+// back/backOnyxLogo.webp. null keeps the scanned back.
+const FORETOLD_BACK: string | null = "backOnyxLogo";
 
 const FORETOLD_FILES = import.meta.glob("../assets/foretold_cards/**/*.webp", {
   query: "?url",
@@ -51,6 +54,8 @@ function foretoldFile(path: string): string {
   if (!url) throw new Error(`No Foretold card art at ${path}`);
   return url;
 }
+
+const BACK_URL = FORETOLD_BACK ? foretoldFile(`back/${FORETOLD_BACK}.webp`) : SCANNED_BACK_URL;
 
 // blue01.webp … blue13.webp, blueJester.webp, blueWizard.webp — Jesters are
 // value 0 and Wizards 14, matching the game rules.
