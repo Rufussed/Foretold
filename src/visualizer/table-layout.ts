@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { SEAT_IDS, type SeatId } from "./player-characters";
-import { CARD_HANDLING } from "./config";
+import { CARD_HANDLING, CARDS } from "./config";
 import { numberedNodes, placementOf, type Placement } from "./placement";
 
 export interface TableLayout {
@@ -46,12 +46,28 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
     return nodes.map((node) => placementOf(node, environment));
   };
 
+  // Cards on these targets grow across the face (CARDS.tableCardScale, or
+  // trickCardScale for the trick); the card's thickness (y) stays.
+  const enlarged = (slot: Placement, by = CARDS.tableCardScale): Placement => ({
+    ...slot,
+    scale: slot.scale.clone().multiply(new THREE.Vector3(by, 1, by)),
+  });
+
   const authoredHand = targets(/^card(\d+)$/);
-  const played = targets(/^played-card-(\d+)$/);
+  const playedTargets = targets(/^played-card-(\d+)$/);
+  // Spread the row from its centre (see CARDS.trickSpread).
+  const playedCentre = playedTargets
+    .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
+    .divideScalar(Math.max(playedTargets.length, 1));
+  const played = playedTargets.map((slot) => ({
+    ...enlarged(slot, CARDS.trickCardScale),
+    position: slot.position.clone().sub(playedCentre).multiplyScalar(CARDS.trickSpread).add(playedCentre),
+  }));
+  // The deck keeps its authored size: larger, it crowds the table's middle.
   const stack = targets(/^stack-card-(\d+)$/);
   const trumpNode = environment.getObjectByName("trump-card") ?? null;
   if (trumpNode) trumpNode.visible = false;
-  const trump = trumpNode ? placementOf(trumpNode, environment) : null;
+  const trump = trumpNode ? enlarged(placementOf(trumpNode, environment)) : null;
 
   // Your seat has no target of its own; your hand set shows where it is.
   const handCentre = authoredHand
@@ -59,11 +75,15 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
     .divideScalar(Math.max(authoredHand.length, 1));
   const localAngle = angleOf(handCentre);
 
-  // Your own hand, moved back towards you (see CARD_HANDLING.handPushOut).
+  // Your own hand, moved back towards you and up a little (see
+  // CARD_HANDLING.handPushOut and handLift).
   const outward = new THREE.Vector3(handCentre.x, 0, handCentre.z).normalize();
   const localHand = authoredHand.map((slot) => ({
-    ...slot,
-    position: slot.position.clone().addScaledVector(outward, CARD_HANDLING.handPushOut),
+    ...enlarged(slot),
+    position: slot.position
+      .clone()
+      .addScaledVector(outward, CARD_HANDLING.handPushOut)
+      .addScaledVector(UP, CARD_HANDLING.handLift),
   }));
 
   const seatAngles = new Map<SeatId, number>();

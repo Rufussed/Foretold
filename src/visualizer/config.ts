@@ -596,6 +596,20 @@ export const CARDS = {
     Yellow: "#f9a825",
   } as Record<string, string>,
 
+  // Size of your hand and the trump card, against the targets in
+  // Wizard.glb (1 = as authored). Only face width and length grow, not
+  // thickness; the deck and other players' hands keep the authored size.
+  tableCardScale: 1.1,
+
+  // Size of the trick's played cards, the same way.
+  trickCardScale: 1.05,
+
+  // How far apart the trick's played cards sit, against the targets in
+  // Wizard.glb (1 = as authored, 0.79 between slots). The authored row leaves
+  // 0.05 between cards; at trickCardScale 1.05 that shrinks to 0.01, and 1.035
+  // gives a gap of about 0.04 again. Spread from the row's centre.
+  trickSpread: 1.035,
+
   // Trump card colour when there's no trump suit: a Jester was turned up, or a
   // Wizard whose suit hasn't been chosen yet.
   noTrumpColor: "#8a8a8a",
@@ -663,6 +677,10 @@ export const CARD_HANDLING = {
   // when the camera turns to the other seats. Other players' hands keep the
   // authored targets.
   handPushOut: 0.25,
+
+  // How far your hand sits above its targets, in scene units, so the bottom
+  // of the larger cards (CARDS.tableCardScale) stays on screen.
+  handLift: 0.08,
 
   // How far above the hand a dragged card must be dropped to play it, in card
   // lengths. Separate from raiseLengths, so a small raise doesn't make cards
