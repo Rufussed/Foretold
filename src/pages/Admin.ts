@@ -109,7 +109,7 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
       <table class="admin-table">
         <thead>
           <tr>
-            <th>Username</th><th>Email</th>
+            <th>Wizard name</th><th>Email</th>
             <th>Joined</th><th>Rooms</th><th></th>
           </tr>
         </thead>
