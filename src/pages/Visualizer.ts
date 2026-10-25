@@ -54,6 +54,7 @@ import { createTurnReadySignal, type TurnReadySignal } from "../visualizer/turn-
 import { createTableLayout } from "../visualizer/table-layout";
 import { centreForPlays, createBlindTour } from "../visualizer/portrait-camera";
 import { createTurnCamera, type TurnCamera } from "../visualizer/turn-camera";
+import { openLeaveDialog } from "../visualizer/leave-dialog";
 import { createWizardScene, type SceneView, type WizardSceneHandle } from "../visualizer/three-scene";
 import { t, type MessageKey } from "../i18n";
 import { serverError } from "../i18n/server-error";
@@ -233,6 +234,27 @@ export async function renderVisualizerPage(
   }
 
   const live = latestState !== null && localUsername !== null;
+
+  // Leave Table asks first while the player still plays their own seat:
+  // leave for now, or quit and let the server play it (leave-dialog.ts).
+  // A guest, a player who quit and the watcher of an all-NPC game just go.
+  container
+    .querySelector<HTMLAnchorElement>(".visualizer-nav a")
+    ?.addEventListener("click", (event) => {
+      const me = latestState?.players.find((player) => player.username === localUsername);
+      if (
+        isGuestGame ||
+        !token ||
+        !me ||
+        me.quit ||
+        isBotName(me.username) ||
+        latestState?.phase === "finished"
+      ) {
+        return;
+      }
+      event.preventDefault();
+      openLeaveDialog(pageEl ?? container, roomId, token, "#/lobby");
+    });
   let seatSync: SeatSync | null = null;
   let sceneView: SceneView | null = null;
   // The game is over: each winner plays their "victory" clip a few times, on

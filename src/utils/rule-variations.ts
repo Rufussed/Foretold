@@ -1,4 +1,4 @@
-import type { WizardGameOptions } from "../../backend/src/game/wizard/gameOptions";
+import { DEFAULT_GAME_OPTIONS, type WizardGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import type { TurnTimeoutMs } from "../../backend/src/game/wizard/turnTimeout";
 import { t } from "../i18n";
 
@@ -21,6 +21,11 @@ export function describeRuleVariations(
   const chosen = [
     options.blindFirstRound ? t("rules.blindFirstRound") : null,
     options.wizardWins === "last" ? t("rules.lastWizardWins") : null,
+    options.missedTurnsToQuit === null
+      ? t("rules.noMissedTurnsQuit")
+      : options.missedTurnsToQuit !== DEFAULT_GAME_OPTIONS.missedTurnsToQuit
+        ? t("rules.missedTurnsQuit", { count: String(options.missedTurnsToQuit) })
+        : null,
   ].filter((variation): variation is string => variation !== null);
 
   const rules = chosen.length

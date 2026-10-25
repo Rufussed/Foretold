@@ -5,7 +5,9 @@ import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 import { assignAvatars, shuffledSeating, WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
-import { registerWizardSocket } from "../websocket/wizardSocket.js";
+import { broadcastGameState, registerWizardSocket } from "../websocket/wizardSocket.js";
+import { activeHumans, hasQuit, quitPlayer, recordOwnMove } from "../services/playerQuit.js";
+import { wizardGameCompletionService } from "../services/wizardGameCompletionService.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
@@ -30,6 +32,7 @@ interface CreateGameBody {
   // The rule variations (see gameOptions.ts); left out, the official ones.
   wizardWins?: "first" | "last";
   blindFirstRound?: boolean;
+  missedTurnsToQuit?: 3 | 5 | 7 | 9 | null;
   // How well the NPCs play (see botLevels.ts); left out, the Apprentice.
   botLevel?: string;
 }
@@ -40,6 +43,30 @@ interface PredictionBody {
 
 interface PlayCardBody {
   cardIndex?: number;
+}
+
+// A running game marks the players who quit, so their pages stop calling them
+// back to the table (the lobby, the room page and services/started-game.ts).
+function withQuitPlayers<
+  T extends { id: number; status: string; players: { username: string }[] },
+>(room: T): T {
+  if (room.status !== "playing") {
+    return room;
+  }
+
+  const game = wizardSessionManager.getGame(room.id);
+
+  if (!game) {
+    return room;
+  }
+
+  return {
+    ...room,
+    players: room.players.map((player) => ({
+      ...player,
+      quit: hasQuit(game, player.username),
+    })),
+  };
 }
 
 function getAuthenticatedUsername(request: {
@@ -89,7 +116,7 @@ export default async function wizardRoutes(
       return creatorFriends.some((friend) => friend.playerId === userId);
     });
 
-    return reply.send({ rooms });
+    return reply.send({ rooms: rooms.map(withQuitPlayers) });
   });
 
   // A single room, so the waiting room can poll without refetching the list.
@@ -156,7 +183,7 @@ export default async function wizardRoutes(
           }
         }
 
-        return reply.send(room);
+        return reply.send(withQuitPlayers(room));
       }
     );
 
@@ -463,6 +490,13 @@ export default async function wizardRoutes(
             blindFirstRound: {
               type: "boolean"
             },
+            // Missed turns that count as leaving; null for never.
+            missedTurnsToQuit: {
+              anyOf: [
+                { type: "integer", enum: [3, 5, 7, 9] },
+                { type: "null" }
+              ]
+            },
             // The turn timeout (see turnTimeout.ts); null for no limit. Left
             // out, the room keeps the one it has.
             turnTimeoutMs: {
@@ -712,6 +746,13 @@ export default async function wizardRoutes(
             blindFirstRound: {
               type: "boolean"
             },
+            // Missed turns that count as leaving; null for never.
+            missedTurnsToQuit: {
+              anyOf: [
+                { type: "integer", enum: [3, 5, 7, 9] },
+                { type: "null" }
+              ]
+            },
             botLevel: {
               type: "string",
               enum: BOT_LEVELS.map(({ level }) => level)
@@ -826,6 +867,10 @@ export default async function wizardRoutes(
         normalizeGameOptions({
           wizardWins: body.wizardWins ?? room.options.wizardWins,
           blindFirstRound: body.blindFirstRound ?? room.options.blindFirstRound,
+          missedTurnsToQuit:
+            body.missedTurnsToQuit !== undefined
+              ? body.missedTurnsToQuit
+              : room.options.missedTurnsToQuit,
         }),
         room.turnTimeoutMs,
       );
@@ -995,12 +1040,19 @@ export default async function wizardRoutes(
       });
     }
     
+    if (hasQuit(game, username)) {
+      return reply.status(403).send({
+        error: "You have left this game",
+      });
+    }
+
     try {
       wizardGameService.submitPrediction(
         game,
         username,
         Number(body.prediction),
       );
+      recordOwnMove(game, username);
       
       wizardSessionManager.saveGame(game);
       
@@ -1084,12 +1136,19 @@ export default async function wizardRoutes(
         error: "It is not your turn",
       });
     }
+
+    if (hasQuit(game, username)) {
+      return reply.status(403).send({
+        error: "You have left this game",
+      });
+    }
     
     try {
       wizardGameService.playCard(
         game,
         Number(body.cardIndex),
       );
+      recordOwnMove(game, username);
       
       wizardSessionManager.saveGame(game);
       
@@ -1104,4 +1163,72 @@ export default async function wizardRoutes(
       });
     }
   });
+
+  // Leaving a game for good: the server plays the seat from now on, and the
+  // others go on without waiting (see playerQuit.ts). When the last human
+  // quits, the game ends there, unfinished for everyone.
+  server.post(
+    "/games/:roomId/quit",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        }
+      }
+    },
+    async (request, reply) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+
+      const roomId = Number((request.params as { roomId: string }).roomId);
+      const username = getAuthenticatedUsername(request);
+
+      if (!username) {
+        return reply.status(401).send({ error: "User identity missing" });
+      }
+
+      const game = wizardSessionManager.getGame(roomId);
+
+      if (!game) {
+        return reply.status(404).send({ error: "Game not found" });
+      }
+
+      const isActiveHuman = activeHumans(game).some(
+        (player) => player.username === username,
+      );
+
+      if (!isActiveHuman) {
+        return reply.status(403).send({ error: "You are not playing in this game" });
+      }
+
+      quitPlayer(game, username);
+
+      if (activeHumans(game).length === 0) {
+        wizardGameCompletionService.expireGame(game);
+        wizardSessionManager.deleteGame(roomId);
+        wizardGameRunner.notifyAction(roomId);
+        return reply.send({ ended: true });
+      }
+
+      wizardSessionManager.saveGame(game);
+      broadcastGameState(roomId, wizardGameService);
+      wizardGameRunner.notifyAction(roomId);
+      wizardGameRunner.run(roomId).catch((error) => {
+        console.error(`[wizard] runner failed for room ${roomId}:`, error);
+      });
+
+      return reply.send({ ended: false });
+    },
+  );
 }

@@ -8,6 +8,7 @@ import { isBotName, seatNameFor } from "../models/bot.js";
 import { isEmote } from "../models/emote.js";
 import { guestTableEmptied, guestTableJoined } from "../services/guestCleanup.js";
 import { withErrorCode } from "../../../errorCodes.js";
+import { hasQuit, recordOwnMove } from "../services/playerQuit.js";
 
 interface SocketQuery {
 	token?: string;
@@ -207,6 +208,12 @@ export function registerWizardSocket(
 					return;
 				}
 
+				// A player who quit can still watch, but the server plays their seat.
+				if (hasQuit(currentGame, username)) {
+					sendJson(socket, { type: "error", error: "You have left this game" });
+					return;
+				}
+
 				// Not a move: this player's table now shows them their turn, after
 				// any walk-in and deal, so its countdown starts now (see the runner).
 				if (message.type === "turn_ready") {
@@ -283,6 +290,7 @@ export function registerWizardSocket(
 					// The human has completed this decision.
 					// The runner will start a fresh deadline for the next human decision.
 					currentGame.turnDeadlineAt = null;
+					recordOwnMove(currentGame, username);
 
 					wizardSessionManager.saveGame(currentGame);
 					broadcastGameState(roomId, gameService);

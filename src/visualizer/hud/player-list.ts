@@ -170,6 +170,14 @@ export function createPlayerList(
         const row = rows.get(player.username)!;
         row.element.classList.toggle("is-you", player.username === game.localUsername);
         row.element.classList.toggle("is-current", player.username === current);
+        // A player who quit: their line dims, and the server plays the seat.
+        row.element.classList.toggle("has-quit", player.quit);
+        const caption = row.element.querySelector("figcaption");
+        if (caption) {
+          caption.title = player.quit
+            ? t("game.playerQuit", { name: displayName(player.username) })
+            : displayName(player.username);
+        }
         const played = holding ? player.roundScores.at(-1) : undefined;
         const prediction = played ? played.prediction : player.prediction;
         const tricksWon = played ? played.tricksWon : player.tricksWon;

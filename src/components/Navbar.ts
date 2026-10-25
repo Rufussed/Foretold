@@ -1,6 +1,7 @@
 import type { User } from "../types/auth";
 import { escapeHtml } from "../utils/escape-html";
 import { getLanguage, setLanguage, t, type MessageKey } from "../i18n";
+import { watchStartedGame } from "../services/started-game";
 
 // The window title of the "?" button for each page with a navbar. The text
 // below it is the same placeholder everywhere until each page has its own.
@@ -92,7 +93,11 @@ export function renderNavbar(
   container.innerHTML = `
     <header class="lobby-header">
       <div class="lobby-brand-group">
-        <a class="lobby-brand" href="#/home">
+        <a
+          class="lobby-brand"
+          href="#/home"
+          data-tooltip="${t("nav.tipHome")}"
+        >
           <img src="/wizardForetold.webp" alt="Wizard" />
         </a>
 
@@ -108,7 +113,11 @@ export function renderNavbar(
       </div>
 
       <nav class="lobby-nav" aria-label="${t("nav.main")}">
-        ${isLobbyPage ? "" : `<a href="#/lobby">${t("nav.glade")}</a>`}
+        ${
+          isLobbyPage
+            ? ""
+            : `<a href="#/lobby" data-tooltip="${t("nav.tipLobby")}">${t("nav.glade")}</a>`
+        }
       </nav>
 
       <div class="lobby-account">
@@ -117,12 +126,18 @@ export function renderNavbar(
           id="navbar-language"
           class="lobby-account-button lobby-language-button"
           aria-label="${t("language.switchLabel")}"
+          data-tooltip="${t("language.switchLabel")}"
         >
           ${t("language.switchTo")}
         </button>
 
-        <a class="lobby-username" href="#/profile">
-          ${escapeHtml(currentUser.displayName || currentUser.username)}
+        <a
+          class="lobby-username"
+          id="navbar-profile"
+          href="#/profile"
+          data-tooltip="${t("nav.tipProfile")}"
+        >
+          <span class="lobby-username-text">${escapeHtml(currentUser.displayName || currentUser.username)}</span>
         </a>
 
         <button
@@ -147,6 +162,20 @@ export function renderNavbar(
   container
     .querySelector<HTMLButtonElement>("#navbar-help-button")
     ?.addEventListener("click", openHelp);
+
+  // A game the player is seated in has started: the name turns gold like
+  // Play Now on Home, and Profile has the button to the table.
+  const profileLink =
+    container.querySelector<HTMLAnchorElement>("#navbar-profile");
+
+  if (profileLink) {
+    watchStartedGame(profileLink, currentUser.username, (game) => {
+      profileLink.classList.toggle("lobby-username-alert", game !== null);
+      profileLink.dataset.tooltip = game
+        ? t("nav.tipGameStarted", { room: game.name })
+        : t("nav.tipProfile");
+    });
+  }
 
   const logoutButton =
     container.querySelector<HTMLButtonElement>("#navbar-logout");

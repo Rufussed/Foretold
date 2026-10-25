@@ -82,6 +82,12 @@ label {
   border: 1px solid #373329;
   border-radius: 4px;
   font: inherit;
+  /* What players type shows as typed, in the text font, even inside a Cinzel
+     label set in capitals: Cinzel has no lowercase, and wizard names are
+     case-sensitive at login. */
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 /* Browser autofill paints its own pale background over the field; paint the
@@ -3348,15 +3354,92 @@ button {
   flex-shrink: 0;
   max-width: 120px;
 
-  overflow: hidden;
-
   color: rgba(244, 234, 216, 0.58);
 
   font-size: 0.82rem;
   letter-spacing: 0.08em;
 
-  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* A long name ends in "…" inside the link, so the link itself can show its
+   hint below. */
+.lobby-username-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A game the player is seated in has started without them (see
+   services/started-game.ts): their name, in the navbar and on Home, and the
+   Take your seat button on Profile take the look of Play Now on Home and glow
+   softly, asking to be pressed. */
+.lobby-account .lobby-username-alert,
+.profile-heading-actions a.profile-take-seat {
+  border: 1px solid #bb7022;
+  background: linear-gradient(180deg, #9a4c14, #663008);
+  color: #f6e7cf;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 207, 121, 0.34),
+    inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+    0 0 18px rgba(211, 101, 18, 0.3);
+  animation: lobby-username-glow 2.4s ease-in-out infinite;
+}
+
+.lobby-account .lobby-username-alert:hover,
+.profile-heading-actions a.profile-take-seat:hover {
+  border-color: #bb7022;
+  background: linear-gradient(180deg, #9a4c14, #663008);
+  color: #fff;
+  filter: brightness(1.13);
+}
+
+@keyframes lobby-username-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 207, 121, 0.34),
+      inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+      0 0 10px rgba(211, 101, 18, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 207, 121, 0.34),
+      inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+      0 0 24px rgba(211, 101, 18, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-account .lobby-username-alert,
+  .home-account-actions > a.home-account-alert,
+  .profile-heading-actions a.profile-take-seat {
+    animation: none;
+  }
+}
+
+.profile-heading-actions a.profile-take-seat[hidden] {
+  display: none;
+}
+
+/* On Home the name stays plain text; only its letters turn gold and glow. */
+.home-account-actions > a.home-account-alert {
+  color: #ffbd62;
+  animation: home-account-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes home-account-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 6px rgba(255, 189, 98, 0.35);
+  }
+
+  50% {
+    text-shadow:
+      0 0 10px rgba(255, 189, 98, 0.85),
+      0 0 22px rgba(211, 101, 18, 0.6);
+  }
 }
 
 .lobby-account-button {
@@ -3424,14 +3507,19 @@ button {
   color: #ffbd62;
 }
 
-/* The hint under the button, from its data-tooltip. */
-.lobby-help-button::after {
+/* The hints under the navbar's logo, links and buttons, from their
+   data-tooltip. They start at the left edge of what they belong to, and on
+   the right side at its right edge, so they stay on the screen. */
+.lobby-header [data-tooltip] {
+  position: relative;
+}
+
+.lobby-header [data-tooltip]::after {
   content: attr(data-tooltip);
 
   position: absolute;
   z-index: 5;
   top: calc(100% + 10px);
-  /* From the button's left edge, as it sits near the left of the screen. */
   left: 0;
 
   padding: 8px 12px;
@@ -3460,15 +3548,48 @@ button {
     transform 0.18s ease;
 }
 
-.lobby-help-button:hover::after,
-.lobby-help-button:focus-visible::after {
+.lobby-header [data-tooltip]:hover::after,
+.lobby-header [data-tooltip]:focus-visible::after {
   opacity: 1;
   transform: translateY(0);
+}
+
+.lobby-account [data-tooltip]::after {
+  left: auto;
+  right: 0;
 }
 
 /* The window is added to the body, outside #app, which lies at 9999. */
 #navbar-help {
   z-index: 10000;
+}
+
+/* A player who quit the game, whose seat the server now plays: their line
+   in the table's player list dims (visualizer/hud/player-list.ts). */
+.hud-opponent.has-quit .hud-opponent-face {
+  opacity: 0.45;
+}
+
+/* Leave Table's choice at the game (visualizer/leave-dialog.ts), in front of
+   the table's HUD. */
+#visualizer-leave-dialog {
+  z-index: 200;
+}
+
+#visualizer-leave-dialog .home-modal-copy + .home-modal-copy {
+  margin-top: 12px;
+}
+
+.visualizer-leave-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.visualizer-leave-actions button {
+  padding: 12px 18px;
 }
 
 /* ---------------------------------------------------------

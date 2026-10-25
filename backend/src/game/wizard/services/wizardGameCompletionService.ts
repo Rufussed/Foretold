@@ -71,18 +71,23 @@ class WizardGameCompletionService {
           );
         }
 
-        playerStatsRepository.recordFinishedGame(
-          roomPlayer.userId,
-          winner?.username === player.username ? 1 : 0,
-          player.score,
-          player.tricksWon,
-          player.roundScores.length,
-          player.roundScores.filter(
-            (round) => round.prediction === round.tricksWon,
-          ).length,
-          room.createdBy === roomPlayer.userId ? 1 : 0,
-          fullGame,
-        );
+        // A player who quit left it unfinished: it counts as played (from
+        // the start), not as finished, so it lowers their reliability and
+        // brings no win or points. Their opponents are still remembered.
+        if (!player.quit) {
+          playerStatsRepository.recordFinishedGame(
+            roomPlayer.userId,
+            winner?.username === player.username ? 1 : 0,
+            player.score,
+            player.tricksWon,
+            player.roundScores.length,
+            player.roundScores.filter(
+              (round) => round.prediction === round.tricksWon,
+            ).length,
+            room.createdBy === roomPlayer.userId ? 1 : 0,
+            fullGame,
+          );
+        }
 
         for (const opponent of game.players) {
           if (opponent.username === player.username) {

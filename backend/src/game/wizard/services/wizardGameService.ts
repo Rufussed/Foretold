@@ -461,6 +461,7 @@ export class WizardGameService {
           tricksWon: player.tricksWon,
           score: player.score,
           roundScores: player.roundScores,
+          quit: player.quit === true,
         };
       }),
       currentRound: game.currentRound,

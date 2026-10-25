@@ -1,3 +1,4 @@
+import { startedGameHash, watchStartedGame } from "../services/started-game";
 import {
   getCurrentUser,
   getCurrentUserOpponents,
@@ -49,6 +50,9 @@ function getPlayerLevel(
 
   return t(level?.name ?? "profile.level.novice");
 }
+
+// How often the profile asks again for friends and friend requests.
+const SOCIAL_REFRESH_MS = 15000;
 
 const HISTORY_LIMITS = [20, 50, 100];
 const HISTORY_PREFS_KEY = "wizardProfileHistory";
@@ -233,32 +237,48 @@ export async function renderProfilePage(
       };
 
   const user = profile;
-  let friends: Friend[] = [];
-  let friendRequests: FriendRequest[] = [];
-  let friendStatus: FriendRelationshipStatus = "none";
 
-  try {
+  // Friends and requests on one's own profile, the friendship on another's.
+  // Also asked again in the background (see the end of this function).
+  const loadSocial = async (): Promise<{
+    friends: Friend[];
+    friendRequests: FriendRequest[];
+    friendStatus: FriendRelationshipStatus;
+  }> => {
     if (ownProfile) {
-      [friends, friendRequests] = await Promise.all([
+      const [friends, friendRequests] = await Promise.all([
         getFriends(),
         getFriendRequests(),
       ]);
-    } else {
-      const [status, currentFriends] = await Promise.all([
-        getFriendStatus(user.id),
-        getFriends(),
-      ]);
-      const normalizedStatus = String(status).trim().toLowerCase();
-      friendStatus = currentFriends.some(
-        (friend) => friend.playerId === user.id,
-      )
-        ? "friend"
-        : normalizedStatus === "pending"
-          ? "pending"
-          : normalizedStatus === "friend"
-            ? "friend"
-            : "none";
+      return { friends, friendRequests, friendStatus: "none" };
     }
+
+    const [status, currentFriends] = await Promise.all([
+      getFriendStatus(user.id),
+      getFriends(),
+    ]);
+    const normalizedStatus = String(status).trim().toLowerCase();
+    const friendStatus: FriendRelationshipStatus = currentFriends.some(
+      (friend) => friend.playerId === user.id,
+    )
+      ? "friend"
+      : normalizedStatus === "pending"
+        ? "pending"
+        : normalizedStatus === "friend"
+          ? "friend"
+          : "none";
+    return { friends: [], friendRequests: [], friendStatus };
+  };
+
+  let friends: Friend[] = [];
+  let friendRequests: FriendRequest[] = [];
+  let friendStatus: FriendRelationshipStatus = "none";
+  let shownSocial = "";
+
+  try {
+    const social = await loadSocial();
+    ({ friends, friendRequests, friendStatus } = social);
+    shownSocial = JSON.stringify(social);
   } catch {
     // Social data is optional; the profile and opponent history still render.
   }
@@ -336,6 +356,15 @@ export async function renderProfilePage(
             ${
               ownProfile
                 ? `
+                  <a
+                    class="profile-action profile-take-seat"
+                    id="profile-take-seat"
+                    href="#/lobby"
+                    hidden
+                  >
+                    ${t("profile.takeSeat")}
+                  </a>
+
                   <button
                     class="profile-action"
                     type="button"
@@ -973,4 +1002,54 @@ export async function renderProfilePage(
       );
     }
   });
+
+  // A game the player is seated in has started without them: the button to
+  // its table shows before Find Players (see services/started-game.ts).
+  const takeSeat =
+    container.querySelector<HTMLAnchorElement>("#profile-take-seat");
+
+  if (takeSeat) {
+    watchStartedGame(takeSeat, currentUser.username, (game) => {
+      takeSeat.hidden = game === null;
+
+      if (game) {
+        takeSeat.href = startedGameHash(game);
+        takeSeat.title = t("nav.tipGameStarted", { room: game.name });
+      }
+    });
+  }
+
+  // New friend requests, and requests the other player answered, show up
+  // without a reload: the friends are asked again every few seconds and the
+  // page is drawn anew when they changed. Not while someone is typing or has
+  // search results open, which a redraw would wipe; it stops once the page
+  // is left or drawn anew.
+  const page = container.querySelector<HTMLElement>(".profile-page");
+
+  const scheduleSocialRefresh = (): void => {
+    window.setTimeout(async () => {
+      if (!page?.isConnected) {
+        return;
+      }
+
+      const typing = document.activeElement?.matches("input, textarea, select");
+
+      if (!document.hidden && !typing && !searchInput?.value) {
+        try {
+          if (JSON.stringify(await loadSocial()) !== shownSocial) {
+            if (page.isConnected) {
+              await reloadProfile();
+            }
+            return;
+          }
+        } catch {
+          // Try again next time.
+        }
+      }
+
+      scheduleSocialRefresh();
+    }, SOCIAL_REFRESH_MS);
+  };
+
+  scheduleSocialRefresh();
 }

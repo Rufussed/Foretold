@@ -667,4 +667,81 @@ describe("WizardGameCompletionService", () => {
       `).run(creatorId, player2Id, player3Id);
     }
   });
+
+  it("does not count the game as finished for a player who quit", () => {
+    const creatorId = createTestUser("completion-quit-creator", "Creator");
+    const quitterId = createTestUser("completion-quit-quitter", "Quitter");
+    const player3Id = createTestUser("completion-quit-player3", "Player 3");
+
+    const room = db.prepare(`
+      INSERT INTO rooms (
+        name,
+        created_by,
+        max_players,
+        status
+      )
+      VALUES (?, ?, ?, 'playing')
+    `).run("Completion Quit Room", creatorId, 3);
+
+    const roomId = Number(room.lastInsertRowid);
+
+    const addPlayer = db.prepare(`
+      INSERT INTO room_players (
+        room_id,
+        user_id,
+        username
+      )
+      VALUES (?, ?, ?)
+    `);
+    addPlayer.run(roomId, creatorId, "completion-quit-creator");
+    addPlayer.run(roomId, quitterId, "completion-quit-quitter");
+    addPlayer.run(roomId, player3Id, "completion-quit-player3");
+
+    const game = createTestGame(
+      roomId,
+      "completion-quit-creator",
+      "completion-quit-quitter",
+      "completion-quit-player3",
+    );
+    game.players[1]!.quit = true;
+
+    try {
+      wizardGameCompletionService.completeGame(game);
+
+      const statsOf = (userId: number) =>
+        db.prepare(`
+          SELECT games_finished, total_points
+          FROM player_stats
+          WHERE user_id = ?
+        `).get(userId) as { games_finished: number; total_points: number };
+
+      expect(statsOf(quitterId)).toEqual({ games_finished: 0, total_points: 0 });
+      expect(statsOf(creatorId).games_finished).toBe(1);
+      expect(statsOf(player3Id).games_finished).toBe(1);
+
+      // The quitter still remembers whom they played against.
+      const opponents = db.prepare(`
+        SELECT COUNT(*) AS count
+        FROM player_opponents
+        WHERE player_id = ?
+      `).get(quitterId) as { count: number };
+
+      expect(opponents.count).toBe(2);
+    } finally {
+      db.prepare(`
+        DELETE FROM player_opponents
+        WHERE player_id IN (?, ?, ?)
+      `).run(creatorId, quitterId, player3Id);
+
+      db.prepare(`
+        DELETE FROM player_stats
+        WHERE user_id IN (?, ?, ?)
+      `).run(creatorId, quitterId, player3Id);
+
+      db.prepare(`
+        DELETE FROM users
+        WHERE id IN (?, ?, ?)
+      `).run(creatorId, quitterId, player3Id);
+    }
+  });
 });

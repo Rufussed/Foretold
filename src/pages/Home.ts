@@ -1,3 +1,4 @@
+import { watchStartedGame } from "../services/started-game";
 import {
   createGuestGame,
   getCurrentUser,
@@ -139,6 +140,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
                 ? `
                   <a
                     class="home-account-button"
+                    id="home-profile-link"
                     href="#/profile"
                   >
                     ${escapeHtml(currentUser?.displayName || currentUser?.username || "")}
@@ -212,6 +214,20 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
 
     if (activePanel !== null) {
       renderPanel();
+    }
+
+    // A game the player is seated in has started without them: their name
+    // turns gold and glows, and Profile has the button to the table.
+    const profileLink =
+      container.querySelector<HTMLAnchorElement>("#home-profile-link");
+
+    if (profileLink && currentUser) {
+      watchStartedGame(profileLink, currentUser.username, (game) => {
+        profileLink.classList.toggle("home-account-alert", game !== null);
+        profileLink.title = game
+          ? t("nav.tipGameStarted", { room: game.name })
+          : "";
+      });
     }
 
     if (isLoggedIn) {

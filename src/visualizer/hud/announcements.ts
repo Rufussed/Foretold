@@ -123,6 +123,18 @@ export interface EventMessage {
 export function eventMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
   const messages: EventMessage[] = [];
 
+  // A player left for good, by choice or after three missed turns: the
+  // server plays their seat from now on.
+  for (const player of next.players) {
+    const before = previous.players.find((p) => p.username === player.username);
+    if (player.quit && before && !before.quit) {
+      messages.push({
+        text: player.username === local ? t("ann.youQuit") : t("ann.quit", { name: announcedName(player.username) }),
+        username: player.username,
+      });
+    }
+  }
+
   if (previous.currentRound === next.currentRound) {
     for (const player of next.players) {
       const before = previous.players.find((p) => p.username === player.username);

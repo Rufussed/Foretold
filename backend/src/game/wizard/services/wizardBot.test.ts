@@ -72,6 +72,7 @@ describe("WizardBotService", () => {
     const game = gameService.createGame(1, ["alice", "Merlin NPC", "Morgana NPC"], new Map(), 3, 1, {
       wizardWins: "first",
       blindFirstRound: true,
+      missedTurnsToQuit: 3,
     });
     const [alice, merlin, morgana] = game.players;
     if (!alice || !merlin || !morgana) throw new Error("Test players are missing");

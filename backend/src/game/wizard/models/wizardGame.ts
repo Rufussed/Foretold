@@ -8,6 +8,8 @@ import type { TurnTimeoutMs } from "../turnTimeout.js";
 export interface RoomPlayer {
   username: string;
   avatar: AvatarId | null;
+  // Sent for a running game only: the player quit it (playerQuit.ts).
+  quit?: boolean;
 }
 
 // A lobby room exists before a game starts and keeps the player list used to
@@ -38,6 +40,11 @@ export interface GamePlayer {
   // How a bot plays (see bots/). Humans have none, and so do bots in games
   // saved before personalities existed; both are played as the Apprentice.
   botPersonality?: BotPersonality;
+  // Set when the player left for good, by choice or after missing three turns
+  // in a row: the server plays their seat from then on (playerQuit.ts).
+  quit?: boolean;
+  // Turns in a row the timer ran out on; a move of their own resets it.
+  missedTurns?: number;
 }
 
 // A played card retains its owner so the rules service can return a username
@@ -88,6 +95,8 @@ export interface PublicGamePlayer {
   tricksWon: number;
   score: number;
   roundScores: RoundScore[];
+  // The player has left; the server plays the seat (playerQuit.ts).
+  quit: boolean;
 }
 
 export interface PublicWizardGameState {

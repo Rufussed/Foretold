@@ -6,7 +6,11 @@ import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
 import { describeRuleVariations } from "../utils/rule-variations";
-import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
+import {
+  DEFAULT_GAME_OPTIONS,
+  MISSED_TURNS_OPTIONS,
+  normalizeGameOptions,
+} from "../../backend/src/game/wizard/gameOptions";
 import {
   createAvatarPicker,
   type AvatarPicker,
@@ -178,6 +182,25 @@ export async function renderRoomPage(
                     </select>
                   </label>
 
+                  <label>
+                    <span>${t("room.missedTurns")}</span>
+                    <select id="room-missed-turns">
+                      ${MISSED_TURNS_OPTIONS.map(
+                        (count) =>
+                          `<option value="${count ?? "off"}"${count === DEFAULT_GAME_OPTIONS.missedTurnsToQuit ? " selected" : ""}>${
+                            count === null
+                              ? t("room.missedTurns.off")
+                              : t(
+                                  count === DEFAULT_GAME_OPTIONS.missedTurnsToQuit
+                                    ? "room.missedTurns.default"
+                                    : "room.missedTurns.count",
+                                  { count: String(count) },
+                                )
+                          }</option>`,
+                      ).join("")}
+                    </select>
+                  </label>
+
                 </div>
               </details>
 
@@ -242,6 +265,9 @@ export async function renderRoomPage(
   // The rule variations, for everyone in the game. See gameOptions.ts.
   const wizardWinsEl = element<HTMLSelectElement>("#room-wizard-wins");
   const blindFirstRoundEl = element<HTMLSelectElement>("#room-blind-first-round");
+  // Missed turns in a row before a player counts as gone and a bot takes the
+  // seat; "off" for never. See gameOptions.ts and the backend's playerQuit.ts.
+  const missedTurnsEl = element<HTMLSelectElement>("#room-missed-turns");
   // How long a human player has for each move before the game makes it for
   // them; "none" for no limit. See turnTimeout.ts.
   const turnTimeoutEl = element<HTMLSelectElement>("#room-turn-timeout");
@@ -250,6 +276,7 @@ export async function renderRoomPage(
   const chosenOptions = () => ({
     wizardWins: wizardWinsEl.value,
     blindFirstRound: blindFirstRoundEl.value === "true",
+    missedTurnsToQuit: missedTurnsEl.value === "off" ? null : Number(missedTurnsEl.value),
     turnTimeoutMs: turnTimeoutEl.value === "none" ? null : Number(turnTimeoutEl.value),
   });
   let humanCount = 0;
@@ -338,6 +365,7 @@ export async function renderRoomPage(
       optionsLoaded = true;
       wizardWinsEl.value = options.wizardWins;
       blindFirstRoundEl.value = String(options.blindFirstRound);
+      missedTurnsEl.value = String(options.missedTurnsToQuit ?? "off");
       turnTimeoutEl.value = room.turnTimeoutMs === null ? "none" : String(room.turnTimeoutMs);
     }
 
@@ -463,8 +491,14 @@ export async function renderRoomPage(
           (player) => player.username === user.username,
         );
 
+        const hasLeft = latest.players.some(
+          (player) => player.username === user.username && player.quit === true,
+        );
+
         if (latest.status === "playing") {
-          if (isMember) {
+          if (hasLeft) {
+            showMessage(t("room.youLeft"));
+          } else if (isMember) {
             window.location.hash = `#/game/${roomId}/visualizer`;
           } else {
             showMessage(t("room.alreadyStarted"));
@@ -511,6 +545,7 @@ export async function renderRoomPage(
   };
   wizardWinsEl.addEventListener("change", saveOptions);
   blindFirstRoundEl.addEventListener("change", saveOptions);
+  missedTurnsEl.addEventListener("change", saveOptions);
   turnTimeoutEl.addEventListener("change", saveOptions);
 
   startButton.addEventListener("click", async () => {

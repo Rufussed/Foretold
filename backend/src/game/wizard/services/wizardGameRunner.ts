@@ -4,6 +4,7 @@ import { wizardSessionManager } from "./wizardSessionManager.js";
 import { WIZARD_TIMING } from "../wizardTiming.js";
 import { clampPace, paced } from "../gameplayPace.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
+import { isPlayedByServer, recordMissedTurn } from "./playerQuit.js";
 
 export type GameStateBroadcaster = (
   roomId: number,
@@ -96,8 +97,9 @@ export class WizardGameRunner {
         
         let timedOutHuman = false;
 
-        // HUMAN TURN: wait for the player, or let the bot decide when the timer expires.
-        if (!this.botService.isBot(currentPlayer.username)) {
+        // HUMAN TURN: wait for the player, or let the bot decide when the timer
+        // expires. A player who quit is played like a bot, without waiting.
+        if (!isPlayedByServer(currentPlayer)) {
           const getDecisionKey = (state: typeof game): string => {
             const player = state.players[state.currentPlayerIndex];
 
@@ -173,15 +175,20 @@ export class WizardGameRunner {
 
           const timedOutPlayer =
             currentGame.players[currentGame.currentPlayerIndex];
-          if (
-            !timedOutPlayer ||
-            this.botService.isBot(timedOutPlayer.username)
-          ) {
+          if (!timedOutPlayer || isPlayedByServer(timedOutPlayer)) {
             continue;
           }
 
           // The timeout has expired. Continue into the bot decision logic
-          // below, but use the current game state.
+          // below, but use the current game state. Enough misses in a row
+          // are a quit (playerQuit.ts); the seat is then played like a bot's.
+          if (recordMissedTurn(currentGame, timedOutPlayer.username)) {
+            console.log(
+              `[wizard] room ${roomId}: ${timedOutPlayer.username} missed too many turns and has quit`,
+            );
+          }
+          wizardSessionManager.saveGame(currentGame);
+
           timedOutHuman = true;
         }
 

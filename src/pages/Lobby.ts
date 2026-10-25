@@ -16,6 +16,8 @@ interface LobbyRoom {
   players: {
     username: string;
     avatar: string | null;
+    // Set on a running game's players who quit it.
+    quit?: boolean;
   }[];
   maxPlayers: number;
   status: "waiting" | "playing";
@@ -25,6 +27,10 @@ interface LobbyRoom {
 type LobbyData = {
   rooms: LobbyRoom[];
 };
+
+// How often the room list asks again, so rooms other players open or fill
+// show up without a reload.
+const ROOMS_REFRESH_MS = 5000;
 
 // A guest's username is a generated id, so they are listed as a stranger.
 function playerLabel(username: string): string {
@@ -295,7 +301,13 @@ export async function renderLobbyPage(
     },
   );
 
-  async function loadRooms(): Promise<void> {
+  // The list as last drawn, so a refresh that finds nothing new leaves the
+  // page alone.
+  let shownRooms = "";
+
+  // A background refresh keeps the list as it is when it fails; only a load
+  // the player asked for shows the error.
+  async function loadRooms(background = false): Promise<void> {
     if (!roomList) {
       return;
     }
@@ -317,6 +329,14 @@ export async function renderLobbyPage(
       const data =
         (await response.json()) as LobbyData;
 
+      const rooms = JSON.stringify(data.rooms ?? []);
+
+      if (rooms === shownRooms) {
+        return;
+      }
+
+      shownRooms = rooms;
+
       if (!data.rooms || data.rooms.length === 0) {
         roomList.innerHTML = `
           <div class="rooms-empty">
@@ -335,6 +355,13 @@ export async function renderLobbyPage(
           const isMember = room.players.some(
             (player) =>
               player.username === currentUser.username,
+          );
+
+          // A player who quit the running game cannot go back to it.
+          const hasLeft = room.players.some(
+            (player) =>
+              player.username === currentUser.username &&
+              player.quit === true,
           );
 
           const playerCount =
@@ -370,7 +397,7 @@ export async function renderLobbyPage(
               <div class="room-actions">
                 ${
                   room.status === "playing"
-                    ? isMember
+                    ? isMember && !hasLeft
                       ? `
                         <button
                           type="button"
@@ -387,7 +414,7 @@ export async function renderLobbyPage(
                           class="room-action-button"
                           disabled
                         >
-                          ${t("lobby.inProgress")}
+                          ${t(hasLeft ? "lobby.youLeft" : "lobby.inProgress")}
                         </button>
                       `
                     : isMember
@@ -456,6 +483,12 @@ export async function renderLobbyPage(
         "Could not load rooms:",
         error,
       );
+
+      if (background) {
+        return;
+      }
+
+      shownRooms = "";
 
       roomList.innerHTML = `
         <div class="rooms-error">
@@ -748,4 +781,22 @@ export async function renderLobbyPage(
   );
 
   void loadRooms();
+
+  // Asks again every few seconds while the tab is in view, and stops once
+  // the page is left (the list is then no longer in the document).
+  function scheduleRefresh(): void {
+    window.setTimeout(async () => {
+      if (!roomList?.isConnected) {
+        return;
+      }
+
+      if (!document.hidden) {
+        await loadRooms(true);
+      }
+
+      scheduleRefresh();
+    }, ROOMS_REFRESH_MS);
+  }
+
+  scheduleRefresh();
 }
