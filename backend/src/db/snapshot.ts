@@ -40,14 +40,20 @@ export function snapshotDatabase(
   }
 }
 
-// Keeps the newest few; the names sort by date, so the oldest are at the front.
+// The date part of a snapshot's name (see snapshotPath), which sorts in time
+// order. The whole name does not: "before-v12" sorts ahead of "before-v5", so
+// the newest copy looked oldest and was deleted as soon as it was taken.
+export const snapshotStamp = (name: string): string =>
+  name.split(".").at(-2) ?? "";
+
+// Keeps the newest few, ordered by their date stamps, oldest at the front.
 function pruneSnapshots(databasePath: string): void {
   const directory = path.dirname(databasePath);
   const prefix = `${path.basename(databasePath, path.extname(databasePath))}.before-v`;
   try {
     const snapshots = readdirSync(directory)
       .filter((name) => name.startsWith(prefix) && name.endsWith(".sqlite"))
-      .sort();
+      .sort((a, b) => snapshotStamp(a).localeCompare(snapshotStamp(b)));
     for (const name of snapshots.slice(0, Math.max(snapshots.length - KEEP, 0))) {
       unlinkSync(path.join(directory, name));
     }
