@@ -102,8 +102,11 @@ against Adepts with the simple rule (33% would be even).
 5. **The text game page** (`WizardGame.ts`): give it a simple power prompt, or
    skip the power there automatically, so it can't hang.
 6. **Cards:** a Foretold game can use a deck whose 7 and 8 show the Seer and
-   Trickster (see `card-art/elements-deck/README.md`); classic keeps plain
-   cards.
+   Trickster; classic keeps plain cards. Rufus's pictures are in
+   `src/assets/elements-cards/`. What his code prints on them is listed in
+   `card-art/elements-deck/README.md`, removed from the repo but kept in git
+   (`git show 7f367bc:card-art/elements-deck/README.md`) and in
+   `~/Desktop/Workspace/wizard-card-art/input/elements-deck/`.
 7. Checks: backend `npm run typecheck`, `npx vitest run`; frontend
    `npx tsc --noEmit`, `npx vite build`. Then play one classic and one
    Foretold game with NPCs, including a Seer or Trickster on the last trick.
