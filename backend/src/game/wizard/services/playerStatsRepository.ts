@@ -9,6 +9,8 @@ export interface PlayerStats {
   fullGamesWon: number;
   totalPoints: number;
   peakTotalPoints: number;
+  // Null until the player finishes a game.
+  bestGameScore: number | null;
   tricksWon: number;
   predictionsMade: number;
   exactPredictions: number;
@@ -70,6 +72,7 @@ class PlayerStatsRepository {
         full_games_won = full_games_won + ?,
         total_points = total_points + ?,
         peak_total_points = MAX(peak_total_points, total_points + ?),
+        best_game_score = MAX(COALESCE(best_game_score, ?), ?),
         tricks_won = tricks_won + ?,
         predictions_made = predictions_made + ?,
         exact_predictions = exact_predictions + ?,
@@ -79,6 +82,8 @@ class PlayerStatsRepository {
       gamesWon,
       fullGamesFinished,
       fullGamesWon,
+      totalPoints,
+      totalPoints,
       totalPoints,
       totalPoints,
       tricksWon,
@@ -100,6 +105,7 @@ class PlayerStatsRepository {
         full_games_won AS fullGamesWon,
         total_points AS totalPoints,
         peak_total_points AS peakTotalPoints,
+        best_game_score AS bestGameScore,
         tricks_won AS tricksWon,
         predictions_made AS predictionsMade,
         exact_predictions AS exactPredictions,

@@ -37,6 +37,7 @@ describe("PlayerStatsRepository", () => {
       expect(stats?.fullGamesWon).toBe(0);
       expect(stats?.totalPoints).toBe(0);
       expect(stats?.peakTotalPoints).toBe(0);
+      expect(stats?.bestGameScore).toBeNull();
       expect(stats?.tricksWon).toBe(0);
       expect(stats?.predictionsMade).toBe(0);
       expect(stats?.exactPredictions).toBe(0);
@@ -325,6 +326,7 @@ describe("PlayerStatsRepository", () => {
 
       expect(stats?.totalPoints).toBe(90);
       expect(stats?.peakTotalPoints).toBe(150);
+      expect(stats?.bestGameScore).toBe(150);
     } finally {
       db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(userId);
       db.prepare("DELETE FROM users WHERE id = ?").run(userId);

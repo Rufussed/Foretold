@@ -324,25 +324,8 @@ export async function renderLobbyPage(
             <p>
               ${t("lobby.emptyHint")}
             </p>
-
-            <button
-              type="button"
-              class="rooms-empty-button"
-              id="empty-create-room"
-            >
-              ${t("lobby.createRoom")}
-            </button>
           </div>
         `;
-
-        document
-          .querySelector<HTMLButtonElement>(
-            "#empty-create-room",
-          )
-          ?.addEventListener(
-            "click",
-            openCreateRoomModal,
-          );
 
         return;
       }

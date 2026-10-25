@@ -375,6 +375,8 @@ export async function renderProfilePage(
 
         <section class="profile-highlights" aria-label="${t("profile.highlights")}">
 
+          <!-- Two groups, as wide as the Record and Social columns below. -->
+          <div class="profile-highlight-group">
           <div class="profile-highlight profile-highlight-primary">
             <span>${t("profile.fullGames")}</span>
             <strong>${stats.fullGamesFinished}</strong>
@@ -392,10 +394,12 @@ export async function renderProfilePage(
             <strong>${fullWinRate.toFixed(1)}%</strong>
             <small>${t("profile.winRateHint", { won: String(stats.fullGamesWon), total: String(stats.fullGamesFinished) })}</small>
           </div>
+          </div>
 
+          <div class="profile-highlight-group">
           <div class="profile-highlight">
             <span>${t("profile.peak")}</span>
-            <strong>${stats.peakTotalPoints}</strong>
+            <strong>${stats.bestGameScore ?? "–"}</strong>
             <small>${t("profile.peakHint")}</small>
           </div>
 
@@ -403,6 +407,7 @@ export async function renderProfilePage(
             <span>${t("profile.totalPoints")}</span>
             <strong>${stats.totalPoints}</strong>
             <small>${t("profile.totalPointsHint")}</small>
+          </div>
           </div>
 
         </section>

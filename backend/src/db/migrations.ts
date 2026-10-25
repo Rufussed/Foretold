@@ -253,6 +253,20 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 13,
+    description: "remember each player's highest score in one game",
+    up(db) {
+      // Finished games are not kept, so past ones cannot be looked at: the
+      // column stays empty until a player's next finished game.
+      if (!hasColumn(db, "player_stats", "best_game_score")) {
+        db.exec(`
+          ALTER TABLE player_stats
+          ADD COLUMN best_game_score INTEGER
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

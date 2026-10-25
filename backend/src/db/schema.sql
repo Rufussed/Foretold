@@ -56,6 +56,8 @@ CREATE TABLE IF NOT EXISTS player_stats (
   total_points INTEGER NOT NULL DEFAULT 0,
   -- Highest total_points ever reached; the level never drops below it.
   peak_total_points INTEGER NOT NULL DEFAULT 0,
+  -- Highest score in one finished game; NULL until the first one.
+  best_game_score INTEGER,
   tricks_won INTEGER NOT NULL DEFAULT 0,
 
   predictions_made INTEGER NOT NULL DEFAULT 0,

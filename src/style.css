@@ -3569,7 +3569,7 @@ button {
 
   background: rgba(4, 5, 4, 0.35);
 
-  color: rgba(224, 161, 77, 0.55);
+  color: rgba(224, 161, 77, 0.85);
 
   font-size: 0.66rem;
   font-weight: 400;
@@ -4968,12 +4968,21 @@ button {
   letter-spacing: 0;
 }
 
+/* Same columns as .profile-detail-grid, so the three game cards line up with
+   the Record card and the two point cards with Social. */
 .profile-highlights {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 16px;
   margin-bottom: 16px;
   flex-shrink: 0;
+}
+
+.profile-highlight-group {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
 }
 
 .profile-highlight {
@@ -5376,12 +5385,8 @@ button {
 
 @media (max-width: 850px) {
   .profile-highlights {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  /* Five cards in two columns: the first takes a row of its own. */
-  .profile-highlight-primary {
-    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
   }
 
   .profile-grid {
@@ -5427,8 +5432,8 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .profile-highlights {
-    grid-template-columns: 1fr;
+  .profile-highlight-group {
+    grid-auto-flow: row;
   }
 
   .profile-info-row {

@@ -25,6 +25,7 @@ export interface PlayerStats {
   fullGamesWon: number;
   totalPoints: number;
   peakTotalPoints: number;
+  bestGameScore: number | null;
   tricksWon: number;
   predictionsMade: number;
   exactPredictions: number;
