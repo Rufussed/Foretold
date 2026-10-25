@@ -3,71 +3,49 @@ import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import { sharpenImage } from "./card-sharpen";
 import { CARDS } from "./config";
 
-// Loads the scanned card art from src/assets/cards. One file per card, plus the
-// single back shown on every face-down card.
+// Loads the card art from src/assets/foretold_cards: one gem set per suit, one
+// file per card (topaz01.webp … topaz13.webp, topazJester.webp,
+// topazWizard.webp), plus the back shown on every face-down card.
 
 // Vite copies each file into the build with a hash of its contents in its name,
-// so re-scanned art reaches players as a new URL their cache cannot mistake for
+// so re-made art reaches players as a new URL their cache cannot mistake for
 // the old one. The hash is only known at build time, so a card's path can no
 // longer be assembled from its suit and value: that naming still decides which
 // file is wanted, but the URL itself comes from this table. Keys are the glob
-// patterns exactly as written above.
-const CARD_FILES = import.meta.glob("../assets/cards/**/*.webp", {
+// patterns exactly as written here.
+const CARD_FILES = import.meta.glob("../assets/foretold_cards/**/*.webp", {
   query: "?url",
   import: "default",
   eager: true,
 }) as Record<string, string>;
 
-function cardFile(path: string): string {
-  const url = CARD_FILES[`../assets/cards/${path}`];
-  // A missing file is a mistake in the naming below or a card that was never
-  // scanned; say so rather than handing three.js undefined and drawing a blank.
-  if (!url) throw new Error(`No card art at ${path}`);
-  return url;
-}
-
-const SCANNED_BACK_URL = cardFile("back/backCard.webp");
-
-// The Foretold faces in src/assets/foretold_cards, one gem per suit, named like
-// the scans (topaz01.webp … topazWizard.webp), with their own backs in back/.
-// Set to false to go back to the scanned faces.
-const USE_FORETOLD_FACES = true;
-// Which Foretold back face-down cards show: back/backBronzeLogo.webp or
-// back/backOnyxLogo.webp. null keeps the scanned back.
-const FORETOLD_BACK: string | null = "backOnyxLogo";
-
-const FORETOLD_FILES = import.meta.glob("../assets/foretold_cards/**/*.webp", {
-  query: "?url",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-
-const FORETOLD_GEMS: Record<Suit, string> = {
+const GEMS: Record<Suit, string> = {
   Blue: "topaz",
   Green: "jade",
   Yellow: "gold",
   Red: "ruby",
 };
 
-function foretoldFile(path: string): string {
-  const url = FORETOLD_FILES[`../assets/foretold_cards/${path}`];
-  if (!url) throw new Error(`No Foretold card art at ${path}`);
+// Which back face-down cards show: back/backBronzeLogo.webp or
+// back/backOnyxLogo.webp.
+const BACK = "backOnyxLogo";
+
+function cardFile(path: string): string {
+  const url = CARD_FILES[`../assets/foretold_cards/${path}`];
+  // A missing file is a mistake in the naming above or a card that was never
+  // made; say so rather than handing three.js undefined and drawing a blank.
+  if (!url) throw new Error(`No card art at ${path}`);
   return url;
 }
 
-const BACK_URL = FORETOLD_BACK ? foretoldFile(`back/${FORETOLD_BACK}.webp`) : SCANNED_BACK_URL;
+const BACK_URL = cardFile(`back/${BACK}.webp`);
 
-// blue01.webp … blue13.webp, blueJester.webp, blueWizard.webp — Jesters are
-// value 0 and Wizards 14, matching the game rules.
+// Jesters are value 0 and Wizards 14, matching the game rules.
 export function cardArtUrl(card: Card): string {
   const name =
     card.value === 0 ? "Jester" : card.value === 14 ? "Wizard" : String(card.value).padStart(2, "0");
-  if (USE_FORETOLD_FACES) {
-    const gem = FORETOLD_GEMS[card.suit];
-    return foretoldFile(`${gem}/${gem}${name}.webp`);
-  }
-  const suit = card.suit.toLowerCase();
-  return cardFile(`${suit}/${suit}${name}.webp`);
+  const gem = GEMS[card.suit];
+  return cardFile(`${gem}/${gem}${name}.webp`);
 }
 
 const loader = new THREE.TextureLoader();
