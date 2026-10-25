@@ -1,8 +1,11 @@
 import { getLanguage } from "./index";
 
-// The long Home panels (Story, Rules, Legal) as whole pieces of markup, one
-// per language side by side, so a translation can be read against its source.
-// Their titles are in en.ts and de.ts like every other short text.
+export type HelpPage = "lobby" | "profile" | "room" | "admin";
+
+// The long Home panels (Story, Rules, Legal) and the navbar's help pages as
+// whole pieces of markup, one per language side by side, so a translation can
+// be read against its source. Their titles are in en.ts and de.ts like every
+// other short text.
 
 const MAIL_LINK = `<a
   class="home-modal-link"
@@ -641,6 +644,155 @@ const legal = {
   `,
 };
 
+// The navbar's "?" window, per page. A page not written yet shows the
+// placeholder (help.placeholder) instead.
+const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
+  lobby: {
+    en: `
+    <div class="home-rules-content">
+
+      <section class="home-rules-section">
+        <h3>What is a glade?</h3>
+        <p>
+          A glade is an open, grassy space, a clearing surrounded by trees
+          within a forest or woodland. Here it is the lobby: the place
+          where wizards gather, open tables and find a game.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Opening a table</h3>
+        <p>
+          Create Room sets up a new table. A public room is open to
+          everyone: any wizard can see it here and join. A private room
+          is for your friends only: only they see it in the Glade, and
+          only they can join.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Before the game</h3>
+        <p>
+          Whoever created a room can delete it, as long as its game has
+          not started. Every room, with its game, is removed 24 hours
+          after it was created, finished or not.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Time per turn</h3>
+        <p>
+          With no limit, a game waits for you: choose Leave for now at
+          the table and come back to it later.
+        </p>
+        <p>
+          With a time limit, the game goes on without you. When your time
+          runs out, a bot makes that move for you, and after the room's
+          number of missed turns in a row (5 unless the room says
+          otherwise) a bot plays your seat for good. The last wizard left
+          at a game is never put out, so a game with a time limit plays
+          on to its end even when everyone has left the table.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Quitting</h3>
+        <p>
+          Quit game, at Leave Table, hands your seat to a bot for the rest
+          of the game. You cannot come back to it, and the game counts as
+          played but not finished, which lowers your Reliability. When the
+          last wizard quits, the game ends there, unfinished for everyone.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Your game has begun</h3>
+        <p>
+          When your name in the navbar glows gold, a game you are in has
+          started. Go to your Profile and choose Take your seat.
+        </p>
+      </section>
+
+    </div>
+  `,
+    de: `
+    <div class="home-rules-content">
+
+      <section class="home-rules-section">
+        <h3>Was ist eine Lichtung?</h3>
+        <p>
+          Eine Lichtung ist eine offene, grasbewachsene Stelle, eine
+          freie Fläche mitten im Wald, ringsum von Bäumen umgeben. Hier
+          ist sie die Lobby: der Ort, an dem sich die Zauberer treffen,
+          Tische eröffnen und eine Partie finden.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Einen Tisch eröffnen</h3>
+        <p>
+          Mit Raum erstellen richtest du einen neuen Tisch ein. Ein
+          öffentlicher Raum steht allen offen: Jeder Zauberer sieht ihn
+          hier und kann beitreten. Ein privater Raum ist nur für deinen
+          Freundeskreis: Nur deine Freunde sehen ihn auf der Lichtung,
+          und nur sie können beitreten.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Vor der Partie</h3>
+        <p>
+          Wer einen Raum erstellt hat, kann ihn löschen, solange die
+          Partie noch nicht begonnen hat. Jeder Raum wird mit seiner
+          Partie 24 Stunden nach dem Erstellen entfernt, ob sie zu Ende
+          gespielt ist oder nicht.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Zeit pro Zug</h3>
+        <p>
+          Ohne Zeitlimit wartet die Partie auf dich: Wähle am Tisch Für
+          eine Weile gehen und komm später zurück.
+        </p>
+        <p>
+          Mit Zeitlimit läuft die Partie ohne dich weiter. Läuft deine
+          Zeit ab, macht ein Bot diesen Zug für dich, und nach so vielen
+          verpassten Zügen in Folge, wie der Raum vorgibt (sonst 5),
+          spielt ein Bot deinen Platz für immer. Der letzte Zauberer einer
+          Partie wird nie hinausgesetzt, daher läuft eine Partie mit
+          Zeitlimit bis zum Ende weiter, auch wenn alle den Tisch
+          verlassen haben.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Aufgeben</h3>
+        <p>
+          Mit Partie aufgeben, unter Tisch verlassen, übernimmt ein Bot
+          deinen Platz bis zum Ende. Du kannst nicht zurück, und die
+          Partie zählt als gespielt, aber nicht beendet, was deine
+          Zuverlässigkeit senkt. Gibt der letzte Zauberer auf, endet die
+          Partie dort, für alle unbeendet.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Deine Partie hat begonnen</h3>
+        <p>
+          Leuchtet dein Name in der Navigationsleiste golden, hat eine
+          Partie begonnen, in der du mitspielst. Geh in dein Profil und
+          wähle Zum Tisch.
+        </p>
+      </section>
+
+    </div>
+  `,
+  },
+};
+
 export const aboutHtml = (): string => about[getLanguage()];
 export const rulesHtml = (): string => rules[getLanguage()];
 export const legalHtml = (): string => legal[getLanguage()];
+export const helpHtml = (page: HelpPage): string | null =>
+  help[page]?.[getLanguage()] ?? null;

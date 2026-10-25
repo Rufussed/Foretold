@@ -1,29 +1,37 @@
 import type { User } from "../types/auth";
 import { escapeHtml } from "../utils/escape-html";
 import { getLanguage, setLanguage, t, type MessageKey } from "../i18n";
+import { helpHtml, type HelpPage } from "../i18n/long-texts";
 import { watchStartedGame } from "../services/started-game";
 
-// The window title of the "?" button for each page with a navbar. The text
-// below it is the same placeholder everywhere until each page has its own.
-function helpTitle(): MessageKey {
+// Which page the "?" button explains: each page with a navbar has its own
+// help, the Glade's for anything else.
+function helpPage(): HelpPage {
   const page = window.location.hash.split("?")[0].split("/")[1];
 
   switch (page) {
     case "profile":
-      return "help.title.profile";
     case "room":
-      return "help.title.room";
     case "admin":
-      return "help.title.admin";
+      return page;
     default:
-      return "help.title.lobby";
+      return "lobby";
   }
 }
+
+const HELP_TITLES: Record<HelpPage, MessageKey> = {
+  lobby: "help.title.lobby",
+  profile: "help.title.profile",
+  room: "help.title.room",
+  admin: "help.title.admin",
+};
 
 // Opens the help window, styled like the Home windows. It closes with the
 // cross, a click beside it, Escape or a change of page.
 function openHelp(): void {
   document.querySelector("#navbar-help")?.remove();
+
+  const page = helpPage();
 
   const backdrop = document.createElement("div");
   backdrop.className = "home-modal-backdrop";
@@ -44,9 +52,9 @@ function openHelp(): void {
         <span></span>
       </button>
 
-      <h2 id="navbar-help-title">${t(helpTitle())}</h2>
+      <h2 id="navbar-help-title">${t(HELP_TITLES[page])}</h2>
 
-      <p class="home-modal-copy">${t("help.placeholder")}</p>
+      ${helpHtml(page) ?? `<p class="home-modal-copy">${t("help.placeholder")}</p>`}
     </section>
   `;
 
