@@ -77,6 +77,12 @@ export const de: Record<MessageKey, string> = {
   "common.noServer": "Server nicht erreichbar",
 
   "nav.glade": "Die Lichtung",
+  "help.button": "Das Grimoire: wofür diese Seite da ist und wie sie funktioniert",
+  "help.title.lobby": "Die Lichtung",
+  "help.title.profile": "Das Profil",
+  "help.title.room": "Vor der Partie",
+  "help.title.admin": "Verwaltung",
+  "help.placeholder": "Die Seiten dieses Grimoires werden noch geschrieben. Bald steht hier, wofür diese Seite da ist und wie sie funktioniert.",
 
   "lobby.createRoom": "Raum erstellen",
   "lobby.colRoom": "Raum",

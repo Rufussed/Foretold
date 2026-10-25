@@ -2382,10 +2382,11 @@ button {
   top: 43%;
   left: 51%;
 
-  /* The welcome sits above Play Now. */
+  /* The welcome sits above Play Now, both centred on the same line, so a long
+     name grows the welcome to both sides and leaves the button its size. */
   display: flex;
   flex-direction: column;
-  align-items: stretch;
+  align-items: center;
   gap: 10px;
 
   transform: translate(-50%, -50%);
@@ -2398,7 +2399,9 @@ button {
 }
 
 .home-welcome {
-  margin: 0 0 4px;
+  /* The right margin takes back the letter spacing after the last letter,
+     as on the button, so the text sits truly centred. */
+  margin: 0 -0.06em 4px 0;
 
   color: #f6e7cf;
   font-family: "Cinzel Variable", serif;
@@ -3374,6 +3377,98 @@ button {
 /* The other language, quieter than the account buttons, as on Home. */
 .lobby-account .lobby-language-button {
   color: #9a8b75;
+}
+
+/* The logo with the "?" of the help window, set well apart so it does not
+   read as a question about the logo. */
+.lobby-brand-group {
+  display: flex;
+  align-items: center;
+  gap: clamp(28px, 4vw, 56px);
+}
+
+.lobby-brand-group .lobby-brand {
+  width: auto;
+}
+
+/* The "?" of the help window, shaped like the account buttons. */
+.lobby-help-button {
+  position: relative;
+  flex-shrink: 0;
+
+  padding: 8px 14px;
+
+  border: var(--ui-edge);
+  border-radius: 4px;
+  background: rgba(10, 10, 8, 0.45);
+
+  color: #e0a14d;
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.lobby-help-button:hover,
+.lobby-help-button:focus-visible {
+  border-color: rgba(191, 125, 47, 0.65);
+  background: rgba(191, 125, 47, 0.12);
+  color: #ffbd62;
+}
+
+/* The hint under the button, from its data-tooltip. */
+.lobby-help-button::after {
+  content: attr(data-tooltip);
+
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 10px);
+  /* From the button's left edge, as it sits near the left of the screen. */
+  left: 0;
+
+  padding: 8px 12px;
+
+  border: var(--ui-edge);
+  border-radius: 4px;
+  background: rgba(12, 13, 11, 0.95);
+  box-shadow: var(--ui-shadow);
+
+  color: #e6dac4;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  /* Two lines at most, so it stays on a phone screen. */
+  width: max-content;
+  max-width: 240px;
+  white-space: normal;
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.lobby-help-button:hover::after,
+.lobby-help-button:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* The window is added to the body, outside #app, which lies at 9999. */
+#navbar-help {
+  z-index: 10000;
 }
 
 /* ---------------------------------------------------------
@@ -4357,6 +4452,11 @@ button {
   .lobby-account-button {
     padding: 6px 9px;
     font-size: 0.68rem;
+  }
+
+  .lobby-help-button {
+    padding: 6px 11px;
+    font-size: 0.8rem;
   }
 
   .lobby-content {

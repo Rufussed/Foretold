@@ -76,6 +76,12 @@ export const en = {
   "common.noServer": "Could not reach the server",
 
   "nav.glade": "The Glade",
+  "help.button": "The Grimoire: what this page is for and how it works",
+  "help.title.lobby": "The Glade",
+  "help.title.profile": "The Profile",
+  "help.title.room": "Before the Game",
+  "help.title.admin": "Administration",
+  "help.placeholder": "The pages of this grimoire are still being written. Soon you will find here what this page is for and how to use it.",
 
   "lobby.createRoom": "Create Room",
   "lobby.colRoom": "Room",
