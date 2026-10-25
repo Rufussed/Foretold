@@ -13,7 +13,6 @@ const MESSAGES = {
   usernameRules: ["Username must be 3-20 letters, numbers, _ or -"],
   npcNameReserved: ["Usernames ending in NPC are reserved for computer players"],
   usernameNotAllowed: ["Please choose a different username"],
-  invalidBirthDate: ["Please enter a valid date of birth"],
   passwordTooShort: ["Password must contain at least 8 characters"],
   createUserFailed: ["Could not create user"],
   unauthorized: ["Unauthorized", "Invalid or missing token"],
@@ -74,7 +73,6 @@ const MESSAGES = {
 
 // Messages with a number in them; the number is passed on as a value.
 const PATTERNS = {
-  lastNameTooLong: /^Last name can be at most (?<max>\d+) characters$/,
   postTooLong: /^Posts can be at most (?<max>\d+) characters$/,
   postCooldown: /^Please wait (?<seconds>\d+) seconds between posts$/,
   maxRounds: /^Max rounds must be between 1 and (?<max>\d+)$/,

@@ -238,6 +238,21 @@ const MIGRATIONS: Migration[] = [
       db.exec("UPDATE users SET display_name = username");
     },
   },
+  {
+    version: 12,
+    description: "drop last name and date of birth",
+    up(db) {
+      // Sign-up no longer asks for them, and what was stored is deleted with
+      // the columns rather than kept unused.
+      if (hasColumn(db, "users", "last_name")) {
+        db.exec("ALTER TABLE users DROP COLUMN last_name");
+      }
+
+      if (hasColumn(db, "users", "birth_date")) {
+        db.exec("ALTER TABLE users DROP COLUMN birth_date");
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

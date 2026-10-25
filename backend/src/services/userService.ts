@@ -36,25 +36,20 @@ function mapUser(row: UserRow): User {
 }
 
 export class UserService {
-  // The display name is the username; the last name and birth date are kept
-  // for the records and never shown to other players.
+  // The display name is the username.
   static createUser(
     username: string,
     passwordHash: string,
     email: string,
-    lastName: string,
-    birthDate: string,
   ): User {
     const statement = db.prepare(`
       INSERT INTO users (
         username,
         password_hash,
         display_name,
-        email,
-        last_name,
-        birth_date
+        email
       )
-      VALUES (?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?)
     `);
 
     const result = statement.run(
@@ -62,8 +57,6 @@ export class UserService {
       passwordHash,
       username,
       email,
-      lastName,
-      birthDate,
     );
 
     const user = this.getUserById(Number(result.lastInsertRowid));

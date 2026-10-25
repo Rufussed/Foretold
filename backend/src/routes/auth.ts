@@ -8,33 +8,11 @@ import { friendService } from "../game/wizard/services/friendService.js";
 import { containsProfanity } from "../services/profanityFilter.js";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
-const LAST_NAME_MAX_LENGTH = 50;
-const BIRTH_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-const OLDEST_BIRTH_YEAR = 1900;
 
 interface RegisterBody {
   username: string;
   password: string;
-  lastName: string;
-  birthDate: string;
   email: string;
-}
-
-// A real calendar day, written YYYY-MM-DD as a date input sends it, between
-// 1900 and today.
-function isValidBirthDate(text: string): boolean {
-  if (!BIRTH_DATE_PATTERN.test(text)) {
-    return false;
-  }
-
-  const date = new Date(`${text}T00:00:00Z`);
-
-  return (
-    !Number.isNaN(date.getTime()) &&
-    date.toISOString().slice(0, 10) === text &&
-    date.getUTCFullYear() >= OLDEST_BIRTH_YEAR &&
-    date.getTime() <= Date.now()
-  );
 }
 
 interface LoginBody {
@@ -61,16 +39,9 @@ export default async function authRoutes(
   server.post<{ Body: RegisterBody }>(
     "/register",
     async (request, reply) => {
-      const {
-        username,
-        password,
-        lastName: rawLastName,
-        birthDate,
-        email,
-      } = request.body;
-      const lastName = rawLastName?.trim() ?? "";
+      const { username, password, email } = request.body;
 
-      if (!username || !password || !lastName || !birthDate || !email) {
+      if (!username || !password || !email) {
         return reply.status(400).send({
           error: "All fields are required",
         });
@@ -85,23 +56,9 @@ export default async function authRoutes(
         });
       }
 
-      // Only the username is checked: the last name is never shown, and a
-      // real one may happen to contain a listed word.
       if (containsProfanity(username)) {
         return reply.status(400).send({
           error: "Please choose a different username",
-        });
-      }
-
-      if (lastName.length > LAST_NAME_MAX_LENGTH) {
-        return reply.status(400).send({
-          error: `Last name can be at most ${LAST_NAME_MAX_LENGTH} characters`,
-        });
-      }
-
-      if (!isValidBirthDate(birthDate)) {
-        return reply.status(400).send({
-          error: "Please enter a valid date of birth",
         });
       }
 
@@ -129,13 +86,7 @@ export default async function authRoutes(
       const passwordHash = await bcrypt.hash(password, 10);
 
       try {
-        const user = UserService.createUser(
-          username,
-          passwordHash,
-          email,
-          lastName,
-          birthDate,
-        );
+        const user = UserService.createUser(username, passwordHash, email);
 
         playerStatsRepository.initializeForUser(user.id);
 

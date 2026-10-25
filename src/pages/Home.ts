@@ -27,60 +27,6 @@ type Panel =
   | "legal"
   | null;
 
-const OLDEST_BIRTH_YEAR = 1900;
-
-// Day / month / year dropdowns instead of a calendar: on phones they open the
-// native scroll wheel, so picking a year decades back is a single flick.
-function birthDateSelectsHtml(): string {
-  const monthName = new Intl.DateTimeFormat(getLanguage(), { month: "long" });
-  const option = (value: number, label: string | number) =>
-    `<option value="${value}">${label}</option>`;
-
-  const days = Array.from({ length: 31 }, (_, i) => option(i + 1, i + 1));
-  const months = Array.from({ length: 12 }, (_, i) =>
-    option(i + 1, monthName.format(new Date(2000, i, 1))),
-  );
-  const currentYear = new Date().getFullYear();
-  const years = Array.from(
-    { length: currentYear - OLDEST_BIRTH_YEAR + 1 },
-    (_, i) => option(currentYear - i, currentYear - i),
-  );
-
-  return `
-    <span class="home-dob">
-      <select name="birthDay" aria-label="${t("signup.day")}" autocomplete="bday-day" required>
-        <option value="">${t("signup.day")}</option>${days.join("")}
-      </select>
-      <select name="birthMonth" aria-label="${t("signup.month")}" autocomplete="bday-month" required>
-        <option value="">${t("signup.month")}</option>${months.join("")}
-      </select>
-      <select name="birthYear" aria-label="${t("signup.year")}" autocomplete="bday-year" required>
-        <option value="">${t("signup.year")}</option>${years.join("")}
-      </select>
-    </span>
-  `;
-}
-
-// "YYYY-MM-DD", or "" when the combination is not a real past date (31 Feb).
-function birthDateFromForm(formData: FormData): string {
-  const day = Number(formData.get("birthDay"));
-  const month = Number(formData.get("birthMonth"));
-  const year = Number(formData.get("birthYear"));
-  const date = new Date(year, month - 1, day);
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day ||
-    date > new Date()
-  ) {
-    return "";
-  }
-
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${year}-${pad(month)}-${pad(day)}`;
-}
-
 export async function renderHomePage(container: HTMLElement): Promise<void> {
   // The page must come up whatever the server is doing: a cold or unreachable
   // backend (a phone on a weak connection) used to leave only the 3D backdrop
@@ -552,24 +498,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             </label>
 
             <label>
-              ${t("signup.lastName")}
-              <input
-                name="lastName"
-                type="text"
-                autocomplete="family-name"
-                maxlength="50"
-                required
-              />
-              <small class="home-auth-hint">${t("signup.privateHint")}</small>
-            </label>
-
-            <label>
-              ${t("signup.birthDate")}
-              ${birthDateSelectsHtml()}
-              <small class="home-auth-hint">${t("signup.privateHint")}</small>
-            </label>
-
-            <label>
               ${t("signup.email")}
               <input
                 name="email"
@@ -1016,12 +944,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         formData.get("username") ?? "",
       );
 
-      const lastName = String(
-        formData.get("lastName") ?? "",
-      );
-
-      const birthDate = birthDateFromForm(formData);
-
       const email = String(
         formData.get("email") ?? "",
       );
@@ -1038,18 +960,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         return;
       }
 
-      if (!birthDate) {
-        if (message) {
-          message.textContent = t("error.invalidBirthDate");
-        }
-        return;
-      }
-
       try {
         await register(
           username,
-          lastName,
-          birthDate,
           email,
           password,
         );

@@ -9,8 +9,8 @@ import { UserService } from "../services/userService.js";
 // as the source. Set SEED_USERS=off to leave a database alone - do that for
 // any deployment reachable from outside.
 const SEEDS = [
-  { username: "Rufus", lastName: "Rufus", email: "rufus@wizard.local", password: "pass1234" },
-  { username: "Obi", lastName: "Obi", email: "obi@wizard.local", password: "pass1234" },
+  { username: "Rufus", email: "rufus@wizard.local", password: "pass1234" },
+  { username: "Obi", email: "obi@wizard.local", password: "pass1234" },
 ] as const;
 
 export function seedUsers(): void {
@@ -27,8 +27,6 @@ export function seedUsers(): void {
       seed.username,
       bcrypt.hashSync(seed.password, 10),
       seed.email,
-      seed.lastName,
-      "2000-01-01",
     );
     console.log(`Seeded user: ${seed.username}`);
   }
