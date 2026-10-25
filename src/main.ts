@@ -1,4 +1,5 @@
 import "./style.css";
+import "@fontsource-variable/cinzel";
 import { renderApp } from "./app";
 import { captureInstallPrompt } from "./utils/pwa-install";
 
