@@ -86,6 +86,28 @@ export class UserService {
     return row ? mapUser(row) : null;
   }
 
+  // Emails are compared without case, as people type them either way. If two
+  // accounts differ only in case, the older one is used.
+  static getUserByEmail(email: string): User | null {
+    const statement = db.prepare(`
+      SELECT
+        id,
+        username,
+        password_hash,
+        display_name,
+        email,
+        created_at
+      FROM users
+      WHERE LOWER(email) = LOWER(?)
+      ORDER BY id
+      LIMIT 1
+    `);
+
+    const row = statement.get(email) as UserRow | undefined;
+
+    return row ? mapUser(row) : null;
+  }
+
   static getUserById(id: number): User | null {
     const statement = db.prepare(`
       SELECT

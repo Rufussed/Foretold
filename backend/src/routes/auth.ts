@@ -120,7 +120,11 @@ export default async function authRoutes(
 		});
 		}
 
-		const user = UserService.getUserByUsername(username);
+		// The login field takes the wizard name or the email. Names cannot
+		// contain "@", so an "@" means an email.
+		const user = username.includes("@")
+		? UserService.getUserByEmail(username.trim())
+		: UserService.getUserByUsername(username);
 
 		if (!user) {
 		return reply.status(401).send({
