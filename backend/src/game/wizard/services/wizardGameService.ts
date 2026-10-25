@@ -64,6 +64,26 @@ export function assignAvatars(
   });
 }
 
+// The order players sit in, shuffled when a game starts. The first one leads
+// the first round, so neither the room's creator nor the order people joined
+// decides who starts, and humans and bots are mixed round the table.
+export function shuffledSeating(
+  usernames: readonly string[],
+  random: () => number = Math.random,
+): string[] {
+  const seating = [...usernames];
+
+  // Fisher-Yates.
+  for (let i = seating.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1));
+    const swap = seating[i] as string;
+    seating[i] = seating[j] as string;
+    seating[j] = swap;
+  }
+
+  return seating;
+}
+
 // Owns the mutable game state and enforces the order of Wizard phases. Rule
 // comparisons stay in WizardRules so this service remains an orchestrator.
 export class WizardGameService {

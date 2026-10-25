@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
 import assert from "node:assert/strict";
-import { WizardGameService } from "./wizardGameService.js";
+import { shuffledSeating, WizardGameService } from "./wizardGameService.js";
 import { LEGACY_GAME_OPTIONS } from "../gameOptions.js";
 
 
@@ -153,5 +153,27 @@ describe("WizardGameService", () => {
         message: "It is not this player's turn",
       },
     );
+  });
+});
+
+describe("shuffledSeating", () => {
+  const players = ["host", "joiner", "Merlin NPC", "Morgana NPC"];
+
+  it("seats every player exactly once", () => {
+    for (let run = 0; run < 20; run++) {
+      const seating = shuffledSeating(players);
+      assert.deepEqual([...seating].sort(), [...players].sort());
+    }
+  });
+
+  it("does not always put the room's creator first", () => {
+    // random() = 0 swaps each position with the first, rotating the order.
+    assert.notEqual(shuffledSeating(players, () => 0)[0], "host");
+  });
+
+  it("leaves the given list untouched", () => {
+    const before = [...players];
+    shuffledSeating(players);
+    assert.deepEqual(players, before);
   });
 });

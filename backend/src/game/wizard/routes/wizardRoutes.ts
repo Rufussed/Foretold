@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { BOT_NAME_SUFFIX, seatNameFor } from "../models/bot.js";
 import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
-import { assignAvatars, WizardGameService } from "../services/wizardGameService.js";
+import { assignAvatars, shuffledSeating, WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { registerWizardSocket } from "../websocket/wizardSocket.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
@@ -806,10 +806,14 @@ export default async function wizardRoutes(
       (_, index) => `bot slot ${index} NPC`,
     );
     const avatars = assignAvatars([...humans, ...botSlots], claims);
+    // Settle the humans' avatars here too: createGame sees them in the
+    // shuffled seating below, where room order no longer breaks a tie.
+    humans.forEach((name, index) => claims.set(name, avatars[index] ?? null));
     const botAvatars = avatars.slice(humans.length);
     const botNames = pickBotNames(botAvatars, humans);
     botNames.forEach((name, index) => claims.set(name, botAvatars[index] ?? null));
-    const players = [...humans, ...botNames];
+    // A random seating, so a random player leads the first round.
+    const players = shuffledSeating([...humans, ...botNames]);
 
     try {
       const game = wizardGameService.createGame(
