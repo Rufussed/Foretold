@@ -5226,6 +5226,50 @@ button {
   letter-spacing: 0.08em;
 }
 
+/* The strong colour under the name: its name, a bar filling towards
+   mastery, and the points. The suit colours are the cards' (visualizer
+   config.ts). */
+.profile-color {
+  --strong: #e0a14d;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+  color: rgba(244, 235, 217, 0.7);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-color[data-color="Blue"] { --strong: #1565c0; }
+.profile-color[data-color="Red"] { --strong: #c62828; }
+.profile-color[data-color="Yellow"] { --strong: #f9a825; }
+.profile-color[data-color="Green"] { --strong: #2e7d32; }
+
+.profile-color-name strong {
+  color: color-mix(in srgb, var(--strong) 55%, #f4ebd9);
+  font-weight: 700;
+}
+
+.profile-color-bar {
+  width: 120px;
+  height: 6px;
+  border: 1px solid color-mix(in srgb, var(--strong) 60%, transparent);
+  background: rgba(8, 9, 7, 0.5);
+}
+
+.profile-color-bar span {
+  display: block;
+  height: 100%;
+  background: var(--strong);
+  box-shadow: 0 0 8px var(--strong);
+}
+
+.profile-color-points {
+  color: rgba(244, 235, 217, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
 .profile-heading-note {
   display: flex;
   align-items: baseline;

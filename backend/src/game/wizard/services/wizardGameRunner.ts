@@ -5,6 +5,7 @@ import { WIZARD_TIMING } from "../wizardTiming.js";
 import { clampPace, paced } from "../gameplayPace.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
 import { isPlayedByServer, recordMissedTurn } from "./playerQuit.js";
+import { isBotName } from "../models/bot.js";
 
 export type GameStateBroadcaster = (
   roomId: number,
@@ -308,7 +309,13 @@ export class WizardGameRunner {
           const cardIndex =
             this.botService.chooseCardIndex(currentGame);
 
-          this.gameService.playCard(currentGame, cardIndex);
+          // A human's card played for them is marked, so it brings them no
+          // colour points (strongColor.ts).
+          this.gameService.playCard(
+            currentGame,
+            cardIndex,
+            !isBotName(decisionPlayer.username),
+          );
 
           currentGame.turnDeadlineAt = null;
           wizardSessionManager.saveGame(currentGame);

@@ -15,6 +15,8 @@
 // wants already, because the first entries below describe changes that were
 // once applied by hand, before this list existed.
 
+import { RANDOM_COLOR_SQL } from "../game/wizard/strongColor.js";
+
 interface Statement {
   run(...params: unknown[]): { changes: number | bigint; lastInsertRowid: number | bigint };
   get(...params: unknown[]): unknown;
@@ -265,6 +267,35 @@ const MIGRATIONS: Migration[] = [
           ADD COLUMN best_game_score INTEGER
         `);
       }
+    },
+  },
+  {
+    version: 14,
+    description: "give every player a strong colour and colour points",
+    up(db) {
+      if (!hasColumn(db, "player_stats", "strong_color")) {
+        db.exec(`
+          ALTER TABLE player_stats
+          ADD COLUMN strong_color TEXT
+        `);
+      }
+
+      for (const suit of ["blue", "red", "yellow", "green"]) {
+        if (!hasColumn(db, "player_stats", `color_points_${suit}`)) {
+          db.exec(`
+            ALTER TABLE player_stats
+            ADD COLUMN color_points_${suit} INTEGER NOT NULL DEFAULT 0
+          `);
+        }
+      }
+
+      // Every player already here is dealt one at random, as a new one is
+      // when they sign up (playerStatsRepository.initializeForUser).
+      db.exec(`
+        UPDATE player_stats
+        SET strong_color = ${RANDOM_COLOR_SQL}
+        WHERE strong_color IS NULL
+      `);
     },
   },
 ];

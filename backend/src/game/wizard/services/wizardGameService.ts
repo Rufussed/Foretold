@@ -9,6 +9,7 @@ import {
   type WizardGameOptions,
 } from "../gameOptions.js";
 import { isJester, isWizard } from "../models/card.js";
+import { isBotName } from "../models/bot.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
 
@@ -222,6 +223,7 @@ export class WizardGameService {
   playCard(
     game: WizardGameState,
     cardIndex: number,
+    byServer = false,
   ): void {
     // This method validates and records one play. A complete trick is resolved
     // immediately, while the caller advances to the next trick afterward.
@@ -278,6 +280,7 @@ export class WizardGameService {
     const playedCard: PlayedCard = {
       username: currentPlayer.username,
       card,
+      ...(byServer ? { byServer: true as const } : {}),
     };
 
     game.currentTrick.playedCards.push(playedCard);
@@ -289,6 +292,32 @@ export class WizardGameService {
 
     game.currentPlayerIndex =
       (game.currentPlayerIndex + 1) % game.players.length;
+  }
+
+  // A trick won with a card of a colour, for the winner's colour points
+  // (strongColor.ts): not a Wizard or Jester, which have no colour of their
+  // own, and not a card the server played for them. Bots get none.
+  private recordColorTrick(game: WizardGameState, winner: GamePlayer): void {
+    if (isBotName(winner.username)) {
+      return;
+    }
+
+    const winning = game.currentTrick.playedCards.find(
+      (played) => played.username === winner.username,
+    );
+
+    if (
+      !winning ||
+      winning.byServer ||
+      isWizard(winning.card) ||
+      isJester(winning.card)
+    ) {
+      return;
+    }
+
+    winner.colorTricks ??= {};
+    winner.colorTricks[winning.card.suit] =
+      (winner.colorTricks[winning.card.suit] ?? 0) + 1;
   }
 
   resolveTrick(game: WizardGameState): string {
@@ -323,6 +352,7 @@ export class WizardGameService {
     }
 
     winner.tricksWon += 1;
+    this.recordColorTrick(game, winner);
     game.currentTrick.winnerUsername = winnerUsername;
     game.currentPlayerIndex = winnerIndex;
 

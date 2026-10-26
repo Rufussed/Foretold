@@ -817,6 +817,19 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
+        <h3>Your strong colour</h3>
+        <p>
+          When you joined, fate gave you one of the four colours: blue,
+          red, yellow or green. It is yours and cannot be changed. Every
+          trick you win with a card of that colour brings 10 points to it;
+          Wizards, Jesters and moves the bot made for you do not count, and
+          a game you quit brings none. The bar under your name shows how
+          far your colour has come. What it leads to will be revealed in
+          time.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Reliability</h3>
         <p>
           Reliability is the share of your games you played to the end.
@@ -866,6 +879,20 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           Stufe steigt mit deinen Gesamtpunkten, aus kurzen wie aus ganzen
           Partien; ganze Partien, weil länger, bringen dich schneller
           voran.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Deine starke Farbe</h3>
+        <p>
+          Als du kamst, hat das Schicksal dir eine der vier Farben gegeben:
+          Blau, Rot, Gelb oder Grün. Sie gehört dir und lässt sich nicht
+          ändern. Jeder Stich, den du mit einer Karte dieser Farbe
+          gewinnst, bringt ihr 10 Punkte; Zauberer, Narren und Züge, die
+          der Bot für dich macht, zählen nicht, und eine aufgegebene
+          Partie bringt keine. Der Balken unter deinem Namen zeigt, wie
+          weit deine Farbe gekommen ist. Wohin sie führt, wird sich mit
+          der Zeit zeigen.
         </p>
       </section>
 

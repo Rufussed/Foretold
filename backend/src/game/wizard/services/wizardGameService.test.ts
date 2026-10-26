@@ -2,6 +2,7 @@ import { describe, it } from "vitest";
 import assert from "node:assert/strict";
 import { shuffledSeating, WizardGameService } from "./wizardGameService.js";
 import { LEGACY_GAME_OPTIONS } from "../gameOptions.js";
+import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
 
 
 describe("WizardGameService", () => {
@@ -154,6 +155,57 @@ describe("WizardGameService", () => {
         message: "It is not this player's turn",
       },
     );
+  });
+});
+
+describe("colour tricks", () => {
+  // A complete trick laid out by hand; the first card is led.
+  const trick = (cards: PlayedCard[]): WizardGameState => {
+    const game = new WizardGameService().createGame(1, ["alice", "bob", "Mia NPC"]);
+    game.trumpSuit = null;
+    game.currentTrick = { playedCards: cards, winnerUsername: null };
+    return game;
+  };
+  const colorTricks = (game: WizardGameState, username: string) =>
+    game.players.find((player) => player.username === username)?.colorTricks;
+
+  it("counts a trick won with a card of a colour", () => {
+    const game = trick([
+      { username: "alice", card: { suit: "Blue", value: 9 } },
+      { username: "bob", card: { suit: "Blue", value: 3 } },
+      { username: "Mia NPC", card: { suit: "Red", value: 12 } },
+    ]);
+    new WizardGameService().resolveTrick(game);
+    assert.deepEqual(colorTricks(game, "alice"), { Blue: 1 });
+  });
+
+  it("does not count a Wizard, a card the server played, or a bot", () => {
+    const service = new WizardGameService();
+
+    const wizard = trick([
+      { username: "alice", card: { suit: "Blue", value: 14 } },
+      { username: "bob", card: { suit: "Blue", value: 3 } },
+      { username: "Mia NPC", card: { suit: "Blue", value: 5 } },
+    ]);
+    service.resolveTrick(wizard);
+    assert.equal(colorTricks(wizard, "alice"), undefined);
+
+    const byServer = trick([
+      { username: "bob", card: { suit: "Green", value: 13 }, byServer: true },
+      { username: "alice", card: { suit: "Green", value: 2 } },
+      { username: "Mia NPC", card: { suit: "Green", value: 5 } },
+    ]);
+    service.resolveTrick(byServer);
+    assert.equal(byServer.currentTrick.winnerUsername, "bob");
+    assert.equal(colorTricks(byServer, "bob"), undefined);
+
+    const bot = trick([
+      { username: "Mia NPC", card: { suit: "Red", value: 13 } },
+      { username: "alice", card: { suit: "Red", value: 2 } },
+      { username: "bob", card: { suit: "Red", value: 5 } },
+    ]);
+    service.resolveTrick(bot);
+    assert.equal(colorTricks(bot, "Mia NPC"), undefined);
   });
 });
 

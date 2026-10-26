@@ -1,3 +1,5 @@
+import type { Suit } from "../../backend/src/game/wizard/models/card";
+
 export interface User {
   id: number;
   username: string;
@@ -31,6 +33,9 @@ export interface PlayerStats {
   exactPredictions: number;
   gamesCreated: number;
   gamesCreatedFinished: number;
+  // See backend strongColor.ts. Null only for a player from before it existed.
+  strongColor: Suit | null;
+  colorPoints: Record<Suit, number>;
 }
 
 export interface PlayerOpponent {

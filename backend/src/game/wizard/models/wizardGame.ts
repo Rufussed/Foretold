@@ -45,6 +45,10 @@ export interface GamePlayer {
   quit?: boolean;
   // Turns in a row the timer ran out on; a move of their own resets it.
   missedTurns?: number;
+  // Tricks won this game with a card of each colour: no Wizard or Jester, and
+  // none the server played for them. Their strong colour's count becomes
+  // colour points at the end (strongColor.ts). Missing in older games.
+  colorTricks?: Partial<Record<Suit, number>>;
 }
 
 // A played card retains its owner so the rules service can return a username
@@ -52,6 +56,9 @@ export interface GamePlayer {
 export interface PlayedCard {
   username: string;
   card: Card;
+  // The server played it for a human: their time ran out, or they quit. It
+  // brings them no colour points (strongColor.ts).
+  byServer?: true;
 }
 
 export interface TrickState {

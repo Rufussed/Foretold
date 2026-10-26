@@ -87,6 +87,10 @@ class WizardGameCompletionService {
             room.createdBy === roomPlayer.userId ? 1 : 0,
             fullGame,
           );
+          playerStatsRepository.addColorTricks(
+            roomPlayer.userId,
+            player.colorTricks ?? {},
+          );
         }
 
         for (const opponent of game.players) {

@@ -187,6 +187,8 @@ export const de: Record<MessageKey, string> = {
   "profile.kicker": "DIE STUDIERSTUBE",
   "profile.title": "Die Studierstube",
   "profile.levelLine": "Wizard · {level}",
+  "profile.strongColor": "Starke Farbe",
+  "profile.colorHint": "Gewinne einen Stich mit einer Karte in {color}: 10 Punkte. Zauberer, Narren und Züge, die der Bot für dich macht, zählen nicht.",
   "profile.takeSeat": "⚔ Zum Tisch",
   "profile.findPlayers": "Mitspielende finden",
   "profile.friendRequests": "Freundschaftsanfragen",

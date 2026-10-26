@@ -66,6 +66,14 @@ CREATE TABLE IF NOT EXISTS player_stats (
   games_created INTEGER NOT NULL DEFAULT 0,
   games_created_finished INTEGER NOT NULL DEFAULT 0,
 
+  -- The player's strong colour (game/wizard/strongColor.ts), and the points
+  -- each colour has gathered: 10 for every trick won with a card of it.
+  strong_color TEXT,
+  color_points_blue INTEGER NOT NULL DEFAULT 0,
+  color_points_red INTEGER NOT NULL DEFAULT 0,
+  color_points_yellow INTEGER NOT NULL DEFAULT 0,
+  color_points_green INTEGER NOT NULL DEFAULT 0,
+
   FOREIGN KEY (user_id) REFERENCES users(id)
 );
 

@@ -25,6 +25,7 @@ import type {
 import { renderNavbar } from "../components/Navbar";
 import { escapeHtml } from "../utils/escape-html";
 import { t, type MessageKey } from "../i18n";
+import { COLOR_MASTERY_POINTS } from "../../backend/src/game/wizard/strongColor";
 
 // About half the 400 points of a perfect three-player game, so short games
 // can earn a level too: 200 points stand in for one full game.
@@ -314,6 +315,27 @@ export async function renderProfilePage(
       ? Math.min(100, (stats.gamesFinished / stats.gamesPlayed) * 100)
       : 0;
 
+  // The player's strong colour and how far its points have come.
+  const strongColor = stats.strongColor;
+  const colorPoints = strongColor ? stats.colorPoints[strongColor] : 0;
+  const strongColorLine = strongColor
+    ? `
+      <div
+        class="profile-color"
+        data-color="${strongColor}"
+        title="${t("profile.colorHint", { color: t(`suit.${strongColor}`) })}"
+      >
+        <span class="profile-color-name">
+          ${t("profile.strongColor")} · <strong>${t(`suit.${strongColor}`)}</strong>
+        </span>
+        <span class="profile-color-bar" aria-hidden="true">
+          <span style="width: ${Math.min(100, (colorPoints / COLOR_MASTERY_POINTS) * 100)}%"></span>
+        </span>
+        <span class="profile-color-points">${colorPoints} / ${COLOR_MASTERY_POINTS}</span>
+      </div>
+    `
+    : "";
+
   const playerLevel = getPlayerLevel(
     stats.fullGamesFinished,
     stats.peakTotalPoints,
@@ -358,6 +380,7 @@ export async function renderProfilePage(
               </span>
             </div>
             <p class="profile-subtitle">@${escapeHtml(user.username)}</p>
+            ${strongColorLine}
           </div>
           <div class="profile-heading-actions">
             ${

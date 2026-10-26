@@ -1,4 +1,10 @@
 import db from "../../../db/database.js";
+import type { Suit } from "../models/card.js";
+import {
+  COLOR_POINTS_PER_TRICK,
+  RANDOM_COLOR_SQL,
+  isSuit,
+} from "../strongColor.js";
 
 export interface PlayerStats {
   userId: number;
@@ -16,22 +22,73 @@ export interface PlayerStats {
   exactPredictions: number;
   gamesCreated: number;
   gamesCreatedFinished: number;
+  // See strongColor.ts. Null only for a row from before it existed.
+  strongColor: Suit | null;
+  colorPoints: Record<Suit, number>;
 }
 
+interface StatsRow extends Omit<PlayerStats, "strongColor" | "colorPoints"> {
+  strongColor: string | null;
+  colorPointsBlue: number;
+  colorPointsRed: number;
+  colorPointsYellow: number;
+  colorPointsGreen: number;
+}
+
+// Each colour's points column.
+const COLOR_POINTS_COLUMN: Record<Suit, string> = {
+  Blue: "color_points_blue",
+  Red: "color_points_red",
+  Yellow: "color_points_yellow",
+  Green: "color_points_green",
+};
+
 class PlayerStatsRepository {
+  // A new player is dealt their strong colour here, at random.
   initializeForUser(userId: number): void {
     db.prepare(`
-      INSERT OR IGNORE INTO player_stats (user_id)
-      VALUES (?)
+      INSERT OR IGNORE INTO player_stats (user_id, strong_color)
+      VALUES (?, ${RANDOM_COLOR_SQL})
     `).run(userId);
   }
 
   initializeForAllUsers(): void {
     db.prepare(`
-      INSERT OR IGNORE INTO player_stats (user_id)
-      SELECT id
+      INSERT OR IGNORE INTO player_stats (user_id, strong_color)
+      SELECT id, ${RANDOM_COLOR_SQL}
       FROM users
     `).run();
+  }
+
+  // The tricks a player won in a finished game with each colour; only their
+  // strong colour's count becomes points.
+  addColorTricks(
+    userId: number,
+    colorTricks: Partial<Record<Suit, number>>,
+  ): void {
+    const row = db.prepare(`
+      SELECT strong_color AS strongColor
+      FROM player_stats
+      WHERE user_id = ?
+    `).get(userId) as { strongColor: string | null } | undefined;
+
+    const color = row?.strongColor;
+
+    if (!isSuit(color)) {
+      return;
+    }
+
+    const tricks = colorTricks[color] ?? 0;
+
+    if (tricks <= 0) {
+      return;
+    }
+
+    db.prepare(`
+      UPDATE player_stats
+      SET ${COLOR_POINTS_COLUMN[color]} = ${COLOR_POINTS_COLUMN[color]} + ?
+      WHERE user_id = ?
+    `).run(tricks * COLOR_POINTS_PER_TRICK, userId);
   }
 
   incrementGamesPlayed(userId: number): void {
@@ -110,25 +167,49 @@ class PlayerStatsRepository {
         predictions_made AS predictionsMade,
         exact_predictions AS exactPredictions,
         games_created AS gamesCreated,
-        games_created_finished AS gamesCreatedFinished
+        games_created_finished AS gamesCreatedFinished,
+        strong_color AS strongColor,
+        color_points_blue AS colorPointsBlue,
+        color_points_red AS colorPointsRed,
+        color_points_yellow AS colorPointsYellow,
+        color_points_green AS colorPointsGreen
       FROM player_stats
       WHERE user_id = ?
-    `).get(userId) as PlayerStats | undefined;
+    `).get(userId) as StatsRow | undefined;
 
     if (!row) {
       return null;
     }
 
+    const {
+      strongColor,
+      colorPointsBlue,
+      colorPointsRed,
+      colorPointsYellow,
+      colorPointsGreen,
+      ...counts
+    } = row;
+    const stats: PlayerStats = {
+      ...counts,
+      strongColor: isSuit(strongColor) ? strongColor : null,
+      colorPoints: {
+        Blue: colorPointsBlue,
+        Red: colorPointsRed,
+        Yellow: colorPointsYellow,
+        Green: colorPointsGreen,
+      },
+    };
+
     // A game counts as played from its start, but one still running is not
     // yet unfinished: leave it out until it ends, so it does not lower the
     // player's reliability meanwhile. A running game they quit stays in, as
     // it is unfinished for them already.
-    row.gamesPlayed = Math.max(
-      row.gamesFinished,
-      row.gamesPlayed - this.countRunningGames(userId),
+    stats.gamesPlayed = Math.max(
+      stats.gamesFinished,
+      stats.gamesPlayed - this.countRunningGames(userId),
     );
 
-    return row;
+    return stats;
   }
 
   // Games under way in which the player still has their seat.

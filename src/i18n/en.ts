@@ -186,6 +186,8 @@ export const en = {
   "profile.kicker": "THE STUDY",
   "profile.title": "The Study",
   "profile.levelLine": "Wizard Player · {level}",
+  "profile.strongColor": "Strong colour",
+  "profile.colorHint": "Win a trick with a {color} card: 10 points. Wizards, Jesters and moves the bot made for you do not count.",
   "profile.takeSeat": "⚔ Take your seat",
   "profile.findPlayers": "Find Players",
   "profile.friendRequests": "Friend Requests",
