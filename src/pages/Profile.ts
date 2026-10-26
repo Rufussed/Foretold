@@ -293,6 +293,9 @@ export async function renderProfilePage(
       ? (stats.fullGamesWon / stats.fullGamesFinished) * 100
       : 0;
 
+  const shortWinRate =
+    shortGamesFinished > 0 ? (shortGamesWon / shortGamesFinished) * 100 : 0;
+
   // One prediction is made per round, so this is every round played in a
   // finished game.
   const roundsPlayed = stats.predictionsMade;
@@ -301,6 +304,10 @@ export async function renderProfilePage(
     stats.predictionsMade > 0
       ? (stats.exactPredictions / stats.predictionsMade) * 100
       : 0;
+
+  // A game played but not finished is one the player quit (or that ended
+  // when the last human quit); these are what bring reliability down.
+  const gamesUnfinished = Math.max(0, stats.gamesPlayed - stats.gamesFinished);
 
   const reliability =
     stats.gamesPlayed > 0
@@ -406,22 +413,41 @@ export async function renderProfilePage(
 
           <!-- Two groups, as wide as the Record and Social columns below. -->
           <div class="profile-highlight-group">
-          <div class="profile-highlight profile-highlight-primary">
+          <!-- Two cards, each two wide: played, won and win rate side by side. -->
+          <div class="profile-highlight profile-highlight-primary profile-highlight-pair">
             <span>${t("profile.fullGames")}</span>
-            <strong>${stats.fullGamesFinished}</strong>
-            <small>${t("profile.fullGamesHint")}</small>
+            <div class="profile-highlight-pair-row">
+              <div>
+                <strong>${stats.fullGamesFinished}</strong>
+                <small>${t("profile.played")}</small>
+              </div>
+              <div>
+                <strong>${stats.fullGamesWon}</strong>
+                <small>${t("profile.won")}</small>
+              </div>
+              <div>
+                <strong>${fullWinRate.toFixed(1)}%</strong>
+                <small>${t("profile.rate")}</small>
+              </div>
+            </div>
           </div>
 
-          <div class="profile-highlight">
-            <span>${t("profile.fullGamesWon")}</span>
-            <strong>${stats.fullGamesWon}</strong>
-            <small>${t("profile.victories")}</small>
-          </div>
-
-          <div class="profile-highlight">
-            <span>${t("profile.winRate")}</span>
-            <strong>${fullWinRate.toFixed(1)}%</strong>
-            <small>${t("profile.winRateHint", { won: String(stats.fullGamesWon), total: String(stats.fullGamesFinished) })}</small>
+          <div class="profile-highlight profile-highlight-pair">
+            <span>${t("profile.shortGames")}</span>
+            <div class="profile-highlight-pair-row">
+              <div>
+                <strong>${shortGamesFinished}</strong>
+                <small>${t("profile.played")}</small>
+              </div>
+              <div>
+                <strong>${shortGamesWon}</strong>
+                <small>${t("profile.won")}</small>
+              </div>
+              <div>
+                <strong>${shortWinRate.toFixed(1)}%</strong>
+                <small>${t("profile.rate")}</small>
+              </div>
+            </div>
           </div>
           </div>
 
@@ -455,16 +481,8 @@ export async function renderProfilePage(
 
               <div class="profile-record-grid">
 
-                <div class="profile-record-item">
-                  <span>${t("profile.shortGames")}</span>
-                  <strong>${shortGamesFinished}</strong>
-                </div>
-
-                <div class="profile-record-item">
-                  <span>${t("profile.shortGamesWon")}</span>
-                  <strong>${shortGamesWon}</strong>
-                </div>
-
+                <!-- Two rows: rounds lead to the prediction accuracy, games
+                     played and unfinished to the reliability. -->
                 <div class="profile-record-item">
                   <span>${t("profile.rounds")}</span>
                   <strong>${roundsPlayed}</strong>
@@ -478,6 +496,16 @@ export async function renderProfilePage(
                 <div class="profile-record-item">
                   <span>${t("profile.accuracy")}</span>
                   <strong>${exactPredictionRate.toFixed(1)}%</strong>
+                </div>
+
+                <div class="profile-record-item">
+                  <span>${t("profile.gamesPlayed")}</span>
+                  <strong>${stats.gamesPlayed}</strong>
+                </div>
+
+                <div class="profile-record-item">
+                  <span>${t("profile.gamesUnfinished")}</span>
+                  <strong>${gamesUnfinished}</strong>
                 </div>
 
                 <div class="profile-record-item">

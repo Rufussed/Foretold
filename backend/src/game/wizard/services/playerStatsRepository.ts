@@ -115,7 +115,39 @@ class PlayerStatsRepository {
       WHERE user_id = ?
     `).get(userId) as PlayerStats | undefined;
 
-    return row ?? null;
+    if (!row) {
+      return null;
+    }
+
+    // A game counts as played from its start, but one still running is not
+    // yet unfinished: leave it out until it ends, so it does not lower the
+    // player's reliability meanwhile. A running game they quit stays in, as
+    // it is unfinished for them already.
+    row.gamesPlayed = Math.max(
+      row.gamesFinished,
+      row.gamesPlayed - this.countRunningGames(userId),
+    );
+
+    return row;
+  }
+
+  // Games under way in which the player still has their seat.
+  private countRunningGames(userId: number): number {
+    const row = db.prepare(`
+      SELECT COUNT(*) AS count
+      FROM games
+      JOIN room_players ON room_players.room_id = games.room_id
+      WHERE room_players.user_id = ?
+        AND games.status NOT IN ('finished', 'expired')
+        AND NOT EXISTS (
+          SELECT 1
+          FROM json_each(games.state_json, '$.players') AS player
+          WHERE json_extract(player.value, '$.username') = room_players.username
+            AND json_extract(player.value, '$.quit') = 1
+        )
+    `).get(userId) as { count: number };
+
+    return row.count;
   }
 }
 

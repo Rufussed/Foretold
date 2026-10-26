@@ -5189,7 +5189,7 @@ button {
   letter-spacing: 0;
 }
 
-/* Same columns as .profile-detail-grid, so the three game cards line up with
+/* Same columns as .profile-detail-grid, so the two game cards line up with
    the Record card and the two point cards with Social. */
 .profile-highlights {
   display: grid;
@@ -5208,6 +5208,7 @@ button {
 
 .profile-highlight {
   min-height: 108px;
+  text-align: center;
   padding: 16px 18px;
   border: 1px solid rgba(180, 119, 47, 0.2);
   background: rgba(12, 13, 11, 0.68);
@@ -5244,6 +5245,18 @@ button {
   background:
     linear-gradient(135deg, rgba(201, 127, 40, 0.12), transparent 70%),
     rgba(12, 13, 11, 0.72);
+}
+
+/* Played, won and win rate share one card, as wide as two: full games and
+   short games side by side. */
+.profile-highlight-pair {
+  grid-column: span 2;
+}
+
+.profile-highlight-pair-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
 }
 
 .profile-grid {
@@ -5655,6 +5668,10 @@ button {
 
   .profile-highlight-group {
     grid-auto-flow: row;
+  }
+
+  .profile-highlight-pair {
+    grid-column: auto;
   }
 
   .profile-info-row {

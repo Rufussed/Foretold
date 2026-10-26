@@ -332,4 +332,71 @@ describe("PlayerStatsRepository", () => {
       db.prepare("DELETE FROM users WHERE id = ?").run(userId);
     }
   });
+
+  it("leaves a running game out of games played until the player quits it", () => {
+    const user = db.prepare(`
+      INSERT INTO users (
+        username,
+        password_hash,
+        display_name,
+        email
+      )
+      VALUES (?, ?, ?, ?)
+    `).run(
+      "stats-test-user-running",
+      "test",
+      "Stats Test User Running",
+      "stats-test-running@example.com",
+    );
+
+    const userId = Number(user.lastInsertRowid);
+
+    const room = db.prepare(`
+      INSERT INTO rooms (
+        name,
+        created_by,
+        max_players,
+        status
+      )
+      VALUES (?, ?, ?, ?)
+    `).run("Stats Running Room", userId, 3, "playing");
+
+    const roomId = Number(room.lastInsertRowid);
+
+    const saveState = (quit: boolean): void => {
+      db.prepare(`
+        INSERT INTO games (room_id, status, state_json)
+        VALUES (?, 'waiting', ?)
+        ON CONFLICT(room_id) DO UPDATE SET state_json = excluded.state_json
+      `).run(
+        roomId,
+        JSON.stringify({
+          players: [{ username: "stats-test-user-running", quit }],
+        }),
+      );
+    };
+
+    try {
+      db.prepare(`
+        INSERT INTO room_players (room_id, user_id, username)
+        VALUES (?, ?, ?)
+      `).run(roomId, userId, "stats-test-user-running");
+
+      playerStatsRepository.initializeForUser(userId);
+      playerStatsRepository.incrementGamesPlayed(userId);
+      playerStatsRepository.incrementGamesPlayed(userId);
+
+      saveState(false);
+      expect(playerStatsRepository.getStats(userId)?.gamesPlayed).toBe(1);
+
+      saveState(true);
+      expect(playerStatsRepository.getStats(userId)?.gamesPlayed).toBe(2);
+    } finally {
+      db.prepare("DELETE FROM games WHERE room_id = ?").run(roomId);
+      db.prepare("DELETE FROM room_players WHERE room_id = ?").run(roomId);
+      db.prepare("DELETE FROM rooms WHERE id = ?").run(roomId);
+      db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(userId);
+      db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    }
+  });
 });

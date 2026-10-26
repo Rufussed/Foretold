@@ -709,7 +709,8 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>Your game has begun</h3>
         <p>
           When your name in the navbar glows gold, a game you are in has
-          started. Go to your Profile and choose Take your seat.
+          started. Go to your Study, your profile page (click your name), and
+          choose Take your seat.
         </p>
       </section>
 
@@ -781,8 +782,120 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>Deine Partie hat begonnen</h3>
         <p>
           Leuchtet dein Name in der Navigationsleiste golden, hat eine
-          Partie begonnen, in der du mitspielst. Geh in dein Profil und
+          Partie begonnen, in der du mitspielst. Geh in deine
+          Studierstube, deine Profilseite (Klick auf deinen Namen), und
           wähle Zum Tisch.
+        </p>
+      </section>
+
+    </div>
+  `,
+  },
+  profile: {
+    en: `
+    <div class="home-rules-content">
+
+      <section class="home-rules-section">
+        <h3>What is the Study?</h3>
+        <p>
+          Every wizard has a study: a quiet room where they keep their
+          books and records. Yours holds what you have played, how well,
+          and the wizards you have played with.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Your games</h3>
+        <p>
+          Full games are played to the last round, short games end
+          sooner. For each you see how many you played, how many you won
+          and your win rate. Highest score is your best single game, Total
+          points all your game scores added up. Your level grows with your
+          total points, from short and full games alike; full games, being
+          longer, get you there faster.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Reliability</h3>
+        <p>
+          Reliability is the share of your games you played to the end.
+          Every game you quit, or lose to a bot after missing too many
+          turns, counts as not finished and lowers it. Other wizards see
+          it in your Study: a low reliability tells them you often leave
+          games early, and they may think twice before sharing a table
+          with you. A game still running does not count until it ends.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Finding players</h3>
+        <p>
+          Find Players searches by wizard name: visit their Study or send
+          a friend request. Requests sent to you wait under Friend
+          Requests, and your friends are listed under Social. Only friends
+          can see and join your private rooms.
+        </p>
+        <p>
+          Recent opponents remembers the last 100 wizards you played with,
+          and how many games. Click a name to visit that wizard's Study.
+        </p>
+      </section>
+
+    </div>
+  `,
+    de: `
+    <div class="home-rules-content">
+
+      <section class="home-rules-section">
+        <h3>Was ist die Studierstube?</h3>
+        <p>
+          Jeder Zauberer hat eine Studierstube: einen stillen Raum, in dem
+          er seine Bücher und Aufzeichnungen aufbewahrt. Deine hält fest,
+          was du gespielt hast, wie gut, und mit welchen Zauberern.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Deine Partien</h3>
+        <p>
+          Ganze Partien gehen bis zur letzten Runde, kurze enden früher.
+          Für beide siehst du, wie viele du gespielt und gewonnen hast,
+          und deine Siegquote. Höchste Punktzahl ist deine beste einzelne
+          Partie, Gesamtpunkte sind alle Partien zusammengezählt. Deine
+          Stufe steigt mit deinen Gesamtpunkten, aus kurzen wie aus ganzen
+          Partien; ganze Partien, weil länger, bringen dich schneller
+          voran.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Zuverlässigkeit</h3>
+        <p>
+          Zuverlässigkeit ist der Anteil deiner Partien, die du bis zum
+          Ende gespielt hast. Jede Partie, die du aufgibst oder nach zu
+          vielen verpassten Zügen an einen Bot verlierst, zählt als nicht
+          beendet und senkt sie. Andere Zauberer sehen sie in deiner
+          Studierstube: Eine niedrige Zuverlässigkeit zeigt ihnen, dass du
+          Partien oft früh verlässt, und sie überlegen es sich vielleicht
+          zweimal, ob sie mit dir an einen Tisch gehen. Eine laufende
+          Partie zählt erst, wenn sie endet.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Spieler finden</h3>
+        <p>
+          Mit Mitspielende finden suchst du nach Zauberernamen: Besuche ihre
+          Studierstube oder schick eine Freundschaftsanfrage. Anfragen an
+          dich warten unter Freundschaftsanfragen, deine Freunde stehen
+          unter Kontakte. Nur Freunde sehen deine privaten Räume und
+          können beitreten.
+        </p>
+        <p>
+          Zuletzt am Tisch merkt sich die letzten 100 Zauberer, mit denen du
+          gespielt hast, und wie viele Partien. Klick auf einen Namen, um
+          seine Studierstube zu besuchen.
         </p>
       </section>
 
