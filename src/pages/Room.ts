@@ -5,6 +5,7 @@ import { t } from "../i18n";
 import type { AvatarId } from "../../backend/src/game/wizard/models/avatar";
 import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
+import { openStartSummary, type StartSummaryRow } from "../components/start-summary";
 import { describeRuleVariations } from "../utils/rule-variations";
 import {
   DEFAULT_GAME_OPTIONS,
@@ -548,7 +549,38 @@ export async function renderRoomPage(
   missedTurnsEl.addEventListener("change", saveOptions);
   turnTimeoutEl.addEventListener("change", saveOptions);
 
-  startButton.addEventListener("click", async () => {
+  // What a select shows, and whether it differs from the page's default.
+  const chosen = (select: HTMLSelectElement): { value: string; changed: boolean } => {
+    const option = select.selectedOptions[0];
+    return { value: option?.text ?? "", changed: option ? !option.defaultSelected : false };
+  };
+
+  // Start game first shows everything chosen, as nothing can change once the
+  // game runs; the game itself starts from there (startGame).
+  const summaryRows = (): StartSummaryRow[] => {
+    const wizards = (room?.players ?? []).map((player) =>
+      player.username === user.username ? greeting : player.username,
+    );
+    const rows: StartSummaryRow[] = [
+      { label: t("start.wizards"), value: wizards.join(", ") },
+      { label: t("room.bots"), value: chosen(botsEl).value },
+    ];
+    if (Number(botsEl.value) > 0) {
+      rows.push({ label: t("room.botLevel"), ...chosen(botLevelEl) });
+    }
+    rows.push(
+      // A full game is the first choice; fewer rounds is the host's own.
+      { label: t("room.rounds"), value: chosen(roundsEl).value, changed: roundsEl.selectedIndex > 0 },
+      { label: t("room.pace"), ...chosen(paceEl) },
+      { label: t("room.turnTimeout"), ...chosen(turnTimeoutEl) },
+      { label: t("room.missedTurns"), ...chosen(missedTurnsEl) },
+      { label: t("room.firstRound"), ...chosen(blindFirstRoundEl) },
+      { label: t("room.wizardWins"), ...chosen(wizardWinsEl) },
+    );
+    return rows;
+  };
+
+  const startGame = async () => {
     startButton.disabled = true;
     showMessage("");
 
@@ -587,6 +619,11 @@ export async function renderRoomPage(
       );
       startButton.disabled = false;
     }
+  };
+
+  startButton.addEventListener("click", () => {
+    showMessage("");
+    openStartSummary(summaryRows(), () => void startGame());
   });
 
   // Joining is idempotent, so opening the room is enough to take a seat: the

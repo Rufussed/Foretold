@@ -902,6 +902,110 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
     </div>
   `,
   },
+  room: {
+    en: `
+    <div class="home-rules-content">
+
+      <section class="home-rules-section">
+        <h3>What is the Antechamber?</h3>
+        <p>
+          An antechamber is the small room before a great hall, where
+          guests wait to be called in. Here the wizards of a room gather
+          before their game: each chooses a portrait, and the host sets
+          the table.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Your portrait</h3>
+        <p>
+          Click a portrait to take it as your face at the table. Each one
+          belongs to one wizard only.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>For the host</h3>
+        <p>
+          The wizard who created the room sets up the game. NPCs fill the
+          empty seats, as a game needs 3 to 6 players; alone, you can give
+          every seat to an NPC and watch. Choose how well they play, the
+          rounds (a full game, or fewer for a short one), the game speed
+          and the time per turn.
+        </p>
+        <p>
+          Rule Variations: in a blind first round you see everyone's card
+          but your own; when two or more Wizards meet in a trick, the
+          first or the last one wins it; and after how many missed turns
+          in a row a bot takes over a seat.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Starting</h3>
+        <p>
+          Start game shows The Table Is Set: everything chosen, at a
+          glance. Go back to change something, or begin; once the game
+          has begun, none of it can be changed. The others see the host's
+          choices while they wait, and the game opens for them by itself.
+        </p>
+      </section>
+
+    </div>
+  `,
+    de: `
+    <div class="home-rules-content">
+
+      <section class="home-rules-section">
+        <h3>Was ist die Vorkammer?</h3>
+        <p>
+          Eine Vorkammer ist der kleine Raum vor einem großen Saal, in dem
+          die Gäste warten, bis man sie hereinruft. Hier versammeln sich
+          die Zauberer eines Raums vor ihrer Partie: Jeder wählt ein
+          Porträt, und wer den Raum erstellt hat, deckt den Tisch.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Dein Porträt</h3>
+        <p>
+          Klick auf ein Porträt, um es als dein Gesicht am Tisch zu
+          nehmen. Jedes gehört nur einem Zauberer.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Für den Gastgeber</h3>
+        <p>
+          Wer den Raum erstellt hat, richtet die Partie ein. NPCs füllen
+          die freien Plätze, denn eine Partie braucht 3 bis 6 Spieler;
+          allein kannst du jeden Platz einem NPC geben und zuschauen.
+          Wähle, wie gut sie spielen, die Runden (eine ganze Partie oder
+          weniger für eine kurze), das Spieltempo und die Zeit pro Zug.
+        </p>
+        <p>
+          Regelvarianten: In einer blinden ersten Runde siehst du die
+          Karten aller anderen, nur deine nicht; treffen zwei oder mehr
+          Zauberer in einem Stich aufeinander, gewinnt der erste oder der
+          letzte; und nach wie vielen verpassten Zügen in Folge ein Bot
+          einen Platz übernimmt.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Der Start</h3>
+        <p>
+          Partie starten zeigt Der Tisch ist gedeckt: alles Gewählte auf
+          einen Blick. Geh zurück, um etwas zu ändern, oder beginne; hat
+          die Partie begonnen, lässt sich nichts mehr ändern. Die anderen
+          sehen beim Warten, was gewählt wurde, und die Partie öffnet sich
+          für sie von selbst.
+        </p>
+      </section>
+
+    </div>
+  `,
+  },
 };
 
 export const aboutHtml = (): string => about[getLanguage()];
