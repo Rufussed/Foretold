@@ -1,10 +1,11 @@
 import db, { transaction } from "../../../db/database.js";
 import { wizardLobbyManager } from "./wizardLobbyManager.js";
 
-// A guest exists for one game at their own private table (the lobby never
-// lists it). They go the moment they leave (see deleteGuest, called by the
-// page), a short while after their connection drops for good (see
-// guestTableEmptied), or when the game ends (wizardGameCompletionService).
+// A guest exists for one game: at their own private table (the lobby never
+// lists it), or invited to someone's guest room (routes /invites). They go
+// the moment they leave (see deleteGuest, called by the page), a short while
+// after their connection drops for good (see guestTableEmptied), or when the
+// game ends (wizardGameCompletionService).
 // The sweep below is the backstop for anything those miss: once a table has
 // gone quiet - the game stops on their turn when they leave, and a waiting
 // table never starts - nothing about them is worth keeping.
@@ -44,7 +45,9 @@ function deleteIdleGuestTables(): void {
   }
 }
 
-// Guests whose table went some other way and left them behind.
+// Guests whose table went some other way and left them behind. A guest
+// invited to someone's guest room has no table of their own but a seat there,
+// and keeps it as long as the room lasts.
 function deleteGuestsWithoutTables(): void {
   const strays = db
     .prepare(`
@@ -53,6 +56,9 @@ function deleteGuestsWithoutTables(): void {
       WHERE is_guest = 1
         AND created_at <= datetime('now', ?)
         AND NOT EXISTS (SELECT 1 FROM rooms WHERE rooms.created_by = users.id)
+        AND NOT EXISTS (
+          SELECT 1 FROM room_players WHERE room_players.user_id = users.id
+        )
     `)
     .all(idleCutoff()) as { id: number }[];
 

@@ -8,6 +8,7 @@ import {
 import { ANIMATION, AVATAR_PICKER } from "./config";
 import { frameCharacter } from "./portrait";
 import { t } from "../i18n";
+import { displayName } from "../utils/display-name";
 
 export interface AvatarPickerOptions {
   onSelect(avatar: CharacterId): void;
@@ -193,7 +194,7 @@ export function createAvatarPicker(
         portrait.button.classList.toggle("is-taken", taken);
         portrait.button.disabled = taken;
         portrait.button.setAttribute("aria-pressed", String(mine));
-        portrait.owner.textContent = mine ? t("avatar.you") : taken ? holder : "";
+        portrait.owner.textContent = mine ? t("avatar.you") : taken ? displayName(holder) : "";
 
         const brightness = taken ? AVATAR_PICKER.takenBrightness : 1;
         portrait.key.intensity = AVATAR_PICKER.keyLightIntensity * brightness;

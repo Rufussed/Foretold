@@ -298,6 +298,25 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 15,
+    description: "guest rooms: an invite code opens the room to guests",
+    up(db) {
+      // Set only on guest rooms, which the invite link is the one way into.
+      if (!hasColumn(db, "rooms", "invite_code")) {
+        db.exec(`
+          ALTER TABLE rooms
+          ADD COLUMN invite_code TEXT
+        `);
+      }
+
+      db.exec(`
+        CREATE UNIQUE INDEX IF NOT EXISTS rooms_invite_code
+        ON rooms (invite_code)
+        WHERE invite_code IS NOT NULL
+      `);
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

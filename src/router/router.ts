@@ -2,6 +2,7 @@ import { renderHomePage } from "../pages/Home";
 import { renderProfilePage } from "../pages/Profile";
 import { renderLobbyPage } from "../pages/Lobby";
 import { renderAdminPage } from "../pages/Admin";
+import { renderJoinPage } from "../pages/Join";
 import { destroyWizardGamePage, renderWizardGamePage } from "../pages/WizardGame";
 import { mountSystemButton } from "../components/system-button";
 import { endGuestSession, getActiveGameToken, getGuestToken } from "../services/auth";
@@ -78,11 +79,13 @@ function renderCurrentRoute(container: HTMLElement): void {
   const route = window.location.hash || "#/home";
 
   // A guest belongs to their own room and game pages; anywhere else means
-  // they have left the table, by whatever button or link.
+  // they have left the table, by whatever button or link. The invite link
+  // itself only leads an invited guest back to their seat.
   if (
     getGuestToken() &&
     !route.startsWith("#/room/") &&
-    !route.startsWith("#/game/")
+    !route.startsWith("#/game/") &&
+    !route.startsWith("#/join/")
   ) {
     endGuestSession();
   }
@@ -147,6 +150,12 @@ function renderCurrentRoute(container: HTMLElement): void {
     }
 
     void renderAdminPage(container);
+    return;
+  }
+
+  // An invite link to a guest room: open to anyone who has it.
+  if (route.startsWith("#/join/")) {
+    void renderJoinPage(container, decodeURIComponent(route.slice("#/join/".length)));
     return;
   }
 

@@ -9,6 +9,34 @@ import { wizardGameRepository } from "./wizardGameRepository.js";
 interface RoomInfo {
   createdBy: number;
   isGuest: number;
+  inviteCode: string | null;
+}
+
+// A solo guest's table and a guest room both count for no one: no stats, no
+// opponents remembered.
+function countsForNoOne(room: RoomInfo): boolean {
+  return room.isGuest === 1 || room.inviteCode !== null;
+}
+
+// The guests a guest room let in go with it: their accounts were only ever
+// for this one game. Run inside the caller's transaction, before the room's
+// seats are cleared.
+function deleteInvitedGuests(roomId: number): void {
+  const guests = db
+    .prepare(`
+      SELECT users.id
+      FROM room_players
+        JOIN users ON users.id = room_players.user_id
+      WHERE room_players.room_id = ? AND users.is_guest = 1
+    `)
+    .all(roomId) as { id: number }[];
+
+  for (const { id } of guests) {
+    db.prepare("DELETE FROM room_players WHERE user_id = ?").run(id);
+    db.prepare("DELETE FROM player_opponents WHERE player_id = ?").run(id);
+    db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(id);
+    db.prepare("DELETE FROM users WHERE id = ? AND is_guest = 1").run(id);
+  }
 }
 
 interface RoomPlayerInfo {
@@ -22,6 +50,7 @@ class WizardGameCompletionService {
       .prepare(`
         SELECT created_by AS createdBy
           , users.is_guest AS isGuest
+          , rooms.invite_code AS inviteCode
         FROM rooms
           JOIN users ON users.id = rooms.created_by
         WHERE rooms.id = ?
@@ -56,7 +85,7 @@ class WizardGameCompletionService {
       fullRounds !== undefined && game.totalRounds >= fullRounds;
 
     transaction(() => {
-      for (const player of room.isGuest ? [] : game.players) {
+      for (const player of countsForNoOne(room) ? [] : game.players) {
         if (isBotName(player.username)) {
           continue;
         }
@@ -126,6 +155,8 @@ class WizardGameCompletionService {
 
       wizardGameRepository.deleteGame(game.roomId);
 
+      deleteInvitedGuests(game.roomId);
+
       db.prepare(`
         DELETE FROM room_players
         WHERE room_id = ?
@@ -160,6 +191,7 @@ class WizardGameCompletionService {
       .prepare(`
         SELECT created_by AS createdBy
           , users.is_guest AS isGuest
+          , rooms.invite_code AS inviteCode
         FROM rooms
           JOIN users ON users.id = rooms.created_by
         WHERE rooms.id = ?
@@ -181,7 +213,7 @@ class WizardGameCompletionService {
       .all(game.roomId) as RoomPlayerInfo[];
 
     transaction(() => {
-      for (const player of room.isGuest ? [] : game.players) {
+      for (const player of countsForNoOne(room) ? [] : game.players) {
         if (isBotName(player.username)) {
           continue;
         }
@@ -256,6 +288,8 @@ class WizardGameCompletionService {
       `).run(game.roomId);
 
       wizardGameRepository.deleteGame(game.roomId);
+
+      deleteInvitedGuests(game.roomId);
 
       db.prepare(`
         DELETE FROM room_players

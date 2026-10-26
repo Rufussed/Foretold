@@ -47,6 +47,16 @@ const MESSAGES = {
   createGuestFailed: ["Could not create guest game"],
   noGuestGame: ["No guest game to leave"],
 
+  // Guest rooms and their invite links
+  guestRoomOnly: ["This is a guest room. Only its invite link leads in."],
+  guestCannotHost: ["Guests cannot open rooms"],
+  inviteInvalid: ["This invitation is no longer valid"],
+  guestNameInvalid: ["Names are 1-20 letters, digits or spaces"],
+  guestNameProfane: ["Please choose a different name"],
+  guestNameBot: ["Names ending in NPC are reserved for computer players"],
+  onlyHostInvites: ["Only the host can invite"],
+  guestPrefixReserved: ["Usernames starting with Guest- are reserved for guests"],
+
   // Friends and profiles
   friendRequestFailed: ["Could not send friend request"],
   friendAcceptFailed: ["Could not accept friend request"],
@@ -76,6 +86,7 @@ const PATTERNS = {
   postTooLong: /^Posts can be at most (?<max>\d+) characters$/,
   postCooldown: /^Please wait (?<seconds>\d+) seconds between posts$/,
   maxRounds: /^Max rounds must be between 1 and (?<max>\d+)$/,
+  guestRoomLimit: /^At most (?<count>\d+) guest rooms an hour$/,
 } as const;
 
 export type ErrorCode = keyof typeof MESSAGES | keyof typeof PATTERNS;

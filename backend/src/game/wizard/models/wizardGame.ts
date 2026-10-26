@@ -27,6 +27,9 @@ export interface Room {
   status: "waiting" | "playing";
   // The rule variations the host has chosen so far, shown to everyone waiting.
   options: WizardGameOptions;
+  // Set on a guest room: the code in its invite link, the one way in. Its
+  // games count for no one's stats.
+  inviteCode: string | null;
 }
 
 export interface GamePlayer {

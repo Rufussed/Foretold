@@ -62,6 +62,14 @@ export default async function authRoutes(
         });
       }
 
+      // Guests' generated names start with "Guest-", and every page shows
+      // such a name as a guest's (the frontend's utils/display-name.ts).
+      if (/^guest-/i.test(username)) {
+        return reply.status(400).send({
+          error: "Usernames starting with Guest- are reserved for guests",
+        });
+      }
+
       // " NPC" at the end of a name marks a bot.
       if (isBotName(username.trim())) {
         return reply.status(400).send({

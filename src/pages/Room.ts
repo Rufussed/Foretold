@@ -8,6 +8,7 @@ import { renderNavbar } from "../components/Navbar";
 import { openStartSummary, type StartSummaryRow } from "../components/start-summary";
 import { describeRuleVariations } from "../utils/rule-variations";
 import { escapeHtml } from "../utils/escape-html";
+import { displayName } from "../utils/display-name";
 import {
   DEFAULT_GAME_OPTIONS,
   MISSED_TURNS_OPTIONS,
@@ -21,6 +22,8 @@ import {
   getCurrentUser,
   getActiveGameToken,
   getGuestUsername,
+  getInvitedGuestRoomId,
+  endGuestSession,
 } from "../services/auth";
 import { serverError, type ServerError } from "../i18n/server-error";
 
@@ -64,13 +67,17 @@ export async function renderRoomPage(
   activeRoom = handle;
 
   const guestUsername = getGuestUsername();
+  // Two kinds of guest: one playing alone from Home, who hosts their own
+  // table, and one invited to a guest room, who sits at someone else's.
+  const isInvitedGuest = getInvitedGuestRoomId() !== null;
+  const isSoloGuest = guestUsername !== null && !isInvitedGuest;
   const user = localStorage.getItem("wizardToken")
     ? await getCurrentUser()
     : guestUsername
       ? {
           id: 0,
           username: guestUsername,
-          displayName: t("common.stranger"),
+          displayName: displayName(guestUsername),
           email: "",
         }
       : await getCurrentUser();
@@ -90,6 +97,26 @@ export async function renderRoomPage(
           <a href="#/lobby" class="room-back-button">${t("common.back")}</a>
 
           <h1 id="room-intro" class="room-intro">${t("room.welcome")}</h1>
+        </section>
+
+        <section id="room-invite" class="room-invite" hidden>
+          <p class="room-invite-title">${t("room.invite.title")}</p>
+          <div class="room-invite-row">
+            <input
+              id="room-invite-link"
+              class="room-invite-link"
+              type="text"
+              readonly
+              aria-label="${t("room.invite.title")}"
+            />
+            <button type="button" id="room-invite-copy" class="room-invite-button">
+              ${t("room.invite.copy")}
+            </button>
+            <button type="button" id="room-invite-renew" class="room-invite-button is-quiet">
+              ${t("room.invite.renew")}
+            </button>
+          </div>
+          <p class="room-invite-note">${t("room.invite.note")}</p>
         </section>
 
         <section class="room-main-panel">
@@ -254,8 +281,9 @@ export async function renderRoomPage(
   // One line: the room, who's here, and an invitation to pick a portrait.
   const introEl = element<HTMLHeadingElement>("#room-intro");
   const messageEl = element<HTMLParagraphElement>("#room-message");
-  // A guest's username is a generated id, so they are greeted as a stranger.
-  const greeting = guestUsername !== null ? t("common.stranger") : user.username;
+  // A guest's username is a generated id: they are greeted by the name they
+  // chose, or as a stranger when playing alone.
+  const greeting = guestUsername !== null ? displayName(guestUsername) : user.username;
   const startEl = element<HTMLDivElement>("#room-start");
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
@@ -297,13 +325,59 @@ export async function renderRoomPage(
       ...values.map((value, index) => new Option(index === 0 ? t("room.fullGame", { count: value }) : value, value)),
     );
     // A guest's game starts at 8 rounds; a longer or shorter choice stands.
-    const preferred = selected || (guestUsername !== null ? "8" : "");
+    const preferred = selected || (isSoloGuest ? "8" : "");
     roundsEl.value = values.includes(preferred) ? preferred : values[0] ?? "";
   };
   botsEl.addEventListener("change", updateRoundOptions);
   const startButton = element<HTMLButtonElement>("#room-start-button");
 
   const waitingEl = element<HTMLParagraphElement>("#room-waiting");
+
+  const inviteEl = element<HTMLElement>("#room-invite");
+  const inviteLinkEl = element<HTMLInputElement>("#room-invite-link");
+  const inviteCopyEl = element<HTMLButtonElement>("#room-invite-copy");
+  const inviteRenewEl = element<HTMLButtonElement>("#room-invite-renew");
+  // The address the guests open: this site, at the join page for the code.
+  const inviteLink = (code: string) =>
+    `${window.location.origin}${window.location.pathname}#/join/${code}`;
+
+  inviteLinkEl.addEventListener("focus", () => inviteLinkEl.select());
+
+  inviteCopyEl.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(inviteLinkEl.value);
+    } catch {
+      // No clipboard (an insecure page, an old browser): selected to copy by hand.
+      inviteLinkEl.select();
+      return;
+    }
+    inviteCopyEl.textContent = t("room.invite.copied");
+    window.setTimeout(() => {
+      inviteCopyEl.textContent = t("room.invite.copy");
+    }, 2000);
+  });
+
+  // A new link for when the old one reached the wrong people.
+  inviteRenewEl.addEventListener("click", async () => {
+    inviteRenewEl.disabled = true;
+    try {
+      const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}/invite`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = (await response.json()) as { inviteCode?: string } & ServerError;
+      if (!response.ok || !data.inviteCode) {
+        showMessage(serverError(data, "room.invite.renewFailed"));
+      } else if (room) {
+        room = { ...room, inviteCode: data.inviteCode };
+        render();
+      }
+    } catch {
+      showMessage(t("common.noServer"));
+    } finally {
+      inviteRenewEl.disabled = false;
+    }
+  });
 
   let room: Room | null = null;
   // Whether the host's selects have been set from what the room saved, so a
@@ -324,11 +398,13 @@ export async function renderRoomPage(
 
     // The server names a guest's room after their generated username.
     const roomName =
-      guestUsername !== null ? room.name.replace(guestUsername, t("common.stranger")) : room.name;
+      isSoloGuest && guestUsername !== null
+        ? room.name.replace(guestUsername, t("common.stranger"))
+        : room.name;
     // A guest plays against NPCs alone, so the head count means nothing to them.
     const isFull = room.players.length >= room.maxPlayers;
     const present =
-      guestUsername !== null
+      isSoloGuest
         ? ""
         : t(isFull ? "room.presentFull" : "room.present", {
             count: String(room.players.length),
@@ -363,9 +439,14 @@ export async function renderRoomPage(
 
     picker.setClaims(claims, user.username);
 
-    const isGuest = guestUsername !== null;
+    const isHost = isSoloGuest || room.createdBy === user.id;
 
-    const isHost = isGuest || room.createdBy === user.id;
+    // A guest room's host hands out its invite link from here.
+    inviteEl.hidden = !(isHost && room.inviteCode);
+    if (isHost && room.inviteCode) {
+      const link = inviteLink(room.inviteCode);
+      if (inviteLinkEl.value !== link) inviteLinkEl.value = link;
+    }
 
     startEl.hidden = !isHost;
     waitingEl.hidden = isHost;
@@ -407,7 +488,7 @@ export async function renderRoomPage(
         );
         // Every free seat filled, unless the host already chose.
         // A guest starts with 4 NPCs besides themselves.
-        const wanted = guestUsername !== null ? "4" : String(freeSeats);
+        const wanted = isSoloGuest ? "4" : String(freeSeats);
         const fallback = options.includes(wanted) ? wanted : options[0] ?? "";
         botsEl.value = current.length && options.includes(selected) ? selected : fallback;
       }
@@ -490,7 +571,13 @@ export async function renderRoomPage(
       }
 
       if (response.status === 404) {
-        showMessage(t("room.gone"));
+        // An invited guest's seat went with the room: the visit is over.
+        if (isInvitedGuest) {
+          endGuestSession();
+          showMessage(t("room.closedByHost"));
+        } else {
+          showMessage(t("room.gone"));
+        }
         return;
       }
 
@@ -572,7 +659,7 @@ export async function renderRoomPage(
   // game runs; the game itself starts from there (startGame).
   const summaryRows = (): StartSummaryRow[] => {
     const wizards = (room?.players ?? []).map((player) =>
-      player.username === user.username ? greeting : player.username,
+      player.username === user.username ? greeting : displayName(player.username),
     );
     const rows: StartSummaryRow[] = [
       { label: t("start.wizards"), value: wizards.join(", ") },

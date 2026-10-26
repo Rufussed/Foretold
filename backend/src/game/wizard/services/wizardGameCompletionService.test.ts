@@ -547,6 +547,88 @@ describe("WizardGameCompletionService", () => {
     }
   });
 
+  // A guest room's games are for fun: no one's record changes, and the guests
+  // it let in go with it.
+  it("counts a guest room's game for no one and removes its guests", () => {
+    const creatorId = createTestUser("guest-room-creator", "Creator");
+    const player2Id = createTestUser("guest-room-player2", "Player 2");
+    const guestId = Number(
+      db.prepare(`
+        INSERT INTO users (username, password_hash, display_name, email, is_guest)
+        VALUES (?, ?, ?, ?, 1)
+      `).run(
+        "Guest-1a2b3c4d-Anna",
+        "test-password-hash",
+        "Anna",
+        `${randomUUID()}@guest.invalid`,
+      ).lastInsertRowid,
+    );
+
+    const roomId = Number(
+      db.prepare(`
+        INSERT INTO rooms (name, created_by, max_players, status, invite_code)
+        VALUES (?, ?, ?, 'playing', ?)
+      `).run("Guest Room", creatorId, 3, randomUUID().slice(0, 10)).lastInsertRowid,
+    );
+
+    for (const [userId, username] of [
+      [creatorId, "guest-room-creator"],
+      [player2Id, "guest-room-player2"],
+      [guestId, "Guest-1a2b3c4d-Anna"],
+    ] as const) {
+      db.prepare(`
+        INSERT INTO room_players (room_id, user_id, username)
+        VALUES (?, ?, ?)
+      `).run(roomId, userId, username);
+    }
+
+    const game = createTestGame(
+      roomId,
+      "guest-room-creator",
+      "guest-room-player2",
+      "Guest-1a2b3c4d-Anna",
+    );
+
+    try {
+      wizardGameCompletionService.completeGame(game);
+
+      const stats = db.prepare(`
+        SELECT games_finished, total_points
+        FROM player_stats
+        WHERE user_id IN (?, ?)
+      `).all(creatorId, player2Id) as { games_finished: number; total_points: number }[];
+
+      expect(stats).toHaveLength(2);
+      for (const row of stats) {
+        expect(row.games_finished).toBe(0);
+        expect(row.total_points).toBe(0);
+      }
+
+      const opponents = db.prepare(`
+        SELECT player_id FROM player_opponents WHERE player_id IN (?, ?)
+      `).all(creatorId, player2Id);
+      expect(opponents).toHaveLength(0);
+
+      expect(db.prepare("SELECT id FROM users WHERE id = ?").get(guestId)).toBeUndefined();
+      expect(db.prepare("SELECT id FROM rooms WHERE id = ?").get(roomId)).toBeUndefined();
+    } finally {
+      db.prepare("DELETE FROM room_players WHERE room_id = ?").run(roomId);
+      db.prepare("DELETE FROM rooms WHERE id = ?").run(roomId);
+      db.prepare(`
+        DELETE FROM player_opponents
+        WHERE player_id IN (?, ?, ?)
+      `).run(creatorId, player2Id, guestId);
+      db.prepare(`
+        DELETE FROM player_stats
+        WHERE user_id IN (?, ?, ?)
+      `).run(creatorId, player2Id, guestId);
+      db.prepare(`
+        DELETE FROM users
+        WHERE id IN (?, ?, ?)
+      `).run(creatorId, player2Id, guestId);
+    }
+  });
+
   // The room lookup joins users, so an unqualified "id" was ambiguous and
   // every expiry threw; the 24-hour cleanup then stalled on the first
   // playing room and nothing after it was ever removed.

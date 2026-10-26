@@ -1,6 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { randomUUID } from "node:crypto";
-import { BOT_NAME_SUFFIX, seatNameFor } from "../models/bot.js";
+import { BOT_NAME_SUFFIX, isBotName, seatNameFor } from "../models/bot.js";
 import { pickBotNames } from "../botNames.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 import { assignAvatars, shuffledSeating, WizardGameService } from "../services/wizardGameService.js";
@@ -20,6 +20,7 @@ import db from "../../../db/database.js";
 import { playerStatsRepository } from "../services/playerStatsRepository.js";
 import { friendService } from "../services/friendService.js";
 import { deleteGuest } from "../services/guestCleanup.js";
+import { containsProfanity } from "../../../services/profanityFilter.js";
 
 interface CreateGameBody {
   roomId?: number;
@@ -69,6 +70,46 @@ function withQuitPlayers<
   };
 }
 
+// A host may open this many guest rooms an hour, so the open invite link
+// cannot be used to spam rooms. Kept in memory: a restart forgets it.
+const GUEST_ROOMS_PER_HOUR = 3;
+const HOUR_MS = 60 * 60 * 1000;
+const guestRoomsOpened = new Map<number, number[]>();
+
+function guestRoomAllowed(userId: number): boolean {
+  const now = Date.now();
+  const recent = (guestRoomsOpened.get(userId) ?? []).filter(
+    (time) => now - time < HOUR_MS,
+  );
+
+  if (recent.length >= GUEST_ROOMS_PER_HOUR) {
+    guestRoomsOpened.set(userId, recent);
+    return false;
+  }
+
+  guestRoomsOpened.set(userId, [...recent, now]);
+  return true;
+}
+
+// The name an invited guest chooses for one game. Any name will do, even one
+// a wizard already has or another guest at the table chose: it is shown in
+// place of the generated part of their username (Guest-1a2b3c4d-Anna, see the
+// frontend's utils/display-name.ts), which stays unique. Letters of any
+// language, digits, spaces and a few marks.
+const GUEST_NAME_PATTERN = /^[\p{L}\p{N}][\p{L}\p{N} _'.-]{0,19}$/u;
+
+// An invited guest's login lasts the longest game with room to spare.
+const INVITED_GUEST_TOKEN_HOURS = 4;
+
+const INVITE_CODE_PARAMS = {
+  type: "object",
+  required: ["code"],
+  additionalProperties: false,
+  properties: {
+    code: { type: "string", pattern: "^[A-Za-z0-9_-]{10}$" },
+  },
+} as const;
+
 function getAuthenticatedUsername(request: {
   user: unknown;
 }): string | null {
@@ -85,6 +126,36 @@ export default async function wizardRoutes(
   const wizardGameRunner =
     registerWizardSocket(server, wizardGameService);
 
+  // A player leaving a running game for good: the server plays the seat from
+  // now on, and the others go on without waiting (see playerQuit.ts). When the
+  // last human leaves, the game ends there, unfinished for everyone. True if
+  // it ended.
+  const leaveGame = (roomId: number, username: string): boolean => {
+    const game = wizardSessionManager.getGame(roomId);
+
+    if (!game) {
+      return false;
+    }
+
+    quitPlayer(game, username);
+
+    if (activeHumans(game).length === 0) {
+      wizardGameCompletionService.expireGame(game);
+      wizardSessionManager.deleteGame(roomId);
+      wizardGameRunner.notifyAction(roomId);
+      return true;
+    }
+
+    wizardSessionManager.saveGame(game);
+    broadcastGameState(roomId, wizardGameService);
+    wizardGameRunner.notifyAction(roomId);
+    wizardGameRunner.run(roomId).catch((error) => {
+      console.error(`[wizard] runner failed for room ${roomId}:`, error);
+    });
+
+    return false;
+  };
+
   server.get("/lobby", async (request, reply) => {
     try {
       await request.jwtVerify();
@@ -99,7 +170,16 @@ export default async function wizardRoutes(
       return reply.status(401).send({ error: "Invalid user" });
     }
 
+    const username = getAuthenticatedUsername(request);
+
     const rooms = wizardLobbyManager.getRooms().filter((room) => {
+      // A guest room shows only to those in it: its invite link is the one way
+      // in. The host and their guests still see it, so their pages can call
+      // them to the table once it starts (services/started-game.ts).
+      if (room.inviteCode !== null) {
+        return room.players.some((player) => player.username === username);
+      }
+
       // Public rooms are visible to everyone authenticated.
       if (room.isPublic) {
         return true;
@@ -169,6 +249,12 @@ export default async function wizardRoutes(
           (player) => player.username === username
         );
 
+        if (room.inviteCode !== null && !isMember) {
+          return reply.status(403).send({
+            error: "This is a guest room. Only its invite link leads in.",
+          });
+        }
+
         if (!room.isPublic && room.createdBy !== userId && !isMember) {
           const creatorFriends = friendService.getFriends(room.createdBy);
 
@@ -209,6 +295,10 @@ export default async function wizardRoutes(
                       isPublic: {
                         type: "boolean",
                       },
+                      // A guest room: hidden, joined by invite link only.
+                      isGuestRoom: {
+                        type: "boolean",
+                      },
                       turnTimeoutMs: {
                         anyOf: [
                           {
@@ -235,12 +325,21 @@ export default async function wizardRoutes(
       name?: string;
       maxPlayers?: number;
       isPublic?: boolean;
+      isGuestRoom?: boolean;
       turnTimeoutMs?: 15000 | 30000 | 45000 | 60000 | null;
     };
     const tokenUser = request.user as {
       sub?: number;
       username?: string;
+      guest?: boolean;
     };
+
+    // Guests play at someone's table; they never host one.
+    if (tokenUser.guest) {
+      return reply.status(403).send({
+        error: "Guests cannot open rooms",
+      });
+    }
 
     if (!body.name || body.name.trim() === "") {
       return reply.status(400).send({
@@ -254,6 +353,14 @@ export default async function wizardRoutes(
       });
     }
 
+    const isGuestRoom = body.isGuestRoom === true;
+
+    if (isGuestRoom && !guestRoomAllowed(Number(tokenUser.sub))) {
+      return reply.status(429).send({
+        error: `At most ${GUEST_ROOMS_PER_HOUR} guest rooms an hour`,
+      });
+    }
+
     const room = wizardLobbyManager.createRoom(
       body.name.trim(),
       Number(tokenUser.sub),
@@ -261,6 +368,7 @@ export default async function wizardRoutes(
       body.maxPlayers,
       body.isPublic ?? true,
       body.turnTimeoutMs === undefined ? 30_000 : body.turnTimeoutMs,
+      isGuestRoom,
     );
 
     return reply.send(room);
@@ -324,6 +432,15 @@ export default async function wizardRoutes(
     if (!room) {
       return reply.status(404).send({
         error: "Room not found",
+      });
+    }
+
+    if (
+      room.inviteCode !== null &&
+      !room.players.some((player) => player.username === username)
+    ) {
+      return reply.status(403).send({
+        error: "This is a guest room. Only its invite link leads in.",
       });
     }
 
@@ -705,7 +822,29 @@ export default async function wizardRoutes(
       return reply.status(401).send({ error: "Unauthorized" });
     }
 
-    const userId = Number((request.user as { sub?: string | number }).sub);
+    const tokenUser = request.user as { sub?: string | number; username?: string };
+    const userId = Number(tokenUser.sub);
+
+    // An invited guest sits at someone else's table: a game already running
+    // goes on without them, their seat played by the server.
+    const seats = db
+      .prepare(`
+        SELECT room_id AS roomId
+        FROM room_players
+          JOIN users ON users.id = room_players.user_id
+        WHERE room_players.user_id = ? AND users.is_guest = 1
+      `)
+      .all(userId) as { roomId: number }[];
+
+    for (const { roomId } of seats) {
+      const game = wizardSessionManager.getGame(roomId);
+      const isActive =
+        game && activeHumans(game).some((player) => player.username === tokenUser.username);
+
+      if (isActive && tokenUser.username) {
+        leaveGame(roomId, tokenUser.username);
+      }
+    }
 
     if (!Number.isInteger(userId) || !deleteGuest(userId)) {
       return reply.status(404).send({ error: "No guest game to leave" });
@@ -713,6 +852,208 @@ export default async function wizardRoutes(
 
     return reply.status(204).send();
   });
+
+  // What an invite link leads to, for the page that asks the guest's name.
+  // Open to anyone holding the link: it shows no more than the room's name,
+  // its host and its seats.
+  server.get(
+    "/invites/:code",
+    { schema: { params: INVITE_CODE_PARAMS } },
+    async (request, reply) => {
+      const { code } = request.params as { code: string };
+      const roomId = wizardLobbyManager.getRoomIdByInviteCode(code);
+      const room = roomId === null ? null : wizardLobbyManager.getRoomById(roomId);
+
+      if (!room) {
+        return reply.status(404).send({
+          error: "This invitation is no longer valid",
+        });
+      }
+
+      return reply.send({
+        roomId: room.id,
+        roomName: room.name,
+        hostName: room.createdByUsername,
+        players: room.players.length,
+        maxPlayers: room.maxPlayers,
+        status: room.status,
+      });
+    },
+  );
+
+  // A guest taking a seat by invite link: a short-lived account under the
+  // name they chose, seated at once. The room's free seats are the limit.
+  server.post(
+    "/invites/:code/guest",
+    {
+      schema: {
+        params: INVITE_CODE_PARAMS,
+        body: {
+          type: "object",
+          required: ["name"],
+          additionalProperties: false,
+          properties: {
+            name: { type: "string", minLength: 1, maxLength: 40 },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const { code } = request.params as { code: string };
+      const name = (request.body as { name: string }).name.trim().replace(/\s+/g, " ");
+
+      if (!GUEST_NAME_PATTERN.test(name)) {
+        return reply.status(400).send({
+          error: "Names are 1-20 letters, digits or spaces",
+        });
+      }
+
+      if (containsProfanity(name)) {
+        return reply.status(400).send({
+          error: "Please choose a different name",
+        });
+      }
+
+      // " NPC" at the end of a name marks a bot.
+      if (isBotName(name)) {
+        return reply.status(400).send({
+          error: "Names ending in NPC are reserved for computer players",
+        });
+      }
+
+      const roomId = wizardLobbyManager.getRoomIdByInviteCode(code);
+      const room = roomId === null ? null : wizardLobbyManager.getRoomById(roomId);
+
+      if (!room) {
+        return reply.status(404).send({
+          error: "This invitation is no longer valid",
+        });
+      }
+
+      if (room.status !== "waiting") {
+        return reply.status(409).send({ error: "Game already started" });
+      }
+
+      if (room.players.length >= room.maxPlayers) {
+        return reply.status(409).send({ error: "Room is full" });
+      }
+
+      const username = `Guest-${randomUUID().slice(0, 8)}-${name}`;
+      const guestId = Number(
+        db
+          .prepare(`
+            INSERT INTO users (username, password_hash, display_name, email, is_guest)
+            VALUES (?, ?, ?, ?, 1)
+          `)
+          .run(
+            username,
+            randomUUID(),
+            name,
+            `${randomUUID()}@guest.invalid`,
+          ).lastInsertRowid,
+      );
+
+      // Another guest may have taken the last seat in the meantime.
+      const joined = wizardLobbyManager.joinRoom(room.id, username);
+
+      if (!joined.success) {
+        deleteGuest(guestId);
+        return reply.status(409).send(
+          joined.reason === "playing"
+            ? { error: "Game already started" }
+            : { error: "Room is full" },
+        );
+      }
+
+      const token = server.jwt.sign(
+        { sub: guestId, username, guest: true },
+        { expiresIn: `${INVITED_GUEST_TOKEN_HOURS}h` },
+      );
+
+      return reply.status(201).send({ token, roomId: room.id, username });
+    },
+  );
+
+  // A signed-up wizard following an invite link: they join as themselves.
+  server.post(
+    "/invites/:code/join",
+    { schema: { params: INVITE_CODE_PARAMS } },
+    async (request, reply) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+
+      const tokenUser = request.user as { username?: string; guest?: boolean };
+
+      if (!tokenUser.username || tokenUser.guest) {
+        return reply.status(401).send({ error: "User identity missing" });
+      }
+
+      const { code } = request.params as { code: string };
+      const roomId = wizardLobbyManager.getRoomIdByInviteCode(code);
+
+      if (roomId === null) {
+        return reply.status(404).send({
+          error: "This invitation is no longer valid",
+        });
+      }
+
+      const joined = wizardLobbyManager.joinRoom(roomId, tokenUser.username);
+
+      if (!joined.success) {
+        return reply.status(joined.reason === "not-found" ? 404 : 409).send(
+          joined.reason === "playing"
+            ? { error: "Game already started" }
+            : joined.reason === "full"
+              ? { error: "Room is full" }
+              : { error: "This invitation is no longer valid" },
+        );
+      }
+
+      return reply.send({ roomId });
+    },
+  );
+
+  // The host's new invite link, for when the old one reached the wrong
+  // people; the old one stops working.
+  server.post(
+    "/lobby/:roomId/invite",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: { type: "string", pattern: "^[1-9][0-9]*$" },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        await request.jwtVerify();
+      } catch {
+        return reply.status(401).send({ error: "Unauthorized" });
+      }
+
+      const roomId = Number((request.params as { roomId: string }).roomId);
+      const userId = Number((request.user as { sub?: string | number }).sub);
+      const room = wizardLobbyManager.getRoomById(roomId);
+
+      if (!room || room.inviteCode === null) {
+        return reply.status(404).send({ error: "Room not found" });
+      }
+
+      if (room.createdBy !== userId) {
+        return reply.status(403).send({ error: "Only the host can invite" });
+      }
+
+      return reply.send({ inviteCode: wizardLobbyManager.renewInviteCode(roomId) });
+    },
+  );
 
   server.post(
     "/games",
@@ -892,13 +1233,16 @@ export default async function wizardRoutes(
         `)
         .all(room.id) as { userId: number }[];
 
-      for (const { userId } of humanPlayerIds) {
-        playerStatsRepository.initializeForUser(userId);
-        playerStatsRepository.incrementGamesPlayed(userId);
-      }
+      // A guest room's games count for no one, so they are not even begun.
+      if (room.inviteCode === null) {
+        for (const { userId } of humanPlayerIds) {
+          playerStatsRepository.initializeForUser(userId);
+          playerStatsRepository.incrementGamesPlayed(userId);
+        }
 
-      playerStatsRepository.initializeForUser(room.createdBy);
-      playerStatsRepository.incrementGamesCreated(room.createdBy);
+        playerStatsRepository.initializeForUser(room.createdBy);
+        playerStatsRepository.incrementGamesCreated(room.createdBy);
+      }
 
       wizardLobbyManager.setRoomStatus(room.id, "playing");
 
@@ -1212,23 +1556,7 @@ export default async function wizardRoutes(
         return reply.status(403).send({ error: "You are not playing in this game" });
       }
 
-      quitPlayer(game, username);
-
-      if (activeHumans(game).length === 0) {
-        wizardGameCompletionService.expireGame(game);
-        wizardSessionManager.deleteGame(roomId);
-        wizardGameRunner.notifyAction(roomId);
-        return reply.send({ ended: true });
-      }
-
-      wizardSessionManager.saveGame(game);
-      broadcastGameState(roomId, wizardGameService);
-      wizardGameRunner.notifyAction(roomId);
-      wizardGameRunner.run(roomId).catch((error) => {
-        console.error(`[wizard] runner failed for room ${roomId}:`, error);
-      });
-
-      return reply.send({ ended: false });
+      return reply.send({ ended: leaveGame(roomId, username) });
     },
   );
 }

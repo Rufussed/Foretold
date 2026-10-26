@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
@@ -30,6 +31,12 @@ type JoinRoomResult =
   | { success: true; room: Room; alreadyMember: boolean }
   | { success: false; reason: "not-found" | "playing" | "full" | "user-not-found" };
 
+
+// Ten URL-safe characters: short enough to type from a screen, far too many to
+// guess (64^10).
+function newInviteCode(): string {
+  return randomBytes(8).toString("base64url").slice(0, 10);
+}
 
 class WizardLobbyManager {
   private parseOptions(json: string | null): WizardGameOptions {
@@ -92,6 +99,7 @@ class WizardLobbyManager {
     is_public: number;
     options_json: string | null;
     turn_timeout_ms: number | null;
+    invite_code: string | null;
   }): Room {
     return {
       id: row.id,
@@ -105,6 +113,7 @@ class WizardLobbyManager {
       isPublic: row.is_public === 1,
       options: this.parseOptions(row.options_json),
       turnTimeoutMs: row.turn_timeout_ms as TurnTimeoutMs,
+      inviteCode: row.invite_code,
     };
   }
 
@@ -122,7 +131,8 @@ class WizardLobbyManager {
             rooms.status,
             rooms.is_public,
             rooms.options_json,
-            rooms.turn_timeout_ms
+            rooms.turn_timeout_ms,
+            rooms.invite_code
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -141,6 +151,7 @@ class WizardLobbyManager {
         is_public: number;
         options_json: string | null;
         turn_timeout_ms: number | null;
+        invite_code: string | null;
       }[];
 
     return rows.map((row) => this.mapRoom(row));
@@ -160,7 +171,8 @@ class WizardLobbyManager {
             rooms.status,
             rooms.is_public,
             rooms.options_json,
-            rooms.turn_timeout_ms
+            rooms.turn_timeout_ms,
+            rooms.invite_code
           FROM rooms
           JOIN users
             ON users.id = rooms.created_by
@@ -178,6 +190,7 @@ class WizardLobbyManager {
         is_public: number;
         options_json: string | null;
         turn_timeout_ms: number | null;
+        invite_code: string | null;
       } | undefined;
 
     if (!row) {
@@ -194,6 +207,7 @@ class WizardLobbyManager {
     maxPlayers: number = 4,
     isPublic: boolean = true,
     turnTimeoutMs: TurnTimeoutMs = 30_000,
+    isGuestRoom: boolean = false,
   ): Room {
     if (!isTurnTimeoutMs(turnTimeoutMs)) {
       throw new Error("Invalid turn timeout");
@@ -209,16 +223,19 @@ class WizardLobbyManager {
           max_players,
           status,
           is_public,
-          turn_timeout_ms
+          turn_timeout_ms,
+          invite_code
         )
-        VALUES (?, ?, ?, 'waiting', ?, ?)
+        VALUES (?, ?, ?, 'waiting', ?, ?, ?)
       `)
       .run(
         name,
         createdBy,
         validMax,
-        isPublic ? 1 : 0,
+        // A guest room is never listed: only its invite link leads in.
+        isPublic && !isGuestRoom ? 1 : 0,
         turnTimeoutMs,
+        isGuestRoom ? newInviteCode() : null,
       );
 
     const roomId = Number(result.lastInsertRowid);
@@ -231,6 +248,29 @@ class WizardLobbyManager {
     ).run(roomId, createdBy, username);
 
     return this.getRoomById(roomId) as Room;
+  }
+
+  // The guest room an invite link leads to, or null for a code no room has
+  // (never had, or one whose room has gone or got a new link).
+  getRoomIdByInviteCode(code: string): number | null {
+    const row = db
+      .prepare("SELECT id FROM rooms WHERE invite_code = ?")
+      .get(code) as { id: number } | undefined;
+
+    return row?.id ?? null;
+  }
+
+  // A fresh link for a guest room; the old one stops working.
+  renewInviteCode(roomId: number): string {
+    const code = newInviteCode();
+
+    db.prepare(`
+      UPDATE rooms
+      SET invite_code = ?
+      WHERE id = ? AND invite_code IS NOT NULL
+    `).run(code, roomId);
+
+    return code;
   }
 
   joinRoom(roomId: number, username: string): JoinRoomResult {

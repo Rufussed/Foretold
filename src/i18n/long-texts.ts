@@ -668,6 +668,13 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           is for your friends only: only they see it in the Glade, and
           only they can join.
         </p>
+        <p>
+          A guest room is for bringing friends who have no account yet.
+          No one else sees it; in its Antechamber you get an invite link
+          to send them. They choose a name and sit down, no sign-up
+          needed. A guest room's games are just for fun and count for no
+          one's record, yours included.
+        </p>
       </section>
 
       <section class="home-rules-section">
@@ -737,6 +744,14 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           hier und kann beitreten. Ein privater Raum ist nur für deinen
           Freundeskreis: Nur deine Freunde sehen ihn auf der Lichtung,
           und nur sie können beitreten.
+        </p>
+        <p>
+          Ein Gästeraum ist für Freunde, die noch kein Konto haben.
+          Niemand sonst sieht ihn; in seiner Vorkammer bekommst du einen
+          Einladungslink, den du ihnen schickst. Sie wählen einen Namen
+          und setzen sich, ganz ohne Anmeldung. Partien im Gästeraum sind
+          nur zum Spaß und zählen für niemandes Bilanz, auch nicht für
+          deine.
         </p>
       </section>
 

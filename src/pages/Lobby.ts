@@ -139,6 +139,7 @@ export async function renderLobbyPage(
               >
               <option value="true" selected>${t("lobby.public")}</option>
               <option value="false">${t("lobby.private")}</option>
+              <option value="guest">${t("lobby.guestRoom")}</option>
             </select>
             </label>
             <fieldset class="room-form-field">
@@ -723,7 +724,10 @@ export async function renderLobbyPage(
           formData.get("maxPlayers"),
         );
 
-      const isPublic = formData.get("isPublic") !== "false";
+      const visibility = formData.get("isPublic");
+      const isPublic = visibility === "true";
+      // A guest room: hidden, its guests come by invite link.
+      const isGuestRoom = visibility === "guest";
 
       if (!name) {
         return;
@@ -754,12 +758,13 @@ export async function renderLobbyPage(
                 name,
                 maxPlayers,
                 isPublic,
+                isGuestRoom,
               }),
             },
           );
 
         const data =
-          (await response.json()) as ServerError;
+          (await response.json()) as ServerError & { id?: number };
 
         if (!response.ok) {
           throw new Error(
@@ -769,6 +774,12 @@ export async function renderLobbyPage(
 
         createRoomForm.reset();
         closeCreateRoomModal();
+
+        // Its invite link waits in the Antechamber, so the host goes there.
+        if (isGuestRoom && data.id) {
+          window.location.hash = `#/room/${data.id}`;
+          return;
+        }
 
         await loadRooms();
       } catch (error) {

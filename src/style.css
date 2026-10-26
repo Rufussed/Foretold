@@ -4860,6 +4860,184 @@ button {
   color: #e0a14d;
 }
 
+/* A guest room's invite link, for its host: the link, Copy and New link on
+   one line, a word on what the link does below. */
+.room-invite {
+  flex: 0 0 auto;
+  width: min(640px, 100%);
+  box-sizing: border-box;
+  margin: 10px auto 6px;
+  padding: 12px 16px;
+  border: 1px solid rgba(224, 161, 77, 0.45);
+  background: rgba(191, 125, 47, 0.08);
+  text-align: center;
+}
+
+.room-invite[hidden] {
+  display: none;
+}
+
+.room-invite-title {
+  margin: 0 0 8px;
+  color: #e0a14d;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.room-invite-row {
+  display: flex;
+  gap: 8px;
+}
+
+.room-invite-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: var(--ui-edge);
+  background: rgba(3, 4, 3, 0.55);
+  color: #f4ebd9;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.room-invite-button {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(206, 139, 53, 0.6);
+  background: linear-gradient(135deg, rgba(161, 94, 24, 0.3), rgba(81, 44, 13, 0.45));
+  color: #eac58a;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.room-invite-button.is-quiet {
+  border-color: rgba(191, 125, 47, 0.3);
+  background: transparent;
+  color: rgba(244, 235, 217, 0.65);
+}
+
+.room-invite-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.room-invite-note {
+  margin: 8px 0 0;
+  color: rgba(244, 235, 217, 0.55);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .room-invite-row {
+    flex-wrap: wrap;
+  }
+
+  .room-invite-link {
+    flex-basis: 100%;
+  }
+
+  .room-invite-button {
+    flex: 1 1 0;
+  }
+}
+
+/* The page an invite link opens: one card in the middle, no navbar, as the
+   guest has no account. */
+.join-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  box-sizing: border-box;
+  padding: 24px 16px;
+}
+
+.join-language {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 12px;
+  border: var(--ui-edge);
+  background: rgba(10, 10, 8, 0.45);
+  color: rgba(244, 235, 217, 0.7);
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.join-card {
+  width: min(460px, 100%);
+  box-sizing: border-box;
+  padding: 28px 28px 24px;
+  border: var(--ui-edge);
+  background:
+    linear-gradient(135deg, rgba(201, 127, 40, 0.035), transparent 36%),
+    var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: var(--ui-blur);
+  text-align: center;
+}
+
+.join-title {
+  margin: 0 0 8px;
+  color: #f4ebd9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.25rem, 4.5vw, 1.6rem);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.join-seats,
+.join-message {
+  margin: 0 0 22px;
+  color: rgba(244, 235, 217, 0.65);
+  font-size: 0.9rem;
+}
+
+.join-form {
+  text-align: left;
+}
+
+.join-form .room-form-field {
+  margin-bottom: 16px;
+}
+
+.join-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.join-note {
+  margin: 12px 0 0;
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.join-error {
+  margin: 14px 0 0;
+  color: #e08a6a;
+  font-size: 0.85rem;
+}
+
+.join-error[hidden] {
+  display: none;
+}
+
 /* Main glass table */
 
 .room-main-panel {
