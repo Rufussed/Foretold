@@ -810,9 +810,19 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           Full games are played to the last round, short games end
           sooner. For each you see how many you played, how many you won
           and your win rate. Highest score is your best single game, Total
-          points all your game scores added up. Your level grows with your
-          total points, from short and full games alike; full games, being
-          longer, get you there faster.
+          points all your game scores added up.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Wizard Skills</h3>
+        <p>
+          Your level climbs from Initiate to Adept, Magus and Wizard. You
+          reach the next one by finished full games or by total points,
+          whichever comes first: Adept at 10 full games or 2,000 points,
+          Magus at 30 or 6,000, Wizard at 75 or 15,000. Short games bring
+          points too. The bar after your level fills towards the next
+          level, and a level once reached is never lost.
         </p>
       </section>
 
@@ -823,9 +833,9 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           red, yellow or green. It is yours and cannot be changed. Every
           trick you win with a card of that colour brings 10 points to it;
           Wizards, Jesters and moves the bot made for you do not count, and
-          a game you quit brings none. The bar under your name shows how
-          far your colour has come. What it leads to will be revealed in
-          time.
+          a game you quit brings none. The bar under your name fills as
+          your colour gathers points, up to 1,000. What it leads to will
+          be revealed in time.
         </p>
       </section>
 
@@ -875,10 +885,20 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           Ganze Partien gehen bis zur letzten Runde, kurze enden früher.
           Für beide siehst du, wie viele du gespielt und gewonnen hast,
           und deine Siegquote. Höchste Punktzahl ist deine beste einzelne
-          Partie, Gesamtpunkte sind alle Partien zusammengezählt. Deine
-          Stufe steigt mit deinen Gesamtpunkten, aus kurzen wie aus ganzen
-          Partien; ganze Partien, weil länger, bringen dich schneller
-          voran.
+          Partie, Gesamtpunkte sind alle Partien zusammengezählt.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
+        <h3>Wizard-Können</h3>
+        <p>
+          Deine Stufe steigt vom Initiand zum Adept, Magus und Zauberer.
+          Die nächste erreichst du durch beendete ganze Partien oder durch
+          Gesamtpunkte, je nachdem, was zuerst kommt: Adept mit 10 ganzen
+          Partien oder 2.000 Punkten, Magus mit 30 oder 6.000, Zauberer mit
+          75 oder 15.000. Auch kurze Partien bringen Punkte. Der Balken hinter
+          deiner Stufe füllt sich bis zur nächsten Stufe, und eine
+          erreichte Stufe geht nie verloren.
         </p>
       </section>
 
@@ -890,9 +910,9 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           ändern. Jeder Stich, den du mit einer Karte dieser Farbe
           gewinnst, bringt ihr 10 Punkte; Zauberer, Narren und Züge, die
           der Bot für dich macht, zählen nicht, und eine aufgegebene
-          Partie bringt keine. Der Balken unter deinem Namen zeigt, wie
-          weit deine Farbe gekommen ist. Wohin sie führt, wird sich mit
-          der Zeit zeigen.
+          Partie bringt keine. Der Balken unter deinem Namen füllt sich,
+          während deine Farbe Punkte sammelt, bis 1.000. Wohin sie führt,
+          wird sich mit der Zeit zeigen.
         </p>
       </section>
 

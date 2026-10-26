@@ -2307,7 +2307,13 @@ button {
   white-space: nowrap;
 }
 
+/* The wizard name as its owner wrote it: names are case-sensitive, and
+   Cinzel has no lowercase, so it takes the text font, as in the navbar. */
 .home-account-actions > a.home-account-button {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: none;
   flex-shrink: 1;
   min-width: 0;
   max-width: 160px;
@@ -5216,27 +5222,21 @@ button {
   font-size: clamp(2rem, 4vw, 3.4rem);
   font-weight: 400;
   letter-spacing: 0.04em;
-  text-transform: uppercase;
 }
 
-.profile-subtitle {
-  margin: 0;
-  color: rgba(244, 235, 217, 0.55);
-  font-size: 0.82rem;
-  letter-spacing: 0.08em;
-}
-
-/* The strong colour under the name: its name, a bar filling towards
-   mastery, and the points. The suit colours are the cards' (visualizer
+/* The strong colour under the name: its name and a bar filling towards
+   mastery. The suit colours are the cards' (visualizer
    config.ts). */
 .profile-color {
   --strong: #e0a14d;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 8px;
+  flex-wrap: wrap;
+  margin-top: 10px;
   color: rgba(244, 235, 217, 0.7);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
+  white-space: nowrap;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
@@ -5252,8 +5252,8 @@ button {
 }
 
 .profile-color-bar {
-  width: 120px;
-  height: 6px;
+  width: 140px;
+  height: 7px;
   border: 1px solid color-mix(in srgb, var(--strong) 60%, transparent);
   background: rgba(8, 9, 7, 0.5);
 }
@@ -5263,11 +5263,6 @@ button {
   height: 100%;
   background: var(--strong);
   box-shadow: 0 0 8px var(--strong);
-}
-
-.profile-color-points {
-  color: rgba(244, 235, 217, 0.55);
-  font-variant-numeric: tabular-nums;
 }
 
 .profile-heading-note {
@@ -5417,14 +5412,63 @@ button {
   white-space: nowrap;
 }
 
-.profile-rank {
-  padding: 6px 10px;
+/* "Wizard skills:", the level box beside it and the bar towards the next
+   level at the right end, on one line. */
+.profile-skills-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.profile-card .profile-skills-heading h2 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* The bar towards the next level, at the end of the line, with its label
+   above it in the style of the cards' labels. */
+.profile-level-progress {
+  display: flex;
+  flex: 0 1 140px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.profile-level-label {
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-level-bar {
+  display: block;
+  height: 6px;
   border: 1px solid rgba(191, 125, 47, 0.42);
-  color: #e0a14d;
-  font-size: 0.68rem;
-  font-weight: 400;
+  background: rgba(8, 9, 7, 0.5);
+}
+
+.profile-level-bar span {
+  display: block;
+  height: 100%;
+  background: #e0a14d;
+  box-shadow: 0 0 8px rgba(224, 161, 77, 0.6);
+}
+
+.profile-rank {
+  padding: 7px 12px;
+  border: 1px solid rgba(224, 161, 77, 0.75);
+  background: rgba(191, 125, 47, 0.14);
+  box-shadow: 0 0 10px rgba(224, 161, 77, 0.18);
+  color: #f0b45e;
+  font-size: 0.78rem;
+  font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .profile-info-list {
@@ -5838,17 +5882,6 @@ button {
   margin-bottom: 0;
 }
 
-.profile-level {
-  padding: 6px 10px;
-  border: 1px solid rgba(191, 125, 47, 0.42);
-  background: rgba(191, 125, 47, 0.08);
-  color: #e0a14d;
-  font-size: 0.66rem;
-  font-weight: 400;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
 .profile-heading-actions {
   display: flex;
   align-items: center;
@@ -5885,29 +5918,58 @@ button {
 
 .profile-record-grid {
   display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* A heading over three numbers, each with its word below, centred as in
+   Full games and Short games. */
+.profile-record-group {
+  padding: 12px 10px;
+  border: 1px solid rgba(191, 125, 47, 0.12);
+  background: rgba(8, 9, 7, 0.28);
+  text-align: center;
+}
+
+.profile-record-group > span {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-record-row {
+  display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
 }
 
-.profile-record-item {
-  padding: 12px;
-  border: 1px solid rgba(191, 125, 47, 0.12);
-  background: rgba(8, 9, 7, 0.28);
-}
-
-.profile-record-item span {
+.profile-record-row strong {
   display: block;
-  margin-bottom: 5px;
-  color: rgba(244, 235, 217, 0.5);
-  font-size: 0.58rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  margin-bottom: 4px;
+  color: #e0a14d;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
 }
 
-.profile-record-item strong {
-  color: #e0a14d;
-  font-size: 1.05rem;
-  font-weight: 400;
+.profile-record-row small {
+  display: block;
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+/* Reliability stands out: other wizards look at it before sharing a table. */
+.profile-record-row .is-marked strong {
+  font-weight: 700;
+}
+
+.profile-record-row .is-marked small {
+  color: rgba(244, 235, 217, 0.85);
+  font-weight: 700;
 }
 
 .profile-social-summary {
@@ -6221,12 +6283,11 @@ button {
     margin-bottom: clamp(8px, 1.4vh, 14px);
   }
 
-  /* The six numbers in one row, so the record card stays low. */
-  .profile-record-grid {
-    grid-template-columns: repeat(6, minmax(0, 1fr));
+  .profile-skills-heading {
+    margin-bottom: clamp(16px, 2.2vh, 22px);
   }
 
-  .profile-record-item {
+  .profile-record-group {
     padding: 10px;
   }
 
@@ -6301,10 +6362,6 @@ button {
 @media (max-width: 850px) {
   .profile-detail-grid {
     grid-template-columns: 1fr;
-  }
-
-  .profile-record-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 

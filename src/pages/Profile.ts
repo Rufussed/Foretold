@@ -31,25 +31,50 @@ import { COLOR_MASTERY_POINTS } from "../../backend/src/game/wizard/strongColor"
 // can earn a level too: 200 points stand in for one full game.
 const POINTS_PER_FULL_GAME = 200;
 
+// From the lowest up: the full games each level needs.
 const PLAYER_LEVELS: { name: MessageKey; fullGames: number }[] = [
-  { name: "profile.level.expert", fullGames: 75 },
-  { name: "profile.level.advanced", fullGames: 30 },
-  { name: "profile.level.intermediate", fullGames: 10 },
+  { name: "profile.level.initiate", fullGames: 0 },
+  { name: "profile.level.adept", fullGames: 10 },
+  { name: "profile.level.magus", fullGames: 30 },
+  { name: "profile.level.wizard", fullGames: 75 },
 ];
+
+interface PlayerLevel {
+  name: string;
+  // 0–1 of the way from this level to the next, by whichever of full games
+  // or points is further along.
+  progress: number;
+}
 
 // Reached by full games or by the highest total points ever held, whichever
 // gets there first. Neither goes down, so neither does the level.
 function getPlayerLevel(
   fullGamesFinished: number,
   peakTotalPoints: number,
-): string {
-  const level = PLAYER_LEVELS.find(
-    ({ fullGames }) =>
-      fullGamesFinished >= fullGames ||
-      peakTotalPoints >= fullGames * POINTS_PER_FULL_GAME,
+): PlayerLevel {
+  const reached = (fullGames: number) =>
+    fullGamesFinished >= fullGames ||
+    peakTotalPoints >= fullGames * POINTS_PER_FULL_GAME;
+  const index = PLAYER_LEVELS.findLastIndex(({ fullGames }) =>
+    reached(fullGames),
   );
+  const level = PLAYER_LEVELS[index];
+  const next = PLAYER_LEVELS[index + 1];
 
-  return t(level?.name ?? "profile.level.novice");
+  if (!next) {
+    return { name: t(level.name), progress: 1 };
+  }
+
+  const span = next.fullGames - level.fullGames;
+  const byGames = (fullGamesFinished - level.fullGames) / span;
+  const byPoints =
+    (peakTotalPoints - level.fullGames * POINTS_PER_FULL_GAME) /
+    (span * POINTS_PER_FULL_GAME);
+
+  return {
+    name: t(level.name),
+    progress: Math.min(1, Math.max(0, byGames, byPoints)),
+  };
 }
 
 // How often the profile asks again for friends and friend requests.
@@ -323,7 +348,6 @@ export async function renderProfilePage(
       <div
         class="profile-color"
         data-color="${strongColor}"
-        title="${t("profile.colorHint", { color: t(`suit.${strongColor}`) })}"
       >
         <span class="profile-color-name">
           ${t("profile.strongColor")} · <strong>${t(`suit.${strongColor}`)}</strong>
@@ -331,7 +355,6 @@ export async function renderProfilePage(
         <span class="profile-color-bar" aria-hidden="true">
           <span style="width: ${Math.min(100, (colorPoints / COLOR_MASTERY_POINTS) * 100)}%"></span>
         </span>
-        <span class="profile-color-points">${colorPoints} / ${COLOR_MASTERY_POINTS}</span>
       </div>
     `
     : "";
@@ -340,6 +363,20 @@ export async function renderProfilePage(
     stats.fullGamesFinished,
     stats.peakTotalPoints,
   );
+
+  // The bar towards the next level; full and unlabelled at the top.
+  const levelProgressLine = `
+    <div class="profile-level-progress">
+      ${
+        playerLevel.progress < 1
+          ? `<span class="profile-level-label">${t("profile.levelNextLabel")}</span>`
+          : ""
+      }
+      <span class="profile-level-bar" aria-hidden="true">
+        <span style="width: ${playerLevel.progress * 100}%"></span>
+      </span>
+    </div>
+  `;
 
   const historyPrefs = loadHistoryPrefs();
   const socialPanels = loadSocialPanels();
@@ -375,11 +412,7 @@ export async function renderProfilePage(
             <p class="lobby-kicker">${t("profile.kicker")}</p>
             <div class="profile-title-row">
               <h1>${escapeHtml(user.displayName || user.username)}</h1>
-              <span class="profile-level">
-                ${t("profile.levelLine", { level: playerLevel })}
-              </span>
             </div>
-            <p class="profile-subtitle">@${escapeHtml(user.username)}</p>
             ${strongColorLine}
           </div>
           <div class="profile-heading-actions">
@@ -493,47 +526,52 @@ export async function renderProfilePage(
         <section class="profile-detail-grid${ownProfile ? "" : " profile-detail-grid-single"}">
           <div class="profile-main-column">
             <article class="profile-card">
-              <div class="profile-section-heading">
-                <div>
-                  <p class="profile-card-kicker">${t("profile.record")}</p>
-                  <h2>${t("profile.skills")}</h2>
-                </div>
-
-                <span class="profile-rank">${playerLevel}</span>
+              <p class="profile-card-kicker">${t("profile.record")}</p>
+              <div class="profile-skills-heading">
+                <h2>${t("profile.skills")}:</h2>
+                <span class="profile-rank">${playerLevel.name}</span>
+                ${levelProgressLine}
               </div>
 
+              <!-- Two groups, as Full games and Short games above: rounds lead
+                   to the prediction accuracy, games played and unfinished to
+                   the reliability. -->
               <div class="profile-record-grid">
 
-                <!-- Two rows: rounds lead to the prediction accuracy, games
-                     played and unfinished to the reliability. -->
-                <div class="profile-record-item">
+                <div class="profile-record-group">
                   <span>${t("profile.rounds")}</span>
-                  <strong>${roundsPlayed}</strong>
+                  <div class="profile-record-row">
+                    <div>
+                      <strong>${roundsPlayed}</strong>
+                      <small>${t("profile.played")}</small>
+                    </div>
+                    <div>
+                      <strong>${stats.exactPredictions}</strong>
+                      <small>${t("profile.exact")}</small>
+                    </div>
+                    <div>
+                      <strong>${exactPredictionRate.toFixed(1)}%</strong>
+                      <small>${t("profile.accuracy")}</small>
+                    </div>
+                  </div>
                 </div>
 
-                <div class="profile-record-item">
-                  <span>${t("profile.exact")}</span>
-                  <strong>${stats.exactPredictions}</strong>
-                </div>
-
-                <div class="profile-record-item">
-                  <span>${t("profile.accuracy")}</span>
-                  <strong>${exactPredictionRate.toFixed(1)}%</strong>
-                </div>
-
-                <div class="profile-record-item">
-                  <span>${t("profile.gamesPlayed")}</span>
-                  <strong>${stats.gamesPlayed}</strong>
-                </div>
-
-                <div class="profile-record-item">
-                  <span>${t("profile.gamesUnfinished")}</span>
-                  <strong>${gamesUnfinished}</strong>
-                </div>
-
-                <div class="profile-record-item">
-                  <span>${t("profile.reliability")}</span>
-                  <strong>${reliability.toFixed(1)}%</strong>
+                <div class="profile-record-group">
+                  <span>${t("profile.recordGames")}</span>
+                  <div class="profile-record-row">
+                    <div>
+                      <strong>${stats.gamesPlayed}</strong>
+                      <small>${t("profile.played")}</small>
+                    </div>
+                    <div>
+                      <strong>${gamesUnfinished}</strong>
+                      <small>${t("profile.unfinished")}</small>
+                    </div>
+                    <div class="is-marked">
+                      <strong>${reliability.toFixed(1)}%</strong>
+                      <small>${t("profile.reliability")}</small>
+                    </div>
+                  </div>
                 </div>
 
               </div>
