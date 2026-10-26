@@ -442,16 +442,26 @@ export async function renderLobbyPage(
                             : ""
                         }
                       `
-                      : `
-                        <button
-                          type="button"
-                          class="room-action-button"
-                          data-room-id="${room.id}"
-                          data-room-action="join"
-                        >
-                          ${t("lobby.join")}
-                        </button>
-                      `
+                      : room.players.length >= room.maxPlayers
+                        ? `
+                          <button
+                            type="button"
+                            class="room-action-button"
+                            disabled
+                          >
+                            ${t("lobby.full")}
+                          </button>
+                        `
+                        : `
+                          <button
+                            type="button"
+                            class="room-action-button"
+                            data-room-id="${room.id}"
+                            data-room-action="join"
+                          >
+                            ${t("lobby.join")}
+                          </button>
+                        `
                 }
 
                 <span class="room-delete-slot">

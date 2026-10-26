@@ -7,6 +7,7 @@ import type { Room } from "../../backend/src/game/wizard/models/wizardGame";
 import { renderNavbar } from "../components/Navbar";
 import { openStartSummary, type StartSummaryRow } from "../components/start-summary";
 import { describeRuleVariations } from "../utils/rule-variations";
+import { escapeHtml } from "../utils/escape-html";
 import {
   DEFAULT_GAME_OPTIONS,
   MISSED_TURNS_OPTIONS,
@@ -325,14 +326,24 @@ export async function renderRoomPage(
     const roomName =
       guestUsername !== null ? room.name.replace(guestUsername, t("common.stranger")) : room.name;
     // A guest plays against NPCs alone, so the head count means nothing to them.
+    const isFull = room.players.length >= room.maxPlayers;
     const present =
       guestUsername !== null
         ? ""
-        : t("room.present", {
+        : t(isFull ? "room.presentFull" : "room.present", {
             count: String(room.players.length),
             max: String(room.maxPlayers),
           });
-    introEl.textContent = `${t("room.intro", { room: roomName })}${present} ${t("room.chooseAvatar", { name: greeting })}`;
+    // Three lines, easier to take in on a small screen: the room's name in
+    // gold, who's here, and the invitation to pick a portrait.
+    introEl.innerHTML = [
+      t("room.intro", { room: `<span class="room-intro-name">${escapeHtml(roomName)}</span>` }),
+      present,
+      t("room.chooseAvatar", { name: escapeHtml(greeting) }),
+    ]
+      .filter(Boolean)
+      .map((line) => `<span class="room-intro-line">${line}</span>`)
+      .join("");
 
     const claims = new Map<AvatarId, string>();
 
@@ -405,6 +416,8 @@ export async function renderRoomPage(
       maxPlayers = room.maxPlayers;
       updateRoundOptions();
       startButton.disabled = options.length === 0;
+      // Every seat taken: Start game glows gold until someone leaves.
+      startButton.classList.toggle("is-ready", isFull);
     }
   };
 

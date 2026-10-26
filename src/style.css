@@ -3373,9 +3373,11 @@ button {
 /* A game the player is seated in has started without them (see
    services/started-game.ts): their name, in the navbar and on Home, and the
    Take your seat button on Profile take the look of Play Now on Home and glow
-   softly, asking to be pressed. */
+   softly, asking to be pressed. So does Start game once every seat in the
+   room is taken (pages/Room.ts). */
 .lobby-account .lobby-username-alert,
-.profile-heading-actions a.profile-take-seat {
+.profile-heading-actions a.profile-take-seat,
+.room-start-button.is-ready {
   border: 1px solid #bb7022;
   background: linear-gradient(180deg, #9a4c14, #663008);
   color: #f6e7cf;
@@ -3387,7 +3389,8 @@ button {
 }
 
 .lobby-account .lobby-username-alert:hover,
-.profile-heading-actions a.profile-take-seat:hover {
+.profile-heading-actions a.profile-take-seat:hover,
+.room-start-button.is-ready:hover:not(:disabled) {
   border-color: #bb7022;
   background: linear-gradient(180deg, #9a4c14, #663008);
   color: #fff;
@@ -3414,7 +3417,8 @@ button {
 @media (prefers-reduced-motion: reduce) {
   .lobby-account .lobby-username-alert,
   .home-account-actions > a.home-account-alert,
-  .profile-heading-actions a.profile-take-seat {
+  .profile-heading-actions a.profile-take-seat,
+  .room-start-button.is-ready {
     animation: none;
   }
 }
@@ -4832,6 +4836,22 @@ button {
   font-size: clamp(1rem, 1.6vw, 1.35rem);
   font-weight: 400;
   letter-spacing: 0.02em;
+}
+
+/* Welcome, who's here, choose a portrait: one line each, the later two a
+   little smaller and quieter. */
+.room-intro-line {
+  display: block;
+  line-height: 1.35;
+}
+
+.room-intro-line + .room-intro-line {
+  color: rgba(248, 240, 224, 0.74);
+  font-size: 0.82em;
+}
+
+.room-intro-name {
+  color: #e0a14d;
 }
 
 /* Main glass table */
