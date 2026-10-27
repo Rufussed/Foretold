@@ -109,15 +109,27 @@ export function renderNavbar(
           <img src="/wizardForetold.webp" alt="Wizard" />
         </a>
 
-        <button
-          type="button"
-          id="navbar-help-button"
-          class="lobby-help-button"
-          aria-label="${t("help.button")}"
-          data-tooltip="${t("help.button")}"
-        >
-          ?
-        </button>
+        <div class="lobby-help-group">
+          <button
+            type="button"
+            id="navbar-help-button"
+            class="lobby-help-button"
+            aria-label="${t("help.button")}"
+            data-tooltip="${t("help.button")}"
+          >
+            ?
+          </button>
+
+          <button
+            type="button"
+            id="navbar-back-button"
+            class="lobby-help-button lobby-back-button"
+            aria-label="${t("nav.back")}"
+            data-tooltip="${t("nav.back")}"
+          >
+            &lt;
+          </button>
+        </div>
       </div>
 
       <nav class="lobby-nav" aria-label="${t("nav.main")}">
@@ -170,6 +182,17 @@ export function renderNavbar(
   container
     .querySelector<HTMLButtonElement>("#navbar-help-button")
     ?.addEventListener("click", openHelp);
+
+  // Back to the page before; a page opened on its own goes to the Glade.
+  container
+    .querySelector<HTMLButtonElement>("#navbar-back-button")
+    ?.addEventListener("click", () => {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else {
+        window.location.hash = "#/lobby";
+      }
+    });
 
   // A game the player is seated in has started: the name turns gold like
   // Play Now on Home, and Profile has the button to the table.

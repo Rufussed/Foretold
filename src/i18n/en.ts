@@ -80,6 +80,7 @@ export const en = {
   "nav.tipLobby": "Lobby",
   "nav.tipProfile": "The Study: your profile",
   "nav.tipGameStarted": "Your game in {room} has started",
+  "nav.back": "Back",
   "help.button": "The Grimoire: what this page is for and how it works",
   "help.title.lobby": "The Glade",
   "help.title.profile": "The Study",

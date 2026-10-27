@@ -3517,6 +3517,21 @@ button {
   color: #ffbd62;
 }
 
+/* The "?" and the "<" side by side. */
+.lobby-help-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The "<" back button: the help button's frame, a bigger and bolder sign
+   at the same height. */
+.lobby-back-button {
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 0.8;
+}
+
 /* The hints under the navbar's logo, links and buttons, from their
    data-tooltip. They start at the left edge of what they belong to, and on
    the right side at its right edge, so they stay on the screen. */
@@ -4626,6 +4641,10 @@ button {
   .lobby-help-button {
     padding: 6px 11px;
     font-size: 0.8rem;
+  }
+
+  .lobby-back-button {
+    font-size: 1.2rem;
   }
 
   .lobby-content {

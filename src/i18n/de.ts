@@ -81,6 +81,7 @@ export const de: Record<MessageKey, string> = {
   "nav.tipLobby": "Lobby",
   "nav.tipProfile": "Die Studierstube: dein Profil",
   "nav.tipGameStarted": "Deine Partie in {room} hat begonnen",
+  "nav.back": "Zurück",
   "help.button": "Das Grimoire: wofür diese Seite da ist und wie sie funktioniert",
   "help.title.lobby": "Die Lichtung",
   "help.title.profile": "Die Studierstube",
