@@ -12,7 +12,7 @@ import { isJester, isWizard } from "../models/card.js";
 import { isBotName } from "../models/bot.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
-import { applyRolePowers } from "../modes/roles/rolePowers.js";
+import { applyRolePowers, applyTrickEndPowers } from "../modes/roles/rolePowers.js";
 
 import type {
   GamePlayer,
@@ -280,6 +280,7 @@ export class WizardGameService {
 
     const playedCard: PlayedCard = {
       username: currentPlayer.username,
+      playedBy: currentPlayer.username,
       card,
       ...(byServer ? { byServer: true as const } : {}),
     };
@@ -357,6 +358,10 @@ export class WizardGameService {
     }
 
     winner.tricksWon += 1;
+
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      applyTrickEndPowers(game, winner);
+    }
     this.recordColorTrick(game, winner);
     game.currentTrick.winnerUsername = winnerUsername;
     game.currentPlayerIndex = winnerIndex;

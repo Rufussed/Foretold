@@ -32,7 +32,9 @@ export class ScoreCalculator {
         prediction: player.prediction,
         tricksWon: player.tricksWon,
         score: roundScore,
+        ...(player.roleBonuses ? { roleBonuses: player.roleBonuses } : {}),
       });
+      delete player.roleBonuses;
 
       player.score += roundScore;
     }

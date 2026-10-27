@@ -1,0 +1,97 @@
+import { describe, it, expect } from "vitest";
+
+import type { Card } from "../../models/card.js";
+import { DEFAULT_GAME_OPTIONS } from "../../gameOptions.js";
+import { WizardGameService } from "../../services/wizardGameService.js";
+import type { RoleId } from "./roles.js";
+import { card } from "./roleTestHelpers.js";
+
+// One trick at a table of three, played in seat order with one card each.
+function playTrick(
+  mode: "classic" | "roles",
+  seats: { name: string; card: Card; role?: RoleId }[],
+) {
+  const service = new WizardGameService();
+  const game = service.createGame(1, seats.map((seat) => seat.name), new Map(), 1, 1, {
+    ...DEFAULT_GAME_OPTIONS,
+    mode,
+  });
+
+  game.players = seats.map((seat) => {
+    const player = game.players.find((p) => p.username === seat.name);
+    if (!player) throw new Error(`no seat for ${seat.name}`);
+    player.hand = [seat.card];
+    if (seat.role) player.role = seat.role;
+    return player;
+  });
+  game.trumpSuit = null;
+  game.phase = "playing";
+  game.currentPlayerIndex = 0;
+  game.currentTrick = { playedCards: [], winnerUsername: null };
+
+  for (const _seat of seats) {
+    service.playCard(game, 0);
+  }
+
+  const score = (name: string) => game.players.find((p) => p.username === name)?.score;
+
+  return { trick: game.currentTrick, score };
+}
+
+describe("the Thief in a game", () => {
+  const seats = [
+    { name: "ana", card: card(8) },
+    { name: "ben", card: card(13) },
+    { name: "thief", card: card(1), role: "thief" as const },
+  ];
+
+  it("wins the trick with the stolen 13 in a Roles game", () => {
+    const { trick } = playTrick("roles", seats);
+
+    expect(trick.winnerUsername).toBe("thief");
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "thief", on: "ben" });
+  });
+
+  it("is an ordinary 1 in a Classic game", () => {
+    const { trick } = playTrick("classic", seats);
+
+    expect(trick.winnerUsername).toBe("ben");
+    expect(trick.roleActions).toBeUndefined();
+  });
+});
+
+describe("the Servant in a game", () => {
+  it("receives the 13, wins the trick and gets 20 points at once", () => {
+    const { trick, score } = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "serv", card: card(2), role: "servant" },
+      { name: "ben", card: card(13) },
+    ]);
+
+    expect(trick.winnerUsername).toBe("serv");
+    expect(score("serv")).toBe(20);
+  });
+
+  it("gets no bonus for a trick someone else wins", () => {
+    const { trick, score } = playTrick("roles", [
+      { name: "ana", card: card(13) },
+      { name: "serv", card: card(2), role: "servant" },
+      { name: "ben", card: card(5) },
+    ]);
+
+    expect(trick.winnerUsername).toBe("ana");
+    expect(score("serv")).toBe(0);
+  });
+
+  it("meets the Thief and nothing happens", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "serv", card: card(2), role: "servant" },
+      { name: "thief", card: card(1), role: "thief" },
+    ]);
+
+    expect(trick.roleActions).toBeUndefined();
+    expect(trick.playedCards.map((played) => played.username)).toEqual(["ana", "serv", "thief"]);
+    expect(trick.winnerUsername).toBe("ana");
+  });
+});

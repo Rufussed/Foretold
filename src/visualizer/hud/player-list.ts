@@ -174,6 +174,9 @@ export function createPlayerList(
         row.element.classList.toggle("has-quit", player.quit);
         const caption = row.element.querySelector("figcaption");
         if (caption) {
+          // In a Roles game the line shows the player's role, as the name is
+          // already in the scores at the top; the name stays in the hint.
+          caption.textContent = player.role ? t(`role.${player.role}`) : shortName(player.username);
           caption.title = player.quit
             ? t("game.playerQuit", { name: displayName(player.username) })
             : displayName(player.username);

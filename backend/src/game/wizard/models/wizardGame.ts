@@ -49,6 +49,9 @@ export interface GamePlayer {
   // In a Roles game, the role played all game (modes/roles/). Missing in
   // Classic games and in games saved before roles existed.
   role?: RoleId;
+  // This round's points from roles' powers so far, by role; already added to
+  // score, and moved into the round's RoundScore when it ends.
+  roleBonuses?: Partial<Record<RoleId, number>>;
   // Set when the player left for good, by choice or after missing three turns
   // in a row: the server plays their seat from then on (playerQuit.ts).
   quit?: boolean;
@@ -68,6 +71,9 @@ export interface PlayedCard {
   // The server played it for a human: their time ran out, or they quit. It
   // brings them no colour points (strongColor.ts).
   byServer?: true;
+  // Who played it, kept when a role's power swaps its owner (modes/roles/).
+  // Missing in games saved before roles existed.
+  playedBy?: string;
 }
 
 export interface TrickState {
@@ -145,4 +151,7 @@ export interface RoundScore {
   prediction: number;
   tricksWon: number;
   score: number;
+  // In a Roles game, the points a role's power brought this round, by role,
+  // already in the total (modes/roles/). Not part of score above.
+  roleBonuses?: Partial<Record<RoleId, number>>;
 }

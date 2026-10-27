@@ -2,7 +2,8 @@ import { displayName } from "../../utils/display-name";
 import { gameWinners } from "./game-winner";
 import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
-import { t } from "../../i18n";
+import { t, type MessageKey } from "../../i18n";
+import type { RoleAction } from "../../../backend/src/game/wizard/modes/roles/roles";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
 // and no timing: announcer.ts decides when each line shows.
@@ -191,8 +192,17 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   return messages;
 }
 
+// What the banner says when a role's power is used: by you, on you, by and on
+// others.
+const ROLE_TEXTS: Partial<Record<RoleAction["role"], [MessageKey, MessageKey, MessageKey]>> & {
+  thief: [MessageKey, MessageKey, MessageKey];
+} = {
+  thief: ["ann.youSteal", "ann.stealsYours", "ann.steals"],
+  servant: ["ann.youServe", "ann.servesYours", "ann.serves"],
+};
+
 // The powers of a Roles game used since the last snapshot (modes/roles/):
-// for now the Thief's steal. Those already announced from the same trick are
+// the Thief's steal and the Servant's service. Those already announced from the same trick are
 // not said again; the trick is the same one while its first card is.
 function roleMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
   const before = previous.currentTrick;
@@ -208,12 +218,8 @@ function roleMessages(previous: PublicWizardGameState, next: PublicWizardGameSta
   return (now.roleActions ?? []).slice(said).map((action) => {
     const card = cardName(action.card);
     const values = { name: announcedName(action.by), victim: announcedName(action.on), card };
-    const text =
-      action.by === local
-        ? t("ann.youSteal", values)
-        : action.on === local
-          ? t("ann.stealsYours", values)
-          : t("ann.steals", values);
+    const [youUse, usedOnYou, used] = ROLE_TEXTS[action.role] ?? ROLE_TEXTS.thief;
+    const text = action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values);
     return { text, username: action.by };
   });
 }
@@ -235,7 +241,7 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
   );
 
   return ordered.map((player) => {
-    const { prediction, tricksWon, score } = last(player);
+    const { prediction, tricksWon, score: predictionScore, roleBonuses } = last(player);
     const off = Math.abs(prediction - tricksWon);
     const lines: RoundResultLine[] =
       prediction === tricksWon
@@ -244,6 +250,14 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
             { label: t("ann.tricks"), value: signed(tricksWon * 10) },
           ]
         : [{ label: t("ann.offBy", { off: String(off) }), value: "" }];
+    // A Roles game: what each role's power brought this round, e.g. the
+    // Servant's bonus, on its own line and in the round's points.
+    let score = predictionScore;
+    for (const [role, points] of Object.entries(roleBonuses ?? {})) {
+      if (!points) continue;
+      lines.push({ label: t(`role.${role as RoleAction["role"]}`), value: signed(points) });
+      score += points;
+    }
     const summary = t("ann.predictedWon", { prediction: String(prediction), won: String(tricksWon) });
     return {
       username: player.username,
