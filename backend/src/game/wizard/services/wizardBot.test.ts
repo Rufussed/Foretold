@@ -74,6 +74,7 @@ describe("WizardBotService", () => {
       wizardWins: "first",
       blindFirstRound: true,
       missedTurnsToQuit: 3,
+      lastPredictionLimited: true,
     });
     const [alice, merlin, morgana] = game.players;
     if (!alice || !merlin || !morgana) throw new Error("Test players are missing");

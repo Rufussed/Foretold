@@ -13,6 +13,7 @@ describe("WizardGameService", () => {
       wizardWins: "first",
       blindFirstRound: true,
       missedTurnsToQuit: 3,
+      lastPredictionLimited: true,
     });
 
     const blind = service.getPublicGameState(game, "alice");
@@ -36,7 +37,7 @@ describe("WizardGameService", () => {
     delete game.options;
 
     const state = service.getPublicGameState(game, "alice");
-    assert.deepEqual(state.options, { mode: "classic", wizardWins: "first", blindFirstRound: false, missedTurnsToQuit: null });
+    assert.deepEqual(state.options, { mode: "classic", wizardWins: "first", blindFirstRound: false, missedTurnsToQuit: null, lastPredictionLimited: true });
     assert.equal(state.blindRound, false);
   });
 

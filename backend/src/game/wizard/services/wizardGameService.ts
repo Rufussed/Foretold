@@ -441,7 +441,14 @@ export class WizardGameService {
     }
 
     // The last predictor can't make the predictions add up to the tricks.
-    if (prediction === forbiddenPrediction(game.players, game.currentRound)) {
+    if (
+      prediction ===
+      forbiddenPrediction(
+        game.players,
+        game.currentRound,
+        normalizeGameOptions(game.options).lastPredictionLimited,
+      )
+    ) {
       throw new Error(
         `The last prediction can't be ${prediction}: predictions can't add up to the ${game.currentRound} tricks this round`,
       );

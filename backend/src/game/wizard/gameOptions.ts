@@ -29,6 +29,10 @@ export interface WizardGameOptions {
   blindFirstRound: boolean;
   // Missed turns in a row that count as leaving the game; null for never.
   missedTurnsToQuit: MissedTurnsToQuit;
+  // The last player to predict in a round may not make everyone's predictions
+  // add up to the round's tricks, so at least one player must miss. false
+  // lets them choose anything (gameplayRules.ts).
+  lastPredictionLimited: boolean;
 }
 
 // What every new room starts with: the official rules (you see your own
@@ -38,6 +42,7 @@ export const DEFAULT_GAME_OPTIONS: WizardGameOptions = {
   wizardWins: "first",
   blindFirstRound: false,
   missedTurnsToQuit: 5,
+  lastPredictionLimited: true,
 };
 
 // How the game was played before the variations existed: the official rules.
@@ -48,6 +53,8 @@ export const LEGACY_GAME_OPTIONS: WizardGameOptions = {
   wizardWins: "first",
   blindFirstRound: false,
   missedTurnsToQuit: null,
+  // Before it was a choice, the last prediction was always limited.
+  lastPredictionLimited: true,
 };
 
 // The options to actually use, given whatever arrived from a client or an
@@ -67,6 +74,8 @@ export const normalizeGameOptions = (
     missedTurnsToQuit: isMissedTurnsToQuit(raw.missedTurnsToQuit)
       ? raw.missedTurnsToQuit
       : fallback.missedTurnsToQuit,
+    lastPredictionLimited:
+      typeof raw.lastPredictionLimited === "boolean" ? raw.lastPredictionLimited : fallback.lastPredictionLimited,
   };
 };
 

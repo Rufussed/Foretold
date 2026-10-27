@@ -37,6 +37,7 @@ interface CreateGameBody {
   wizardWins?: "first" | "last";
   blindFirstRound?: boolean;
   missedTurnsToQuit?: 3 | 5 | 7 | 9 | null;
+  lastPredictionLimited?: boolean;
   // How well the NPCs play (see botLevels.ts); left out, the Apprentice.
   botLevel?: string;
 }
@@ -698,6 +699,10 @@ export default async function wizardRoutes(
                 { type: "null" }
               ]
             },
+            // Whether the last prediction may not add up to the tricks.
+            lastPredictionLimited: {
+              type: "boolean"
+            },
             // The turn timeout (see turnTimeout.ts); null for no limit. Left
             // out, the room keeps the one it has.
             turnTimeoutMs: {
@@ -1180,6 +1185,10 @@ export default async function wizardRoutes(
                 { type: "null" }
               ]
             },
+            // Whether the last prediction may not add up to the tricks.
+            lastPredictionLimited: {
+              type: "boolean"
+            },
             botLevel: {
               type: "string",
               enum: BOT_LEVELS.map(({ level }) => level)
@@ -1299,6 +1308,7 @@ export default async function wizardRoutes(
             body.missedTurnsToQuit !== undefined
               ? body.missedTurnsToQuit
               : room.options.missedTurnsToQuit,
+          lastPredictionLimited: body.lastPredictionLimited ?? room.options.lastPredictionLimited,
         }),
         room.turnTimeoutMs,
       );

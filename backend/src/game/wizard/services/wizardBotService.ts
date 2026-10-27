@@ -2,6 +2,7 @@ import { isBotName } from "../models/bot.js";
 import type { Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.js";
+import { normalizeGameOptions } from "../gameOptions.js";
 import { strategyFor } from "../bots/index.js";
 import { currentPlayer } from "../bots/personality.js";
 import { WizardGameService } from "./wizardGameService.js";
@@ -30,7 +31,11 @@ export class WizardBotService {
 
     return avoidForbiddenPrediction(
       choice,
-      forbiddenPrediction(game.players, game.currentRound),
+      forbiddenPrediction(
+        game.players,
+        game.currentRound,
+        normalizeGameOptions(game.options).lastPredictionLimited,
+      ),
       game.currentRound,
     );
   }

@@ -170,6 +170,9 @@ export const de: Record<MessageKey, string> = {
   "room.wizardWins": "Zwei oder mehr Zauberer",
   "room.wizardWins.first": "Standard: Der erste Zauberer gewinnt",
   "room.wizardWins.last": "Der letzte Zauberer gewinnt",
+  "room.lastPrediction": "Letzte Ansage",
+  "room.lastPrediction.limited": "Standard: ≠ Rundenzahl",
+  "room.lastPrediction.free": "Frei",
   "room.missedTurns": "Bot übernimmt nach",
   "room.missedTurns.count": "{count} verpassten Zügen",
   "room.missedTurns.default": "Standard: {count} verpassten Zügen",
@@ -213,6 +216,7 @@ export const de: Record<MessageKey, string> = {
 
   "rules.blindFirstRound": "Blinde erste Runde",
   "rules.lastWizardWins": "Letzter Zauberer gewinnt",
+  "rules.lastPredictionFree": "Letzte Ansage frei",
   "rules.missedTurnsQuit": "Bot nach {count} verpassten Zügen",
   "rules.noMissedTurnsQuit": "Keine Bot-Übernahme",
   "rules.variations": "Regelvarianten: {list}",

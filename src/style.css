@@ -5454,8 +5454,8 @@ button {
 
 .room-variations-controls {
   display: grid;
-  /* All three on one row. */
-  grid-template-columns: repeat(3, minmax(0, max-content));
+  /* All four on one row. */
+  grid-template-columns: repeat(4, minmax(0, max-content));
   justify-content: center;
   gap: 12px;
   margin-top: 10px;

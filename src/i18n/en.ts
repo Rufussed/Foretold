@@ -169,6 +169,9 @@ export const en = {
   "room.wizardWins": "Two or more Wizards",
   "room.wizardWins.first": "Default: First Wizard wins",
   "room.wizardWins.last": "Last Wizard wins",
+  "room.lastPrediction": "Last prediction",
+  "room.lastPrediction.limited": "Default: ≠ Round Nr.",
+  "room.lastPrediction.free": "Free",
   "room.missedTurns": "Bot takes over after",
   "room.missedTurns.count": "{count} missed turns",
   "room.missedTurns.default": "Default: {count} missed turns",
@@ -212,6 +215,7 @@ export const en = {
 
   "rules.blindFirstRound": "Blind first round",
   "rules.lastWizardWins": "Last Wizard wins",
+  "rules.lastPredictionFree": "Last prediction free",
   "rules.missedTurnsQuit": "Bot after {count} missed turns",
   "rules.noMissedTurnsQuit": "No bot takeover",
   "rules.variations": "Rule variations: {list}",

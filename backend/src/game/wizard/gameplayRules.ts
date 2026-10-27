@@ -5,13 +5,15 @@ interface PredictingPlayer {
 }
 
 // The prediction the player now choosing may not make, or null if any is
-// allowed. Applies only to the round's last predictor, and only when the
+// allowed. Applies only with the room's rule on (lastPredictionLimited in
+// gameOptions.ts), only to the round's last predictor, and only when the
 // forbidden number is one they could otherwise choose (0 to tricksThisRound).
 export function forbiddenPrediction(
   players: readonly PredictingPlayer[],
   tricksThisRound: number,
+  limited: boolean,
 ): number | null {
-  if (!GAMEPLAY_RULES.lastPredictionCannotMatchTricks) return null;
+  if (!limited) return null;
   const waiting = players.filter((player) => player.prediction === null).length;
   if (waiting !== 1) return null;
   const predicted = players.reduce((total, player) => total + (player.prediction ?? 0), 0);

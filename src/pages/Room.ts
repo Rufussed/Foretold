@@ -230,6 +230,14 @@ export async function renderRoomPage(
                   </label>
 
                   <label>
+                    <span>${t("room.lastPrediction")}</span>
+                    <select id="room-last-prediction">
+                      <option value="true" selected>${t("room.lastPrediction.limited")}</option>
+                      <option value="false">${t("room.lastPrediction.free")}</option>
+                    </select>
+                  </label>
+
+                  <label>
                     <span>${t("room.missedTurns")}</span>
                     <select id="room-missed-turns">
                       ${MISSED_TURNS_OPTIONS.map(
@@ -378,6 +386,8 @@ export async function renderRoomPage(
   // The rule variations, for everyone in the game. See gameOptions.ts.
   const wizardWinsEl = element<HTMLSelectElement>("#room-wizard-wins");
   const blindFirstRoundEl = element<HTMLSelectElement>("#room-blind-first-round");
+  // Whether the last prediction may make them all add up to the tricks.
+  const lastPredictionEl = element<HTMLSelectElement>("#room-last-prediction");
   // Missed turns in a row before a player counts as gone and a bot takes the
   // seat; "off" for never. See gameOptions.ts and the backend's playerQuit.ts.
   const missedTurnsEl = element<HTMLSelectElement>("#room-missed-turns");
@@ -389,6 +399,7 @@ export async function renderRoomPage(
   const chosenOptions = () => ({
     wizardWins: wizardWinsEl.value,
     blindFirstRound: blindFirstRoundEl.value === "true",
+    lastPredictionLimited: lastPredictionEl.value === "true",
     missedTurnsToQuit: missedTurnsEl.value === "off" ? null : Number(missedTurnsEl.value),
     turnTimeoutMs: turnTimeoutEl.value === "none" ? null : Number(turnTimeoutEl.value),
   });
@@ -553,6 +564,7 @@ export async function renderRoomPage(
       optionsLoaded = true;
       wizardWinsEl.value = options.wizardWins;
       blindFirstRoundEl.value = String(options.blindFirstRound);
+      lastPredictionEl.value = String(options.lastPredictionLimited);
       missedTurnsEl.value = String(options.missedTurnsToQuit ?? "off");
       turnTimeoutEl.value = room.turnTimeoutMs === null ? "none" : String(room.turnTimeoutMs);
     }
@@ -741,6 +753,7 @@ export async function renderRoomPage(
   };
   wizardWinsEl.addEventListener("change", saveOptions);
   blindFirstRoundEl.addEventListener("change", saveOptions);
+  lastPredictionEl.addEventListener("change", saveOptions);
   missedTurnsEl.addEventListener("change", saveOptions);
   turnTimeoutEl.addEventListener("change", saveOptions);
 
@@ -776,6 +789,7 @@ export async function renderRoomPage(
       { label: t("room.missedTurns"), ...chosen(missedTurnsEl) },
       { label: t("room.firstRound"), ...chosen(blindFirstRoundEl) },
       { label: t("room.wizardWins"), ...chosen(wizardWinsEl) },
+      { label: t("room.lastPrediction"), ...chosen(lastPredictionEl) },
     );
     return rows;
   };
