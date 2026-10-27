@@ -190,7 +190,10 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     }
   }
 
-  messages.push(...roleMessages(previous, next, local));
+  // A Farmer's seeds and harvests come once the trick is won, so they are
+  // said after who won it.
+  const roleEvents = roleMessages(previous, next, local);
+  messages.push(...roleEvents.filter((message) => !message.atTrickEnd));
 
   const winner = next.currentTrick.winnerUsername;
   if (winner && previous.currentTrick.winnerUsername !== winner) {
@@ -210,23 +213,36 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     });
   }
 
+  messages.push(...roleEvents.filter((message) => message.atTrickEnd));
+
   return messages;
 }
 
 // What the banner says when a role's power is used: by you, on you, by and on
 // others.
-const ROLE_TEXTS: Partial<Record<RoleAction["role"], [MessageKey, MessageKey, MessageKey]>> & {
-  thief: [MessageKey, MessageKey, MessageKey];
-} = {
+// A Farmer's action is a seed planted, or a harvest when it has points (a
+// harvest of nothing when those are 0).
+const ROLE_TEXTS: Record<RoleAction["role"] | "harvest" | "barren", [MessageKey, MessageKey, MessageKey]> = {
   thief: ["ann.youSteal", "ann.stealsYours", "ann.steals"],
   servant: ["ann.youServe", "ann.servesYours", "ann.serves"],
   fisher: ["ann.youFish", "ann.fishesYours", "ann.fishes"],
+  farmer: ["ann.youPlant", "ann.plantsYours", "ann.plants"],
+  harvest: ["ann.youHarvest", "ann.harvestsYours", "ann.harvests"],
+  barren: ["ann.youHarvestNothing", "ann.harvestsNothingYours", "ann.harvestsNothing"],
 };
 
+const textsFor = (action: RoleAction) =>
+  ROLE_TEXTS[action.points === undefined ? action.role : action.points ? "harvest" : "barren"];
+
 // The powers of a Roles game used since the last snapshot (modes/roles/):
-// the Thief's steal, the Servant's service and the Fisher's catch. Those already announced from the same trick are
+// the Thief's steal, the Servant's service, the Fisher's catch, and a
+// Farmer's seeds and harvests. Those already announced from the same trick are
 // not said again; the trick is the same one while its first card is.
-function roleMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
+function roleMessages(
+  previous: PublicWizardGameState,
+  next: PublicWizardGameState,
+  local: string,
+): (EventMessage & { atTrickEnd: boolean })[] {
   const before = previous.currentTrick;
   const now = next.currentTrick;
   const first = (trick: typeof now) => trick.playedCards[0]?.card;
@@ -239,10 +255,10 @@ function roleMessages(previous: PublicWizardGameState, next: PublicWizardGameSta
 
   return (now.roleActions ?? []).slice(said).map((action) => {
     const card = cardName(action.card);
-    const values = { name: announcedName(action.by), victim: announcedName(action.on), card };
-    const [youUse, usedOnYou, used] = ROLE_TEXTS[action.role] ?? ROLE_TEXTS.thief;
+    const values = { name: announcedName(action.by), victim: announcedName(action.on), card, points: String(action.points ?? 0) };
+    const [youUse, usedOnYou, used] = textsFor(action);
     const text = action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values);
-    return { text, username: action.by };
+    return { text, username: action.by, atTrickEnd: action.role === "farmer" };
   });
 }
 
@@ -277,7 +293,9 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
     let score = predictionScore;
     for (const [role, points] of Object.entries(roleBonuses ?? {})) {
       if (!points) continue;
-      lines.push({ label: t(`role.${role as RoleAction["role"]}`), value: signed(points) });
+      // A Farmer's harvest taken from a seed-holder is a loss of its own.
+      const label = role === "farmer" && points < 0 ? t("ann.harvested") : t(`role.${role as RoleAction["role"]}`);
+      lines.push({ label, value: signed(points) });
       score += points;
     }
     const summary = t("ann.predictedWon", { prediction: String(prediction), won: String(tricksWon) });

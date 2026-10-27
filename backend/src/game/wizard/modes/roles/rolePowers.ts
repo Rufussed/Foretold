@@ -1,10 +1,12 @@
 import { normalizeGameOptions } from "../../gameOptions.js";
 import type { GamePlayer, PlayedCard, WizardGameState } from "../../models/wizardGame.js";
 import { WizardRules } from "../../services/wizardRules.js";
+import { harvest, plant, plantedBy } from "./farmer.js";
 import { botCatch, fish, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
 import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
 import { findService, servantBonus } from "./servant.js";
 import { findSteal } from "./thief.js";
+import type { RoleAction, RoleId } from "./roles.js";
 
 const rules = new WizardRules();
 
@@ -28,17 +30,56 @@ export function applyRolePowers(game: WizardGameState): void {
   }
 }
 
-// When a trick is won in a Roles game: what the powers used in it bring the
-// winner, straight onto their score.
-export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
-  const bonus = servantBonus(game.currentTrick.roleActions, winner.username);
+// Points a role's power moves, straight onto the score and into this round's
+// roleBonuses for the results.
+function addBonus(player: GamePlayer, role: RoleId, points: number): void {
+  if (!points) {
+    return;
+  }
 
-  if (bonus) {
-    winner.score += bonus;
-    winner.roleBonuses = {
-      ...winner.roleBonuses,
-      servant: (winner.roleBonuses?.servant ?? 0) + bonus,
-    };
+  player.score += points;
+  player.roleBonuses = {
+    ...player.roleBonuses,
+    [role]: (player.roleBonuses?.[role] ?? 0) + points,
+  };
+}
+
+// The Farmers at the end of a trick: the winner harvests their own seeds
+// first, then takes a seed from each other Farmer's 4 in the trick.
+function applyFarming(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+  const won = trick.playedCards.find((played) => played.username === winner.username)?.card;
+
+  for (const { holder, points } of harvest(game.players, winner.username)) {
+    addBonus(winner, "farmer", points);
+    addBonus(holder, "farmer", -points);
+    // A harvest of nothing is still told: the seeds are gone.
+    if (won) {
+      actions.push({ role: "farmer", by: winner.username, on: holder.username, card: won, points });
+    }
+  }
+
+  for (const { farmer, card } of plantedBy(trick.playedCards, rolesOf(game))) {
+    if (plant(winner, farmer)) {
+      actions.push({ role: "farmer", by: farmer, on: winner.username, card });
+    }
+  }
+
+  return actions;
+}
+
+// When a trick is won in a Roles game: what the powers used in it bring, or
+// cost, straight onto the scores.
+export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
+  const trick = game.currentTrick;
+
+  addBonus(winner, "servant", servantBonus(trick.roleActions, winner.username));
+
+  const farming = applyFarming(game, winner);
+
+  if (farming.length) {
+    trick.roleActions = [...(trick.roleActions ?? []), ...farming];
   }
 }
 

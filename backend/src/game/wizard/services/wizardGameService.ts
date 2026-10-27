@@ -532,6 +532,7 @@ export class WizardGameService {
           roundScores: player.roundScores,
           quit: player.quit === true,
           role: player.role ?? null,
+          seeds: player.seeds ?? {},
         };
       }),
       currentRound: game.currentRound,

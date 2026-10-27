@@ -1,4 +1,5 @@
 import { displayName } from "../../utils/display-name";
+import { seedCount } from "../../../backend/src/game/wizard/modes/roles/farmer";
 import type { CharacterId } from "../character-assets";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer } from "../seat-mapping";
@@ -176,10 +177,15 @@ export function createPlayerList(
         if (caption) {
           // In a Roles game the line shows the player's role, as the name is
           // already in the scores at the top; the name stays in the hint.
-          caption.textContent = player.role ? t(`role.${player.role}`) : shortName(player.username);
+          // A Farmer's seeds they carry follow it, e.g. "Thief 🌱2".
+          const seeds = seedCount(player.seeds);
+          const marks = seeds ? ` \u{1F331}${seeds}` : "";
+          caption.textContent = player.role ? `${t(`role.${player.role}`)}${marks}` : shortName(player.username);
           caption.title = player.quit
             ? t("game.playerQuit", { name: displayName(player.username) })
-            : displayName(player.username);
+            : seeds
+              ? `${displayName(player.username)} \u00b7 ${t("game.seeds", { count: String(seeds) })}`
+              : displayName(player.username);
         }
         const played = holding ? player.roundScores.at(-1) : undefined;
         const prediction = played ? played.prediction : player.prediction;

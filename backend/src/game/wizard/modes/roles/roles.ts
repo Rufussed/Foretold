@@ -28,6 +28,10 @@ export interface RoleAction {
   // Who used the power, and on whom.
   by: string;
   on: string;
-  // The card it was about: for the Thief, the card stolen.
+  // The card it was about: for the Thief, the card stolen; for a Farmer's
+  // seed, their 4; for a harvest, the card the Farmer won the trick with.
   card: Card;
+  // A Farmer's harvest: the points taken from the seed-holder (on), 0 when
+  // they had none to give. Missing for a seed planted.
+  points?: number;
 }
