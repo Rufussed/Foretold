@@ -9,25 +9,27 @@ describe("fishingSpots", () => {
   it("offers every card played after a 3 in the lead suit", () => {
     const trick = [play("ana", 5), play("fisher", 3), play("ben", 12), play("cara", 7)];
 
-    expect(fishingSpots(trick, 1, null, roleOf)).toEqual([2, 3]);
+    expect(fishingSpots(trick, 1)).toEqual([2, 3]);
   });
 
   it("leaves Wizards and Jesters alone", () => {
     const trick = [play("fisher", 3), play("ben", 14), play("cara", 0), play("dan", 9)];
 
-    expect(fishingSpots(trick, 0, null, roleOf)).toEqual([3]);
+    expect(fishingSpots(trick, 0)).toEqual([3]);
   });
 
-  it("cannot fish a Thief's 1 or a Servant's 2", () => {
-    const trick = [play("fisher", 3), play("thief", 1), play("serv", 2), play("dan", 9)];
+  it("can fish a Thief's 1 or a Servant's 2: by now they are just cards", () => {
+    const trick = [play("fisher", 3), play("thief", 1), play("serv", 2)];
 
-    expect(fishingSpots(trick, 0, null, roleOf)).toEqual([3]);
+    expect(fishingSpots(trick, 0)).toEqual([1, 2]);
   });
 
-  it("can fish a plain 1 or 2", () => {
-    const trick = [play("fisher", 3), play("ana", 1), play("ben", 2)];
+  it("still fishes after a Thief stole the 3, but not the 1 it now holds", () => {
+    const trick = [play("ana", 5), play("fisher", 3), play("thief", 1), play("ben", 12)];
+    [trick[1]!.username, trick[2]!.username] = ["thief", "fisher"];
 
-    expect(fishingSpots(trick, 0, null, roleOf)).toEqual([1, 2]);
+    expect(fishingSpots(trick, 1)).toEqual([3]);
+    expect(nextFisher(trick, [], null, roleOf)).toBe(1);
   });
 });
 

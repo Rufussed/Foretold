@@ -1,6 +1,6 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { fishingSpots } from "../../backend/src/game/wizard/modes/roles/fisher";
-import { playerOf, type RoleOf } from "../../backend/src/game/wizard/modes/roles/rolePlay";
+import { playerOf } from "../../backend/src/game/wizard/modes/roles/rolePlay";
 import { trumpColor } from "./card-textures";
 import { canAct, isLocalTurn, type GameConnection } from "./game-connection";
 import { t } from "../i18n";
@@ -22,10 +22,8 @@ export interface FishPromptOptions {
 // The cards the local Fisher may fish, by place in the trick.
 function spotsFor(state: PublicWizardGameState, local: string): number[] {
   const playedCards = state.currentTrick.playedCards;
-  const roleOf: RoleOf = (username) =>
-    state.players.find((player) => player.username === username)?.role ?? undefined;
   const three = playedCards.findIndex((played) => playerOf(played) === local);
-  return fishingSpots(playedCards, three, state.trumpSuit, roleOf);
+  return fishingSpots(playedCards, three);
 }
 
 // "Fish a card": in a Roles game, once a trick is complete, a Fisher whose 3

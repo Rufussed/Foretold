@@ -6,36 +6,22 @@ import type { RoleAction } from "./roles.js";
 // How long a Fisher has to choose before a card is picked for them at random.
 export const FISHING_TIMEOUT_MS = 15_000;
 
-// A Thief's 1 or a Servant's 2 with its power on: a Fisher cannot fish it.
-const guarded = (playedCards: PlayedCard[], index: number, trumpSuit: Suit | null, roleOf: RoleOf): boolean =>
-  powerOn(playedCards, index, "thief", trumpSuit, roleOf)
-  || powerOn(playedCards, index, "servant", trumpSuit, roleOf);
-
 // The places in a complete trick the Fisher's 3 at `three` may fish from: any
-// card played after it, whoever holds it now, but no Wizard or Jester, no
-// Thief's 1 or Servant's 2 with its power on, and not the Fisher's own.
-export function fishingSpots(
-  playedCards: PlayedCard[],
-  three: number,
-  trumpSuit: Suit | null,
-  roleOf: RoleOf,
-): number[] {
+// card played after it, whoever holds it now, but no Wizard or Jester and not
+// the Fisher's own. By then a Thief's 1 or a Servant's 2 is just a card.
+export function fishingSpots(playedCards: PlayedCard[], three: number): number[] {
   const fisher = playedCards[three] ? playerOf(playedCards[three]) : undefined;
 
   return playedCards.flatMap((played, index) =>
-    index > three
-    && played.username !== fisher
-    && canBeTaken(played)
-    && !guarded(playedCards, index, trumpSuit, roleOf)
-      ? [index]
-      : []);
+    index > three && played.username !== fisher && canBeTaken(played) ? [index] : []);
 }
 
 // The Fisher's power, a must: once the trick is complete, a Fisher whose 3
 // was played in the lead suit or as a trump picks one card played after it,
-// and swaps it for the card they hold. Returns the place of the next 3 to
-// fish with, in play order: one that has not fished yet and has something
-// to fish. Null when no Fisher is left to choose.
+// and swaps it for the card they hold. Powers never move with cards: a Thief
+// may steal the 3, or a Servant receive it, and the Fisher still fishes.
+// Returns the place of the next 3 to fish with, in play order: one that has
+// not fished yet and has something to fish. Null when no Fisher is left.
 export function nextFisher(
   playedCards: PlayedCard[],
   actions: RoleAction[] | undefined,
@@ -46,7 +32,7 @@ export function nextFisher(
   const three = playedCards.findIndex((played, index) =>
     powerOn(playedCards, index, "fisher", trumpSuit, roleOf)
     && !fished.has(playerOf(played))
-    && fishingSpots(playedCards, index, trumpSuit, roleOf).length > 0);
+    && fishingSpots(playedCards, index).length > 0);
 
   return three === -1 ? null : three;
 }

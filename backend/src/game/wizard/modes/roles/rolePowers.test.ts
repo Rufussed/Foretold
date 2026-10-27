@@ -135,15 +135,21 @@ describe("the Fisher in a game", () => {
     expect(game.currentTrick.winnerUsername).toBe("ben");
   });
 
-  it("is protected from the Thief", () => {
-    const { game } = playTrick("roles", [
+  it("keeps the power when a Thief steals the 3, and fishes with the 1", () => {
+    const { game, service } = playTrick("roles", [
       { name: "ana", card: card(8) },
       { name: "fisher", card: card(3), role: "fisher" },
       { name: "thief", card: card(1), role: "thief" },
+      { name: "ben", card: card(13) },
     ]);
 
-    // Nothing to fish (the Thief's 1 is guarded) and nothing stolen.
-    expect(game.currentTrick.roleActions).toBeUndefined();
-    expect(game.currentTrick.winnerUsername).toBe("ana");
+    expect(game.currentTrick.roleActions?.[0]).toMatchObject({ role: "thief", on: "fisher" });
+    expect(game.players[game.currentPlayerIndex]?.username).toBe("fisher");
+
+    service.fishCard(game, "fisher", 3);
+
+    expect(game.currentTrick.winnerUsername).toBe("fisher");
+    expect(game.currentTrick.playedCards[3]?.username).toBe("fisher");
+    expect(game.currentTrick.playedCards[2]?.username).toBe("ben");
   });
 });

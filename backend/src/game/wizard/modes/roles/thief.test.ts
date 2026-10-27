@@ -50,10 +50,10 @@ describe("findSteal", () => {
     expect(findSteal(trick, null, roleOf)).toBeNull();
   });
 
-  it("cannot steal a Fisher's 3", () => {
+  it("steals a Fisher's 3 like any card", () => {
     const trick = [play("ana", 9), play("fisher", 3), play("thief", 1)];
 
-    expect(findSteal(trick, null, roleOf)).toBeNull();
+    expect(findSteal(trick, null, roleOf)?.card).toEqual(card(3));
   });
 
   it("is a plain 1 for anyone who is not the Thief", () => {

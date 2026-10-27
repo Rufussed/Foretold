@@ -65,7 +65,7 @@ export function spotsToFish(game: WizardGameState): number[] {
   const playedCards = game.currentTrick.playedCards;
   const three = playedCards.findIndex((played) => playerOf(played) === fisher);
 
-  return fishingSpots(playedCards, three, game.trumpSuit, rolesOf(game));
+  return fishingSpots(playedCards, three);
 }
 
 // The Fisher whose move it is takes the card at this place in the trick.

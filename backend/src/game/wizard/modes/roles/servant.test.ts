@@ -49,8 +49,8 @@ describe("findService", () => {
     expect(findService([play("serv", 2), play("serv2", 2)], null, roleOf)).toBeNull();
   });
 
-  it("cannot receive a Fisher's 3", () => {
-    expect(findService([play("serv", 2), play("fisher", 3)], null, roleOf)).toBeNull();
+  it("receives a Fisher's 3 like any card", () => {
+    expect(findService([play("serv", 2), play("fisher", 3)], null, roleOf)?.card).toEqual(card(3));
   });
 
   it("lets the second of two Servants serve on the next card", () => {
