@@ -2199,7 +2199,7 @@ button {
    Top bar
    --------------------------------------------------------- */
 .home-logo {
-  width: 114px;
+  width: 150px;
   height: auto;
   display: block;
 }
@@ -3286,7 +3286,7 @@ button {
   display: block;
 
   width: auto;
-  height: 72px;
+  height: 88px;
 }
 
 .lobby-nav {
@@ -4730,7 +4730,7 @@ button {
   }
 
   .lobby-brand img {
-    height: 60px;
+    height: 70px;
   }
 
   .lobby-nav {

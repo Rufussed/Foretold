@@ -134,6 +134,8 @@ export async function renderLobbyPage(
               />
             </label>
 
+            <!-- The choice of game, set aside for now: the host picks it in the
+                 Antechamber, and a new room is Classic. Kept for later.
             <fieldset class="room-form-field">
               <legend>${t("lobby.mode")}</legend>
 
@@ -154,6 +156,7 @@ export async function renderLobbyPage(
                 ).join("")}
               </div>
             </fieldset>
+            -->
 
             <label class="room-form-field" for="roomVisibility">
               <span>${t("lobby.visibility")}</span>

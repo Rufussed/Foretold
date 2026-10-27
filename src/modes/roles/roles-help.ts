@@ -12,7 +12,6 @@ export function openRolesHelp(): void {
       <div class="home-rules-content roles-help">
         <section class="home-rules-section">
           <p>${t("roles.help.intro")}</p>
-          <p>${t("roles.help.swap")}</p>
         </section>
         ${ROLES.map(
           ({ id, card }) => `

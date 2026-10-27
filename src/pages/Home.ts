@@ -82,8 +82,8 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           <a class="home-brand" href="#/home">
             <img
               class="home-logo"
-              src="/wizardForetold.webp"
-              alt="Wizard"
+              src="/logo-foretold.webp"
+              alt="Foretold"
             />
           </a>
 
@@ -189,7 +189,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         </section>
 
         <footer class="home-footer">
-          <p>Wizard Platform</p>
+          <p>Foretold</p>
           <button type="button" data-panel="legal">
             ${t("home.legal")}
           </button>

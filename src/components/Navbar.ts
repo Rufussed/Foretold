@@ -52,7 +52,7 @@ export function renderNavbar(
           href="#/home"
           data-tooltip="${t("nav.tipHome")}"
         >
-          <img src="/wizardForetold.webp" alt="Wizard" />
+          <img src="/logo-foretold.webp" alt="Foretold" />
         </a>
 
         <div class="lobby-help-group">
