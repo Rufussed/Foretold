@@ -5,6 +5,7 @@ import { normalizeGameOptions } from "../gameOptions.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
+import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
 
 const rules = new WizardRules();
 
@@ -43,7 +44,8 @@ function strength(card: Card, trumpSuit: Suit | null): number {
 // The second bot: it bids on the chance each card has of winning, counting
 // trumps and the number of opponents, then plays to make that bid exactly.
 // While it still needs tricks it plays to win them, and once it has them it
-// plays to lose, getting rid of its dangerous cards when it safely can.
+// plays to lose, getting rid of its dangerous cards when it safely can. In a
+// Roles game it knows its role and what its card does (roleSense.ts).
 export const adept: BotStrategy = {
   chooseTrumpSuit: chooseLongestSuit,
 
@@ -54,7 +56,7 @@ export const adept: BotStrategy = {
 
     const crowd = crowdFactor(game.players.length);
     const expected = currentPlayer(game).hand.reduce((total, card) => {
-      const chance = trickChance(card, game.trumpSuit);
+      const chance = trickChance(card, game.trumpSuit) + roleBidValue(game, card);
       return total + (isWizard(card) ? chance : chance * crowd);
     }, 0);
 
@@ -68,7 +70,7 @@ export const adept: BotStrategy = {
     const { wizardWins } = normalizeGameOptions(game.options);
     const leadSuit = rules.getLeadSuit(played);
 
-    const legal = player.hand
+    const legal: Play[] = player.hand
       .map((card, index) => ({ card, index }))
       .filter(({ card }) => rules.isValidCardPlay(card, player.hand, leadSuit));
 
@@ -83,6 +85,16 @@ export const adept: BotStrategy = {
 
     const wantsTricks = (player.prediction ?? 0) > player.tricksWon;
 
+    // Which cards would take the trick as it stands, powers included. Only
+    // for the last player is that final; anyone after may still beat it.
+    const winsNow = ({ card }: { card: Card }) =>
+      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins) === player.username;
+    const winners = legal.filter(winsNow);
+    const losers = legal.filter((play) => !winsNow(play));
+    const rolePlay = rolePick(game, legal, losers, wantsTricks, winners.length > 0);
+
+    if (rolePlay) return rolePlay.index;
+
     // Leading: its best card to take the trick, or its lowest to give it
     // away, keeping a Jester back for a trick it can't otherwise lose.
     if (played.length === 0) {
@@ -91,16 +103,6 @@ export const adept: BotStrategy = {
       return weakest(notJesters.length > 0 ? notJesters : legal).index;
     }
 
-    // Which cards would take the trick as it stands. Only for the last player
-    // is that final; anyone after may still beat it.
-    const winsNow = ({ card }: { card: Card }) =>
-      rules.determineTrickWinner(
-        [...played, { username: player.username, card }],
-        trumpSuit,
-        wizardWins,
-      ) === player.username;
-    const winners = legal.filter(winsNow);
-    const losers = legal.filter((play) => !winsNow(play));
     const playsLast = played.length === game.players.length - 1;
 
     if (wantsTricks) {
@@ -114,7 +116,10 @@ export const adept: BotStrategy = {
     }
 
     // Enough tricks: lose this one with the highest card that still loses,
-    // so it can't win a trick later; if every card wins, the weakest.
+    // so it can't win a trick later; if every card wins, the weakest. A
+    // Servant's 2 is no sure loser: the next card becomes theirs.
+    const safe = losers.filter(({ card }) => !servesNext(game, card));
+    if (safe.length > 0) return strongest(safe).index;
     if (losers.length > 0) return strongest(losers).index;
     return weakest(winners).index;
   },

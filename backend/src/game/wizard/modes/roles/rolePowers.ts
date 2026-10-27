@@ -10,7 +10,8 @@ import type { RoleAction, RoleId } from "./roles.js";
 
 const rules = new WizardRules();
 
-const rolesOf = (game: WizardGameState): RoleOf => (username) =>
+// Who holds which role in this game.
+export const rolesOf = (game: WizardGameState): RoleOf => (username) =>
   game.players.find((player) => player.username === username)?.role;
 
 // The doors from the game into the roles. After every card played in a
