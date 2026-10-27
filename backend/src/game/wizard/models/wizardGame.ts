@@ -2,12 +2,15 @@ import type { AvatarId } from "./avatar.js";
 import type { Card, Suit } from "./card.js";
 import type { BotPersonality } from "../botLevels.js";
 import type { WizardGameOptions } from "../gameOptions.js";
+import type { RoleAction, RoleId } from "../modes/roles/roles.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
 
 // A room member and the avatar they claimed, if any, while the room waits.
 export interface RoomPlayer {
   username: string;
   avatar: AvatarId | null;
+  // The role chosen for a Roles game; null until chosen.
+  role: RoleId | null;
   // Sent for a running game only: the player quit it (playerQuit.ts).
   quit?: boolean;
 }
@@ -43,6 +46,9 @@ export interface GamePlayer {
   // How a bot plays (see bots/). Humans have none, and so do bots in games
   // saved before personalities existed; both are played as the Apprentice.
   botPersonality?: BotPersonality;
+  // In a Roles game, the role played all game (modes/roles/). Missing in
+  // Classic games and in games saved before roles existed.
+  role?: RoleId;
   // Set when the player left for good, by choice or after missing three turns
   // in a row: the server plays their seat from then on (playerQuit.ts).
   quit?: boolean;
@@ -67,6 +73,8 @@ export interface PlayedCard {
 export interface TrickState {
   playedCards: PlayedCard[];
   winnerUsername: string | null;
+  // In a Roles game, the powers used in this trick, in order (modes/roles/).
+  roleActions?: RoleAction[];
 }
 
 export interface WizardGameState {
@@ -107,6 +115,8 @@ export interface PublicGamePlayer {
   roundScores: RoundScore[];
   // The player has left; the server plays the seat (playerQuit.ts).
   quit: boolean;
+  // Their role in a Roles game, known to all; null in Classic.
+  role: RoleId | null;
 }
 
 export interface PublicWizardGameState {

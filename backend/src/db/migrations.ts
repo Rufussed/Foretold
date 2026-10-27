@@ -317,6 +317,19 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 16,
+    description: "roles: the role each player chose in a Roles room",
+    up(db) {
+      // Empty until the player picks one (modes/roles/roles.ts).
+      if (!hasColumn(db, "room_players", "role")) {
+        db.exec(`
+          ALTER TABLE room_players
+          ADD COLUMN role TEXT
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

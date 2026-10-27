@@ -323,8 +323,8 @@ export async function renderRoomPage(
   const greeting = guestUsername !== null ? displayName(guestUsername) : user.username;
   const startEl = element<HTMLDivElement>("#room-start");
   // A Roles room's role, chosen from a list: in the host's settings, or on
-  // its own for everyone else (modes/roles/roles.ts). For now the choice is
-  // only shown on this page; it is not sent to the server yet.
+  // its own for everyone else (modes/roles/roles.ts). It is saved to the room,
+  // so the others see it; anyone who chooses none gets one at random.
   const hostRoleEl = element<HTMLLabelElement>(".room-role-field");
   const ownRoleEl = element<HTMLLabelElement>("#room-role-own");
   const roleSelects = [...container.querySelectorAll<HTMLSelectElement>(".room-role-select")];
@@ -336,14 +336,44 @@ export async function renderRoomPage(
       openRolesHelp();
     });
   }
+  // Both lists show the same choice, with its power as the hint.
+  const showRole = (role: RoleId | null) => {
+    chosenRole = role;
+    for (const select of roleSelects) {
+      select.value = role ?? "";
+      select.title = role ? t(`role.${role}.power`) : "";
+    }
+  };
+  // One save at a time, so a quick change of mind lands last. Until a poll
+  // started after the last save has come back, the room's older answer is
+  // not taken over the choice just made.
+  let roleSave = Promise.resolve();
+  let roleSyncAfter = 0;
   for (const select of roleSelects) {
     select.addEventListener("change", () => {
-      chosenRole = isRoleId(select.value) ? select.value : null;
-      // Both lists show the same choice, with its power as the hint.
-      for (const other of roleSelects) {
-        other.value = chosenRole ?? "";
-        other.title = chosenRole ? t(`role.${chosenRole}.power`) : "";
-      }
+      const role = isRoleId(select.value) ? select.value : null;
+      showRole(role);
+      roleSyncAfter = Number.POSITIVE_INFINITY;
+      roleSave = roleSave.then(async () => {
+        if (destroyed) return;
+        try {
+          const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}/role`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ role }),
+          });
+          if (!response.ok) {
+            const data = (await response.json()) as ServerError;
+            showMessage(serverError(data, "room.saveFailed"));
+          }
+        } catch (error) {
+          console.warn("[room] saving the role failed:", error);
+        }
+        roleSyncAfter = Date.now() + POLL_MS * 2;
+      });
     });
   }
   const botsEl = element<HTMLSelectElement>("#room-bots");
@@ -522,6 +552,11 @@ export async function renderRoomPage(
     const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
     const isRoles = options.mode === "roles";
     hostRoleEl.hidden = !isRoles;
+    // The role the room has for this player, unless a change is on its way.
+    const savedRole = room.players.find((player) => player.username === user.username)?.role ?? null;
+    if (savedRole !== chosenRole && Date.now() > roleSyncAfter) {
+      showRole(savedRole);
+    }
     ownRoleEl.hidden = !isRoles || isHost;
     variationsSummaryEl.hidden = isHost;
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
@@ -731,9 +766,12 @@ export async function renderRoomPage(
   // Start game first shows everything chosen, as nothing can change once the
   // game runs; the game itself starts from there (startGame).
   const summaryRows = (): StartSummaryRow[] => {
-    const wizards = (room?.players ?? []).map((player) =>
-      player.username === user.username ? greeting : displayName(player.username),
-    );
+    // In a Roles room each wizard's role follows their name.
+    const isRoles = modeEl.value === "roles";
+    const wizards = (room?.players ?? []).map((player) => {
+      const name = player.username === user.username ? greeting : displayName(player.username);
+      return isRoles && player.role ? `${name} (${t(`role.${player.role}`)})` : name;
+    });
     const rows: StartSummaryRow[] = [
       { label: t("lobby.mode"), ...chosen(modeEl) },
       { label: t("start.wizards"), value: wizards.join(", ") },

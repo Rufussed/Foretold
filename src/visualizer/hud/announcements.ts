@@ -168,6 +168,8 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     }
   }
 
+  messages.push(...roleMessages(previous, next, local));
+
   const winner = next.currentTrick.winnerUsername;
   if (winner && previous.currentTrick.winnerUsername !== winner) {
     const played = next.currentTrick.playedCards.find((entry) => entry.username === winner);
@@ -187,6 +189,33 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   }
 
   return messages;
+}
+
+// The powers of a Roles game used since the last snapshot (modes/roles/):
+// for now the Thief's steal. Those already announced from the same trick are
+// not said again; the trick is the same one while its first card is.
+function roleMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
+  const before = previous.currentTrick;
+  const now = next.currentTrick;
+  const first = (trick: typeof now) => trick.playedCards[0]?.card;
+  const sameTrick =
+    previous.currentRound === next.currentRound &&
+    before.playedCards.length <= now.playedCards.length &&
+    first(before)?.value === first(now)?.value &&
+    first(before)?.suit === first(now)?.suit;
+  const said = sameTrick ? (before.roleActions?.length ?? 0) : 0;
+
+  return (now.roleActions ?? []).slice(said).map((action) => {
+    const card = cardName(action.card);
+    const values = { name: announcedName(action.by), victim: announcedName(action.on), card };
+    const text =
+      action.by === local
+        ? t("ann.youSteal", values)
+        : action.on === local
+          ? t("ann.stealsYours", values)
+          : t("ann.steals", values);
+    return { text, username: action.by };
+  });
 }
 
 // When a round has just been scored: a result per player, the round's best

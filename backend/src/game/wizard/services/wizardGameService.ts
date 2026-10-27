@@ -12,6 +12,7 @@ import { isJester, isWizard } from "../models/card.js";
 import { isBotName } from "../models/bot.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
+import { applyRolePowers } from "../modes/roles/rolePowers.js";
 
 import type {
   GamePlayer,
@@ -285,6 +286,10 @@ export class WizardGameService {
 
     game.currentTrick.playedCards.push(playedCard);
 
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      applyRolePowers(game);
+    }
+
     if (game.currentTrick.playedCards.length === game.players.length) {
       this.resolveTrick(game);
       return;
@@ -492,6 +497,7 @@ export class WizardGameService {
           score: player.score,
           roundScores: player.roundScores,
           quit: player.quit === true,
+          role: player.role ?? null,
         };
       }),
       currentRound: game.currentRound,

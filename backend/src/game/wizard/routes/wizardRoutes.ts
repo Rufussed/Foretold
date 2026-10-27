@@ -14,6 +14,8 @@ import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../gameOptions.js";
 import { GAME_MODES, type GameMode } from "../modes/modes.js";
+import { ROLES, type RoleId } from "../modes/roles/roles.js";
+import { assignRoles } from "../modes/roles/assignRoles.js";
 import { BOT_LEVELS, normalizeBotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
@@ -582,6 +584,75 @@ export default async function wizardRoutes(
     if (!wizardLobbyManager.claimAvatar(roomId, username, avatar)) {
       return reply.status(409).send({ error: "That avatar is taken" });
     }
+
+    return reply.send(wizardLobbyManager.getRoomById(roomId));
+  });
+
+  // A player's role in a Roles room, chosen while the room waits; null takes
+  // it back. Everyone waiting sees it with the room.
+  server.post(
+    "/lobby/:roomId/role",
+    {
+      schema: {
+        params: {
+          type: "object",
+          required: ["roomId"],
+          additionalProperties: false,
+          properties: {
+            roomId: {
+              type: "string",
+              pattern: "^[1-9][0-9]*$"
+            }
+          }
+        },
+        body: {
+          type: "object",
+          required: ["role"],
+          additionalProperties: false,
+          properties: {
+            role: {
+              anyOf: [
+                { type: "string", enum: ROLES.map((role) => role.id) },
+                { type: "null" }
+              ]
+            }
+          }
+        }
+      }
+    },
+  async (request, reply) => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return reply.status(401).send({ error: "Unauthorized" });
+    }
+
+    const roomId = Number((request.params as { roomId: string }).roomId);
+    const { role } = request.body as { role: RoleId | null };
+    const username = getAuthenticatedUsername(request);
+    const room = wizardLobbyManager.getRoomById(roomId);
+
+    if (!username) {
+      return reply.status(401).send({ error: "User identity missing" });
+    }
+
+    if (!room) {
+      return reply.status(404).send({ error: "Room not found" });
+    }
+
+    if (!room.players.some((player) => player.username === username)) {
+      return reply.status(403).send({
+        error: "You are not a member of this room",
+      });
+    }
+
+    if (room.status !== "waiting") {
+      return reply.status(409).send({
+        error: "Roles can only be chosen before the game starts",
+      });
+    }
+
+    wizardLobbyManager.chooseRole(roomId, username, role);
 
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
@@ -1232,6 +1303,12 @@ export default async function wizardRoutes(
         room.turnTimeoutMs,
       );
       assignBotPersonalities(game.players, normalizeBotLevel(body.botLevel));
+      if (game.options?.mode === "roles") {
+        assignRoles(
+          game.players,
+          new Map(room.players.map((player) => [player.username, player.role])),
+        );
+      }
 
       game.status = "playing";
 

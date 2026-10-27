@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
+import { isRoleId, type RoleId } from "../modes/roles/roles.js";
 import type { Room, RoomPlayer } from "../models/wizardGame.js";
 import { DEFAULT_GAME_OPTIONS, normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_EXPIRATION_MS } from "./wizardGameRepository.js";
@@ -25,6 +26,7 @@ interface RoomRow {
 interface PlayerRow {
   username: string;
   avatar: string | null;
+  role: string | null;
 }
 
 type JoinRoomResult =
@@ -74,7 +76,7 @@ class WizardLobbyManager {
     const rows = db
       .prepare(
         `
-          SELECT username, avatar
+          SELECT username, avatar, role
           FROM room_players
           WHERE room_id = ?
           ORDER BY joined_at ASC
@@ -85,6 +87,7 @@ class WizardLobbyManager {
     return rows.map((row) => ({
       username: row.username,
       avatar: isAvatarId(row.avatar) ? row.avatar : null,
+      role: isRoleId(row.role) ? row.role : null,
     }));
   }
 
@@ -540,6 +543,16 @@ class WizardLobbyManager {
     }
 
     return true;
+  }
+
+  // A player's role for a Roles game; null takes it back. Several players may
+  // hold the same role.
+  chooseRole(roomId: number, username: string, role: RoleId | null): void {
+    db.prepare(`
+      UPDATE room_players
+      SET role = ?
+      WHERE room_id = ? AND username = ?
+    `).run(role, roomId, username);
   }
 
   setRoomStatus(

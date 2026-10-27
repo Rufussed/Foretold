@@ -38,6 +38,7 @@ const MESSAGES = {
   avatarTaken: ["That avatar is taken"],
   unknownAvatar: ["Unknown avatar"],
   avatarLocked: ["Avatars can only be changed before the game starts"],
+  roleLocked: ["Roles can only be chosen before the game starts"],
   onlyHostRules: ["Only the host can choose the rule variations"],
   rulesLocked: ["Rule variations can only be changed before the game starts"],
   gameExists: ["A game already exists for this room"],
