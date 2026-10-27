@@ -83,6 +83,10 @@ export interface TrickState {
   roleActions?: RoleAction[];
 }
 
+// "fishing": a Roles game's trick is complete and a Fisher picks a card from
+// it before it is won (modes/roles/fisher.ts).
+export type GamePhase = "trump-selection" | "predictions" | "playing" | "fishing" | "finished";
+
 export interface WizardGameState {
   roomId: number;
   players: GamePlayer[];
@@ -95,7 +99,7 @@ export interface WizardGameState {
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished" | "expired";
   deck: Card[];
-  phase: "trump-selection" | "predictions" | "playing" | "finished";
+  phase: GamePhase;
   // How fast this game plays out; chosen in room setup. See gameplayPace.ts.
   // Games saved before the pace existed have none, so read it through
   // clampPace rather than trusting it.
@@ -136,7 +140,7 @@ export interface PublicWizardGameState {
   trumpSuit: Suit | null;
   currentTrick: TrickState;
   status: "waiting" | "playing" | "finished";
-  phase: "trump-selection" | "predictions" | "playing" | "finished";
+  phase: GamePhase;
   deckCount: number;
   // The game's pace, so the visualiser scales its beats to match the server's.
   pace: number;

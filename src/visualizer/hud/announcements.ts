@@ -4,6 +4,7 @@ import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/s
 import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
 import { t, type MessageKey } from "../../i18n";
 import type { RoleAction } from "../../../backend/src/game/wizard/modes/roles/roles";
+import { playerOf, powerOn, type RoleOf } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
 // and no timing: announcer.ts decides when each line shows.
@@ -86,7 +87,10 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       if (state.currentTrick.playedCards.length === 0) {
         return current === local ? t("ann.youLead") : t("ann.leads", { name: announcedName(current) });
       }
-      return current === local ? t("ann.yourTurn") : t("ann.turn", { name: announcedName(current) });
+      return servantWaiting(state, local) ?? (current === local ? t("ann.yourTurn") : t("ann.turn", { name: announcedName(current) }));
+    case "fishing":
+      if (!current) return null;
+      return current === local ? t("ann.youFishing") : t("ann.fishing", { name: announcedName(current) });
     case "finished": {
       const winners = gameWinners(state);
       const winner = winners[0];
@@ -101,6 +105,23 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
         : t("ann.wins", { name: announcedName(winner.username) });
     }
   }
+}
+
+const rolesIn = (state: PublicWizardGameState): RoleOf => (username) =>
+  state.players.find((player) => player.username === username)?.role ?? undefined;
+
+// While a Servant's 2 waits for the next card (modes/roles/servant.ts): who
+// will give theirs. Null when no Servant is waiting.
+function servantWaiting(state: PublicWizardGameState, local: string): string | null {
+  const playedCards = state.currentTrick.playedCards;
+  const last = playedCards.length - 1;
+  const next = state.players[state.currentPlayerIndex]?.username;
+  const two = playedCards[last];
+  if (!two || !next || !powerOn(playedCards, last, "servant", state.trumpSuit, rolesIn(state))) return null;
+  const servant = playerOf(two);
+  const values = { name: announcedName(servant), next: announcedName(next) };
+  if (servant === local) return t("ann.youWaitServant", values);
+  return next === local ? t("ann.waitsForYou", values) : t("ann.waitsServant", values);
 }
 
 // Said once a round's cards are dealt and the trump card is showing: which suit
@@ -199,10 +220,11 @@ const ROLE_TEXTS: Partial<Record<RoleAction["role"], [MessageKey, MessageKey, Me
 } = {
   thief: ["ann.youSteal", "ann.stealsYours", "ann.steals"],
   servant: ["ann.youServe", "ann.servesYours", "ann.serves"],
+  fisher: ["ann.youFish", "ann.fishesYours", "ann.fishes"],
 };
 
 // The powers of a Roles game used since the last snapshot (modes/roles/):
-// the Thief's steal and the Servant's service. Those already announced from the same trick are
+// the Thief's steal, the Servant's service and the Fisher's catch. Those already announced from the same trick are
 // not said again; the trick is the same one while its first card is.
 function roleMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
   const before = previous.currentTrick;

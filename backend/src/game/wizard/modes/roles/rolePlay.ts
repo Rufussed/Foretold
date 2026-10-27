@@ -37,8 +37,13 @@ export function powerOn(
 export const canBeTaken = (played: PlayedCard): boolean =>
   !isWizard(played.card) && !isJester(played.card);
 
-// The owners of the last two cards in the trick change places, like a swap
-// in C. The cards keep their places; only who they count for changes.
+// The owners of two cards in the trick change places, like a swap in C. The
+// cards keep their places; only who they count for changes.
+export function swapOwners(a: PlayedCard, b: PlayedCard): void {
+  [a.username, b.username] = [b.username, a.username];
+}
+
+// The same for the last two cards in the trick.
 export function swapLastTwo(playedCards: PlayedCard[]): void {
   const last = playedCards.at(-1);
   const before = playedCards.at(-2);
@@ -47,5 +52,5 @@ export function swapLastTwo(playedCards: PlayedCard[]): void {
     return;
   }
 
-  [last.username, before.username] = [before.username, last.username];
+  swapOwners(last, before);
 }

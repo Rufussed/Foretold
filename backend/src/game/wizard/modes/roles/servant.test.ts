@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { findService, servantBonus, SERVANT_BONUS } from "./servant.js";
 import { card, play, roles } from "./roleTestHelpers.js";
 
-const roleOf = roles({ serv: "servant", serv2: "servant", thief: "thief" });
+const roleOf = roles({ serv: "servant", serv2: "servant", thief: "thief", fisher: "fisher" });
 
 describe("findService", () => {
   it("receives the card played right after a 2 in the lead suit", () => {
@@ -47,6 +47,10 @@ describe("findService", () => {
   it("meets a Thief's 1 and a second Servant's 2 as equals: nothing happens", () => {
     expect(findService([play("serv", 2), play("thief", 1)], null, roleOf)).toBeNull();
     expect(findService([play("serv", 2), play("serv2", 2)], null, roleOf)).toBeNull();
+  });
+
+  it("cannot receive a Fisher's 3", () => {
+    expect(findService([play("serv", 2), play("fisher", 3)], null, roleOf)).toBeNull();
   });
 
   it("lets the second of two Servants serve on the next card", () => {

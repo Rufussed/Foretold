@@ -3,7 +3,7 @@ import { describe, it, expect } from "vitest";
 import { findSteal } from "./thief.js";
 import { card, play, roles } from "./roleTestHelpers.js";
 
-const roleOf = roles({ thief: "thief", serv: "servant" });
+const roleOf = roles({ thief: "thief", serv: "servant", fisher: "fisher" });
 
 describe("findSteal", () => {
   it("takes the card just before a 1 in the lead suit", () => {
@@ -46,6 +46,12 @@ describe("findSteal", () => {
 
   it("cannot outsmart a Servant's 2", () => {
     const trick = [play("ana", 9), play("serv", 2), play("thief", 1)];
+
+    expect(findSteal(trick, null, roleOf)).toBeNull();
+  });
+
+  it("cannot steal a Fisher's 3", () => {
+    const trick = [play("ana", 9), play("fisher", 3), play("thief", 1)];
 
     expect(findSteal(trick, null, roleOf)).toBeNull();
   });

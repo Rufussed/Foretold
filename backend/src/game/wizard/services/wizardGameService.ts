@@ -12,7 +12,12 @@ import { isJester, isWizard } from "../models/card.js";
 import { isBotName } from "../models/bot.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
-import { applyRolePowers, applyTrickEndPowers } from "../modes/roles/rolePowers.js";
+import {
+  applyFishing,
+  applyRolePowers,
+  applyTrickEndPowers,
+  startFishing,
+} from "../modes/roles/rolePowers.js";
 
 import type {
   GamePlayer,
@@ -292,12 +297,36 @@ export class WizardGameService {
     }
 
     if (game.currentTrick.playedCards.length === game.players.length) {
-      this.resolveTrick(game);
+      this.completeTrick(game);
       return;
     }
 
     game.currentPlayerIndex =
       (game.currentPlayerIndex + 1) % game.players.length;
+  }
+
+  // A complete trick is resolved, unless a Fisher of a Roles game still has
+  // a card to choose (modes/roles/fisher.ts): then that is the next move.
+  private completeTrick(game: WizardGameState): void {
+    if (
+      normalizeGameOptions(game.options).mode === "roles" &&
+      startFishing(game)
+    ) {
+      return;
+    }
+
+    game.phase = "playing";
+    this.resolveTrick(game);
+  }
+
+  // The Fisher whose move it is takes the card at this place in the trick.
+  fishCard(
+    game: WizardGameState,
+    username: string,
+    spot: number,
+  ): void {
+    applyFishing(game, username, spot);
+    this.completeTrick(game);
   }
 
   // A trick won with a card of a colour, for the winner's colour points

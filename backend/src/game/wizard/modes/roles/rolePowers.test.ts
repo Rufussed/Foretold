@@ -35,7 +35,7 @@ function playTrick(
 
   const score = (name: string) => game.players.find((p) => p.username === name)?.score;
 
-  return { trick: game.currentTrick, score };
+  return { trick: game.currentTrick, score, game, service };
 }
 
 describe("the Thief in a game", () => {
@@ -93,5 +93,57 @@ describe("the Servant in a game", () => {
     expect(trick.roleActions).toBeUndefined();
     expect(trick.playedCards.map((played) => played.username)).toEqual(["ana", "serv", "thief"]);
     expect(trick.winnerUsername).toBe("ana");
+  });
+});
+
+describe("the Fisher in a game", () => {
+  const seats = [
+    { name: "ana", card: card(8) },
+    { name: "fisher", card: card(3), role: "fisher" as const },
+    { name: "ben", card: card(13) },
+  ];
+
+  it("waits for the Fisher before the trick is won", () => {
+    const { game } = playTrick("roles", seats);
+
+    expect(game.phase).toBe("fishing");
+    expect(game.players[game.currentPlayerIndex]?.username).toBe("fisher");
+    expect(game.currentTrick.winnerUsername).toBeNull();
+  });
+
+  it("wins the trick with the fished 13", () => {
+    const { game, service } = playTrick("roles", seats);
+
+    service.fishCard(game, "fisher", 2);
+
+    expect(game.phase).toBe("playing");
+    expect(game.currentTrick.winnerUsername).toBe("fisher");
+    expect(game.currentTrick.roleActions?.[0]).toMatchObject({ role: "fisher", on: "ben" });
+  });
+
+  it("refuses a card that cannot be fished, and anyone else's choice", () => {
+    const { game, service } = playTrick("roles", seats);
+
+    expect(() => service.fishCard(game, "fisher", 0)).toThrow();
+    expect(() => service.fishCard(game, "ben", 2)).toThrow();
+  });
+
+  it("is an ordinary 3 in a Classic game", () => {
+    const { game } = playTrick("classic", seats);
+
+    expect(game.phase).toBe("playing");
+    expect(game.currentTrick.winnerUsername).toBe("ben");
+  });
+
+  it("is protected from the Thief", () => {
+    const { game } = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "fisher", card: card(3), role: "fisher" },
+      { name: "thief", card: card(1), role: "thief" },
+    ]);
+
+    // Nothing to fish (the Thief's 1 is guarded) and nothing stolen.
+    expect(game.currentTrick.roleActions).toBeUndefined();
+    expect(game.currentTrick.winnerUsername).toBe("ana");
   });
 });

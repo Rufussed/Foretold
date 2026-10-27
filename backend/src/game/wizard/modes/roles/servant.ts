@@ -9,8 +9,8 @@ export const SERVANT_BONUS = 20;
 // The Servant's power, a must: the card played right after their 2 (in the
 // lead suit or as a trump) becomes theirs, and its player gets the 2.
 // Nothing happens when the 2 is the trick's last card, the next card is a
-// Wizard or Jester, or it is a Thief's 1 or another Servant's 2: those meet
-// their match and stay as they are.
+// Wizard or Jester, or it is a Thief's 1, another Servant's 2 or a Fisher's
+// 3: those meet their match and stay as they are.
 export function findService(
   playedCards: PlayedCard[],
   trumpSuit: Suit | null,
@@ -28,6 +28,7 @@ export function findService(
     !canBeTaken(next)
     || powerOn(playedCards, last, "thief", trumpSuit, roleOf)
     || powerOn(playedCards, last, "servant", trumpSuit, roleOf)
+    || powerOn(playedCards, last, "fisher", trumpSuit, roleOf)
   ) {
     return null;
   }
