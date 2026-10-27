@@ -6,6 +6,8 @@ import { formatDateTime } from "../utils/format-date-time";
 import { escapeHtml } from "../utils/escape-html";
 import { t } from "../i18n";
 import { serverError, type ServerError } from "../i18n/server-error";
+import { GAME_MODES } from "../../backend/src/game/wizard/modes/modes";
+import { gameModeBadge, gameModeName, gameModeOf } from "../utils/game-mode";
 
 interface LobbyRoom {
   id: number;
@@ -22,6 +24,8 @@ interface LobbyRoom {
   maxPlayers: number;
   status: "waiting" | "playing";
   isPublic: boolean;
+  // The game played there; an older server sends none, which is Classic.
+  options?: { mode?: string };
 }
 
 type LobbyData = {
@@ -129,6 +133,27 @@ export async function renderLobbyPage(
                 required
               />
             </label>
+
+            <fieldset class="room-form-field">
+              <legend>${t("lobby.mode")}</legend>
+
+              <div class="game-mode-options">
+                ${GAME_MODES.map(
+                  (mode) => `
+                    <label class="game-mode-option mode-${mode}">
+                      <input
+                        type="radio"
+                        name="mode"
+                        value="${mode}"
+                        ${mode === "classic" ? "checked" : ""}
+                      />
+                      <span class="game-mode-name">${gameModeName(mode)}</span>
+                      <span class="game-mode-description">${t(`mode.${mode}.description`)}</span>
+                    </label>
+                  `,
+                ).join("")}
+              </div>
+            </fieldset>
 
             <label class="room-form-field" for="roomVisibility">
               <span>${t("lobby.visibility")}</span>
@@ -368,10 +393,13 @@ export async function renderLobbyPage(
           const playerCount =
             `${room.players.length}/${room.maxPlayers}`;
 
+          const mode = gameModeOf(room.options);
+
           return `
-            <article class="room-row">
+            <article class="room-row mode-${mode}">
               <strong class="room-name">
-                ${escapeHtml(room.name)}
+                <span class="room-name-text">${escapeHtml(room.name)}</span>
+                ${gameModeBadge(mode)}
               </strong>
 
               <div class="room-created">
@@ -728,6 +756,7 @@ export async function renderLobbyPage(
       const isPublic = visibility === "true";
       // A guest room: hidden, its guests come by invite link.
       const isGuestRoom = visibility === "guest";
+      const mode = formData.get("mode") ?? "classic";
 
       if (!name) {
         return;
@@ -759,6 +788,7 @@ export async function renderLobbyPage(
                 maxPlayers,
                 isPublic,
                 isGuestRoom,
+                mode,
               }),
             },
           );

@@ -669,6 +669,12 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           only they can join.
         </p>
         <p>
+          You also choose the game. Classic is Wizard as printed. In
+          Roles, every wizard chooses a role before the game, like the
+          Thief or the Fisher, and uses its power when they play its
+          card. Each room shows its game in a small tag under its name.
+        </p>
+        <p>
           A guest room is for bringing friends who have no account yet.
           No one else sees it; in its Antechamber you get an invite link
           to send them. They choose a name and sit down, no sign-up
@@ -744,6 +750,13 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           hier und kann beitreten. Ein privater Raum ist nur für deinen
           Freundeskreis: Nur deine Freunde sehen ihn auf der Lichtung,
           und nur sie können beitreten.
+        </p>
+        <p>
+          Du wählst auch das Spiel. Klassisch ist Wizard wie gedruckt. Bei
+          Rollen wählt jeder Zauberer vor der Partie eine Rolle, etwa den
+          Dieb oder den Fischer, und nutzt ihre Kraft, wenn er ihre Karte
+          spielt. Jeder Raum zeigt sein Spiel in einem kleinen Schild
+          unter seinem Namen.
         </p>
         <p>
           Ein Gästeraum ist für Freunde, die noch kein Konto haben.
@@ -989,7 +1002,8 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       <section class="home-rules-section">
         <h3>For the host</h3>
         <p>
-          The wizard who created the room sets up the game. NPCs fill the
+          The wizard who created the room sets up the game, starting
+          with which one: Classic or Roles. NPCs fill the
           empty seats, as a game needs 3 to 6 players; alone, you can give
           every seat to an NPC and watch. Choose how well they play, the
           rounds (a full game, or fewer for a short one), the game speed
@@ -1039,7 +1053,8 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       <section class="home-rules-section">
         <h3>Für den Gastgeber</h3>
         <p>
-          Wer den Raum erstellt hat, richtet die Partie ein. NPCs füllen
+          Wer den Raum erstellt hat, richtet die Partie ein, zuerst das
+          Spiel: Klassisch oder Rollen. NPCs füllen
           die freien Plätze, denn eine Partie braucht 3 bis 6 Spieler;
           allein kannst du jeden Platz einem NPC geben und zuschauen.
           Wähle, wie gut sie spielen, die Runden (eine ganze Partie oder

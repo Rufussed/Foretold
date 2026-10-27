@@ -32,6 +32,8 @@ export interface InviteInfo {
   players: number;
   maxPlayers: number;
   status: "waiting" | "playing";
+  // The game played there; none from an older server, which is Classic.
+  mode?: string;
 }
 
 interface ServerErrorBody {

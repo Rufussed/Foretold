@@ -3584,8 +3584,9 @@ button {
   right: 0;
 }
 
-/* The window is added to the body, outside #app, which lies at 9999. */
-#navbar-help {
+/* The windows are added to the body, outside #app, which lies at 9999. */
+#navbar-help,
+#roles-help {
   z-index: 10000;
 }
 
@@ -3897,17 +3898,69 @@ button {
 }
 
 .room-name {
+  /* The name, then its game's tag under it. */
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+
   min-width: 0;
-  overflow: hidden;
 
   color: #eee0c7;
 
   font-family: Georgia, "Times New Roman", serif;
   font-size: 1.2rem;
   font-weight: 400;
+}
+
+.room-name-text {
+  max-width: 100%;
+  overflow: hidden;
 
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* Each game's colour (modes/modes.ts): its tag, the stripe on its rooms in
+   the Glade and its card in Create Room. */
+.mode-classic {
+  --mode-color: 201, 164, 92;
+}
+
+.mode-roles {
+  --mode-color: 184, 132, 224;
+}
+
+/* A game's name in a small frame, after or under a room's name. */
+.mode-badge {
+  display: inline-block;
+  flex-shrink: 0;
+
+  padding: 2px 8px;
+
+  border: 1px solid rgba(var(--mode-color), 0.75);
+  border-radius: 3px;
+  background: rgba(var(--mode-color), 0.12);
+
+  color: rgb(var(--mode-color));
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  line-height: 1.5;
+  text-transform: uppercase;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.room-intro .mode-badge {
+  margin-left: 10px;
+}
+
+/* A room's game as a stripe down its left edge. */
+.room-row[class*="mode-"] {
+  box-shadow: inset 4px 0 0 rgba(var(--mode-color), 0.8);
 }
 
 .room-created {
@@ -4416,6 +4469,70 @@ button {
     0 0 0 2px rgba(175, 102, 29, 0.08);
 }
 
+/* Create Room's choice of game: a card per game, its name in the game's
+   colour and one line on how it plays. */
+.game-mode-options {
+  display: grid;
+  gap: 8px;
+}
+
+.game-mode-option {
+  display: grid;
+  gap: 4px;
+
+  padding: 10px 12px;
+
+  border: var(--ui-edge);
+  background: rgba(3, 4, 3, 0.45);
+
+  cursor: pointer;
+
+  transition:
+    border-color 160ms ease,
+    background 160ms ease;
+}
+
+.game-mode-option input {
+  position: absolute;
+
+  opacity: 0;
+  pointer-events: none;
+}
+
+.game-mode-option:hover {
+  border-color: rgba(var(--mode-color), 0.5);
+}
+
+.game-mode-option:has(input:checked) {
+  border-color: rgba(var(--mode-color), 0.85);
+  background: rgba(var(--mode-color), 0.1);
+}
+
+.game-mode-option:has(input:focus-visible) {
+  outline: 2px solid rgba(var(--mode-color), 0.85);
+  outline-offset: 2px;
+}
+
+.game-mode-name {
+  color: rgb(var(--mode-color));
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.game-mode-description {
+  color: rgba(244, 234, 216, 0.62);
+
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.4;
+  text-transform: none;
+}
+
 .player-count-options {
   display: grid;
 
@@ -4837,22 +4954,9 @@ button {
   text-align: center;
 }
 
-.room-back-button {
-  position: absolute;
-  top: 0;
-  left: 0;
-  color: rgba(221, 177, 110, 0.8);
-  font-size: 1.2rem;
-  text-decoration: none;
-  transition: color 0.2s ease;
-}
-
-.room-back-button:hover {
-  color: #ffd54f;
-}
-
 /* The one intro line: room, players present, and the invitation to choose.
-   Clear of the Back button on the left, and of the corner buttons on the right. */
+   Clear of the corner buttons, with the same room on both sides so it stays
+   centred. */
 .room-title-row .room-intro {
   margin: 0;
   padding: 0 90px;
@@ -5149,17 +5253,154 @@ button {
 .room-start-controls {
   width: 100%;
   display: grid;
-  /* Two columns: the NPC and round choices on the left, the game's speed and
-     time per turn on the right. */
-  grid-template-columns: repeat(2, max-content);
+  /* Four across the whole box, so it stays low: the game, the role and the
+     NPCs first, then the skill, the speed and the time per turn. The column
+     and pair wrappers step aside so every choice is a cell of this grid. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-flow: row dense;
   align-items: start;
-  justify-content: center;
-  gap: 12px 24px;
+  gap: 12px 20px;
 }
 
-.room-start-column {
-  display: grid;
-  gap: 12px;
+.room-start-controls .room-start-column,
+.room-start-controls .room-start-pair {
+  display: contents;
+}
+
+/* The NPC skill's choices are long, so it takes two cells. */
+.room-start-controls label:has(#room-bot-level) {
+  grid-column: span 2;
+}
+
+.room-start-controls .room-role-field[hidden],
+.room-role-own[hidden] {
+  display: none;
+}
+
+/* The role for players other than the host, who have no settings: the same
+   list on its own, above "waiting for the host". */
+.room-role-own {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  gap: 7px;
+
+  min-width: 200px;
+  margin-top: 12px;
+  /* In a small box like the host's settings, so the scene stays behind it. */
+  padding: 14px 22px 16px;
+  border: var(--ui-edge);
+  background: var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(16px);
+
+  color: rgba(244, 235, 217, 0.72);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* "Role" in the Roles colour, so it stands out from the scene; above the
+   list, centred, for those who are not the host. */
+.room-role-field > span:first-child,
+.room-role-own > span:first-child {
+  color: rgb(var(--mode-color));
+}
+
+/* Bold, brighter and with a heavier shadow, as the scene behind would
+   otherwise swallow it. */
+.room-role-own > span:first-child {
+  color: rgb(155, 95, 215);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 1px 10px rgba(0, 0, 0, 1);
+}
+
+/* The roles window in the Roles colour. */
+#roles-help .home-modal h2 {
+  color: rgb(155, 95, 215);
+}
+
+/* The list and its "?" side by side. */
+.room-role-row {
+  display: flex;
+  gap: 8px;
+}
+
+.room-role-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The "?" that opens the description of every role: the navbar's help
+   button, in the Roles colour. */
+.room-role-row .roles-help-button {
+  flex: 0 0 40px;
+
+  min-height: 40px;
+  padding: 0;
+
+  border: 1px solid rgba(var(--mode-color), 0.6);
+  border-radius: 4px;
+  background: rgba(10, 10, 8, 0.45);
+
+  color: rgb(var(--mode-color));
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow: none;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.room-role-row .roles-help-button:hover,
+.room-role-row .roles-help-button:focus-visible {
+  border-color: rgb(var(--mode-color));
+  background: rgba(var(--mode-color), 0.16);
+}
+
+/* In the roles window: each role's card number in a small purple seal. */
+.roles-help-card {
+  display: inline-grid;
+  place-items: center;
+
+  width: 24px;
+  height: 24px;
+  margin-right: 9px;
+
+  border: 1px solid rgba(184, 132, 224, 0.7);
+  border-radius: 50%;
+  background: rgba(184, 132, 224, 0.14);
+
+  color: rgb(184, 132, 224);
+  font-size: 12px;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+.roles-help h3 {
+  color: rgb(184, 132, 224);
+}
+
+.room-role-own select {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(180, 119, 47, 0.3);
+  background: rgba(5, 6, 5, 0.72);
+  color: rgba(248, 240, 224, 0.9);
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: none;
 }
 
 /* Two small choices side by side inside a column. */
@@ -5206,7 +5447,8 @@ button {
 
 .room-variations-controls {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, max-content));
+  /* All three on one row. */
+  grid-template-columns: repeat(3, minmax(0, max-content));
   justify-content: center;
   gap: 12px;
   margin-top: 10px;
@@ -5216,7 +5458,7 @@ button {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  min-width: 130px;
+  min-width: 0;
   color: rgba(244, 235, 217, 0.64);
   font-size: 0.72rem;
   /* Plain, not the bold every label gets: the titles and, through the

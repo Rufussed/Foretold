@@ -208,6 +208,7 @@ class WizardLobbyManager {
     isPublic: boolean = true,
     turnTimeoutMs: TurnTimeoutMs = 30_000,
     isGuestRoom: boolean = false,
+    options: WizardGameOptions = DEFAULT_GAME_OPTIONS,
   ): Room {
     if (!isTurnTimeoutMs(turnTimeoutMs)) {
       throw new Error("Invalid turn timeout");
@@ -224,9 +225,10 @@ class WizardLobbyManager {
           status,
           is_public,
           turn_timeout_ms,
-          invite_code
+          invite_code,
+          options_json
         )
-        VALUES (?, ?, ?, 'waiting', ?, ?, ?)
+        VALUES (?, ?, ?, 'waiting', ?, ?, ?, ?)
       `)
       .run(
         name,
@@ -236,6 +238,7 @@ class WizardLobbyManager {
         isPublic && !isGuestRoom ? 1 : 0,
         turnTimeoutMs,
         isGuestRoom ? newInviteCode() : null,
+        JSON.stringify(normalizeGameOptions(options)),
       );
 
     const roomId = Number(result.lastInsertRowid);

@@ -13,6 +13,7 @@ import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../gameOptions.js";
+import { GAME_MODES, type GameMode } from "../modes/modes.js";
 import { BOT_LEVELS, normalizeBotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
@@ -299,6 +300,11 @@ export default async function wizardRoutes(
                       isGuestRoom: {
                         type: "boolean",
                       },
+                      // Which game is played (modes/modes.ts); classic if left out.
+                      mode: {
+                        type: "string",
+                        enum: [...GAME_MODES],
+                      },
                       turnTimeoutMs: {
                         anyOf: [
                           {
@@ -327,6 +333,7 @@ export default async function wizardRoutes(
       isPublic?: boolean;
       isGuestRoom?: boolean;
       turnTimeoutMs?: 15000 | 30000 | 45000 | 60000 | null;
+      mode?: GameMode;
     };
     const tokenUser = request.user as {
       sub?: number;
@@ -369,6 +376,7 @@ export default async function wizardRoutes(
       body.isPublic ?? true,
       body.turnTimeoutMs === undefined ? 30_000 : body.turnTimeoutMs,
       isGuestRoom,
+      { ...DEFAULT_GAME_OPTIONS, mode: body.mode ?? "classic" },
     );
 
     return reply.send(room);
@@ -600,6 +608,11 @@ export default async function wizardRoutes(
           required: ["wizardWins", "blindFirstRound"],
           additionalProperties: false,
           properties: {
+            // Which game is played; left out, the room keeps its own.
+            mode: {
+              type: "string",
+              enum: [...GAME_MODES]
+            },
             wizardWins: {
               type: "string",
               enum: ["first", "last"]
@@ -654,7 +667,8 @@ export default async function wizardRoutes(
       });
     }
 
-    wizardLobbyManager.setRoomOptions(roomId, normalizeGameOptions(request.body, DEFAULT_GAME_OPTIONS));
+    // Anything left out (an older page sends no mode) stays as the room has it.
+    wizardLobbyManager.setRoomOptions(roomId, normalizeGameOptions(request.body, room.options));
 
     const body = request.body as { turnTimeoutMs?: unknown };
     if ("turnTimeoutMs" in body && isTurnTimeoutMs(body.turnTimeoutMs)) {
@@ -855,7 +869,7 @@ export default async function wizardRoutes(
 
   // What an invite link leads to, for the page that asks the guest's name.
   // Open to anyone holding the link: it shows no more than the room's name,
-  // its host and its seats.
+  // its host, its seats and the game played there.
   server.get(
     "/invites/:code",
     { schema: { params: INVITE_CODE_PARAMS } },
@@ -877,6 +891,7 @@ export default async function wizardRoutes(
         players: room.players.length,
         maxPlayers: room.maxPlayers,
         status: room.status,
+        mode: room.options.mode,
       });
     },
   );
@@ -1206,6 +1221,7 @@ export default async function wizardRoutes(
         clampPace(body.pace),
         // What the start button sent, falling back to what the room saved.
         normalizeGameOptions({
+          mode: room.options.mode,
           wizardWins: body.wizardWins ?? room.options.wizardWins,
           blindFirstRound: body.blindFirstRound ?? room.options.blindFirstRound,
           missedTurnsToQuit:

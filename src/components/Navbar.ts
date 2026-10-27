@@ -3,6 +3,7 @@ import { escapeHtml } from "../utils/escape-html";
 import { getLanguage, setLanguage, t, type MessageKey } from "../i18n";
 import { helpHtml, type HelpPage } from "../i18n/long-texts";
 import { watchStartedGame } from "../services/started-game";
+import { openInfoWindow } from "./info-window";
 
 // Which page the "?" button explains: each page with a navbar has its own
 // help, the Glade's for anything else.
@@ -26,70 +27,15 @@ const HELP_TITLES: Record<HelpPage, MessageKey> = {
   admin: "help.title.admin",
 };
 
-// Opens the help window, styled like the Home windows. It closes with the
-// cross, a click beside it, Escape or a change of page.
+// Opens the help window for the page.
 function openHelp(): void {
-  document.querySelector("#navbar-help")?.remove();
-
   const page = helpPage();
 
-  const backdrop = document.createElement("div");
-  backdrop.className = "home-modal-backdrop";
-  backdrop.id = "navbar-help";
-  backdrop.innerHTML = `
-    <section
-      class="home-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="navbar-help-title"
-    >
-      <button
-        type="button"
-        class="home-close-button"
-        aria-label="${t("common.close")}"
-      >
-        <span></span>
-        <span></span>
-      </button>
-
-      <h2 id="navbar-help-title">${t(HELP_TITLES[page])}</h2>
-
-      ${helpHtml(page) ?? `<p class="home-modal-copy">${t("help.placeholder")}</p>`}
-    </section>
-  `;
-
-  function close(): void {
-    backdrop.remove();
-    document.removeEventListener("keydown", closeOnEscape);
-    window.removeEventListener("hashchange", close);
-  }
-
-  function closeOnEscape(event: KeyboardEvent): void {
-    if (event.key === "Escape") {
-      close();
-    }
-  }
-
-  // Only a press that began on the backdrop closes it, as on Home, so
-  // selecting text in the window and letting go beside it does not.
-  let pressedOnBackdrop = false;
-  backdrop.addEventListener("pointerdown", (event) => {
-    pressedOnBackdrop = event.target === backdrop;
-  });
-  backdrop.addEventListener("click", (event) => {
-    if (event.target === backdrop && pressedOnBackdrop) {
-      close();
-    }
-    pressedOnBackdrop = false;
-  });
-
-  backdrop
-    .querySelector<HTMLButtonElement>(".home-close-button")
-    ?.addEventListener("click", close);
-  document.addEventListener("keydown", closeOnEscape);
-  window.addEventListener("hashchange", close);
-
-  document.body.append(backdrop);
+  openInfoWindow(
+    "navbar-help",
+    t(HELP_TITLES[page]),
+    helpHtml(page) ?? `<p class="home-modal-copy">${t("help.placeholder")}</p>`,
+  );
 }
 
 export function renderNavbar(
