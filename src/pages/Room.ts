@@ -26,7 +26,6 @@ import {
   endGuestSession,
 } from "../services/auth";
 import { serverError, type ServerError } from "../i18n/server-error";
-import { GAME_MODES } from "../../backend/src/game/wizard/modes/modes";
 import { gameModeBadge, gameModeName } from "../utils/game-mode";
 import { ROLES, isRoleId, type RoleId } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
@@ -155,16 +154,6 @@ export async function renderRoomPage(
               hidden
             ></p>
             <div class="room-start-controls">
-
-              <label class="room-mode-field">
-                <span>${t("lobby.mode")}</span>
-                <select id="room-mode">
-                  ${GAME_MODES.map(
-                    (mode) =>
-                      `<option value="${mode}"${mode === "classic" ? " selected" : ""}>${gameModeName(mode)}</option>`,
-                  ).join("")}
-                </select>
-              </label>
 
               <label class="room-role-field mode-roles" hidden>
                 <span>${t("room.role")}</span>
@@ -383,8 +372,9 @@ export async function renderRoomPage(
   // How fast the game plays out, for everyone in it: the server's pauses and
   // the table's animations both scale by it. See gameplayPace.ts.
   const paceEl = element<HTMLSelectElement>("#room-pace");
-  // Which game is played, for everyone in it. See modes/modes.ts.
-  const modeEl = element<HTMLSelectElement>("#room-mode");
+  // Which game is played: chosen in Create Room and kept by the room, shown
+  // here by the badge after its name. See modes/modes.ts.
+  const roomMode = () => normalizeGameOptions(room?.options, DEFAULT_GAME_OPTIONS).mode;
   // The rule variations, for everyone in the game. See gameOptions.ts.
   const wizardWinsEl = element<HTMLSelectElement>("#room-wizard-wins");
   const blindFirstRoundEl = element<HTMLSelectElement>("#room-blind-first-round");
@@ -397,7 +387,6 @@ export async function renderRoomPage(
   // What the host has chosen, for everyone else waiting.
   const variationsSummaryEl = element<HTMLParagraphElement>("#room-variations-summary");
   const chosenOptions = () => ({
-    mode: modeEl.value,
     wizardWins: wizardWinsEl.value,
     blindFirstRound: blindFirstRoundEl.value === "true",
     missedTurnsToQuit: missedTurnsEl.value === "off" ? null : Number(missedTurnsEl.value),
@@ -562,7 +551,6 @@ export async function renderRoomPage(
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {
       optionsLoaded = true;
-      modeEl.value = options.mode;
       wizardWinsEl.value = options.wizardWins;
       blindFirstRoundEl.value = String(options.blindFirstRound);
       missedTurnsEl.value = String(options.missedTurnsToQuit ?? "off");
@@ -751,7 +739,6 @@ export async function renderRoomPage(
       }
     });
   };
-  modeEl.addEventListener("change", saveOptions);
   wizardWinsEl.addEventListener("change", saveOptions);
   blindFirstRoundEl.addEventListener("change", saveOptions);
   missedTurnsEl.addEventListener("change", saveOptions);
@@ -767,13 +754,14 @@ export async function renderRoomPage(
   // game runs; the game itself starts from there (startGame).
   const summaryRows = (): StartSummaryRow[] => {
     // In a Roles room each wizard's role follows their name.
-    const isRoles = modeEl.value === "roles";
+    const mode = roomMode();
+    const isRoles = mode === "roles";
     const wizards = (room?.players ?? []).map((player) => {
       const name = player.username === user.username ? greeting : displayName(player.username);
       return isRoles && player.role ? `${name} (${t(`role.${player.role}`)})` : name;
     });
     const rows: StartSummaryRow[] = [
-      { label: t("lobby.mode"), ...chosen(modeEl) },
+      { label: t("lobby.mode"), value: gameModeName(mode), changed: mode !== "classic" },
       { label: t("start.wizards"), value: wizards.join(", ") },
       { label: t("room.bots"), value: chosen(botsEl).value },
     ];
@@ -799,8 +787,7 @@ export async function renderRoomPage(
     try {
       // The time per move goes with the room, not the start: the game takes
       // the room's saved one, so a save still on its way lands first.
-      // The mode too: the game takes the room's saved one.
-      const { turnTimeoutMs: _saved, mode: _mode, ...rules } = chosenOptions();
+      const { turnTimeoutMs: _saved, ...rules } = chosenOptions();
       await optionsSave;
       const response = await fetch(`${API_BASE}/wizard/games`, {
         method: "POST",
