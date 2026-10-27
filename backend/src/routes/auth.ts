@@ -83,9 +83,7 @@ export default async function authRoutes(
         });
       }
 
-      const existingUser = UserService.getUserByUsername(username);
-
-      if (existingUser) {
+      if (UserService.isUsernameTaken(username)) {
         return reply.status(409).send({
           error: "Username is already in use",
         });
