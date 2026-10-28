@@ -1383,6 +1383,24 @@ button {
   overflow-wrap: normal;
 }
 
+/* A Roles game: the role over the name, both lines together as tall as the
+   picture beside them. */
+.hud-opponent .hud-opponent-face figcaption.has-role {
+  display: grid;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.hud-opponent .hud-opponent-face:has(figcaption.has-role) img {
+  width: 30px;
+  height: 30px;
+}
+
+.hud-opponent .hud-opponent-face figcaption.has-role span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .hud-opponent .hud-stat-label {
   font-size: 10px;
 }

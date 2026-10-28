@@ -176,10 +176,10 @@ export function createPlayerList(
         row.element.classList.toggle("has-quit", player.quit);
         const caption = row.element.querySelector("figcaption");
         if (caption) {
-          // In a Roles game the line shows the player's role, as the name is
-          // already in the scores at the top; the name stays in the hint.
-          // A Farmer's seeds and a Shepherd's sheep they carry follow it,
-          // and a Smith's armour, e.g. "Thief 🌱2 🐑1" or "Smith 🛡️2".
+          // In a Roles game the caption is two lines as tall as the picture:
+          // the role, then the name. A Farmer's seeds and a Shepherd's sheep
+          // they carry follow the role, and a Smith's armour, e.g.
+          // "Thief: 🌱2 🐑1" or "Smith: 🛡️2".
           const seeds = seedCount(player.seeds);
           const sheep = sheepCount(player.sheep);
           const armor = player.armor ?? 0;
@@ -189,7 +189,16 @@ export function createPlayerList(
             sheep ? t("game.sheep", { count: String(sheep) }) : "",
             armor ? t("game.armor", { count: String(armor) }) : "",
           ].filter(Boolean).join(", ");
-          caption.textContent = player.role ? `${t(`role.${player.role}`)}${marks}` : shortName(player.username);
+          caption.classList.toggle("has-role", !!player.role);
+          if (player.role) {
+            const role = document.createElement("span");
+            role.textContent = `${t(`role.${player.role}`)}:${marks}`;
+            const name = document.createElement("span");
+            name.textContent = shortName(player.username);
+            caption.replaceChildren(role, name);
+          } else {
+            caption.textContent = shortName(player.username);
+          }
           caption.title = player.quit
             ? t("game.playerQuit", { name: displayName(player.username) })
             : carried
