@@ -50,7 +50,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        The hidden knowledge was studied deeply by the Magi of the
+        Thousands of years later, the hidden knowledge was studied deeply by the Magi of the
         city of Babylon. When some of these Magi began to acquire
         great magical power, they fled Babylon and crossed the sea
         to settle in a faraway land to the north.
@@ -82,7 +82,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        The cards are here. And you too can foretell the future.
+        It is FORETOLD. The cards are here. And you too can foretell the future.
       </p>
     </div>
   `,
