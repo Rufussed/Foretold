@@ -14,13 +14,14 @@ describe("assignRoles", () => {
     );
 
     const roles = Object.fromEntries(game.players.map((player) => [player.username, player.role]));
-    expect(roles).toEqual({ alice: "thief", bob: "farmer", "Merlin NPC": "farmer" });
+    expect(roles).toEqual({ alice: "thief", bob: "shepherd", "Merlin NPC": "shepherd" });
   });
 
   it("draws every role, the last one included", () => {
     expect(randomRole(() => 0)).toBe("thief");
     expect(randomRole(() => 0.3)).toBe("servant");
-    expect(randomRole(() => 0.6)).toBe("fisher");
-    expect(randomRole(() => 0.999)).toBe("farmer");
+    expect(randomRole(() => 0.5)).toBe("fisher");
+    expect(randomRole(() => 0.7)).toBe("farmer");
+    expect(randomRole(() => 0.999)).toBe("shepherd");
   });
 });

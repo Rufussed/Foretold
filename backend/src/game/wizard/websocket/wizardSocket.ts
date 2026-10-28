@@ -20,6 +20,8 @@ interface SocketMessage {
 	cardIndex?: number;
 	// fish_card: the place in the trick of the card a Fisher takes.
 	spot?: number;
+	// play_card: the place in the trick of the card a Thief's trump 1 takes.
+	stealSpot?: number;
 	suit?: string;
 	emote?: string;
 }
@@ -277,7 +279,14 @@ export function registerWizardSocket(
 							throw new Error("It is not your turn");
 						}
 
-						gameService.playCard(currentGame, message.cardIndex);
+						if (
+							message.stealSpot !== undefined &&
+							(typeof message.stealSpot !== "number" || !Number.isInteger(message.stealSpot))
+						) {
+							throw new Error("Invalid card");
+						}
+
+						gameService.playCard(currentGame, message.cardIndex, false, message.stealSpot);
 					} else if (message.type === "fish_card") {
 						if (
 							typeof message.spot !== "number" ||

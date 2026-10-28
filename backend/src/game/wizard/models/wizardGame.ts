@@ -58,6 +58,8 @@ export interface GamePlayer {
   // In a Roles game, the Farmers' seeds this player holds, by Farmer; they
   // stay from round to round until harvested (modes/roles/farmer.ts).
   seeds?: Record<string, number>;
+  // The same for the Shepherds' sheep (modes/roles/shepherd.ts).
+  sheep?: Record<string, number>;
   // Turns in a row the timer ran out on; a move of their own resets it.
   missedTurns?: number;
   // Tricks won this game with a card of each colour: no Wizard or Jester, and
@@ -132,6 +134,8 @@ export interface PublicGamePlayer {
   role: RoleId | null;
   // The Farmers' seeds they hold, by Farmer; empty in Classic.
   seeds: Record<string, number>;
+  // The Shepherds' sheep they hold, by Shepherd; empty in Classic.
+  sheep: Record<string, number>;
 }
 
 export interface PublicWizardGameState {

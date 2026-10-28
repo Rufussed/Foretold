@@ -105,6 +105,47 @@ describe("Adept in a Roles game", () => {
     expect(chosenBy(adept, game)).toEqual(card("Green", 4));
   });
 
+  // Merlin plays last once the fourth seat is gone.
+  const lastToPlay = (game: WizardGameState): WizardGameState => {
+    game.players.splice(3, 1);
+    return game;
+  };
+
+  it("wins with its Shepherd's 5 as the last card while its sheep are out", () => {
+    const game = lastToPlay(rolesTrick(
+      "shepherd",
+      [card("Blue", 4), card("Blue", 5)],
+      [{ card: card("Blue", 2) }, { card: card("Blue", 3) }],
+      { prediction: 1, tricksWon: 0 },
+    ));
+    game.players[0]!.sheep = { "Merlin NPC": 1 };
+
+    expect(chosenBy(adept, game)).toEqual(card("Blue", 5));
+  });
+
+  it("risks its Shepherd's 5 one card before last with two sheep out", () => {
+    const hand = [card("Blue", 4), card("Blue", 5), card("Blue", 9)];
+    const played = [{ card: card("Blue", 2) }, { card: card("Blue", 3) }];
+    const one = rolesTrick("shepherd", hand, played, { prediction: 1, tricksWon: 0 });
+    const two = rolesTrick("shepherd", hand, played, { prediction: 1, tricksWon: 0 });
+    one.players[0]!.sheep = { "Merlin NPC": 1 };
+    two.players[0]!.sheep = { "Merlin NPC": 2 };
+
+    expect(chosenBy(adept, one)).toEqual(card("Blue", 9));
+    expect(chosenBy(adept, two)).toEqual(card("Blue", 5));
+  });
+
+  it("wins with the cheapest card when no sheep are out", () => {
+    const game = lastToPlay(rolesTrick(
+      "shepherd",
+      [card("Blue", 4), card("Blue", 5)],
+      [{ card: card("Blue", 2) }, { card: card("Blue", 3) }],
+      { prediction: 1, tricksWon: 0 },
+    ));
+
+    expect(chosenBy(adept, game)).toEqual(card("Blue", 4));
+  });
+
   it("counts its role's card in the bid", () => {
     const hand = [card("Blue", 3), card("Green", 6)];
     const fisher = rolesTrick("fisher", hand, [], { prediction: 0, tricksWon: 0 });

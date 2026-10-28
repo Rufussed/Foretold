@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { findService, servantBonus, SERVANT_BONUS } from "./servant.js";
+import { findService, tippers } from "./servant.js";
 import { card, play, roles } from "./roleTestHelpers.js";
 
 const roleOf = roles({ serv: "servant", serv2: "servant", thief: "thief", fisher: "fisher" });
@@ -60,15 +60,15 @@ describe("findService", () => {
   });
 });
 
-describe("servantBonus", () => {
+describe("tippers", () => {
   const served = [{ role: "servant" as const, by: "serv", on: "ben", card: card(12) }];
 
-  it("rewards the Servant who served and won the trick", () => {
-    expect(servantBonus(served, "serv")).toBe(SERVANT_BONUS);
+  it("names the player served when the Servant wins the trick", () => {
+    expect(tippers(served, "serv")).toEqual(["ben"]);
   });
 
-  it("gives nothing to anyone else, or without service", () => {
-    expect(servantBonus(served, "ben")).toBe(0);
-    expect(servantBonus(undefined, "serv")).toBe(0);
+  it("names no one for anyone else, or without service", () => {
+    expect(tippers(served, "ben")).toEqual([]);
+    expect(tippers(undefined, "serv")).toEqual([]);
   });
 });

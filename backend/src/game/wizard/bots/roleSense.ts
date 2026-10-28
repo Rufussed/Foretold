@@ -1,12 +1,15 @@
 import { normalizeGameOptions } from "../gameOptions.js";
 import type { Card } from "../models/card.js";
 import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
-import { powerOn, swapLastTwo } from "../modes/roles/rolePlay.js";
-import { rolesOf } from "../modes/roles/rolePowers.js";
+import { powerOn } from "../modes/roles/rolePlay.js";
+import { playPower, rolesOf } from "../modes/roles/rolePowers.js";
 import { roleCard, type RoleId } from "../modes/roles/roles.js";
-import { findService } from "../modes/roles/servant.js";
-import { findSteal } from "../modes/roles/thief.js";
+import { sheepOut } from "../modes/roles/shepherd.js";
+import { stealSpots } from "../modes/roles/thief.js";
+import { WizardRules } from "../services/wizardRules.js";
 import { currentPlayer } from "./personality.js";
+
+const rules = new WizardRules();
 
 // How a bot sees its own role in a Roles game (modes/roles/): what its role's
 // card is worth in a bid, and what playing a card would do to the trick. In
@@ -19,8 +22,9 @@ export interface Play {
 
 // Roughly the tricks a role's card brings in a bid. The Fisher picks the
 // winner when played early, the Thief often steals one, the Servant's luck
-// depends on the next player, and the Farmer's 4 farms points, not tricks.
-const BID_VALUE: Record<RoleId, number> = { thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0 };
+// depends on the next player, and the Farmer's 4 and the Shepherd's 5 bring
+// points, not tricks.
+const BID_VALUE: Record<RoleId, number> = { thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0 };
 
 const isRoles = (game: WizardGameState): boolean =>
   normalizeGameOptions(game.options).mode === "roles";
@@ -40,23 +44,42 @@ export const roleBidValue = (game: WizardGameState, card: Card): number =>
   isRoleCard(game, card) ? BID_VALUE[roleOfBot(game)!] : 0;
 
 // The trick as it would stand once the bot plays this card, with the powers
-// it sets off at once: its own Thief's steal, or a Servant just before it
-// receiving the card.
-export function trickAfter(game: WizardGameState, card: Card): PlayedCard[] {
+// it sets off at once: its own Thief's steal, of the card at stealSpot, or a
+// Servant just before it receiving the card.
+function trickWith(game: WizardGameState, card: Card, stealSpot?: number): PlayedCard[] {
   const { username } = currentPlayer(game);
   const trick = game.currentTrick.playedCards.map((played) => ({ ...played }));
 
   trick.push({ username, playedBy: username, card });
   if (isRoles(game)) {
-    const roleOf = rolesOf(game);
-
-    if (findService(trick, game.trumpSuit, roleOf) ?? findSteal(trick, game.trumpSuit, roleOf)) {
-      swapLastTwo(trick);
-    }
+    playPower(trick, game.trumpSuit, rolesOf(game), stealSpot);
   }
 
   return trick;
 }
+
+// Which card a Thief bot's trump 1 takes, when it has a choice: one that wins
+// it the trick when it wants tricks, one that loses it when it has enough;
+// the nearest such card. Undefined when there is nothing to choose.
+export function stealChoice(game: WizardGameState, card: Card): number | undefined {
+  const player = currentPlayer(game);
+  const played: PlayedCard = { username: player.username, playedBy: player.username, card };
+  const spots = stealSpots([...game.currentTrick.playedCards, played], game.trumpSuit, rolesOf(game));
+
+  if (spots.length < 2) {
+    return undefined;
+  }
+
+  const wizardWins = normalizeGameOptions(game.options).wizardWins;
+  const wantsTricks = (player.prediction ?? 0) > player.tricksWon;
+  const wins = (spot: number) =>
+    rules.determineTrickWinner(trickWith(game, card, spot), game.trumpSuit, wizardWins) === player.username;
+
+  return [...spots].reverse().find((spot) => wins(spot) === wantsTricks);
+}
+
+export const trickAfter = (game: WizardGameState, card: Card): PlayedCard[] =>
+  trickWith(game, card, stealChoice(game, card));
 
 // Whether this card would be the bot's role card with its power on, with
 // players still to come after it.
@@ -73,24 +96,43 @@ function powerAhead(game: WizardGameState, card: Card, role: RoleId): boolean {
 export const servesNext = (game: WizardGameState, card: Card): boolean =>
   powerAhead(game, card, "servant");
 
-const isFarmerFour = (game: WizardGameState, card: Card): boolean =>
-  roleOfBot(game) === "farmer" && isRoleCard(game, card);
+// A Farmer's 4 or a Shepherd's 5: a seed or a sheep for whoever wins.
+const givesAway = (game: WizardGameState, card: Card): boolean =>
+  (roleOfBot(game) === "farmer" || roleOfBot(game) === "shepherd") && isRoleCard(game, card);
+
+// A Shepherd is paid only by winning with their own 5: once sheep are out,
+// the 5 that takes the trick so far. The more sheep are out, the more it
+// risks: as the last card with one, from one before last with two, from two
+// before last with three.
+function collectingFive(game: WizardGameState, winners: Play[]): Play | undefined {
+  const { username } = currentPlayer(game);
+  const stillToCome = game.players.length - 1 - game.currentTrick.playedCards.length;
+
+  if (roleOfBot(game) !== "shepherd" || stillToCome >= sheepOut(game.players, username)) {
+    return undefined;
+  }
+
+  return winners.find(({ card }) => isRoleCard(game, card));
+}
 
 // The card the bot's role would rather play now, if any. Wanting tricks: a
+// Shepherd's 5 that wins so far, early enough for the sheep out; a
 // Fisher's 3 with cards still to come, as it can fish the best of them; or,
 // with nothing that wins, a Servant's 2 as a gamble on the next card. Not
-// wanting them: a Farmer's 4 that loses, so a seed goes to someone else.
+// wanting them: a Farmer's 4 or a Shepherd's 5 that loses, so a seed or a
+// sheep goes to someone else.
 export function rolePick(
   game: WizardGameState,
   legal: Play[],
+  winners: Play[],
   losers: Play[],
   wantsTricks: boolean,
-  hasWinner: boolean,
 ): Play | undefined {
   if (!wantsTricks) {
-    return losers.find(({ card }) => isFarmerFour(game, card));
+    return losers.find(({ card }) => givesAway(game, card));
   }
 
-  return legal.find(({ card }) => powerAhead(game, card, "fisher"))
-    ?? (hasWinner ? undefined : legal.find(({ card }) => servesNext(game, card)));
+  return collectingFive(game, winners)
+    ?? legal.find(({ card }) => powerAhead(game, card, "fisher"))
+    ?? (winners.length ? undefined : legal.find(({ card }) => servesNext(game, card)));
 }

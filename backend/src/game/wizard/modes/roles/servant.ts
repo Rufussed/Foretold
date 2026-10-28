@@ -3,8 +3,10 @@ import type { PlayedCard } from "../../models/wizardGame.js";
 import { canBeTaken, powerOn, type RoleOf } from "./rolePlay.js";
 import type { RoleAction } from "./roles.js";
 
-// What a Servant earns for winning a trick they served in.
-export const SERVANT_BONUS = 20;
+// What a Servant is tipped by the player they served, never more than that
+// player has: at once for the service, and again for winning that trick.
+export const SERVICE_POINTS = 10;
+export const SERVANT_BONUS = 10;
 
 // The Servant's power, a must: the card played right after their 2 (in the
 // lead suit or as a trump) becomes theirs, and its player gets the 2.
@@ -35,9 +37,9 @@ export function findService(
   return { role: "servant", by: two.username, on: next.username, card: next.card };
 }
 
-// The bonus for whoever won the trick, if they served in it.
-export function servantBonus(actions: RoleAction[] | undefined, winner: string): number {
-  const served = (actions ?? []).some((action) => action.role === "servant" && action.by === winner);
-
-  return served ? SERVANT_BONUS : 0;
+// Who tips whoever won the trick: the players they served in it, if any.
+export function tippers(actions: RoleAction[] | undefined, winner: string): string[] {
+  return (actions ?? [])
+    .filter((action) => action.role === "servant" && action.by === winner)
+    .map((action) => action.on);
 }

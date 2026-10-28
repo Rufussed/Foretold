@@ -332,6 +332,7 @@ export class WizardGameRunner {
             currentGame,
             cardIndex,
             !isBotName(decisionPlayer.username),
+            this.botService.chooseStealSpot(currentGame, cardIndex),
           );
 
           currentGame.turnDeadlineAt = null;

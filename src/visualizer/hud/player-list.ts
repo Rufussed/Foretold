@@ -1,5 +1,6 @@
 import { displayName } from "../../utils/display-name";
 import { seedCount } from "../../../backend/src/game/wizard/modes/roles/farmer";
+import { sheepCount } from "../../../backend/src/game/wizard/modes/roles/shepherd";
 import type { CharacterId } from "../character-assets";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer } from "../seat-mapping";
@@ -177,14 +178,20 @@ export function createPlayerList(
         if (caption) {
           // In a Roles game the line shows the player's role, as the name is
           // already in the scores at the top; the name stays in the hint.
-          // A Farmer's seeds they carry follow it, e.g. "Thief 🌱2".
+          // A Farmer's seeds and a Shepherd's sheep they carry follow it,
+          // e.g. "Thief 🌱2 🐑1".
           const seeds = seedCount(player.seeds);
-          const marks = seeds ? ` \u{1F331}${seeds}` : "";
+          const sheep = sheepCount(player.sheep);
+          const marks = `${seeds ? ` \u{1F331}${seeds}` : ""}${sheep ? ` \u{1F411}${sheep}` : ""}`;
+          const carried = [
+            seeds ? t("game.seeds", { count: String(seeds) }) : "",
+            sheep ? t("game.sheep", { count: String(sheep) }) : "",
+          ].filter(Boolean).join(", ");
           caption.textContent = player.role ? `${t(`role.${player.role}`)}${marks}` : shortName(player.username);
           caption.title = player.quit
             ? t("game.playerQuit", { name: displayName(player.username) })
-            : seeds
-              ? `${displayName(player.username)} \u00b7 ${t("game.seeds", { count: String(seeds) })}`
+            : carried
+              ? `${displayName(player.username)} \u00b7 ${carried}`
               : displayName(player.username);
         }
         const played = holding ? player.roundScores.at(-1) : undefined;

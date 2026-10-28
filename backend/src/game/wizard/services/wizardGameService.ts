@@ -15,6 +15,7 @@ import type { TurnTimeoutMs } from "../turnTimeout.js";
 import {
   applyFishing,
   applyRolePowers,
+  applyRoundEndPowers,
   applyTrickEndPowers,
   startFishing,
 } from "../modes/roles/rolePowers.js";
@@ -230,6 +231,9 @@ export class WizardGameService {
     game: WizardGameState,
     cardIndex: number,
     byServer = false,
+    // A Thief's trump 1: the place in the trick of the card to take
+    // (modes/roles/thief.ts); the one just before when left out.
+    stealSpot?: number,
   ): void {
     // This method validates and records one play. A complete trick is resolved
     // immediately, while the caller advances to the next trick afterward.
@@ -293,7 +297,7 @@ export class WizardGameService {
     game.currentTrick.playedCards.push(playedCard);
 
     if (normalizeGameOptions(game.options).mode === "roles") {
-      applyRolePowers(game);
+      applyRolePowers(game, stealSpot);
     }
 
     if (game.currentTrick.playedCards.length === game.players.length) {
@@ -478,6 +482,9 @@ export class WizardGameService {
     }
 
     this.scoreCalculator.updatePlayerScores(game);
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      applyRoundEndPowers(game);
+    }
 
     if (game.currentRound === game.totalRounds) {
       game.status = "finished";
@@ -540,6 +547,7 @@ export class WizardGameService {
           quit: player.quit === true,
           role: player.role ?? null,
           seeds: player.seeds ?? {},
+          sheep: player.sheep ?? {},
         };
       }),
       currentRound: game.currentRound,

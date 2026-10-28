@@ -5,6 +5,7 @@ import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.
 import { normalizeGameOptions } from "../gameOptions.js";
 import { strategyFor } from "../bots/index.js";
 import { currentPlayer } from "../bots/personality.js";
+import { stealChoice } from "../bots/roleSense.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 // Makes the moves of whoever's turn it is, as their bot personality would
@@ -42,5 +43,14 @@ export class WizardBotService {
 
   chooseCardIndex(game: WizardGameState): number {
     return strategyFor(currentPlayer(game)).chooseCardIndex(game);
+  }
+
+  // The card a Thief's trump 1 at this index takes: the Adept's choice; the
+  // one just before for anyone else.
+  chooseStealSpot(game: WizardGameState, cardIndex: number): number | undefined {
+    const player = currentPlayer(game);
+    const card = player.hand[cardIndex];
+
+    return player.botPersonality === "adept" && card ? stealChoice(game, card) : undefined;
   }
 }

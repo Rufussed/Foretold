@@ -190,7 +190,8 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     }
   }
 
-  // A Farmer's seeds and harvests come once the trick is won, so they are
+  // A Farmer's seeds and harvests, and a Shepherd's sheep, come once the
+  // trick is won, so they are
   // said after who won it.
   const roleEvents = roleMessages(previous, next, local);
   messages.push(...roleEvents.filter((message) => !message.atTrickEnd));
@@ -221,22 +222,37 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
 // What the banner says when a role's power is used: by you, on you, by and on
 // others.
 // A Farmer's action is a seed planted, or a harvest when it has points (a
-// harvest of nothing when those are 0).
-const ROLE_TEXTS: Record<RoleAction["role"] | "harvest" | "barren", [MessageKey, MessageKey, MessageKey]> = {
+// harvest of nothing when those are 0); a Shepherd's, a sheep given or a
+// payment the same way.
+type PaidText = "harvest" | "barren" | "collect" | "unpaid";
+const ROLE_TEXTS: Record<RoleAction["role"] | PaidText, [MessageKey, MessageKey, MessageKey]> = {
   thief: ["ann.youSteal", "ann.stealsYours", "ann.steals"],
   servant: ["ann.youServe", "ann.servesYours", "ann.serves"],
   fisher: ["ann.youFish", "ann.fishesYours", "ann.fishes"],
   farmer: ["ann.youPlant", "ann.plantsYours", "ann.plants"],
   harvest: ["ann.youHarvest", "ann.harvestsYours", "ann.harvests"],
   barren: ["ann.youHarvestNothing", "ann.harvestsNothingYours", "ann.harvestsNothing"],
+  shepherd: ["ann.youGiveSheep", "ann.givesSheepYours", "ann.givesSheep"],
+  collect: ["ann.youCollect", "ann.collectsYours", "ann.collects"],
+  unpaid: ["ann.youCollectNothing", "ann.collectsNothingYours", "ann.collectsNothing"],
 };
 
-const textsFor = (action: RoleAction) =>
-  ROLE_TEXTS[action.points === undefined ? action.role : action.points ? "harvest" : "barren"];
+const PAID_TEXTS: Partial<Record<RoleAction["role"], [PaidText, PaidText]>> = {
+  farmer: ["harvest", "barren"],
+  shepherd: ["collect", "unpaid"],
+};
+
+const textsFor = (action: RoleAction) => {
+  const paid = PAID_TEXTS[action.role];
+  return ROLE_TEXTS[action.points === undefined || !paid ? action.role : action.points ? paid[0] : paid[1]];
+};
+
+// Seeds and sheep change hands once the trick is won.
+const AT_TRICK_END: RoleAction["role"][] = ["farmer", "shepherd"];
 
 // The powers of a Roles game used since the last snapshot (modes/roles/):
-// the Thief's steal, the Servant's service, the Fisher's catch, and a
-// Farmer's seeds and harvests. Those already announced from the same trick are
+// the Thief's steal, the Servant's service, the Fisher's catch, a Farmer's
+// seeds and harvests, and a Shepherd's sheep and payments. Those already announced from the same trick are
 // not said again; the trick is the same one while its first card is.
 function roleMessages(
   previous: PublicWizardGameState,
@@ -258,9 +274,17 @@ function roleMessages(
     const values = { name: announcedName(action.by), victim: announcedName(action.on), card, points: String(action.points ?? 0) };
     const [youUse, usedOnYou, used] = textsFor(action);
     const text = action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values);
-    return { text, username: action.by, atTrickEnd: action.role === "farmer" };
+    return { text, username: action.by, atTrickEnd: AT_TRICK_END.includes(action.role) };
   });
 }
+
+const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
+  thief: "ann.stolen",
+  servant: "ann.tipped",
+  fisher: "ann.fished",
+  farmer: "ann.harvested",
+  shepherd: "ann.sheepPaid",
+};
 
 // When a round has just been scored: a result per player, the round's best
 // first and the rest in descending order. Empty otherwise.
@@ -293,8 +317,10 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
     let score = predictionScore;
     for (const [role, points] of Object.entries(roleBonuses ?? {})) {
       if (!points) continue;
-      // A Farmer's harvest taken from a seed-holder is a loss of its own.
-      const label = role === "farmer" && points < 0 ? t("ann.harvested") : t(`role.${role as RoleAction["role"]}`);
+      // Points another player's power took are a loss of their own: robbed by
+      // a Thief, a Servant's tip, a Fisher's catch, a Farmer's harvest, a
+      // Shepherd's sheep.
+      const label = points < 0 ? t(LOSS_LABELS[role as RoleAction["role"]]) : t(`role.${role as RoleAction["role"]}`);
       lines.push({ label, value: signed(points) });
       score += points;
     }

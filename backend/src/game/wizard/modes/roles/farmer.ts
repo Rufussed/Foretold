@@ -5,7 +5,7 @@ import { roleCard } from "./roles.js";
 
 // What one seed is worth at harvest, and how many seeds a player can hold in
 // all, of every Farmer together.
-export const SEED_POINTS = 10;
+export const SEED_POINTS = 5;
 export const MAX_SEEDS = 4;
 
 // The seeds a player holds, by the Farmer who planted them. They stay from
@@ -43,8 +43,9 @@ export function plant(winner: SeedHolder, farmer: string): boolean {
   return true;
 }
 
-// The Farmer won a trick, any trick: every seed of theirs is harvested at
-// once, SEED_POINTS each, and its holder is left without. A Farmer farms good
+// The Farmer made their prediction exactly: once the round is scored, every
+// seed of theirs is harvested at once, SEED_POINTS each, and its holder is
+// left without. A Farmer who missed harvests nothing; the seeds wait. A Farmer farms good
 // land only: never more than the holder has, so nothing from 0 or below.
 // Returns who gives how many points; moving them is the caller's.
 export function harvest<T extends SeedHolder>(players: T[], farmer: string): { holder: T; points: number }[] {

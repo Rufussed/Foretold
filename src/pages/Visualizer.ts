@@ -44,6 +44,7 @@ import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { createFishPrompt, type FishPrompt } from "../visualizer/fish-prompt";
+import { createStealPrompt, type StealPrompt } from "../visualizer/steal-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
@@ -94,6 +95,7 @@ export async function renderVisualizerPage(
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
   let fishPrompt: FishPrompt | null = null;
+  let stealPrompt: StealPrompt | null = null;
   let gameHud: GameHud | null = null;
   let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
@@ -130,6 +132,7 @@ export async function renderVisualizerPage(
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
     fishPrompt?.dispose();
+    stealPrompt?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
     timeoutNotice?.dispose();
@@ -355,6 +358,7 @@ export async function renderVisualizerPage(
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
       fishPrompt?.applyState();
+      stealPrompt?.applyState();
       gameHud?.applyState();
       hourglassTurns?.applyState();
       timeoutNotice?.applyState();
@@ -414,6 +418,8 @@ export async function renderVisualizerPage(
     fishPrompt = createFishPrompt(page, hudConnection!, {
       blocked: () => !cardTable || !director.turnShown() || timedOut(),
     });
+    // A Roles game's Thief picks the card their trump 1 takes.
+    stealPrompt = createStealPrompt(page, hudConnection!);
     // The banner's gameplay lines wait until every card, trump included, has landed.
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
@@ -529,6 +535,8 @@ export async function renderVisualizerPage(
         headTurnOf: (seat) => players.headQuaternion(seat),
         headRadiusOf: (seat) => players.headRadius(seat),
         onDealDone: () => director.dealt(),
+        // A Thief's trump 1 asks which card to take before it is sent.
+        chooseSteal: (cardIndex) => stealPrompt?.ask(cardIndex) ?? Promise.resolve(undefined),
         // An NPC whose card was leading shows it did not like being beaten.
         onOvertaken: (previousLeader) => {
           if (trigger) reactToOvertake(previousLeader, trigger, (username) => sync?.seatOf(username) ?? null);

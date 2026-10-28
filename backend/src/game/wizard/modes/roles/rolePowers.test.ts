@@ -5,12 +5,17 @@ import type { GamePlayer } from "../../models/wizardGame.js";
 import { DEFAULT_GAME_OPTIONS } from "../../gameOptions.js";
 import { WizardGameService } from "../../services/wizardGameService.js";
 import type { RoleId } from "./roles.js";
+import { SEED_POINTS } from "./farmer.js";
+import { CATCH_POINTS } from "./fisher.js";
+import { SERVANT_BONUS, SERVICE_POINTS } from "./servant.js";
+import { SHEEP_POINTS } from "./shepherd.js";
 import { card } from "./roleTestHelpers.js";
+import { STEAL_POINTS } from "./thief.js";
 
 // One trick at a table of three, played in seat order with one card each.
 function playTrick(
   mode: "classic" | "roles",
-  seats: { name: string; card: Card; role?: RoleId }[],
+  seats: { name: string; card: Card; role?: RoleId; stealSpot?: number }[],
   setUp?: (players: GamePlayer[]) => void,
   trumpSuit: Suit | null = null,
 ) {
@@ -33,8 +38,8 @@ function playTrick(
   game.currentPlayerIndex = 0;
   game.currentTrick = { playedCards: [], winnerUsername: null };
 
-  for (const _seat of seats) {
-    service.playCard(game, 0);
+  for (const seat of seats) {
+    service.playCard(game, 0, false, seat.stealSpot);
   }
 
   const score = (name: string) => game.players.find((p) => p.username === name)?.score;
@@ -56,6 +61,67 @@ describe("the Thief in a game", () => {
     expect(trick.roleActions?.[0]).toMatchObject({ role: "thief", on: "ben" });
   });
 
+  it("takes points from the player robbed", () => {
+    const { trick, score } = playTrick("roles", seats, (players) => {
+      players.find((p) => p.username === "ben")!.score = 50;
+    });
+
+    expect(score("thief")).toBe(STEAL_POINTS);
+    expect(score("ben")).toBe(50 - STEAL_POINTS);
+    expect(trick.roleActions?.[0]?.points).toBe(STEAL_POINTS);
+  });
+
+  it("never takes more than the player robbed has, but still steals the card", () => {
+    const { trick, score } = playTrick("roles", seats, (players) => {
+      players.find((p) => p.username === "ben")!.score = 4;
+    });
+
+    expect(trick.winnerUsername).toBe("thief");
+    expect(score("thief")).toBe(4);
+    expect(score("ben")).toBe(0);
+  });
+
+  it("takes the card of their choice with a trump 1", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(13) },
+        { name: "ben", card: card(8) },
+        { name: "thief", card: card(1, "Blue"), role: "thief", stealSpot: 0 },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ana")!.score = 50;
+      },
+      "Blue",
+    );
+
+    // The 13 is the Thief's, but the trump 1 now ana's wins the trick.
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "thief", on: "ana", card: card(13) });
+    expect(trick.winnerUsername).toBe("ana");
+    expect(score("thief")).toBe(STEAL_POINTS);
+    expect(score("ana")).toBe(50 - STEAL_POINTS);
+  });
+
+  it("takes the points even when someone else wins the trick", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "ben", card: card(7) },
+        { name: "thief", card: card(1), role: "thief" },
+        { name: "cara", card: card(13) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.score = 50;
+      },
+    );
+
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "thief", on: "ben" });
+    expect(trick.winnerUsername).toBe("cara");
+    expect(score("thief")).toBe(STEAL_POINTS);
+    expect(score("ben")).toBe(50 - STEAL_POINTS);
+  });
+
   it("is an ordinary 1 in a Classic game", () => {
     const { trick } = playTrick("classic", seats);
 
@@ -65,15 +131,51 @@ describe("the Thief in a game", () => {
 });
 
 describe("the Servant in a game", () => {
-  it("receives the 13, wins the trick and gets 20 points at once", () => {
-    const { trick, score } = playTrick("roles", [
+  it("receives the 13, wins the trick and is tipped by the player served", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "serv", card: card(2), role: "servant" },
+        { name: "ben", card: card(13) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.score = 50;
+      },
+    );
+
+    expect(trick.winnerUsername).toBe("serv");
+    expect(score("serv")).toBe(SERVICE_POINTS + SERVANT_BONUS);
+    expect(score("ben")).toBe(50 - SERVICE_POINTS - SERVANT_BONUS);
+  });
+
+  it("is tipped for the service even when someone else wins the trick", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(13) },
+        { name: "serv", card: card(2), role: "servant" },
+        { name: "ben", card: card(5) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.score = 50;
+      },
+    );
+
+    expect(trick.winnerUsername).toBe("ana");
+    expect(score("serv")).toBe(SERVICE_POINTS);
+    expect(score("ben")).toBe(50 - SERVICE_POINTS);
+  });
+
+  it("is tipped no more than the player served has", () => {
+    const { score } = playTrick("roles", [
       { name: "ana", card: card(8) },
       { name: "serv", card: card(2), role: "servant" },
       { name: "ben", card: card(13) },
     ]);
 
-    expect(trick.winnerUsername).toBe("serv");
-    expect(score("serv")).toBe(20);
+    expect(score("serv")).toBe(0);
+    expect(score("ben")).toBe(0);
   });
 
   it("gets no bonus for a trick someone else wins", () => {
@@ -123,6 +225,38 @@ describe("the Fisher in a game", () => {
     expect(game.phase).toBe("playing");
     expect(game.currentTrick.winnerUsername).toBe("fisher");
     expect(game.currentTrick.roleActions?.[0]).toMatchObject({ role: "fisher", on: "ben" });
+  });
+
+  it("takes points from the player fished when the catch wins the trick", () => {
+    const { game, service, score } = playTrick("roles", seats, (players) => {
+      players.find((p) => p.username === "ben")!.score = 50;
+    });
+
+    service.fishCard(game, "fisher", 2);
+
+    expect(score("fisher")).toBe(CATCH_POINTS);
+    expect(score("ben")).toBe(50 - CATCH_POINTS);
+  });
+
+  it("takes nothing for a catch that does not win the trick", () => {
+    const { game, service, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "fisher", card: card(3), role: "fisher" },
+        { name: "ben", card: card(5) },
+        { name: "cara", card: card(13) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.score = 50;
+      },
+    );
+
+    service.fishCard(game, "fisher", 2);
+
+    expect(game.currentTrick.winnerUsername).toBe("cara");
+    expect(score("fisher")).toBe(0);
+    expect(score("ben")).toBe(50);
   });
 
   it("refuses a card that cannot be fished, and anyone else's choice", () => {
@@ -180,65 +314,144 @@ describe("the Farmer in a game", () => {
     expect(game.players.find((p) => p.username === "ben")?.seeds).toBeUndefined();
   });
 
-  it("harvests when the Farmer wins a trick, own 4 or not, and plants nothing", () => {
-    const { game, trick, score } = playTrick(
+  // The Farmer, seat 1, played their 4 into a trick ben won; then the round
+  // is scored, with each player's prediction set beforehand.
+  const farmRound = (predictions: Record<string, number>, scores: Record<string, number>, seeds: Record<string, number>) =>
+    playTrick(
       "roles",
       [
         { name: "ana", card: card(8) },
-        { name: "farmer", card: card(4, "Blue"), role: "farmer" },
+        { name: "farmer", card: card(4), role: "farmer" },
         { name: "ben", card: card(13) },
+      ],
+      (players) => {
+        for (const player of players) {
+          player.prediction = predictions[player.username] ?? 0;
+          player.score = scores[player.username] ?? 0;
+          if (seeds[player.username]) player.seeds = { farmer: seeds[player.username]! };
+        }
+      },
+    );
+
+  it("does not harvest when a trick is won", () => {
+    const { game, score } = playTrick(
+      "roles",
+      [
+        { name: "farmer", card: card(13), role: "farmer" },
+        { name: "ana", card: card(8) },
+        { name: "ben", card: card(5) },
       ],
       (players) => {
         players.find((p) => p.username === "ana")!.seeds = { farmer: 2 };
         players.find((p) => p.username === "ana")!.score = 50;
-        players.find((p) => p.username === "ben")!.seeds = { farmer: 1 };
-        players.find((p) => p.username === "ben")!.score = 10;
-      },
-      "Blue",
-    );
-
-    expect(trick.winnerUsername).toBe("farmer");
-    expect(score("farmer")).toBe(30);
-    expect(score("ana")).toBe(30);
-    expect(score("ben")).toBe(0);
-    expect(game.players.every((p) => !p.seeds?.farmer)).toBe(true);
-    expect(trick.roleActions?.map((a) => a.points)).toEqual([20, 10]);
-  });
-
-  it("farms nothing from a holder at 0 points, but the seeds are gone", () => {
-    const { game, trick, score } = playTrick(
-      "roles",
-      [
-        { name: "farmer", card: card(13), role: "farmer" },
-        { name: "ana", card: card(8) },
-        { name: "ben", card: card(5) },
-      ],
-      (players) => {
-        players.find((p) => p.username === "ana")!.seeds = { farmer: 2 };
       },
     );
 
     expect(score("farmer")).toBe(0);
-    expect(score("ana")).toBe(0);
-    expect(game.players.find((p) => p.username === "ana")?.seeds).toEqual({});
-    expect(trick.roleActions?.[0]).toMatchObject({ role: "farmer", on: "ana", points: 0 });
+    expect(game.players.find((p) => p.username === "ana")?.seeds).toEqual({ farmer: 2 });
   });
 
-  it("a Farmer winning another Farmer's 4 harvests first, then takes the seed", () => {
-    const { game, score } = playTrick(
+  it("harvests every seed once the round is scored, when the Farmer made the prediction", () => {
+    const { game, service, score } = farmRound({ farmer: 0, ana: 0, ben: 1 }, { ana: 50, ben: 0 }, { ana: 2, ben: 1 });
+
+    service.finishRound(game);
+
+    // ana: 50 + 20 for the round, less 2 seeds; ben: 0 + 30 for the round,
+    // less 2 seeds, as he took a new one in the trick.
+    expect(score("farmer")).toBe(20 + 4 * SEED_POINTS);
+    expect(score("ana")).toBe(70 - 2 * SEED_POINTS);
+    expect(score("ben")).toBe(30 - 2 * SEED_POINTS);
+    expect(game.players.every((p) => !p.seeds?.farmer)).toBe(true);
+    expect(game.players.find((p) => p.username === "farmer")?.roundScores.at(-1)?.roleBonuses).toEqual({ farmer: 4 * SEED_POINTS });
+    expect(game.players.find((p) => p.username === "ana")?.roundScores.at(-1)?.roleBonuses).toEqual({ farmer: -2 * SEED_POINTS });
+  });
+
+  it("harvests nothing when the Farmer missed, and the seeds wait", () => {
+    const { game, service, score } = farmRound({ farmer: 1, ana: 0, ben: 1 }, { ana: 50 }, { ana: 2 });
+
+    service.finishRound(game);
+
+    expect(score("farmer")).toBe(-10);
+    expect(score("ana")).toBe(70);
+    expect(game.players.find((p) => p.username === "ana")?.seeds).toEqual({ farmer: 2 });
+  });
+
+  it("never harvests more than the holder has, counting this round's points", () => {
+    const { game, service, score } = farmRound({ farmer: 0, ana: 1, ben: 1 }, { ana: 5 }, { ana: 4 });
+
+    service.finishRound(game);
+
+    // ana missed: 5 - 10 = -5, so nothing to harvest; the seeds are gone.
+    // ben's seed from the trick brings the Farmer one seed's points.
+    expect(score("farmer")).toBe(20 + SEED_POINTS);
+    expect(score("ana")).toBe(-5);
+    expect(score("ben")).toBe(30 - SEED_POINTS);
+    expect(game.players.find((p) => p.username === "ana")?.seeds).toEqual({});
+  });
+});
+
+describe("the Shepherd in a game", () => {
+  it("gives a sheep to the trick's winner", () => {
+    const { game, trick } = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "shepherd", card: card(5), role: "shepherd" },
+      { name: "ben", card: card(13) },
+    ]);
+
+    expect(game.players.find((p) => p.username === "ben")?.sheep).toEqual({ shepherd: 1 });
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "shepherd", by: "shepherd", on: "ben" });
+  });
+
+  it("is paid only when winning with the 5, and gives no sheep then", () => {
+    const { game, trick, score } = playTrick(
       "roles",
       [
-        { name: "farmer2", card: card(4), role: "farmer" },
-        { name: "farmer", card: card(13), role: "farmer" },
-        { name: "ben", card: card(5) },
+        { name: "ana", card: card(3) },
+        { name: "shepherd", card: card(5), role: "shepherd" },
+        { name: "ben", card: card(2) },
       ],
       (players) => {
-        players.find((p) => p.username === "ben")!.seeds = { farmer: 1 };
-        players.find((p) => p.username === "ben")!.score = 40;
+        players.find((p) => p.username === "ana")!.sheep = { shepherd: 2 };
+        players.find((p) => p.username === "ana")!.score = 100;
+        players.find((p) => p.username === "ben")!.sheep = { shepherd: 1 };
+        players.find((p) => p.username === "ben")!.score = 10;
       },
     );
 
-    expect(score("farmer")).toBe(10);
-    expect(game.players.find((p) => p.username === "farmer")?.seeds).toEqual({ farmer2: 1 });
+    // ben has only 10 to give for his sheep.
+    expect(trick.winnerUsername).toBe("shepherd");
+    expect(score("shepherd")).toBe(2 * SHEEP_POINTS + 10);
+    expect(score("ana")).toBe(100 - 2 * SHEEP_POINTS);
+    expect(score("ben")).toBe(0);
+    expect(game.players.every((p) => !p.sheep?.shepherd)).toBe(true);
+    expect(trick.roleActions?.map((a) => a.points)).toEqual([2 * SHEEP_POINTS, 10]);
+  });
+
+  it("is not paid for winning with another card", () => {
+    const { game, score } = playTrick(
+      "roles",
+      [
+        { name: "shepherd", card: card(13), role: "shepherd" },
+        { name: "ana", card: card(8) },
+        { name: "ben", card: card(2) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ana")!.sheep = { shepherd: 1 };
+        players.find((p) => p.username === "ana")!.score = 50;
+      },
+    );
+
+    expect(score("shepherd")).toBe(0);
+    expect(game.players.find((p) => p.username === "ana")?.sheep).toEqual({ shepherd: 1 });
+  });
+
+  it("a Shepherd winning another Shepherd's 5 takes a sheep like anyone", () => {
+    const { game } = playTrick("roles", [
+      { name: "shepherd2", card: card(5), role: "shepherd" },
+      { name: "shepherd", card: card(13), role: "shepherd" },
+      { name: "ben", card: card(2) },
+    ]);
+
+    expect(game.players.find((p) => p.username === "shepherd")?.sheep).toEqual({ shepherd2: 1 });
   });
 });

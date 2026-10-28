@@ -91,7 +91,7 @@ export const adept: BotStrategy = {
       rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins) === player.username;
     const winners = legal.filter(winsNow);
     const losers = legal.filter((play) => !winsNow(play));
-    const rolePlay = rolePick(game, legal, losers, wantsTricks, winners.length > 0);
+    const rolePlay = rolePick(game, legal, winners, losers, wantsTricks);
 
     if (rolePlay) return rolePlay.index;
 
