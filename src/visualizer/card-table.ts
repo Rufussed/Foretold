@@ -46,7 +46,7 @@ export interface CardTableOptions {
   // player who was leading.
   onOvertaken?(previousLeader: string): void;
   // Before a card is sent: the card a Thief's trump 1 takes, if there is a
-  // choice (steal-prompt.ts); null takes the card back.
+  // choice (steal-prompt.ts); null when the turn passed before a choice.
   chooseSteal?(cardIndex: number): Promise<number | null | undefined>;
 }
 

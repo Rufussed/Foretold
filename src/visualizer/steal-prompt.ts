@@ -7,8 +7,9 @@ import { announcedName, cardName } from "./hud/announcements";
 
 export interface StealPrompt {
   // Before the local player's card is sent: the place in the trick of the
-  // card their Thief's trump 1 takes, picked from a row of buttons; undefined
-  // when there is nothing to choose, null when they took the card back.
+  // card their Thief's trump 1 takes, picked from a row of buttons: once
+  // played, the 1 must take one. Undefined when there is nothing to choose,
+  // null when the turn passed before a choice, e.g. when time ran out.
   ask(cardIndex: number): Promise<number | null | undefined>;
   // Call after every game-state update; closes the prompt once the turn has
   // passed, e.g. when time ran out.
@@ -56,9 +57,9 @@ export function createStealPrompt(root: HTMLElement, game: GameConnection): Stea
   };
 
   optionsEl.addEventListener("click", (event) => {
-    const button = (event.target as HTMLElement).closest<HTMLButtonElement>("button");
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>("[data-spot]");
     if (!button) return;
-    close(button.dataset.spot === undefined ? null : Number(button.dataset.spot));
+    close(Number(button.dataset.spot));
   });
 
   return {
@@ -68,9 +69,6 @@ export function createStealPrompt(root: HTMLElement, game: GameConnection): Stea
       if (spots.length < 2) return Promise.resolve(undefined);
 
       const playedCards = game.state()!.currentTrick.playedCards;
-      const cancel = document.createElement("button");
-      cancel.type = "button";
-      cancel.textContent = t("common.cancel");
       optionsEl.replaceChildren(
         ...spots.map((spot) => {
           const played = playedCards[spot]!;
@@ -85,7 +83,6 @@ export function createStealPrompt(root: HTMLElement, game: GameConnection): Stea
           button.append(swatch, name);
           return button;
         }),
-        cancel,
       );
       close(null);
       modal.hidden = false;
