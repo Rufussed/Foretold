@@ -251,7 +251,7 @@ export const de: Record<MessageKey, string> = {
   "profile.totalPoints": "Gesamtpunkte",
   "profile.totalPointsHint": "Alle Partien zusammengezählt",
   "profile.record": "BILANZ",
-  "profile.levelNextLabel": "Nächste Stufe",
+  "profile.levelNextLabel": "Nächste Stufe {level}",
   "profile.skills": "Wizard-Können",
   "profile.shortGames": "Kurze Partien",
   "profile.rounds": "Runden",

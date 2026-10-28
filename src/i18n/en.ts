@@ -250,7 +250,7 @@ export const en = {
   "profile.totalPoints": "Total points",
   "profile.totalPointsHint": "All game scores added up",
   "profile.record": "RECORD",
-  "profile.levelNextLabel": "To next level",
+  "profile.levelNextLabel": "To next level {level}",
   "profile.skills": "Wizard Skills",
   "profile.shortGames": "Short games",
   "profile.rounds": "Rounds",
