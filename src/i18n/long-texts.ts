@@ -127,7 +127,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        Das verborgene Wissen wurde von den Magiern der Stadt
+        Tausende Jahre später wurde das verborgene Wissen von den Magiern der Stadt
         Babylon eingehend studiert. Als einige dieser Magier große
         magische Kräfte erlangten, flohen sie aus Babylon,
         überquerten das Meer und ließen sich in einem fernen Land
@@ -161,7 +161,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        Die Karten sind hier. Und auch du kannst die Zukunft
+        Es ist FORETOLD. Die Karten sind hier. Und auch du kannst die Zukunft
         vorhersagen.
       </p>
     </div>
