@@ -1024,6 +1024,8 @@ button {
   top: 50%;
   left: 50%;
   transform: translate(-50%, calc(-50% - 3px));
+  /* Toned down so they don't outshine the rest of the table. */
+  filter: brightness(0.8);
 }
 
 /* An emoticon in its character's colour: the drawn art keeps its shading, and
