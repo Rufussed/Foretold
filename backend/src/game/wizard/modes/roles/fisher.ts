@@ -32,7 +32,10 @@ export function nextFisher(
   trumpSuit: Suit | null,
   roleOf: RoleOf,
 ): number | null {
-  const fished = new Set((actions ?? []).filter((action) => action.role === "fisher").map((action) => action.by));
+  // A catch the Smith's armour blocked counts as fished: the Smith's action
+  // is on the Fisher.
+  const fished = new Set((actions ?? []).flatMap((action) =>
+    action.role === "fisher" ? [action.by] : action.role === "smith" ? [action.on] : []));
   const three = playedCards.findIndex((played, index) =>
     powerOn(playedCards, index, "fisher", trumpSuit, roleOf)
     && !fished.has(playerOf(played))

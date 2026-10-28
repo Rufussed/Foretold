@@ -47,8 +47,14 @@ export function plant(winner: SeedHolder, farmer: string): boolean {
 // seed of theirs is harvested at once, SEED_POINTS each, and its holder is
 // left without. A Farmer who missed harvests nothing; the seeds wait. A Farmer farms good
 // land only: never more than the holder has, so nothing from 0 or below.
-// Returns who gives how many points; moving them is the caller's.
-export function harvest<T extends SeedHolder>(players: T[], farmer: string): { holder: T; points: number }[] {
+// `shield` says how many of a holder's seeds their armour blocks (smith.ts);
+// those bring nothing. Returns who gives how many points, and how many seeds
+// were blocked; moving the points is the caller's.
+export function harvest<T extends SeedHolder>(
+  players: T[],
+  farmer: string,
+  shield: (holder: T, count: number) => number = () => 0,
+): { holder: T; points: number; blocked: number }[] {
   return players.flatMap((holder) => {
     const count = holder.seeds?.[farmer] ?? 0;
 
@@ -57,7 +63,8 @@ export function harvest<T extends SeedHolder>(players: T[], farmer: string): { h
     }
 
     delete holder.seeds[farmer];
+    const blocked = shield(holder, count);
 
-    return [{ holder, points: Math.min(count * SEED_POINTS, Math.max(0, holder.score)) }];
+    return [{ holder, points: Math.min((count - blocked) * SEED_POINTS, Math.max(0, holder.score)), blocked }];
   });
 }

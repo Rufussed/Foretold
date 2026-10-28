@@ -179,13 +179,15 @@ export function createPlayerList(
           // In a Roles game the line shows the player's role, as the name is
           // already in the scores at the top; the name stays in the hint.
           // A Farmer's seeds and a Shepherd's sheep they carry follow it,
-          // e.g. "Thief 🌱2 🐑1".
+          // and a Smith's armour, e.g. "Thief 🌱2 🐑1" or "Smith 🛡️2".
           const seeds = seedCount(player.seeds);
           const sheep = sheepCount(player.sheep);
-          const marks = `${seeds ? ` \u{1F331}${seeds}` : ""}${sheep ? ` \u{1F411}${sheep}` : ""}`;
+          const armor = player.armor ?? 0;
+          const marks = `${seeds ? ` \u{1F331}${seeds}` : ""}${sheep ? ` \u{1F411}${sheep}` : ""}${armor ? ` \u{1F6E1}\u{FE0F}${armor}` : ""}`;
           const carried = [
             seeds ? t("game.seeds", { count: String(seeds) }) : "",
             sheep ? t("game.sheep", { count: String(sheep) }) : "",
+            armor ? t("game.armor", { count: String(armor) }) : "",
           ].filter(Boolean).join(", ");
           caption.textContent = player.role ? `${t(`role.${player.role}`)}${marks}` : shortName(player.username);
           caption.title = player.quit

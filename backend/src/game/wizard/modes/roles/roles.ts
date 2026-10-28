@@ -1,6 +1,6 @@
 // The roles of the Roles mode: each wizard picks one before the game and
 // keeps it to the end. A role's power belongs to one number card, the one
-// given here. These five are open to everyone; roles to be earned by playing
+// given here. These six are open to everyone; roles to be earned by playing
 // come later. Like modes.ts it must stay free of Node-only code, because Vite
 // bundles it into the browser.
 
@@ -12,6 +12,7 @@ export const ROLES = [
   { id: "fisher", card: 3 },
   { id: "farmer", card: 4 },
   { id: "shepherd", card: 5 },
+  { id: "smith", card: 6 },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];
@@ -35,7 +36,9 @@ export interface RoleAction {
   card: Card;
   // A steal, a service, a catch, a Farmer's harvest or a Shepherd's payment:
   // the points taken from the player robbed, served, fished or the holder
-  // (on), 0 when they had none to give.
+  // (on), 0 when they had none to give. For a Smith, a block: the points
+  // bounced back from the attacker (on); missing for armour forged (on is the
+  // Smith themself).
   // Missing for a seed or sheep given.
   points?: number;
 }

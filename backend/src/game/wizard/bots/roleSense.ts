@@ -2,7 +2,7 @@ import { normalizeGameOptions } from "../gameOptions.js";
 import type { Card } from "../models/card.js";
 import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
 import { powerOn } from "../modes/roles/rolePlay.js";
-import { playPower, rolesOf } from "../modes/roles/rolePowers.js";
+import { armorOf, playPower, rolesOf } from "../modes/roles/rolePowers.js";
 import { roleCard, type RoleId } from "../modes/roles/roles.js";
 import { sheepOut } from "../modes/roles/shepherd.js";
 import { stealSpots } from "../modes/roles/thief.js";
@@ -22,9 +22,9 @@ export interface Play {
 
 // Roughly the tricks a role's card brings in a bid. The Fisher picks the
 // winner when played early, the Thief often steals one, the Servant's luck
-// depends on the next player, and the Farmer's 4 and the Shepherd's 5 bring
-// points, not tricks.
-const BID_VALUE: Record<RoleId, number> = { thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0 };
+// depends on the next player, the Farmer's 4 and the Shepherd's 5 bring
+// points, not tricks, and the Smith's 6 forges armour.
+const BID_VALUE: Record<RoleId, number> = { thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0 };
 
 const isRoles = (game: WizardGameState): boolean =>
   normalizeGameOptions(game.options).mode === "roles";
@@ -52,7 +52,7 @@ function trickWith(game: WizardGameState, card: Card, stealSpot?: number): Playe
 
   trick.push({ username, playedBy: username, card });
   if (isRoles(game)) {
-    playPower(trick, game.trumpSuit, rolesOf(game), stealSpot);
+    playPower(trick, game.trumpSuit, rolesOf(game), stealSpot, armorOf(game));
   }
 
   return trick;
@@ -100,6 +100,13 @@ export const servesNext = (game: WizardGameState, card: Card): boolean =>
 const givesAway = (game: WizardGameState, card: Card): boolean =>
   (roleOfBot(game) === "farmer" || roleOfBot(game) === "shepherd") && isRoleCard(game, card);
 
+// A Smith's 6 with its power on: a piece of armour.
+function forgesNow(game: WizardGameState, card: Card): boolean {
+  const trick = trickAfter(game, card);
+
+  return roleOfBot(game) === "smith" && powerOn(trick, trick.length - 1, "smith", game.trumpSuit, rolesOf(game));
+}
+
 // A Shepherd is paid only by winning with their own 5: once sheep are out,
 // the 5 that takes the trick so far. The more sheep are out, the more it
 // risks: as the last card with one, from one before last with two, from two
@@ -120,7 +127,7 @@ function collectingFive(game: WizardGameState, winners: Play[]): Play | undefine
 // Fisher's 3 with cards still to come, as it can fish the best of them; or,
 // with nothing that wins, a Servant's 2 as a gamble on the next card. Not
 // wanting them: a Farmer's 4 or a Shepherd's 5 that loses, so a seed or a
-// sheep goes to someone else.
+// sheep goes to someone else, or a Smith's 6 that loses and forges armour.
 export function rolePick(
   game: WizardGameState,
   legal: Play[],
@@ -129,7 +136,7 @@ export function rolePick(
   wantsTricks: boolean,
 ): Play | undefined {
   if (!wantsTricks) {
-    return losers.find(({ card }) => givesAway(game, card));
+    return losers.find(({ card }) => givesAway(game, card) || forgesNow(game, card));
   }
 
   return collectingFive(game, winners)

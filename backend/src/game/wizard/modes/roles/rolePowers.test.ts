@@ -9,6 +9,7 @@ import { SEED_POINTS } from "./farmer.js";
 import { CATCH_POINTS } from "./fisher.js";
 import { SERVANT_BONUS, SERVICE_POINTS } from "./servant.js";
 import { SHEEP_POINTS } from "./shepherd.js";
+import { BLOCK_POINTS } from "./smith.js";
 import { card } from "./roleTestHelpers.js";
 import { STEAL_POINTS } from "./thief.js";
 
@@ -453,5 +454,122 @@ describe("the Shepherd in a game", () => {
     ]);
 
     expect(game.players.find((p) => p.username === "shepherd")?.sheep).toEqual({ shepherd2: 1 });
+  });
+});
+
+describe("the Smith in a game", () => {
+  const find = (game: { players: GamePlayer[] }, name: string) => game.players.find((p) => p.username === name)!;
+
+  it("forges armour with a 6 in the lead suit", () => {
+    const { game, trick } = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "smith", card: card(6), role: "smith" },
+      { name: "ben", card: card(13) },
+    ]);
+
+    expect(find(game, "smith").armor).toBe(1);
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "smith", by: "smith", on: "smith" });
+  });
+
+  it("blocks a steal: the card stays, and the Thief pays", () => {
+    const { game, trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "smith", card: card(13), role: "smith" },
+        { name: "thief", card: card(1), role: "thief" },
+      ],
+      (players) => {
+        players.find((p) => p.username === "smith")!.armor = 1;
+        players.find((p) => p.username === "thief")!.score = 50;
+      },
+    );
+
+    expect(trick.winnerUsername).toBe("smith");
+    expect(find(game, "smith").armor).toBe(0);
+    expect(score("smith")).toBe(BLOCK_POINTS);
+    expect(score("thief")).toBe(50 - BLOCK_POINTS);
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "smith", by: "smith", on: "thief", points: BLOCK_POINTS });
+  });
+
+  it("blocks a service: the Servant gets nothing and pays", () => {
+    const { game, trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "serv", card: card(2), role: "servant" },
+        { name: "smith", card: card(13), role: "smith" },
+      ],
+      (players) => {
+        players.find((p) => p.username === "smith")!.armor = 1;
+        players.find((p) => p.username === "serv")!.score = 50;
+      },
+    );
+
+    expect(trick.winnerUsername).toBe("smith");
+    expect(find(game, "smith").armor).toBe(0);
+    expect(score("serv")).toBe(50 - BLOCK_POINTS);
+  });
+
+  it("blocks a catch, and the Fisher's turn is used all the same", () => {
+    const { game, service, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "fisher", card: card(3), role: "fisher" },
+        { name: "smith", card: card(13), role: "smith" },
+      ],
+      (players) => {
+        players.find((p) => p.username === "smith")!.armor = 1;
+        players.find((p) => p.username === "fisher")!.score = 50;
+      },
+    );
+
+    service.fishCard(game, "fisher", 2);
+
+    expect(game.phase).toBe("playing");
+    expect(game.currentTrick.winnerUsername).toBe("smith");
+    expect(score("fisher")).toBe(50 - BLOCK_POINTS);
+  });
+
+  it("blocks one sheep per piece of armour", () => {
+    const { game, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "shepherd", card: card(5), role: "shepherd" },
+        { name: "smith", card: card(2), role: "smith" },
+      ],
+      (players) => {
+        Object.assign(players.find((p) => p.username === "smith")!, { armor: 1, score: 100, sheep: { shepherd: 2 } });
+        players.find((p) => p.username === "shepherd")!.score = 50;
+      },
+    );
+
+    expect(score("smith")).toBe(100 - SHEEP_POINTS + BLOCK_POINTS);
+    expect(score("shepherd")).toBe(50 + SHEEP_POINTS - BLOCK_POINTS);
+    expect(find(game, "smith").armor).toBe(0);
+  });
+
+  it("blocks one seed per piece of armour at the harvest", () => {
+    const { game, service, score } = playTrick(
+      "roles",
+      [
+        { name: "farmer", card: card(13), role: "farmer" },
+        { name: "smith", card: card(8), role: "smith" },
+        { name: "ben", card: card(5) },
+      ],
+      (players) => {
+        for (const player of players) player.prediction = player.username === "farmer" ? 1 : 0;
+        Object.assign(players.find((p) => p.username === "smith")!, { armor: 1, score: 100, seeds: { farmer: 3 } });
+      },
+    );
+
+    service.finishRound(game);
+
+    // farmer: 30 for the round, 2 seeds harvested, 1 blocked; smith: 100 + 20.
+    expect(score("farmer")).toBe(30 + 2 * SEED_POINTS - BLOCK_POINTS);
+    expect(score("smith")).toBe(120 - 2 * SEED_POINTS + BLOCK_POINTS);
+    expect(find(game, "smith").armor).toBe(0);
   });
 });

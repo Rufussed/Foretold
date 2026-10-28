@@ -49,9 +49,15 @@ export function giveSheep(players: SheepHolder[], winner: SheepHolder, shepherd:
 
 // The Shepherd won a trick with their own 5: everyone holding their sheep
 // pays SHEEP_POINTS each, and the whole flock comes home. Never more than the
-// holder has, so nothing from 0 or below. Returns who pays how many points;
-// moving them is the caller's.
-export function collect<T extends SheepHolder>(players: T[], shepherd: string): { holder: T; points: number }[] {
+// holder has, so nothing from 0 or below. `shield` says how many of a
+// holder's sheep their armour blocks (smith.ts); those bring nothing. Returns
+// who pays how many points, and how many sheep were blocked; moving the
+// points is the caller's.
+export function collect<T extends SheepHolder>(
+  players: T[],
+  shepherd: string,
+  shield: (holder: T, count: number) => number = () => 0,
+): { holder: T; points: number; blocked: number }[] {
   return players.flatMap((holder) => {
     const count = holder.sheep?.[shepherd] ?? 0;
 
@@ -60,7 +66,8 @@ export function collect<T extends SheepHolder>(players: T[], shepherd: string): 
     }
 
     delete holder.sheep[shepherd];
+    const blocked = shield(holder, count);
 
-    return [{ holder, points: Math.min(count * SHEEP_POINTS, Math.max(0, holder.score)) }];
+    return [{ holder, points: Math.min((count - blocked) * SHEEP_POINTS, Math.max(0, holder.score)), blocked }];
   });
 }

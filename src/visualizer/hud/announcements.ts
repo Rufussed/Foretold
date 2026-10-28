@@ -224,7 +224,7 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
 // A Farmer's action is a seed planted, or a harvest when it has points (a
 // harvest of nothing when those are 0); a Shepherd's, a sheep given or a
 // payment the same way.
-type PaidText = "harvest" | "barren" | "collect" | "unpaid";
+type PaidText = "harvest" | "barren" | "collect" | "unpaid" | "block" | "blockFree";
 const ROLE_TEXTS: Record<RoleAction["role"] | PaidText, [MessageKey, MessageKey, MessageKey]> = {
   thief: ["ann.youSteal", "ann.stealsYours", "ann.steals"],
   servant: ["ann.youServe", "ann.servesYours", "ann.serves"],
@@ -235,11 +235,15 @@ const ROLE_TEXTS: Record<RoleAction["role"] | PaidText, [MessageKey, MessageKey,
   shepherd: ["ann.youGiveSheep", "ann.givesSheepYours", "ann.givesSheep"],
   collect: ["ann.youCollect", "ann.collectsYours", "ann.collects"],
   unpaid: ["ann.youCollectNothing", "ann.collectsNothingYours", "ann.collectsNothing"],
+  smith: ["ann.youForge", "ann.youForge", "ann.forges"],
+  block: ["ann.youBlock", "ann.blocksYours", "ann.blocks"],
+  blockFree: ["ann.youBlockFree", "ann.blocksFreeYours", "ann.blocksFree"],
 };
 
 const PAID_TEXTS: Partial<Record<RoleAction["role"], [PaidText, PaidText]>> = {
   farmer: ["harvest", "barren"],
   shepherd: ["collect", "unpaid"],
+  smith: ["block", "blockFree"],
 };
 
 const textsFor = (action: RoleAction) => {
@@ -284,6 +288,7 @@ const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
   fisher: "ann.fished",
   farmer: "ann.harvested",
   shepherd: "ann.sheepPaid",
+  smith: "ann.blocked",
 };
 
 // When a round has just been scored: a result per player, the round's best

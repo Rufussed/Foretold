@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { WizardGameService } from "../../services/wizardGameService.js";
 import { assignRoles, randomRole } from "./assignRoles.js";
+import { ROLES } from "./roles.js";
 
 describe("assignRoles", () => {
   it("keeps each chosen role and draws one for the rest", () => {
@@ -14,14 +15,14 @@ describe("assignRoles", () => {
     );
 
     const roles = Object.fromEntries(game.players.map((player) => [player.username, player.role]));
-    expect(roles).toEqual({ alice: "thief", bob: "shepherd", "Merlin NPC": "shepherd" });
+    const last = ROLES.at(-1)!.id;
+    expect(roles).toEqual({ alice: "thief", bob: last, "Merlin NPC": last });
   });
 
   it("draws every role, the last one included", () => {
-    expect(randomRole(() => 0)).toBe("thief");
-    expect(randomRole(() => 0.3)).toBe("servant");
-    expect(randomRole(() => 0.5)).toBe("fisher");
-    expect(randomRole(() => 0.7)).toBe("farmer");
-    expect(randomRole(() => 0.999)).toBe("shepherd");
+    ROLES.forEach(({ id }, index) => {
+      expect(randomRole(() => (index + 0.5) / ROLES.length)).toBe(id);
+    });
+    expect(randomRole(() => 0.999)).toBe(ROLES.at(-1)!.id);
   });
 });

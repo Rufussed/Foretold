@@ -7,6 +7,7 @@ import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } f
 import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
+import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
 import type { RoleAction, RoleId } from "./roles.js";
 
@@ -16,27 +17,54 @@ const rules = new WizardRules();
 export const rolesOf = (game: WizardGameState): RoleOf => (username) =>
   game.players.find((player) => player.username === username)?.role;
 
+// The pieces of armour each player wears; only Smiths have any.
+export const armorOf = (game: WizardGameState) => (username: string): number =>
+  game.players.find((player) => player.username === username)?.armor ?? 0;
+
+// A power used against a Smith in armour: what the block looks like, the
+// Smith's action on the attacker.
+const blockedBy = (smith: string, attacker: string, played: PlayedCard): RoleAction =>
+  ({ role: "smith", by: smith, on: attacker, card: played.card });
+
 // The power the trick's last card sets off at once, if any: a Servant just
 // before it receiving it, or a Thief's 1 stealing - the card at stealSpot
-// when it is one the 1 may take, else the one nearest it. Swaps the owners in
+// when it is one the 1 may take, else the one nearest it. Either is blocked
+// when it is a Smith's card and they wear armour. Swaps the owners in
 // playedCards; the bots use it on a copy to look ahead.
 export function playPower(
   playedCards: PlayedCard[],
   trumpSuit: Suit | null,
   roleOf: RoleOf,
   stealSpot?: number,
+  armor: (username: string) => number = () => 0,
 ): RoleAction | null {
   const service = findService(playedCards, trumpSuit, roleOf);
+  const last = playedCards.at(-1);
 
-  if (service) {
+  if (service && last) {
+    if (armor(service.on)) {
+      return blockedBy(service.on, service.by, last);
+    }
     swapLastTwo(playedCards);
     return service;
   }
 
   const spots = stealSpots(playedCards, trumpSuit, roleOf);
   const spot = stealSpot !== undefined && spots.includes(stealSpot) ? stealSpot : spots.at(-1);
+  const target = spot === undefined ? undefined : playedCards[spot];
 
-  return spot === undefined ? null : steal(playedCards, spot);
+  if (spot === undefined || !target || !last) {
+    return null;
+  }
+
+  return armor(target.username) ? blockedBy(target.username, last.username, target) : steal(playedCards, spot);
+}
+
+// A Smith's armour used up on a block, and the points bounced back from the
+// attacker.
+function bounce(game: WizardGameState, action: RoleAction): void {
+  block(game.players.find((player) => player.username === action.by));
+  action.points = movePoints(game, action.on, action.by, "smith", BLOCK_POINTS);
 }
 
 // The doors from the game into the roles. After every card played in a
@@ -45,10 +73,15 @@ export function playPower(
 // players to be told.
 export function applyRolePowers(game: WizardGameState, stealSpot?: number): void {
   const trick = game.currentTrick;
-  const action = playPower(trick.playedCards, game.trumpSuit, rolesOf(game), stealSpot);
+  const roleOf = rolesOf(game);
+  const action = playPower(trick.playedCards, game.trumpSuit, roleOf, stealSpot, armorOf(game));
 
   if (action) {
     trick.roleActions = [...(trick.roleActions ?? []), action];
+  }
+
+  if (action?.role === "smith") {
+    bounce(game, action);
   }
 
   if (action?.role === "thief") {
@@ -57,6 +90,22 @@ export function applyRolePowers(game: WizardGameState, stealSpot?: number): void
   if (action?.role === "servant") {
     action.points = movePoints(game, action.on, action.by, "servant", SERVICE_POINTS);
   }
+
+  applyForging(game);
+}
+
+// A Smith's 6 just played, with its power on: a piece of armour, if they
+// have room for it.
+function applyForging(game: WizardGameState): void {
+  const trick = game.currentTrick;
+  const six = trick.playedCards.at(-1);
+  const smith = six && game.players.find((player) => player.username === playerOf(six));
+
+  if (!six || !smith || !forgesArmor(trick.playedCards, game.trumpSuit, rolesOf(game)) || !forge(smith)) {
+    return;
+  }
+
+  trick.roleActions = [...(trick.roleActions ?? []), { role: "smith", by: smith.username, on: smith.username, card: six.card }];
 }
 
 // Points a role's power moves, straight onto the score and into this round's
@@ -115,11 +164,16 @@ function applyShepherding(game: WizardGameState, winner: GamePlayer): RoleAction
   const won = trick.playedCards.find((played) => played.username === winner.username);
 
   if (won && playerOf(won) === winner.username && laidBy([won], rolesOf(game)).length) {
-    for (const { holder, points } of collect(game.players, winner.username)) {
+    for (const { holder, points, blocked } of collect(game.players, winner.username, block)) {
       addBonus(winner, "shepherd", points);
       addBonus(holder, "shepherd", -points);
       // A payment of nothing is still told: the sheep are home.
       actions.push({ role: "shepherd", by: winner.username, on: holder.username, card: won.card, points });
+      // A Smith's armour, one piece per sheep, bounces points back.
+      if (blocked) {
+        const bounced = movePoints(game, winner.username, holder.username, "smith", blocked * BLOCK_POINTS);
+        actions.push({ role: "smith", by: holder.username, on: winner.username, card: won.card, points: bounced });
+      }
     }
   }
 
@@ -166,15 +220,19 @@ export function applyRoundEndPowers(game: WizardGameState): void {
       continue;
     }
 
-    for (const { holder, points } of harvest(game.players, farmer.username)) {
-      addRoundPoints(farmer, points);
-      addRoundPoints(holder, -points);
+    for (const { holder, points, blocked } of harvest(game.players, farmer.username, block)) {
+      addRoundPoints(farmer, "farmer", points);
+      addRoundPoints(holder, "farmer", -points);
+      // A Smith's armour, one piece per seed, bounces points back.
+      const bounced = Math.min(blocked * BLOCK_POINTS, Math.max(0, farmer.score));
+      addRoundPoints(holder, "smith", bounced);
+      addRoundPoints(farmer, "smith", -bounced);
     }
   }
 }
 
-// Points onto a score and into the last round's results, as the Farmer's.
-function addRoundPoints(player: GamePlayer, points: number): void {
+// Points onto a score and into the last round's results, as this role's.
+function addRoundPoints(player: GamePlayer, role: RoleId, points: number): void {
   const round = player.roundScores.at(-1);
 
   if (!points || !round) {
@@ -182,7 +240,7 @@ function addRoundPoints(player: GamePlayer, points: number): void {
   }
 
   player.score += points;
-  round.roleBonuses = { ...round.roleBonuses, farmer: (round.roleBonuses?.farmer ?? 0) + points };
+  round.roleBonuses = { ...round.roleBonuses, [role]: (round.roleBonuses?.[role] ?? 0) + points };
 }
 
 // When a Roles game's trick is complete: if a Fisher is left to choose, the
@@ -224,6 +282,16 @@ export function applyFishing(game: WizardGameState, username: string, spot: numb
   }
 
   const trick = game.currentTrick;
+  const caught = trick.playedCards[spot]!;
+
+  // A Smith in armour keeps their card; the Fisher's turn is used all the same.
+  if (armorOf(game)(caught.username)) {
+    const action = blockedBy(caught.username, username, caught);
+    trick.roleActions = [...(trick.roleActions ?? []), action];
+    bounce(game, action);
+    return;
+  }
+
   trick.roleActions = [...(trick.roleActions ?? []), fish(trick.playedCards, username, spot)];
 }
 
@@ -239,8 +307,11 @@ export function botFishingSpot(game: WizardGameState): number {
     return rules.determineTrickWinner(copy, game.trumpSuit, wizardWins) === fisher?.username;
   };
   const wantsTricks = (fisher?.prediction ?? 0) > (fisher?.tricksWon ?? 0);
+  // A Smith in armour would only block the catch.
+  const spots = spotsToFish(game);
+  const open = spots.filter((spot) => !armorOf(game)(game.currentTrick.playedCards[spot]!.username));
 
-  return botCatch(spotsToFish(game), winsWith, wantsTricks);
+  return botCatch(open.length ? open : spots, winsWith, wantsTricks);
 }
 
 // A human whose time ran out: a card at random.

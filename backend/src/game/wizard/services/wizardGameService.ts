@@ -548,6 +548,7 @@ export class WizardGameService {
           role: player.role ?? null,
           seeds: player.seeds ?? {},
           sheep: player.sheep ?? {},
+          armor: player.armor ?? 0,
         };
       }),
       currentRound: game.currentRound,

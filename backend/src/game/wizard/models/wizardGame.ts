@@ -60,6 +60,9 @@ export interface GamePlayer {
   seeds?: Record<string, number>;
   // The same for the Shepherds' sheep (modes/roles/shepherd.ts).
   sheep?: Record<string, number>;
+  // A Smith's pieces of armour (modes/roles/smith.ts); they stay from round
+  // to round until used.
+  armor?: number;
   // Turns in a row the timer ran out on; a move of their own resets it.
   missedTurns?: number;
   // Tricks won this game with a card of each colour: no Wizard or Jester, and
@@ -136,6 +139,8 @@ export interface PublicGamePlayer {
   seeds: Record<string, number>;
   // The Shepherds' sheep they hold, by Shepherd; empty in Classic.
   sheep: Record<string, number>;
+  // A Smith's pieces of armour; 0 for everyone else.
+  armor: number;
 }
 
 export interface PublicWizardGameState {
