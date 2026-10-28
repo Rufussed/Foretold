@@ -259,12 +259,14 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "login") {
       panelContainer.innerHTML = renderLoginPanel();
       attachLoginEvents();
+      focusFirstInput(panelContainer);
       return;
     }
 
     if (activePanel === "signup") {
       panelContainer.innerHTML = renderSignupPanel();
       attachSignupEvents();
+      focusFirstInput(panelContainer);
       return;
     }
 
@@ -870,6 +872,11 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         if (submit) submit.disabled = false;
       }
     });
+  }
+
+  /** Puts the typing cursor in the panel's first field, so no click is needed. */
+  function focusFirstInput(container: HTMLElement): void {
+    container.querySelector<HTMLInputElement>("input")?.focus();
   }
 
   function attachLoginEvents(): void {
