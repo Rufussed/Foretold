@@ -303,56 +303,6 @@
 
 
 /* ---------------------------------------------------------
-   PLAYERS TABLE
-   --------------------------------------------------------- */
-
-.players-table {
-  overflow: hidden;
-  border: 1px solid #d9e0ea;
-  border-radius: 6px;
-}
-
-.players-table-header,
-.players-table-row {
-  display: grid;
-  grid-template-columns: 2fr repeat(4, 1fr);
-  align-items: center;
-}
-
-.players-table-header {
-  min-height: 42px;
-  padding: 0 14px;
-  color: #6b778c;
-  background: #f5f7fa;
-  border-bottom: 1px solid #d9e0ea;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-}
-
-.players-table-row {
-  min-height: 50px;
-  padding: 0 14px;
-  border-bottom: 1px solid #e5e9ef;
-}
-
-.players-table-row:last-child {
-  border-bottom: 0;
-}
-
-.players-table-row > span:not(:first-child),
-.players-table-header > span:not(:first-child) {
-  text-align: center;
-}
-
-.player-current {
-  background: #eef4ff;
-  font-weight: 400;
-}
-
-
-/* ---------------------------------------------------------
    YOUR HAND
    --------------------------------------------------------- */
 
@@ -438,16 +388,6 @@
 
   .game-status {
     grid-template-columns: 1fr;
-  }
-
-  .players-table-header,
-  .players-table-row {
-    grid-template-columns: 2fr repeat(4, 70px);
-    min-width: 500px;
-  }
-
-  .players-table {
-    overflow-x: auto;
   }
 
   .card-button {

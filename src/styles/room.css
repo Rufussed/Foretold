@@ -15,84 +15,6 @@
   background: transparent;
 }
 
-.room-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 30px;
-  padding: 15px clamp(24px, 5vw, 80px);
-  border-bottom: 1px solid rgba(191, 125, 47, 0.2);
-  background: rgba(8, 9, 7, 0.35);
-  backdrop-filter: var(--ui-blur);
-}
-
-.room-brand {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-}
-
-.room-logo {
-  display: block;
-  width: 90px;
-  height: 62px;
-  object-fit: cover;
-  mix-blend-mode: screen;
-}
-
-.room-nav {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.room-nav a,
-.room-account a,
-.room-account button {
-  border: 0;
-  background: transparent;
-  color: rgba(244, 235, 217, 0.82);
-  font-family: inherit;
-  font-size: 0.78rem;
-  letter-spacing: 0.1em;
-  text-decoration: none;
-  text-transform: uppercase;
-  cursor: pointer;
-  transition:
-    color 0.2s ease,
-    text-shadow 0.2s ease;
-}
-
-.room-nav a:hover,
-.room-account a:hover,
-.room-account button:hover {
-  color: #fff;
-  text-shadow: 0 0 12px rgba(191, 125, 47, 0.55);
-}
-
-.room-nav-rune {
-  color: rgba(191, 125, 47, 0.72);
-  font-size: 1.15rem;
-  line-height: 1;
-}
-
-.room-account {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-}
-
-.room-account button {
-  padding: 8px 14px;
-  border: var(--ui-edge);
-  background: rgba(10, 10, 8, 0.42);
-}
-
-.room-account button:hover {
-  border-color: rgba(191, 125, 47, 0.65);
-  background: rgba(191, 125, 47, 0.12);
-}
-
 .room-content {
   width: min(1100px, calc(100% - 48px));
   /* min-height, not height: the sections size to their contents now, and a
@@ -687,45 +609,9 @@
   font-weight: 400;
   text-align: center;
 }
-/* Footer */
-
-.room-footer {
-  width: min(1100px, calc(100% - 48px));
-  height: 38px;
-  margin: 0 auto;
-  padding: 8px 0 0;
-  text-align: center;
-}
-
-.room-footer a {
-  color: rgba(244, 235, 217, 0.58);
-  font-size: 0.76rem;
-  letter-spacing: 0.1em;
-  text-decoration: none;
-  text-transform: uppercase;
-}
-
-.room-footer a:hover {
-  color: rgba(244, 235, 217, 0.92);
-}
-
 /* Responsive */
 
 @media (max-width: 720px) {
-  .room-header {
-    flex-wrap: wrap;
-    padding: 14px 20px;
-  }
-
-  .room-nav {
-    order: 3;
-    width: 100%;
-    justify-content: center;
-  }
-
-  .room-account {
-    margin-left: auto;
-  }
 
   .room-content {
     width: min(100% - 28px, 1180px);
@@ -771,26 +657,9 @@
   .room-variations-controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .room-footer {
-    width: calc(100% - 28px);
-  }
 }
 
 @media (max-width: 420px) {
-  .room-logo {
-    width: 76px;
-    height: 52px;
-  }
-
-  .room-account {
-    gap: 8px;
-  }
-
-  .room-account a,
-  .room-account button {
-    font-size: 0.68rem;
-  }
 
   .room-title-row .room-intro {
     font-size: 1.1rem;

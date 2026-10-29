@@ -134,19 +134,6 @@
   text-transform: uppercase;
 }
 
-.home-rune-mark {
-  width: 40px;
-  height: 40px;
-
-  stroke: #d69a40;
-  stroke-width: 1.25;
-
-  filter:
-    drop-shadow(
-      0 0 6px rgba(232, 133, 30, 0.3)
-    );
-}
-
 .home-account-actions {
   display: flex;
   align-items: center;
@@ -882,49 +869,6 @@
    Rules
    --------------------------------------------------------- */
 
-.home-rule-list {
-  display: grid;
-  gap: 10px;
-
-  margin: 25px 0 0;
-  padding: 0;
-
-  text-align: left;
-
-  list-style: none;
-}
-
-.home-rule-list li {
-  /* The number is its own column so a rule long enough to wrap keeps its
-     second line aligned with the first, instead of running back underneath
-     the number. Baseline alignment keeps the smaller number sitting on the
-     first line as it did while it was inline. */
-  display: flex;
-  align-items: baseline;
-
-  border-bottom: 1px solid #2d2b24;
-
-  padding: 9px 0;
-
-  color: #c9bca8;
-
-  font-family: "Cinzel Variable", serif;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  line-height: 1.5;
-}
-
-.home-rule-list span {
-  display: inline-block;
-
-  flex: 0 0 28px;
-  width: 28px;
-
-  color: #b36e27;
-
-  font-size: 9px;
-}
-
 .home-rules-content {
   max-height: min(62vh, 560px);
   margin-top: 25px;
@@ -1049,11 +993,6 @@
 
   .home-topbar {
     padding: 10px 18px 19px;
-  }
-
-  .home-rune-mark {
-    width: 32px;
-    height: 32px;
   }
 
   .home-brand strong {

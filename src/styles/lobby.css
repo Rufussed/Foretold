@@ -527,15 +527,6 @@
     0 3px 25px rgba(0, 0, 0, 0.65);
 }
 
-.lobby-subtitle {
-  margin: 14px 0 0;
-
-  color: rgba(244, 234, 216, 0.55);
-
-  font-size: 0.9rem;
-  letter-spacing: 0.035em;
-}
-
 /* ---------------------------------------------------------
    CREATE ROOM BUTTON
    --------------------------------------------------------- */
@@ -835,29 +826,6 @@
   font-weight: 400;
 }
 
-.access-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-
-  min-width: 0;
-  max-width: 100%;
-  padding: 0 4px;
-  box-sizing: border-box;
-  overflow: hidden;
-  height: 25px;
-
-  border: 1px solid rgba(143, 105, 54, 0.32);
-
-  background: rgba(104, 71, 31, 0.12);
-
-  color: rgba(218, 170, 102, 0.75);
-
-  font-size: 0.58rem;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-}
-
 /* ---------------------------------------------------------
    ROOM ACTIONS
    --------------------------------------------------------- */
@@ -1015,65 +983,6 @@
   text-transform: uppercase;
 
   cursor: pointer;
-}
-
-/* ---------------------------------------------------------
-   FOOTER
-   --------------------------------------------------------- */
-
-.lobby-footer {
-  position: relative;
-  z-index: 1;
-
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  width: min(1180px, calc(100% - 48px));
-
-  margin: 0 auto;
-
-  padding: 0 0 28px;
-
-  color: rgba(244, 234, 216, 0.32);
-
-  font-size: 0.66rem;
-  letter-spacing: 0.07em;
-}
-
-.lobby-footer > div {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.lobby-footer a,
-.lobby-footer button {
-  padding: 0;
-
-  border: 0;
-
-  background: transparent;
-
-  color: rgba(244, 234, 216, 0.38);
-
-  font: inherit;
-  text-decoration: none;
-
-  cursor: pointer;
-}
-
-.lobby-footer a:hover,
-.lobby-footer button:hover {
-  color: rgba(224, 161, 77, 0.8);
-}
-
-.lobby-footer span span,
-.lobby-footer > div > span {
-  width: 1px;
-  height: 12px;
-
-  background: rgba(191, 125, 47, 0.25);
 }
 
 /* ---------------------------------------------------------
@@ -1398,57 +1307,6 @@
 }
 
 /* ---------------------------------------------------------
-   ACCESS PREVIEW
-   --------------------------------------------------------- */
-
-.room-access-preview {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  gap: 18px;
-
-  margin: 8px 0 28px;
-  padding: 14px 15px;
-
-  border: 1px solid rgba(191, 125, 47, 0.15);
-
-  background: rgba(94, 61, 27, 0.08);
-}
-
-.room-access-preview > div {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
-.room-access-label {
-  color: rgba(244, 234, 216, 0.36);
-
-  font-size: 0.58rem;
-  font-weight: 400;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.room-access-preview strong {
-  color: #dca45c;
-
-  font-size: 0.67rem;
-  letter-spacing: 0.12em;
-}
-
-.room-access-preview small {
-  max-width: 210px;
-
-  color: rgba(244, 234, 216, 0.3);
-
-  font-size: 0.62rem;
-  line-height: 1.45;
-  text-align: right;
-}
-
-/* ---------------------------------------------------------
    MODAL ACTIONS
    --------------------------------------------------------- */
 
@@ -1519,9 +1377,6 @@
 /* ---------------------------------------------------------
    MOBILE
    --------------------------------------------------------- */
-
-@media (max-width: 900px) {
-}
 
 @media (max-width: 720px) {
   .lobby-header {
@@ -1604,28 +1459,8 @@
     border-radius: 0;
   }
 
-  .lobby-footer {
-    width: calc(100% - 28px);
-
-    align-items: flex-start;
-    flex-direction: column;
-
-    gap: 12px;
-  }
-
   .room-modal {
     padding: 30px 22px;
-  }
-
-  .room-access-preview {
-    align-items: flex-start;
-    flex-direction: column;
-  }
-
-  .room-access-preview small {
-    max-width: none;
-
-    text-align: left;
   }
 }
 
