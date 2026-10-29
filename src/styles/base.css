@@ -1,0 +1,207 @@
+/* The base every page shares: the font, the frosted-glass panel tokens,
+   form fields and the brand button. */
+
+:root {
+  /* The text font of the interface. Titles use "Cinzel Variable", shipped
+     with the app (@fontsource-variable/cinzel, imported in main.ts), so no
+     request goes to Google. */
+  font-family: Georgia, "Times New Roman", serif;
+  color: #172033;
+  background: #eef2f7;
+}
+
+/* The one box the interface wears: the brown frosted glass with its fine
+   edge, lightly blurred. Panels, prompts and HUD pieces all take these, so a
+   change here changes them together. */
+:root {
+  --ui-bg: rgba(12, 13, 11, 0.6);
+  --ui-bg-hover: rgba(12, 13, 11, 0.72);
+  --ui-bg-solid: rgba(12, 13, 11, 0.88);
+  --ui-edge: 1px solid rgba(191, 125, 47, 0.28);
+  --ui-edge-strong: 1px solid rgba(191, 125, 47, 0.45);
+  --ui-blur: blur(2px);
+  --ui-shadow: 0 18px 45px rgba(0, 0, 0, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+
+  /* One thin amber scrollbar everywhere (Home panels, lobby, profile...). */
+  scrollbar-color: rgba(191, 125, 47, 0.45) transparent;
+  scrollbar-width: thin;
+}
+
+body {
+  margin: 0;
+}
+
+#app {
+  position: relative;
+  z-index: 9999;
+  min-height: 100vh;
+}
+
+.page {
+  width: min(640px, calc(100% - 32px));
+  margin: 0 auto;
+  padding: 64px 0;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 42px;
+}
+
+h2 {
+  margin-top: 0;
+}
+
+.panel {
+  margin-top: 24px;
+  padding: 24px;
+  background: rgb(255 255 255 / 75%); /* the table scene shows through */
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgb(30 50 80 / 8%);
+}
+
+form {
+  display: grid;
+  gap: 16px;
+}
+
+label {
+  display: grid;
+  gap: 6px;
+  font-weight: 400;
+}
+
+/* Dark fields, the same as the create-account panel's, so no control falls
+   back to the browser's white. */
+:where(input:not([type="checkbox"], [type="radio"], [type="range"]), textarea) {
+  padding: 10px;
+  color: #eee2cc;
+  background: #090a08;
+  border: 1px solid #373329;
+  border-radius: 4px;
+  font: inherit;
+  /* What players type shows as typed, in the text font, even inside a Cinzel
+     label set in capitals: Cinzel has no lowercase, and wizard names are
+     case-sensitive at login. */
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* Browser autofill paints its own pale background over the field; paint the
+   dark one over that. Important, because the fields' own focus shadows and
+   transitions would otherwise replace it and the pale background shows
+   whenever an autofilled field is selected. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #eee2cc;
+  caret-color: #eee2cc;
+  box-shadow: 0 0 0 1000px #090a08 inset !important;
+  transition: background-color 600000s 0s !important;
+}
+
+:where(select, select option, select optgroup) {
+  color: #eee2cc;
+  background: #090a08;
+}
+
+/* Browsers give form controls their own UI font rather than the page's, so
+   every one of them has to be told to inherit, or the interface goes back to
+   sans-serif wherever someone can type or choose. */
+select,
+textarea,
+option,
+optgroup {
+  font: inherit;
+}
+
+/* No bold anywhere in the interface: the elements a browser draws bold by
+   default (headings, strong, table headings, option group labels) are set to
+   regular, and every font-weight below is 400. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+b,
+strong,
+th,
+optgroup,
+legend,
+dt {
+  font-weight: 400;
+}
+
+/* The brand button, from the sign-up button: brown fill, copper edge, and a
+   gold edge and text when hovered. Everything below inherits these, so a
+   button no one has styled still matches. */
+:root {
+  --button-fill: linear-gradient(#874513, #5a2908);
+  --button-edge: #a66122;
+  --button-text: #f6e7cf;
+  --button-gold: #e4a348;
+  --button-gold-text: #ffbd62;
+}
+
+button {
+  width: fit-content;
+  padding: 10px 16px;
+  color: var(--button-text);
+  background: var(--button-fill);
+  border: 1px solid var(--button-edge);
+  border-radius: 4px;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    filter 180ms ease;
+}
+
+/* :where keeps this from outranking a component's own button styles. */
+:where(button):hover:not(:disabled) {
+  color: var(--button-gold-text);
+  border-color: var(--button-gold);
+  filter: brightness(1.12);
+}
+
+#backend-status {
+  color: #176b43;
+  font-weight: 400;
+}
+
+#login-message {
+  min-height: 24px;
+}
+
+.home-page {
+  min-height: 100vh;
+  padding: 4px 32px 64px;
+  color: white;
+  /* The table scene shows through (see backdrop-scene.ts). */
+  background-image: linear-gradient(rgb(0 0 0 / 35%), rgb(0 0 0 / 35%));
+  background-position: center;
+  background-size: cover;
+  background-size: 100% auto;
+  background-repeat: no-repeat;
+}
+
+/* The table scene behind every page but the 3D view: full window, under all
+   page content. */
+.backdrop-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+

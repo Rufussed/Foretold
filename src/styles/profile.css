@@ -1,0 +1,1512 @@
+/* The Profile page, and the later redesign that overrides parts of it. */
+
+/* =========================
+   PROFILE
+   ========================= */
+
+.profile-page {
+  position: relative;
+  min-height: 100svh;
+  overflow: hidden;
+  color: #f4ebd9;
+}
+
+.profile-content {
+  width: min(1180px, calc(100% - 48px));
+  min-height: calc(100svh - 125px);
+  margin: 0 auto;
+  padding: clamp(30px, 5vh, 55px) 0 20px;
+  display: flex;
+  flex-direction: column;
+}
+
+.profile-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 32px;
+  flex-shrink: 0;
+}
+
+.profile-heading h1 {
+  margin: 2px 0 4px;
+  color: #f4ebd9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2rem, 4vw, 3.4rem);
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+/* The strong colour under the name: its name and a bar filling towards
+   mastery. The suit colours are the cards' (visualizer
+   config.ts). */
+.profile-color {
+  --strong: #e0a14d;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: rgba(244, 235, 217, 0.7);
+  font-size: 0.82rem;
+  white-space: nowrap;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-color[data-color="Blue"] { --strong: #1565c0; }
+.profile-color[data-color="Red"] { --strong: #c62828; }
+.profile-color[data-color="Yellow"] { --strong: #f9a825; }
+.profile-color[data-color="Green"] { --strong: #2e7d32; }
+
+.profile-color-name strong {
+  color: color-mix(in srgb, var(--strong) 55%, #f4ebd9);
+  font-weight: 700;
+}
+
+.profile-color-bar {
+  width: 140px;
+  height: 7px;
+  border: 1px solid color-mix(in srgb, var(--strong) 60%, transparent);
+  background: rgba(8, 9, 7, 0.5);
+}
+
+.profile-color-bar span {
+  display: block;
+  height: 100%;
+  background: var(--strong);
+  box-shadow: 0 0 8px var(--strong);
+}
+
+.profile-heading-note {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  margin: 0 0 5px;
+  color: rgba(244, 235, 217, 0.7);
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+.profile-heading-note strong {
+  color: #e0a14d;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 2rem;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+/* Same columns as .profile-detail-grid, so the two game cards line up with
+   the Record card and the two point cards with Social. */
+.profile-highlights {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.profile-highlight-group {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 10px;
+}
+
+.profile-highlight {
+  min-height: 108px;
+  text-align: center;
+  padding: 16px 18px;
+  border: 1px solid rgba(180, 119, 47, 0.2);
+  background: rgba(12, 13, 11, 0.68);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.24);
+  backdrop-filter: var(--ui-blur);
+}
+
+.profile-highlight span,
+.profile-highlight small {
+  display: block;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-highlight strong {
+  display: block;
+  margin: 8px 0 2px;
+  color: #e0a14d;
+  font-size: clamp(1.6rem, 3vw, 2.3rem);
+  font-weight: 400;
+  line-height: 1;
+}
+
+.profile-highlight small {
+  font-size: 0.62rem;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.profile-highlight-primary {
+  border-color: rgba(191, 125, 47, 0.48);
+  background:
+    linear-gradient(135deg, rgba(201, 127, 40, 0.12), transparent 70%),
+    rgba(12, 13, 11, 0.72);
+}
+
+/* Played, won and win rate share one card, as wide as two: full games and
+   short games side by side. */
+.profile-highlight-pair {
+  grid-column: span 2;
+}
+
+.profile-highlight-pair-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.profile-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.8fr) minmax(500px, 1.7fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.profile-card {
+  border: var(--ui-edge);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(201, 127, 40, 0.035),
+      transparent 36%
+    ),
+    var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: var(--ui-blur);
+  padding: 20px 24px;
+}
+
+.profile-card-kicker {
+  margin: 0 0 5px;
+  color: #b97a2d;
+  font-size: 0.62rem;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+}
+
+.profile-card h2 {
+  margin: 0 0 14px;
+  color: #f4ebd9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 1.3rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.profile-card-heading,
+.profile-section-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-card-note {
+  padding-top: 3px;
+  color: rgba(244, 235, 217, 0.42);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* "Wizard skills:", the level box beside it and the bar towards the next
+   level at the right end, on one line. */
+.profile-skills-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.profile-card .profile-skills-heading h2 {
+  margin: 0;
+  white-space: nowrap;
+}
+
+/* The bar towards the next level, at the end of the line, with its label
+   above it in the style of the cards' labels. */
+.profile-level-progress {
+  display: flex;
+  flex: 0 1 140px;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  margin-left: auto;
+}
+
+.profile-level-label {
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-level-bar {
+  display: block;
+  height: 6px;
+  border: 1px solid rgba(191, 125, 47, 0.42);
+  background: rgba(8, 9, 7, 0.5);
+}
+
+.profile-level-bar span {
+  display: block;
+  height: 100%;
+  background: #e0a14d;
+  box-shadow: 0 0 8px rgba(224, 161, 77, 0.6);
+}
+
+.profile-rank {
+  padding: 7px 12px;
+  border: 1px solid rgba(224, 161, 77, 0.75);
+  background: rgba(191, 125, 47, 0.14);
+  box-shadow: 0 0 10px rgba(224, 161, 77, 0.18);
+  color: #f0b45e;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.profile-info-list {
+  display: grid;
+}
+
+.profile-info-row {
+  padding: 10px 0;
+}
+
+.profile-info-row:first-child {
+  padding-top: 0;
+}
+
+.profile-info-row:last-child {
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.profile-info-row span {
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.76rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.profile-info-row strong {
+  color: rgba(244, 235, 217, 0.9);
+  font-size: 0.88rem;
+  font-weight: 400;
+  text-align: right;
+}
+
+.profile-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 7px;
+}
+
+.profile-stat {
+  min-height: 58px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(191, 125, 47, 0.12);
+}
+
+.profile-stat span {
+  display: block;
+  margin-bottom: 4px;
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.58rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.profile-stat strong {
+  color: #e0a14d;
+  font-size: 1rem;
+  font-weight: 400;
+}
+
+.profile-opponents {
+  margin-bottom: 22px;
+}
+
+.profile-social {
+  min-height: 0;
+}
+
+.profile-player-search {
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.profile-search-form {
+  display: grid;
+  gap: 7px;
+}
+
+.profile-search-label {
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-search-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.profile-search-controls input {
+  min-width: 0;
+  border: 1px solid rgba(191, 125, 47, 0.24);
+  background: rgba(8, 9, 7, 0.52);
+  color: #f4ebd9;
+  font: inherit;
+  font-size: 0.82rem;
+  padding: 8px 10px;
+}
+
+.profile-search-controls input:focus {
+  border-color: rgba(191, 125, 47, 0.7);
+  outline: none;
+}
+
+.profile-search-results {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  max-height: 132px;
+  overflow-y: auto;
+}
+
+.profile-search-result {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 12px;
+  border: 1px solid rgba(191, 125, 47, 0.14);
+  background: rgba(8, 9, 7, 0.28);
+}
+
+.profile-search-result > div {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.profile-search-result strong {
+  color: #f4ebd9;
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.profile-search-result span {
+  color: rgba(244, 235, 217, 0.48);
+  font-size: 0.65rem;
+}
+
+.profile-social-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.profile-social .opponents-list {
+  max-height: 112px;
+}
+
+.profile-section-heading {
+  flex-shrink: 0;
+  margin-bottom: 8px;
+}
+
+.opponents-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  padding-right: 8px;
+}
+
+.profile-opponent-count {
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.opponent-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid rgba(191, 125, 47, 0.14);
+  background: rgba(8, 9, 7, 0.28);
+}
+
+.opponent-row > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.opponent-row strong {
+  color: #f4ebd9;
+  font-size: 0.9rem;
+  font-weight: 400;
+}
+
+.opponent-row span {
+  padding: 3px 7px;
+  border: 1px solid rgba(191, 125, 47, 0.2);
+  color: rgba(244, 235, 217, 0.48);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.opponent-games {
+  color: #e0a14d !important;
+  white-space: nowrap;
+}
+
+.opponent-player-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.opponent-player-link:hover {
+  text-decoration: underline;
+}
+
+.profile-social-person {
+  min-width: 0;
+}
+
+.profile-social-person > div {
+  display: grid;
+  gap: 4px;
+}
+
+.profile-action-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.profile-action {
+  border: 1px solid rgba(191, 125, 47, 0.42);
+  background: rgba(191, 125, 47, 0.12);
+  color: #e0a14d;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  padding: 7px 10px;
+  text-decoration: none;
+}
+
+.profile-action:hover:not(:disabled) {
+  background: rgba(191, 125, 47, 0.22);
+}
+
+.profile-action-muted {
+  border-color: rgba(244, 235, 217, 0.16);
+  background: transparent;
+  color: rgba(244, 235, 217, 0.62);
+}
+
+/* A request already sent: the same box as the button, but nothing to press. */
+.profile-action-sent {
+  cursor: default;
+  user-select: none;
+}
+
+.profile-action:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.profile-public-social {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.profile-empty {
+  margin: 0;
+  padding: 20px 0 5px;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.85rem;
+}
+
+.profile-footer {
+  display: flex;
+  justify-content: space-between;
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 0 0 28px;
+  color: rgba(244, 235, 217, 0.35);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 850px) {
+  .profile-highlights {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-social-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+
+  .profile-heading-note {
+    margin: 0;
+    text-align: left;
+  }
+
+  .profile-heading-note strong {
+    font-size: 1.7rem;
+  }
+
+  .profile-content {
+    width: min(100% - 28px, 1180px);
+    padding-top: 40px;
+  }
+
+  .profile-heading h1 {
+    font-size: 2.3rem;
+  }
+
+  .profile-card {
+    padding: 20px;
+  }
+
+  .profile-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-highlight-group {
+    grid-auto-flow: row;
+  }
+
+  .profile-highlight-pair {
+    grid-column: auto;
+  }
+
+  .profile-info-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .profile-info-row strong {
+    text-align: left;
+  }
+
+  .profile-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .opponents-list {
+    grid-template-columns: 1fr;
+  }
+
+  .opponent-row > div {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .profile-public-social {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .profile-action-group {
+    justify-content: flex-start;
+  }
+
+  .profile-footer {
+    width: min(100% - 28px, 1180px);
+  }
+}
+
+/* =========================================================
+   Profile redesign
+   ========================================================= */
+
+.profile-heading {
+  align-items: center;
+}
+
+.profile-identity-main {
+  min-width: 0;
+}
+
+.profile-title-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.profile-title-row h1 {
+  margin-bottom: 0;
+}
+
+.profile-heading-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.profile-action-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 5px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: #b97a2d;
+  color: #0c0d0b;
+  font-size: 0.58rem;
+  font-weight: 400;
+}
+
+/* New record + social layout */
+
+.profile-detail-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.profile-record-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+/* A heading over three numbers, each with its word below, centred as in
+   Full games and Short games. */
+.profile-record-group {
+  padding: 12px 10px;
+  border: 1px solid rgba(191, 125, 47, 0.12);
+  background: rgba(8, 9, 7, 0.28);
+  text-align: center;
+}
+
+.profile-record-group > span {
+  display: block;
+  margin-bottom: 8px;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-record-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.profile-record-row strong {
+  display: block;
+  margin-bottom: 4px;
+  color: #e0a14d;
+  font-size: 1.25rem;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.profile-record-row small {
+  display: block;
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.6rem;
+  overflow-wrap: anywhere;
+}
+
+/* Reliability stands out: other wizards look at it before sharing a table. */
+.profile-record-row .is-marked strong {
+  font-weight: 700;
+}
+
+.profile-record-row .is-marked small {
+  color: rgba(244, 235, 217, 0.85);
+  font-weight: 700;
+}
+
+.profile-social-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.profile-social-summary .profile-section-heading {
+  margin-bottom: 0;
+}
+
+.profile-social-summary-section {
+  padding-top: 12px;
+  border-top: 1px solid rgba(191, 125, 47, 0.14);
+}
+
+.profile-social-summary-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  color: rgba(244, 235, 217, 0.7);
+  font-size: 0.7rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.profile-social-summary-heading strong {
+  color: #e0a14d;
+  font-size: 0.9rem;
+}
+
+.profile-mini-list {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-mini-player {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(191, 125, 47, 0.1);
+  background: rgba(8, 9, 7, 0.22);
+  color: #f4ebd9;
+  text-decoration: none;
+}
+
+.profile-mini-player:hover {
+  border-color: rgba(191, 125, 47, 0.3);
+}
+
+.profile-mini-player span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+}
+
+.profile-mini-player small {
+  color: rgba(244, 235, 217, 0.42);
+  font-size: 0.62rem;
+}
+
+.profile-mini-request {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.profile-mini-request .profile-action-group {
+  flex-wrap: nowrap;
+  gap: 6px;
+}
+
+/* Friends and requests keep the card one size however many there are. */
+.profile-scroll-list {
+  max-height: 248px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.profile-mini-friend {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+}
+
+.profile-mini-friend[hidden] {
+  display: none;
+}
+
+.profile-mini-friend .profile-mini-player span {
+  flex: 1;
+}
+
+.profile-list-filter,
+.profile-select {
+  border: 1px solid rgba(191, 125, 47, 0.24);
+  background: rgba(8, 9, 7, 0.52);
+  color: #f4ebd9;
+  font: inherit;
+  font-size: 0.78rem;
+  padding: 7px 10px;
+}
+
+.profile-list-filter {
+  box-sizing: border-box;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.profile-list-filter:focus,
+.profile-select:focus {
+  border-color: rgba(191, 125, 47, 0.7);
+  outline: none;
+}
+
+.profile-select option {
+  background: #14120e;
+}
+
+/* Headers that open and close the panel below them: history, social,
+   friends, requests. */
+
+.profile-collapse-toggle {
+  cursor: pointer;
+  margin-bottom: 0;
+}
+
+.profile-collapse-toggle h2 {
+  margin-bottom: 0;
+}
+
+.profile-collapse-toggle:focus-visible {
+  outline: 1px solid rgba(191, 125, 47, 0.7);
+  outline-offset: 4px;
+}
+
+[data-collapse-body][hidden] {
+  display: none;
+}
+
+.profile-history-body {
+  margin-top: 12px;
+}
+
+.profile-social-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.profile-social-summary-heading.profile-collapse-toggle[aria-expanded="false"] {
+  margin-bottom: 0;
+}
+
+.profile-social-count {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* A few pixels more under the count, so it clears the filter box and the
+   first request's buttons. */
+.profile-social-summary-heading.profile-collapse-toggle {
+  margin-bottom: 13px;
+  line-height: 1.2;
+}
+
+.profile-history-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  align-self: center;
+}
+
+.profile-chevron {
+  width: 8px;
+  height: 8px;
+  border-right: 2px solid #e0a14d;
+  border-bottom: 2px solid #e0a14d;
+  transform: rotate(-45deg);
+  transition: transform 0.2s ease;
+}
+
+.profile-chevron-small {
+  width: 6px;
+  height: 6px;
+  border-width: 0 1.5px 1.5px 0;
+}
+
+.profile-collapse-toggle[aria-expanded="true"] > * > .profile-chevron {
+  transform: rotate(45deg);
+}
+
+.profile-history-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  cursor: default;
+}
+
+.profile-collapse-toggle[aria-expanded="false"] .profile-history-controls {
+  display: none;
+}
+
+.profile-history-controls label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Expanded search */
+
+.profile-player-search[hidden] {
+  display: none;
+}
+
+.profile-player-search {
+  margin-bottom: 16px;
+}
+
+/* Opponent history should be a normal page section */
+
+.profile-opponents {
+  display: block;
+  flex: none;
+  min-height: 0;
+}
+
+.profile-opponents .opponents-list {
+  max-height: 420px;
+  overflow-y: auto;
+}
+
+/* Record with the history under it on the left, social on the right. */
+
+.profile-detail-grid-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.profile-main-column,
+.profile-side-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.profile-main-column .profile-opponents,
+.profile-side-column .profile-player-search {
+  margin: 0;
+}
+
+/* On a screen big enough the whole profile fits in it: the page does not
+   scroll, the long lists scroll inside their cards. */
+@media (min-width: 851px) and (min-height: 700px) {
+  .profile-page {
+    display: flex;
+    flex-direction: column;
+    height: 100svh;
+    min-height: 0;
+  }
+
+  .profile-content {
+    flex: 1;
+    min-height: 0;
+    padding: clamp(16px, 3vh, 32px) 0 12px;
+  }
+
+  .profile-heading {
+    margin-bottom: clamp(10px, 2vh, 24px);
+  }
+
+  .profile-heading h1 {
+    font-size: clamp(1.8rem, 5vh, 3.4rem);
+  }
+
+  .profile-highlights {
+    margin-bottom: clamp(10px, 1.6vh, 16px);
+  }
+
+  .profile-highlight {
+    min-height: 0;
+    padding: clamp(8px, 1.4vh, 14px) 16px;
+  }
+
+  .profile-highlight strong {
+    margin: clamp(4px, 0.8vh, 8px) 0 2px;
+    font-size: clamp(1.3rem, 3.4vh, 2.3rem);
+  }
+
+  .profile-card {
+    padding: clamp(14px, 2.2vh, 20px) 24px;
+  }
+
+  .profile-card h2 {
+    margin-bottom: clamp(8px, 1.4vh, 14px);
+  }
+
+  .profile-skills-heading {
+    margin-bottom: clamp(16px, 2.2vh, 22px);
+  }
+
+  .profile-record-group {
+    padding: 10px;
+  }
+
+  .profile-main-column .profile-opponents,
+  .profile-social-summary {
+    overflow: hidden;
+  }
+
+  .opponent-row {
+    padding: 9px 14px;
+  }
+
+  .profile-social-summary {
+    gap: 10px;
+  }
+
+  .profile-social-summary-section {
+    padding-top: 10px;
+  }
+
+  .profile-detail-grid {
+    flex: 1;
+    grid-template-rows: minmax(0, 1fr);
+    min-height: 0;
+    margin-bottom: 0;
+  }
+
+  .profile-main-column,
+  .profile-side-column,
+  .profile-history-body,
+  .profile-social-body,
+  .profile-social-summary-section,
+  .profile-social-section-body {
+    min-height: 0;
+  }
+
+  .profile-main-column .profile-opponents,
+  .profile-social-summary {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .profile-history-body,
+  .profile-social-body,
+  .profile-social-summary-section,
+  .profile-social-section-body {
+    display: flex;
+    flex: 0 1 auto;
+    flex-direction: column;
+  }
+
+  .profile-main-column .opponents-list,
+  .profile-scroll-list {
+    flex: 0 1 auto;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+  }
+
+  .profile-side-column .profile-search-results {
+    max-height: 160px;
+    overflow-y: auto;
+  }
+
+  .profile-footer {
+    padding-bottom: 12px;
+  }
+}
+
+@media (max-width: 850px) {
+  .profile-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-heading {
+    align-items: flex-start;
+  }
+
+  .profile-heading-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+
+  .profile-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .profile-record-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* iPhone home-screen app prompts (see visualizer/iphone-app-prompts.ts). */
+.visualizer-page .install-hint {
+  position: absolute;
+  bottom: max(12px, env(safe-area-inset-bottom));
+  left: 50%;
+  z-index: 5;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: calc(100% - 32px);
+  padding: 8px 12px;
+  transform: translateX(-50%);
+  color: rgba(244, 235, 217, 0.95);
+  background: rgba(8, 9, 7, 0.85);
+  border: 1px solid rgba(191, 125, 47, 0.4);
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.visualizer-page .install-hint button {
+  padding: 0 6px;
+  color: inherit;
+  background: none;
+  border: 0;
+  font-size: 1.2rem;
+}
+
+.visualizer-page .rotate-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: none;
+  place-items: center;
+  padding: 24px;
+  color: rgba(244, 235, 217, 0.95);
+  background: #080907;
+  text-align: center;
+  font-size: 1.1rem;
+}
+
+@media (orientation: portrait) {
+  .visualizer-page .rotate-cover {
+    display: grid;
+  }
+}
+
+/* A short confirmation after signing up (see pages/Home.ts). */
+.home-toast {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 1000;
+  max-width: calc(100% - 32px);
+  padding: 22px 42px;
+  transform: translate(-50%, calc(-50% + 100px));
+  color: #eee2cc;
+  background: rgba(8, 9, 7, 0.94);
+  border: 1px solid rgba(191, 125, 47, 0.55);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
+  font-size: 1.2rem;
+  text-align: center;
+  animation: home-fade-in 180ms ease both;
+}
+
+/* Buttons that restyle themselves still take the gold hover, so every action
+   button answers the pointer the same way. */
+.home-modal-primary:hover,
+.home-play-button:hover,
+.create-room-button:hover,
+.create-room-submit:hover:not(:disabled),
+.room-action-button:hover:not(:disabled),
+.room-start-button:hover:not(:disabled),
+.profile-action:hover:not(:disabled),
+.secondary-action:hover {
+  color: var(--button-gold-text);
+  border-color: var(--button-gold);
+}
+
+.home-modal-primary,
+.create-room-submit,
+.room-start-button,
+.profile-action,
+.secondary-action,
+.room-action-button,
+.create-room-button {
+  transition:
+    border-color 180ms ease,
+    color 180ms ease,
+    background 180ms ease,
+    box-shadow 180ms ease;
+}
+
+/* Phones and small windows: the corner pieces shrink together (see
+   visualizer/hud-scale.ts), so they keep their layout without overlapping. */
+.visualizer-page .visualizer-nav,
+.visualizer-page .hud-status,
+.visualizer-page .hud-toolbar,
+.visualizer-page .hud-opponents,
+.visualizer-page .visualizer-self,
+.visualizer-page .visualizer-emotes,
+.visualizer-page .prediction-modal,
+.visualizer-page .hud-results,
+.visualizer-page .hud-game-winner {
+  zoom: var(--hud-scale);
+}
+
+/* A guest's invitation to sign up, after their game (see
+   visualizer/guest-signup-prompt.ts). */
+.visualizer-page .guest-signup {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 20;
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  width: min(420px, calc(100% - 32px));
+  padding: 16px 20px;
+  transform: translate(-50%, -50%);
+  color: #eee2cc;
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge-strong);
+  box-shadow: var(--ui-shadow);
+  text-align: center;
+  animation: home-fade-in 240ms ease both;
+}
+
+.guest-signup-question {
+  margin: 0;
+  white-space: pre-line;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+
+.guest-signup-invitation {
+  margin: 0 0 6px;
+  color: var(--button-gold-text);
+  font-size: 1.2rem;
+  font-weight: 400;
+}
+
+.guest-signup-button {
+  padding: 12px 28px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.visualizer-page .guest-signup-dismiss {
+  padding: 4px 8px;
+  color: rgba(238, 226, 204, 0.6);
+  background: none;
+  border: 0;
+  font-size: 0.8rem;
+}
+
+/* The fullscreen and install buttons on every screen outside a game (see
+   components/system-button.ts), and room for them in the headers they sit over. */
+.system-button {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  /* The highest layer there is: the app sits at z-index 9999, and anything
+     above this button would cover it, or blur it with a backdrop filter. */
+  z-index: 2147483647;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  color: rgba(244, 235, 217, 0.9);
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge);
+  border-radius: 4px;
+}
+
+.system-button[hidden] {
+  display: none;
+}
+
+/* Install, to the left of fullscreen when both are there. */
+.system-button.is-second {
+  right: 52px;
+}
+
+.system-button svg {
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.system-hint {
+  position: fixed;
+  top: 54px;
+  right: 10px;
+  z-index: 2147483647;
+  max-width: min(260px, calc(100% - 20px));
+  padding: 12px 14px;
+  color: rgba(244, 235, 217, 0.95);
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge-strong);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+body.has-system-button .home-topbar {
+  padding-right: calc(clamp(24px, 4.5vw, 76px) + 44px);
+}
+
+body.has-system-button .lobby-header {
+  padding-right: calc(clamp(24px, 5vw, 80px) + 44px);
+}
+
+body.has-two-system-buttons .home-topbar {
+  padding-right: calc(clamp(24px, 4.5vw, 76px) + 86px);
+}
+
+body.has-two-system-buttons .lobby-header {
+  padding-right: calc(clamp(24px, 5vw, 80px) + 86px);
+}
+
+/* Home menu on phones: the four entries (About, Rules, Board, News) go behind
+   a button beside the logo and drop down as a list, instead of crowding the
+   top bar and running over the logo and the account buttons. */
+.home-menu-toggle {
+  display: none;
+}
+
+@media (max-width: 720px) {
+  .home-topbar {
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .home-brand {
+    transform: none;
+  }
+
+  .home-menu-toggle {
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 4px;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background: rgba(10, 10, 8, 0.44);
+    border: 1px solid rgba(214, 154, 64, 0.58);
+    border-radius: 4px;
+    cursor: pointer;
+  }
+
+  .home-menu-toggle span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: #d9c9ac;
+    border-radius: 1px;
+    transition:
+      transform 180ms ease,
+      opacity 180ms ease;
+  }
+
+  .home-topbar.is-menu-open .home-menu-toggle span:nth-child(1) {
+    transform: translateY(6px) rotate(45deg);
+  }
+
+  .home-topbar.is-menu-open .home-menu-toggle span:nth-child(2) {
+    opacity: 0;
+  }
+
+  .home-topbar.is-menu-open .home-menu-toggle span:nth-child(3) {
+    transform: translateY(-6px) rotate(-45deg);
+  }
+
+  .home-top-nav {
+    position: absolute;
+    top: 100%;
+    left: 18px;
+    z-index: 20;
+    display: none;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    min-width: 180px;
+    margin: 0;
+    padding: 6px;
+    background: var(--ui-bg-solid);
+    border: var(--ui-edge-strong);
+    border-radius: 4px;
+    box-shadow: var(--ui-shadow);
+    transform: none;
+  }
+
+  .home-topbar.is-menu-open .home-top-nav {
+    display: flex;
+  }
+
+  .home-top-nav button {
+    padding: 13px 12px;
+    font-size: 12px;
+    letter-spacing: 0.18em;
+    text-align: left;
+  }
+
+  .home-top-nav span {
+    display: none;
+  }
+}
+

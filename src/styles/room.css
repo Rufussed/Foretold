@@ -1,0 +1,799 @@
+/* The Room page: the glass table, the avatar choice, the host's settings
+   and the guest-room invite page. */
+
+/* =========================================================
+   ROOM PAGE
+   ========================================================= */
+
+.room-page {
+  position: relative;
+  min-height: 100svh;
+  overflow-x: hidden;
+  /* The earlier .room-page rule hides overflow on both axes; the waiting room
+     must still be able to scroll down to the start controls on a short window. */
+  overflow-y: auto;
+  background: transparent;
+}
+
+.room-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 30px;
+  padding: 15px clamp(24px, 5vw, 80px);
+  border-bottom: 1px solid rgba(191, 125, 47, 0.2);
+  background: rgba(8, 9, 7, 0.35);
+  backdrop-filter: var(--ui-blur);
+}
+
+.room-brand {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+}
+
+.room-logo {
+  display: block;
+  width: 90px;
+  height: 62px;
+  object-fit: cover;
+  mix-blend-mode: screen;
+}
+
+.room-nav {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.room-nav a,
+.room-account a,
+.room-account button {
+  border: 0;
+  background: transparent;
+  color: rgba(244, 235, 217, 0.82);
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.2s ease,
+    text-shadow 0.2s ease;
+}
+
+.room-nav a:hover,
+.room-account a:hover,
+.room-account button:hover {
+  color: #fff;
+  text-shadow: 0 0 12px rgba(191, 125, 47, 0.55);
+}
+
+.room-nav-rune {
+  color: rgba(191, 125, 47, 0.72);
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.room-account {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.room-account button {
+  padding: 8px 14px;
+  border: var(--ui-edge);
+  background: rgba(10, 10, 8, 0.42);
+}
+
+.room-account button:hover {
+  border-color: rgba(191, 125, 47, 0.65);
+  background: rgba(191, 125, 47, 0.12);
+}
+
+.room-content {
+  width: min(1100px, calc(100% - 48px));
+  /* min-height, not height: the sections size to their contents now, and a
+     short window would otherwise clip the start controls with no way to
+     scroll to them. Taller windows are unaffected. */
+  min-height: max(455px, calc(100svh - 145px));
+  margin: 0 auto;
+  padding: 24px 0 10px;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.room-title-row {
+  position: relative;
+  flex: 0 0 auto;
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+/* The one intro line: room, players present, and the invitation to choose.
+   Clear of the corner buttons, with the same room on both sides so it stays
+   centred. */
+.room-title-row .room-intro {
+  margin: 0;
+  padding: 0 90px;
+  color: rgba(248, 240, 224, 0.96);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
+/* Welcome, who's here, choose a portrait: one line each, the later two a
+   little smaller and quieter. */
+.room-intro-line {
+  display: block;
+  line-height: 1.35;
+}
+
+.room-intro-line + .room-intro-line {
+  color: rgba(248, 240, 224, 0.74);
+  font-size: 0.82em;
+}
+
+.room-intro-name {
+  color: #e0a14d;
+}
+
+/* A guest room's invite link, for its host: the link, Copy and New link on
+   one line, a word on what the link does below. */
+.room-invite {
+  flex: 0 0 auto;
+  width: min(640px, 100%);
+  box-sizing: border-box;
+  margin: 10px auto 6px;
+  padding: 12px 16px;
+  border: 1px solid rgba(224, 161, 77, 0.45);
+  background: rgba(191, 125, 47, 0.08);
+  text-align: center;
+}
+
+.room-invite[hidden] {
+  display: none;
+}
+
+.room-invite-title {
+  margin: 0 0 8px;
+  color: #e0a14d;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.room-invite-row {
+  display: flex;
+  gap: 8px;
+}
+
+.room-invite-link {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 36px;
+  box-sizing: border-box;
+  padding: 0 10px;
+  border: var(--ui-edge);
+  background: rgba(3, 4, 3, 0.55);
+  color: #f4ebd9;
+  font: inherit;
+  font-size: 0.8rem;
+}
+
+.room-invite-button {
+  flex: 0 0 auto;
+  height: 36px;
+  padding: 0 14px;
+  border: 1px solid rgba(206, 139, 53, 0.6);
+  background: linear-gradient(135deg, rgba(161, 94, 24, 0.3), rgba(81, 44, 13, 0.45));
+  color: #eac58a;
+  font: inherit;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.room-invite-button.is-quiet {
+  border-color: rgba(191, 125, 47, 0.3);
+  background: transparent;
+  color: rgba(244, 235, 217, 0.65);
+}
+
+.room-invite-button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.room-invite-note {
+  margin: 8px 0 0;
+  color: rgba(244, 235, 217, 0.55);
+  font-size: 0.72rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 560px) {
+  .room-invite-row {
+    flex-wrap: wrap;
+  }
+
+  .room-invite-link {
+    flex-basis: 100%;
+  }
+
+  .room-invite-button {
+    flex: 1 1 0;
+  }
+}
+
+/* The page an invite link opens: one card in the middle, no navbar, as the
+   guest has no account. */
+.join-page {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100svh;
+  box-sizing: border-box;
+  padding: 24px 16px;
+}
+
+.join-language {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 8px 12px;
+  border: var(--ui-edge);
+  background: rgba(10, 10, 8, 0.45);
+  color: rgba(244, 235, 217, 0.7);
+  font: inherit;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+}
+
+.join-card {
+  width: min(460px, 100%);
+  box-sizing: border-box;
+  padding: 28px 28px 24px;
+  border: var(--ui-edge);
+  background:
+    linear-gradient(135deg, rgba(201, 127, 40, 0.035), transparent 36%),
+    var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: var(--ui-blur);
+  text-align: center;
+}
+
+.join-title {
+  margin: 0 0 8px;
+  color: #f4ebd9;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.25rem, 4.5vw, 1.6rem);
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.join-seats,
+.join-message {
+  margin: 0 0 22px;
+  color: rgba(244, 235, 217, 0.65);
+  font-size: 0.9rem;
+}
+
+.join-form {
+  text-align: left;
+}
+
+.join-form .room-form-field {
+  margin-bottom: 16px;
+}
+
+.join-submit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  font-size: 0.75rem;
+  text-decoration: none;
+}
+
+.join-note {
+  margin: 12px 0 0;
+  color: rgba(244, 235, 217, 0.5);
+  font-size: 0.75rem;
+  text-align: center;
+}
+
+.join-error {
+  margin: 14px 0 0;
+  color: #e08a6a;
+  font-size: 0.85rem;
+}
+
+.join-error[hidden] {
+  display: none;
+}
+
+/* Main glass table */
+
+.room-main-panel {
+  flex: 1;
+  min-height: 0;
+
+  display: flex;
+  flex-direction: column;
+
+}
+
+/* Avatar section */
+
+.room-avatar-section {
+  /* Sized by its contents, not by a share of the panel. As a flex child it was
+     given less height than the portrait row needs and the cells spilled out
+     over the player list and the start controls below. */
+  flex: 0 0 auto;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  padding: 4px 30px 10px;
+}
+
+.room-avatar-picker {
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 900px;
+  min-height: 0;
+  margin-top: 8px;
+}
+
+.room-avatar-picker .avatar-grid {
+  /* All six on one row; the columns flex so the views shrink with the panel. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-rows: auto;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* Portrait screens: two rows of three, so each portrait gets room to be seen. */
+@media (orientation: portrait) {
+  .room-avatar-picker .avatar-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* No reserved height: empty, this takes no room under the portraits,
+   and it only appears when there is an error to report. */
+.room-message {
+  margin: 4px 0 0;
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.85rem;
+}
+
+.room-message:empty {
+  display: none;
+}
+
+/* Players */
+
+.room-start[hidden],
+.room-waiting[hidden] {
+  display: none !important;
+}
+
+/* Host controls */
+
+.room-start {
+  flex: 0 0 auto;
+  /* The same width as the row of six characters above it. */
+  box-sizing: border-box;
+  width: min(calc(100% - 60px), 900px);
+  margin: 4px auto 0;
+  padding: 16px 30px 18px;
+  border: var(--ui-edge);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(201, 127, 40, 0.035),
+      transparent 36%
+    ),
+    var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(16px);
+}
+
+.room-start-controls {
+  width: 100%;
+  display: grid;
+  /* One row across the whole box, so it stays low: the NPCs, the rounds,
+     their skill (two cells), the speed and the time per turn. In a Roles
+     room the host's role sits centred underneath. The column and pair
+     wrappers step aside so every choice is a cell of this grid. */
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-auto-flow: row dense;
+  align-items: start;
+  gap: 12px 20px;
+}
+
+.room-start-controls .room-start-column,
+.room-start-controls .room-start-pair {
+  display: contents;
+}
+
+/* The NPC skill's choices are long, so it takes two cells. */
+.room-start-controls label:has(#room-bot-level) {
+  grid-column: span 2;
+}
+
+/* The host's role, under the row of choices, in its middle. */
+.room-start-controls .room-role-field {
+  grid-row: 2;
+  grid-column: 3 / span 2;
+}
+
+.room-start-controls .room-role-field[hidden],
+.room-role-own[hidden] {
+  display: none;
+}
+
+/* The role for players other than the host, who have no settings: the same
+   list on its own, above "waiting for the host". */
+.room-role-own {
+  display: flex;
+  flex-direction: column;
+  align-self: center;
+  gap: 7px;
+
+  min-width: 200px;
+  margin-top: 12px;
+  /* In a small box like the host's settings, so the scene stays behind it. */
+  padding: 14px 22px 16px;
+  border: var(--ui-edge);
+  background: var(--ui-bg-solid);
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: blur(16px);
+
+  color: rgba(244, 235, 217, 0.72);
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.9);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* "Role" in the Roles colour, so it stands out from the scene; above the
+   list, centred, for those who are not the host. */
+.room-role-field > span:first-child,
+.room-role-own > span:first-child {
+  color: rgb(var(--mode-color));
+}
+
+/* Bold, brighter and with a heavier shadow, as the scene behind would
+   otherwise swallow it. */
+.room-role-own > span:first-child {
+  color: rgb(155, 95, 215);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-align: center;
+  text-shadow:
+    0 0 4px rgba(0, 0, 0, 1),
+    0 1px 10px rgba(0, 0, 0, 1);
+}
+
+/* The roles window in the Roles colour. */
+#roles-help .home-modal h2 {
+  color: rgb(155, 95, 215);
+}
+
+/* The list and its "?" side by side. */
+.room-role-row {
+  display: flex;
+  gap: 8px;
+}
+
+.room-role-row select {
+  flex: 1;
+  min-width: 0;
+}
+
+/* The "?" that opens the description of every role: the navbar's help
+   button, in the Roles colour. */
+.room-role-row .roles-help-button {
+  flex: 0 0 40px;
+
+  min-height: 40px;
+  padding: 0;
+
+  border: 1px solid rgba(var(--mode-color), 0.6);
+  border-radius: 4px;
+  background: rgba(10, 10, 8, 0.45);
+
+  color: rgb(var(--mode-color));
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow: none;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+
+.room-role-row .roles-help-button:hover,
+.room-role-row .roles-help-button:focus-visible {
+  border-color: rgb(var(--mode-color));
+  background: rgba(var(--mode-color), 0.16);
+}
+
+/* In the roles window: each role's card number in a small purple seal. */
+.roles-help-card {
+  display: inline-grid;
+  place-items: center;
+
+  width: 24px;
+  height: 24px;
+  margin-right: 9px;
+
+  border: 1px solid rgba(184, 132, 224, 0.7);
+  border-radius: 50%;
+  background: rgba(184, 132, 224, 0.14);
+
+  color: rgb(184, 132, 224);
+  font-size: 12px;
+  letter-spacing: 0;
+  vertical-align: middle;
+}
+
+.roles-help h3 {
+  color: rgb(184, 132, 224);
+}
+
+.room-role-own select {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(180, 119, 47, 0.3);
+  background: rgba(5, 6, 5, 0.72);
+  color: rgba(248, 240, 224, 0.9);
+  font: inherit;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/* Two small choices side by side inside a column. */
+.room-start-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.room-start-button {
+  grid-column: 1 / -1;
+  justify-self: center;
+}
+
+/* Rule variants most games leave alone, folded away under the main choices. */
+.room-variations {
+  grid-column: 1 / -1;
+  justify-self: center;
+  /* Room above, from the choices, and below, from the Start button. */
+  margin: 14px 0;
+  color: rgba(244, 235, 217, 0.64);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.room-variations summary {
+  cursor: pointer;
+}
+
+/* The host's chosen rule variations, as the other players see them: under
+   the portraits, in the waiting message's colour. */
+.room-variations-summary {
+  flex: 0 0 auto;
+  margin: 12px 0 0;
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.room-variations-controls {
+  display: grid;
+  /* All four on one row. */
+  grid-template-columns: repeat(4, minmax(0, max-content));
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.room-start-controls label {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-width: 0;
+  color: rgba(244, 235, 217, 0.64);
+  font-size: 0.72rem;
+  /* Plain, not the bold every label gets: the titles and, through the
+     selects, the options. */
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.room-start-controls select {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(180, 119, 47, 0.3);
+  background: rgba(5, 6, 5, 0.72);
+  color: rgba(248, 240, 224, 0.9);
+  font: inherit;
+}
+
+.room-start-button {
+  min-height: 40px;
+  padding: 0 22px;
+  border: 1px solid rgba(191, 125, 47, 0.55);
+  background: rgba(145, 83, 23, 0.24);
+  color: rgba(248, 240, 224, 0.94);
+  font-family: inherit;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.room-start-button:hover:not(:disabled) {
+  border-color: rgba(221, 177, 110, 0.8);
+  background: rgba(145, 83, 23, 0.42);
+}
+
+.room-start-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.room-waiting {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 16px;
+
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-align: center;
+}
+/* Footer */
+
+.room-footer {
+  width: min(1100px, calc(100% - 48px));
+  height: 38px;
+  margin: 0 auto;
+  padding: 8px 0 0;
+  text-align: center;
+}
+
+.room-footer a {
+  color: rgba(244, 235, 217, 0.58);
+  font-size: 0.76rem;
+  letter-spacing: 0.1em;
+  text-decoration: none;
+  text-transform: uppercase;
+}
+
+.room-footer a:hover {
+  color: rgba(244, 235, 217, 0.92);
+}
+
+/* Responsive */
+
+@media (max-width: 720px) {
+  .room-header {
+    flex-wrap: wrap;
+    padding: 14px 20px;
+  }
+
+  .room-nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .room-account {
+    margin-left: auto;
+  }
+
+  .room-content {
+    width: min(100% - 28px, 1180px);
+    padding-top: 35px;
+  }
+
+  .room-avatar-section,
+  .room-start {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .room-start {
+    width: min(calc(100% - 40px), 900px);
+  }
+
+  .room-start-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 8px;
+  }
+
+  /* Two across: the role takes a row of its own, at the top. */
+  .room-start-controls .room-role-field {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+
+  .room-start-controls label {
+    min-width: 0;
+    width: auto;
+  }
+
+  .room-start-controls select,
+  .room-start-button {
+    width: 100%;
+  }
+
+  .room-variations {
+    width: 100%;
+  }
+
+  .room-variations-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .room-footer {
+    width: calc(100% - 28px);
+  }
+}
+
+@media (max-width: 420px) {
+  .room-logo {
+    width: 76px;
+    height: 52px;
+  }
+
+  .room-account {
+    gap: 8px;
+  }
+
+  .room-account a,
+  .room-account button {
+    font-size: 0.68rem;
+  }
+
+  .room-title-row .room-intro {
+    font-size: 1.1rem;
+  }
+}
+

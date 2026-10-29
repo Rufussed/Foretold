@@ -1,0 +1,980 @@
+/* The game page (Rufus's area): the navbar, the older table layout, the
+   waiting room, the avatar picker and the in-game prompts. */
+
+/* =========================================================
+   WIZARD GAME
+   ========================================================= */
+
+/* The links at the top of every page but the 3D view, in a box like the
+   panels so they stay readable over the table scene behind. */
+.navbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 16px;
+  background: rgb(255 255 255 / 75%);
+  border: 1px solid #d9e0ea;
+  border-radius: 8px;
+}
+
+/* Technical View: the way back to the 3D view, a full button on the right. */
+.game-nav .game-nav-visualizer {
+  margin-left: auto;
+  padding: 10px 16px;
+  color: white;
+  font-weight: 400;
+  text-decoration: none;
+  background: #2457a6;
+  border-radius: 4px;
+}
+
+.game-nav .game-nav-visualizer:hover {
+  background: #1b4381;
+}
+
+.game-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+}
+
+.game-label {
+  margin: 0 0 6px;
+  color: #6b778c;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 1.5px;
+}
+
+.game-header h1 {
+  margin: 0;
+  font-size: 36px;
+}
+
+.game-header h1 span {
+  color: #7b8798;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.game-meta {
+  color: #6b778c;
+  font-size: 14px;
+  text-align: right;
+}
+
+.game-meta p {
+  margin: 0 0 6px;
+}
+
+
+/* ---------------------------------------------------------
+   GAME STATUS
+   --------------------------------------------------------- */
+
+.game-status {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.status-box {
+  padding: 16px;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+}
+
+.status-label {
+  display: block;
+  margin-bottom: 6px;
+  color: #6b778c;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1px;
+}
+
+.status-box strong {
+  font-size: 17px;
+}
+
+
+/* ---------------------------------------------------------
+   SECTION HEADINGS
+   --------------------------------------------------------- */
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 18px;
+}
+
+.section-heading h2 {
+  margin-bottom: 4px;
+}
+
+.section-heading p {
+  margin: 0;
+  color: #6b778c;
+  font-size: 14px;
+}
+
+
+/* ---------------------------------------------------------
+   SEAT ORDER
+   --------------------------------------------------------- */
+
+.seat-order {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.seat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+}
+
+.seat-current {
+  border-color: #2457a6;
+  background: #eef4ff;
+}
+
+.seat-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: #172033;
+  background: white;
+  border: 1px solid #cbd4e0;
+  border-radius: 50%;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.seat-name {
+  overflow: hidden;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seat-indicator {
+  display: block;
+  margin-left: auto;
+  color: #2457a6;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+
+/* ---------------------------------------------------------
+   PREDICTIONS
+   --------------------------------------------------------- */
+
+.prediction-list {
+  display: grid;
+  gap: 8px;
+}
+
+.prediction-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 14px;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+}
+
+.prediction-current {
+  border-color: #2457a6;
+  background: #eef4ff;
+}
+
+.prediction-done {
+  background: #f2f8f5;
+}
+
+.prediction-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 400;
+}
+
+.player-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  color: #6b778c;
+  background: white;
+  border: 1px solid #d9e0ea;
+  border-radius: 50%;
+  font-size: 12px;
+}
+
+.turn-marker {
+  padding: 3px 7px;
+  color: #2457a6;
+  background: #dce9ff;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.prediction-value {
+  font-weight: 400;
+}
+
+.prediction-submitted {
+  color: #176b43;
+}
+
+.prediction-waiting {
+  color: #8a95a5;
+  font-weight: 400;
+}
+
+.phase-complete {
+  margin: 16px 0 0;
+  padding: 12px;
+  color: #176b43;
+  background: #f2f8f5;
+  border: 1px solid #c9e4d6;
+  border-radius: 6px;
+  font-weight: 400;
+}
+
+
+/* ---------------------------------------------------------
+   CURRENT TRICK
+   --------------------------------------------------------- */
+
+.trick-list {
+  display: grid;
+  gap: 8px;
+}
+
+.trick-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 48px;
+  padding: 10px 14px;
+  background: #f5f7fa;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+}
+
+.trick-player {
+  font-weight: 400;
+}
+
+.trick-card {
+  color: #2457a6;
+  font-weight: 400;
+}
+
+.trick-winner {
+  margin-top: 16px;
+  padding: 12px;
+  background: #eef4ff;
+  border: 1px solid #cbdcff;
+  border-radius: 6px;
+  text-align: center;
+}
+
+
+/* ---------------------------------------------------------
+   PLAYERS TABLE
+   --------------------------------------------------------- */
+
+.players-table {
+  overflow: hidden;
+  border: 1px solid #d9e0ea;
+  border-radius: 6px;
+}
+
+.players-table-header,
+.players-table-row {
+  display: grid;
+  grid-template-columns: 2fr repeat(4, 1fr);
+  align-items: center;
+}
+
+.players-table-header {
+  min-height: 42px;
+  padding: 0 14px;
+  color: #6b778c;
+  background: #f5f7fa;
+  border-bottom: 1px solid #d9e0ea;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.players-table-row {
+  min-height: 50px;
+  padding: 0 14px;
+  border-bottom: 1px solid #e5e9ef;
+}
+
+.players-table-row:last-child {
+  border-bottom: 0;
+}
+
+.players-table-row > span:not(:first-child),
+.players-table-header > span:not(:first-child) {
+  text-align: center;
+}
+
+.player-current {
+  background: #eef4ff;
+  font-weight: 400;
+}
+
+
+/* ---------------------------------------------------------
+   YOUR HAND
+   --------------------------------------------------------- */
+
+.hand {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.card-button {
+  width: 130px;
+  min-height: 90px;
+  padding: 16px;
+  color: #172033;
+  background: white;
+  border: 2px solid #cbd4e0;
+  border-radius: 8px;
+  font-weight: 400;
+  transition:
+    transform 0.1s ease,
+    border-color 0.1s ease,
+    box-shadow 0.1s ease;
+}
+
+.card-button:not(:disabled):hover {
+  color: #172033;
+  background: white;
+  border-color: #2457a6;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 14px rgb(30 50 80 / 12%);
+}
+
+.card-button:disabled {
+  color: #9aa4b2;
+  background: #f1f3f6;
+  border-color: #d9e0ea;
+  cursor: not-allowed;
+}
+
+.action-message {
+  min-height: 24px;
+  margin-bottom: 0;
+  color: #6b778c;
+  font-weight: 400;
+}
+
+
+/* ---------------------------------------------------------
+   PREDICTION ACTION
+   --------------------------------------------------------- */
+
+.action-panel {
+  border-color: #2457a6;
+}
+
+.action-panel > p {
+  color: #6b778c;
+}
+
+.action-panel form {
+  max-width: 300px;
+}
+
+
+/* ---------------------------------------------------------
+   RESPONSIVE
+   --------------------------------------------------------- */
+
+@media (min-width: 800px) {
+  .page:has(.game-header) {
+    width: min(1000px, calc(100% - 48px));
+  }
+}
+
+@media (max-width: 650px) {
+  .game-header {
+    flex-direction: column;
+  }
+
+  .game-meta {
+    text-align: left;
+  }
+
+  .game-status {
+    grid-template-columns: 1fr;
+  }
+
+  .players-table-header,
+  .players-table-row {
+    grid-template-columns: 2fr repeat(4, 70px);
+    min-width: 500px;
+  }
+
+  .players-table {
+    overflow-x: auto;
+  }
+
+  .card-button {
+    width: 110px;
+    min-height: 80px;
+  }
+}
+
+.visualizer-page {
+  /* Set from the window's size by visualizer/hud-scale.ts. */
+  --hud-scale: 1;
+  /* A character's colour, for anything marked with their data-character: the
+     announcement border and the emoticons. Gold unless a rule below says
+     otherwise. */
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.visualizer-canvas-wrap {
+  position: absolute;
+  inset: 0;
+  background: #000;
+  overflow: hidden;
+}
+
+.visualizer-canvas-wrap canvas {
+  display: block;
+  /* The canvas takes every touch itself: card drags and taps must never be
+     claimed by the browser as a scroll, pull-to-refresh or toolbar gesture,
+     which cancels the pointer mid-drag. */
+  touch-action: none;
+  width: 100%;
+  height: 100%;
+}
+
+.visualizer-nav {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  z-index: 1;
+}
+
+.visualizer-nav a {
+  padding: 8px 12px;
+  color: rgba(244, 235, 217, 0.88);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  backdrop-filter: var(--ui-blur);
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.visualizer-nav a:hover {
+  color: #fff;
+  background: rgba(191, 125, 47, 0.12);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+/* The turn hourglass, under Leave Table, centred and 90% as wide as it (see
+   visualizer/turn-hourglass.ts). The box is the upright hourglass, 0.72 wide
+   to 1 tall. Its canvas is square and larger, centred on it, so the glass has
+   room to turn sideways mid-flip: the camera fits a 0.683 half-height around
+   the 0.36 radius discs (TURN_HOURGLASS.fitRadius), so the canvas is 1.9
+   times the box's width. */
+.visualizer-hourglass {
+  position: relative;
+  align-self: center;
+  width: 90%;
+  margin-top: 10px;
+  aspect-ratio: 0.72;
+  pointer-events: none;
+}
+
+.visualizer-hourglass[hidden] {
+  display: none;
+}
+
+.visualizer-hourglass canvas {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 190%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+}
+
+#wizard-visualizer-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ddd;
+  font-size: 1.1rem;
+  background: #000;
+  pointer-events: none;
+  transition: opacity 0.3s ease;
+}
+
+#wizard-visualizer-loading.hidden {
+  opacity: 0;
+}
+/* ---------------------------------------------------------
+   WAITING ROOM
+   --------------------------------------------------------- */
+
+.room-page {
+  position: relative;
+  height: 100svh;
+  min-height: 600px;
+  overflow: hidden;
+  background: transparent;
+}
+
+.room-message {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 16px;
+
+  color: rgba(221, 177, 110, 0.9);
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-align: center;
+}
+
+.room-start {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 16px;
+}
+
+/* ---------------------------------------------------------
+   AVATAR PICKER
+   --------------------------------------------------------- */
+
+.avatar-picker {
+  position: relative;
+}
+
+.room-avatar-picker .avatar-grid {
+  /* All six on one row. Flexible columns rather than a fixed width, so six
+     across fit whatever the panel is given instead of spilling over the player
+     list below; the views are square, so they shrink with the column. */
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  justify-content: center;
+}
+
+/* Prefixed to outrank the global button:hover and button:disabled styles. */
+.avatar-picker .avatar-cell {
+  display: grid;
+  gap: 4px;
+  width: auto;
+  padding: 8px;
+  color: #f4ebd9;
+  /* The blurred panel the chooser used to sit inside, worn by each portrait
+     instead: the shared canvas draws the characters over the top, so each one
+     stands on its own frosted disc rather than on one shared box. */
+  background: rgba(12, 13, 11, 0.55);
+  backdrop-filter: blur(16px);
+  border: var(--ui-edge);
+  border-radius: 600px;
+  font-weight: 400;
+  text-align: center;
+  cursor: pointer;
+}
+
+.avatar-picker .avatar-cell:hover:not(:disabled) {
+  background: rgba(191, 125, 47, 0.14);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+/* Thicker outline; padding shrinks by the same amount so nothing shifts. */
+.avatar-picker .avatar-cell.is-selected,
+.avatar-picker .avatar-cell.is-selected:hover {
+  padding: 6px;
+  background: rgba(191, 125, 47, 0.2);
+  border: 3px solid rgba(191, 125, 47, 0.75);
+}
+
+.avatar-picker .avatar-cell.is-taken {
+  color: rgba(244, 235, 217, 0.4);
+  background: rgba(0, 0, 0, 0.15);
+  cursor: not-allowed;
+}
+
+.avatar-view {
+  display: block;
+  aspect-ratio: 1;
+}
+
+.avatar-owner {
+  min-height: 1.2em;
+  color: #5b6b82;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* One shared canvas over the grid; clicks pass through to the cells. */
+.avatar-canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Your own character, bottom right of the table view, over a row of four
+   round emote buttons as wide as it. The background is a circle; the body is
+   cut off along its lower half, at the waist, but the arms are not, so hands
+   reaching forward come over its edge (visualizer/portrait-arm-crop.ts does
+   the cut; SELF_PORTRAIT in config.ts frames it). Raised arms go up past its
+   top. */
+.visualizer-page {
+  --self-width: 188px;
+}
+
+.visualizer-self {
+  position: absolute;
+  /* Centred over the emote row, which is 32px wider and reaches left. */
+  right: 32px;
+  bottom: 88px;
+  /* No layer of its own, so its background and character can sit on
+     different ones: the background with the HUD panels, the character
+     above the score box but below the emotes. */
+  width: var(--self-width);
+  height: var(--self-width); /* a circle */
+  margin: 0;
+  /* Decoration only. Its canvas reaches well past the circle, and on a
+     portrait phone that covers most of the hand, so it must let touches
+     through to the cards beneath. */
+  pointer-events: none;
+}
+
+/* Background behind the character portrait. */
+.visualizer-self::before {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  content: "";
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 600px;
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-self[hidden] {
+  display: none;
+}
+
+/* Character portrait: well past the circle on every side, so arms are never
+   cut by the canvas's own edge - above for raised arms, out to the sides for
+   wide gestures, below for hands coming over its bottom edge. */
+.visualizer-self-view {
+  position: absolute;
+  z-index: 2;
+  bottom: -100px;
+  left: -90px;
+  width: calc(100% + 180px);
+  height: calc(100% + 240px);
+}
+
+.visualizer-self-view canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Hide the name beneath the avatar. */
+.visualizer-self-name {
+  display: none;
+}
+
+/* Four clickable emotes below the portrait. */
+.visualizer-emotes {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 3; /* in front of the portrait's character */
+  display: flex;
+  /* A little wider than the portrait, out to the left, to space the
+     emoticons out. */
+  width: calc(var(--self-width) + 32px);
+  gap: 4px;
+}
+
+/* One shared backing for the four emoticons: a rounded black patch, blurred
+   so its edges fade out softly into the table. */
+.visualizer-emotes::before {
+  position: absolute;
+  inset: 2px -6px 2px 4px;
+  z-index: -1;
+  content: "";
+  background: rgb(0 0 0 / 75%);
+  border-radius: 999px;
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+/* No box: just the emoticon, with a soft black edge. The edge is shadows on
+   the button rather than the emoticon, whose mask would cut it away: a tight
+   one keeps the shape crisp, and wider ones feather it out. */
+.visualizer-page .visualizer-emotes {
+  --emote-outline: drop-shadow(0 0 1px #000) drop-shadow(0 0 3px #000)
+    drop-shadow(0 0 3px #000);
+}
+
+.visualizer-page .visualizer-emotes button {
+  flex: 1;
+  min-width: 0;
+  aspect-ratio: 1;
+  padding: 0;
+  font-size: 22px;
+  line-height: 1;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  filter: var(--emote-outline);
+}
+
+/* Lit only while pressed: hover (sticky after a tap on touch screens) keeps
+   the resting look, and the gold goes as soon as the button is released. */
+.visualizer-page .visualizer-emotes button:hover {
+  color: inherit;
+  background: none;
+  border: none;
+  filter: var(--emote-outline);
+}
+
+.visualizer-page .visualizer-emotes button:active {
+  filter: brightness(1.12) drop-shadow(0 0 1px var(--button-gold))
+    drop-shadow(0 0 3px var(--button-gold)) drop-shadow(0 0 3px var(--button-gold));
+}
+
+.visualizer-page .visualizer-emotes button {
+  position: relative;
+  /* The emoticons are drawn larger than their buttons and may spill out. */
+  overflow: visible;
+}
+
+/* Centred on the button by position, since a grid gives up centring an item
+   bigger than its cell, and raised a little: the art sits low in its frame. */
+.visualizer-emotes .emoticon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, calc(-50% - 3px));
+  /* Toned down so they don't outshine the rest of the table. */
+  filter: brightness(0.8);
+}
+
+/* An emoticon in its character's colour: the drawn art keeps its shading, and
+   takes the hue of --border-mid. Its shape (the art's own transparency) is
+   cut out with the mask. */
+.emoticon {
+  display: block;
+  width: 56px;
+  height: 56px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
+    var(--emoticon) center / contain no-repeat;
+  background-blend-mode: color, normal;
+  mask: var(--emoticon) center / contain no-repeat;
+  -webkit-mask: var(--emoticon) center / contain no-repeat;
+}
+
+/* No separate small sizes for the portrait and emotes: the whole group
+   scales smoothly with the window (see visualizer/hud-scale.ts), so it keeps
+   its proportions and stays centred in its box. */
+
+/* Prediction prompt: centred on the screen, with no backdrop so the table
+   stays visible behind it. */
+.visualizer-page .prediction-modal {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  /* Sized to its buttons, never wider than the screen. */
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 13px 19px;
+  color: rgba(244, 235, 217, 0.92);
+  text-align: center;
+  /* The same box as the HUD panels (.hud-panel). */
+  background: var(--ui-bg);
+  border: var(--ui-edge-strong);
+  border-radius: 4px;
+  box-shadow: var(--ui-shadow);
+  transform: translate(-50%, -50%);
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .prediction-modal[hidden] {
+  display: none;
+}
+
+.prediction-modal h2 {
+  margin: 0 0 2px;
+  color: rgba(248, 240, 224, 0.96);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.prediction-round {
+  margin: 0 0 10px;
+  color: rgba(244, 235, 217, 0.62);
+  font-size: 14px;
+}
+
+.prediction-options {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* Prefixed to outrank the global button styles. */
+.visualizer-page .prediction-options button {
+  min-width: 48px;
+  padding: 10px 0;
+  color: rgba(244, 235, 217, 0.9);
+  background: rgba(10, 10, 8, 0.45);
+  border: 1px solid rgba(191, 125, 47, 0.32);
+  border-radius: 4px;
+  font-size: 18px;
+  font-weight: 400;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.visualizer-page .prediction-options button:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(191, 125, 47, 0.12);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+.visualizer-page .prediction-options button.is-chosen {
+  color: #211408;
+  background: #ddaF6e;
+  border-color: #f0c77e;
+}
+
+.visualizer-page .prediction-options button:disabled:not(.is-chosen) {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.prediction-error {
+  margin: 6px 0 0;
+  color: #e0a14d;
+  font-weight: 400;
+}
+
+/* No reason to show: take no space, so the bottom padding matches the top. */
+.prediction-error:empty {
+  display: none;
+}
+
+/* Trump choice after a Wizard or Jester is turned up: one swatch per suit. */
+.trump-options {
+  display: grid;
+  /* Equal columns, so every swatch is the same size whatever its label. */
+  grid-template-columns: repeat(4, 72px);
+  gap: 10px;
+}
+
+.visualizer-page .trump-options button {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+  justify-items: center;
+  width: 100%; /* fill the column, not the global fit-content */
+  padding: 8px 4px;
+  color: white;
+  font-size: 13px;
+  font-weight: 400;
+  background: transparent;
+  border: 1px solid rgba(191, 125, 47, 0.32);
+  border-radius: 4px;
+}
+
+.trump-swatch {
+  width: 56px;
+  aspect-ratio: 5 / 7;
+  border: 2px solid rgba(191, 125, 47, 0.55);
+  border-radius: 6px;
+}
+
+.visualizer-page .trump-options button:hover:not(:disabled),
+.visualizer-page .trump-options button.is-chosen {
+  border-color: #ffd54f;
+}
+
+.visualizer-page .trump-options button:disabled:not(.is-chosen) {
+  cursor: default;
+  opacity: 0.5;
+}
+
