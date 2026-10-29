@@ -2,24 +2,8 @@
    sign-up windows, the rules board and the footer. */
 
 /* =========================================================
-   Home page redesign
+   HOME
    ========================================================= */
-
-/* .home-page {
-  position: relative;
-  min-height: 100svh;
-  overflow: hidden;
-  isolation: isolate;
-
-  background-color: #211408;
-  background-blend-mode: screen;
-  background-position: center center;
-  background-repeat: no-repeat;
-  background-size: cover;
-
-  color: #f4ead4;
-  font-family: "Inter", sans-serif;
-} */
 
 .home-page {
   position: relative;
@@ -27,25 +11,6 @@
   color: white;
   background: transparent;
   overflow: visible;
-}
-
-.home-topbar {
-  position: relative;
-  z-index: 10;
-}
-
-.home-table-action {
-  position: absolute;
-  z-index: 10;
-}
-
-.home-footer {
-  position: absolute;
-  z-index: 10;
-}
-
-.home-modal-backdrop {
-  z-index: 100;
 }
 
 .home-scene-shade {
@@ -429,8 +394,6 @@
   place-items: center;
 
   padding: 24px;
-
-  /* background: rgba(2, 3, 3, 0.76); */
 
   animation: home-fade-in 180ms ease both;
   backdrop-filter: var(--ui-blur);
