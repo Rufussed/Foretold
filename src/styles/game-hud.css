@@ -661,16 +661,6 @@
   opacity: 0;
 }
 
-.hud-result {
-  transition: opacity 220ms ease-out;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hud-result {
-    transition: none;
-  }
-}
-
 /* Headshot and name on one line, the breakdown below it. */
 .hud-result {
   display: grid;
@@ -686,6 +676,13 @@
   border-radius: 4px;
   backdrop-filter: var(--ui-blur);
   animation: hud-result-in 0.3s ease-out;
+  transition: opacity 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-result {
+    transition: none;
+  }
 }
 
 /* The round's best score: yellow, with a crown on the headshot. */
@@ -700,6 +697,10 @@
 
 .hud-results .hud-result-face {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
 }
 
 .hud-result.is-winner .hud-result-face::before {
@@ -728,17 +729,6 @@
   font-size: 13px;
   text-align: left;
 }
-
-/* The breakdown: labels, then values in their own column so the +/- signs
-   line up. */
-.hud-results .hud-result-face {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  justify-self: start;
-}
-
-
 
 .hud-result-summary {
   margin: 0;

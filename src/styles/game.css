@@ -724,6 +724,9 @@
 }
 
 .visualizer-page .visualizer-emotes button {
+  position: relative;
+  /* The emoticons are drawn larger than their buttons and may spill out. */
+  overflow: visible;
   flex: 1;
   min-width: 0;
   aspect-ratio: 1;
@@ -748,12 +751,6 @@
 .visualizer-page .visualizer-emotes button:active {
   filter: brightness(1.12) drop-shadow(0 0 1px var(--button-gold))
     drop-shadow(0 0 3px var(--button-gold)) drop-shadow(0 0 3px var(--button-gold));
-}
-
-.visualizer-page .visualizer-emotes button {
-  position: relative;
-  /* The emoticons are drawn larger than their buttons and may spill out. */
-  overflow: visible;
 }
 
 /* Centred on the button by position, since a grid gives up centring an item
