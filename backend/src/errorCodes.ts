@@ -47,6 +47,8 @@ const MESSAGES = {
   createGameFailed: ["Could not create game"],
   createGuestFailed: ["Could not create guest game"],
   noGuestGame: ["No guest game to leave"],
+  quickPlayLogIn: ["Log in to use Quick Play"],
+  quickPlaySeated: ["Leave your room first"],
 
   // Guest rooms and their invite links
   guestRoomOnly: ["This is a guest room. Only its invite link leads in."],

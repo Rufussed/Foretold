@@ -1,4 +1,12 @@
 import { getLanguage } from "./index";
+import {
+  QUICK_PLAY_FULL_TABLE,
+  QUICK_PLAY_NPCS_AFTER_MS,
+  QUICK_PLAY_TABLE_AFTER_MS,
+} from "../../backend/src/game/wizard/services/quickPlayQueue";
+
+// Quick Play's waits in seconds, for the Glade's help.
+const quickPlaySeconds = (ms: number): number => ms / 1000;
 
 export type HelpPage = "lobby" | "profile" | "room" | "admin";
 
@@ -661,7 +669,37 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
+        <h3>Quick Play</h3>
+        <p>
+          Quick Play finds you a table without setting anything up. It is
+          always Classic, short and quick: half the rounds of a full game
+          at Fast speed, with 30 seconds per turn and the official rules.
+          Its games count for your record like any other.
+        </p>
+        <p>
+          It looks for ${QUICK_PLAY_FULL_TABLE} wizards and starts the
+          moment it has them. The longer the wait, the smaller the table
+          it accepts: ${QUICK_PLAY_FULL_TABLE - 1} after
+          ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[5])} seconds,
+          4 after ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[4])} and
+          3 after ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[3])}. After
+          ${quickPlaySeconds(QUICK_PLAY_NPCS_AFTER_MS)} seconds NPCs, a mix
+          of Apprentices and Adepts, fill the empty seats up to
+          ${QUICK_PLAY_FULL_TABLE}, even if you are searching alone.
+        </p>
+        <p>
+          Cancel stops the search, and so does opening or joining a room.
+          Only signed-up wizards can use Quick Play.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Opening a table</h3>
+        <p>
+          For a game your way, there is Create Room: you choose the game,
+          the number of players, the rules, the rounds and the NPCs
+          yourself.
+        </p>
         <p>
           Create Room sets up a new table. A public room is open to
           everyone: any wizard can see it here and join. A private room
@@ -743,7 +781,39 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
+        <h3>Schnelles Spiel</h3>
+        <p>
+          Schnelles Spiel findet einen Tisch für dich, ohne dass du etwas
+          einstellen musst. Es ist immer Klassisch, kurz und zügig: die
+          Hälfte der Runden einer ganzen Partie bei schnellem Tempo, mit
+          30 Sekunden pro Zug und den offiziellen Regeln. Seine Partien
+          zählen für deine Bilanz wie jede andere.
+        </p>
+        <p>
+          Es sucht ${QUICK_PLAY_FULL_TABLE} Zauberer und beginnt, sobald
+          es sie hat. Je länger die Wartezeit, desto kleiner darf der
+          Tisch sein: ${QUICK_PLAY_FULL_TABLE - 1} nach
+          ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[5])} Sekunden,
+          4 nach ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[4])} und
+          3 nach ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[3])}. Nach
+          ${quickPlaySeconds(QUICK_PLAY_NPCS_AFTER_MS)} Sekunden füllen
+          NPCs, Lehrlinge und Adepten gemischt, die freien Plätze bis
+          ${QUICK_PLAY_FULL_TABLE} auf, auch wenn du allein suchst.
+        </p>
+        <p>
+          Abbrechen beendet die Suche, ebenso das Eröffnen eines Raums
+          oder der Beitritt zu einem. Schnelles Spiel steht nur
+          angemeldeten Zauberern offen.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Einen Tisch eröffnen</h3>
+        <p>
+          Für eine Partie nach deinen Wünschen gibt es Raum erstellen:
+          Du wählst das Spiel, die Zahl der Spieler, die Regeln, die
+          Runden und die NPCs selbst.
+        </p>
         <p>
           Mit Raum erstellen richtest du einen neuen Tisch ein. Ein
           öffentlicher Raum steht allen offen: Jeder Zauberer sieht ihn

@@ -1,4 +1,4 @@
-import type { FastifyInstance } from "fastify";
+import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 import { BOT_NAME_SUFFIX, isBotName, seatNameFor } from "../models/bot.js";
 import { pickBotNames } from "../botNames.js";
@@ -12,11 +12,11 @@ import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
-import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../gameOptions.js";
+import { DEFAULT_GAME_OPTIONS, normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_MODES, type GameMode } from "../modes/modes.js";
 import { ROLES, type RoleId } from "../modes/roles/roles.js";
 import { assignRoles } from "../modes/roles/assignRoles.js";
-import { BOT_LEVELS, normalizeBotLevel } from "../botLevels.js";
+import { BOT_LEVELS, DEFAULT_BOT_LEVEL, normalizeBotLevel, type BotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
 import db from "../../../db/database.js";
@@ -24,6 +24,13 @@ import { playerStatsRepository } from "../services/playerStatsRepository.js";
 import { friendService } from "../services/friendService.js";
 import { deleteGuest } from "../services/guestCleanup.js";
 import { containsProfanity } from "../../../services/profanityFilter.js";
+import type { Room, WizardGameState } from "../models/wizardGame.js";
+import {
+  QUICK_PLAY_PACE,
+  QUICK_PLAY_TICK_MS,
+  quickPlayQueue,
+  quickPlayRounds,
+} from "../services/quickPlayQueue.js";
 
 interface CreateGameBody {
   roomId?: number;
@@ -73,6 +80,9 @@ function withQuitPlayers<
     })),
   };
 }
+
+// The room a Quick Play table is seated in.
+const QUICK_PLAY_ROOM_NAME = "Quick Play";
 
 // A host may open this many guest rooms an hour, so the open invite link
 // cannot be used to spam rooms. Kept in memory: a restart forgets it.
@@ -159,6 +169,227 @@ export default async function wizardRoutes(
 
     return false;
   };
+
+  // Seats the room's players and its NPCs and starts the game, from the start
+  // button or a Quick Play table. Null if the room has a game already; throws
+  // if the game cannot be made.
+  const startGame = (
+    room: Room,
+    setup: {
+      botCount: number;
+      // An all-NPC game: the host's seat goes to "<host> NPC" and they watch.
+      allNpcs: boolean;
+      maxRounds: number | undefined;
+      pace: number;
+      options: WizardGameOptions;
+      botLevel: BotLevel;
+      // Whether the room's creator is counted as having made a game.
+      countCreated: boolean;
+    },
+  ): WizardGameState | null => {
+    const { botCount, allNpcs } = setup;
+
+    // Avatars first, so each bot can be named to suit its avatar; the bots'
+    // avatars then go to createGame as claims, so it keeps these assignments.
+    // Bot slots are placeholders ending in " NPC", which no player can register.
+    const humans = room.players.map((player) =>
+      allNpcs ? `${player.username}${BOT_NAME_SUFFIX}` : player.username,
+    );
+    const claims = new Map<string, AvatarId | null>(
+      room.players.map((player, index) => [humans[index]!, player.avatar]),
+    );
+    const botSlots = Array.from(
+      { length: allNpcs ? botCount - 1 : botCount },
+      (_, index) => `bot slot ${index} NPC`,
+    );
+    const avatars = assignAvatars([...humans, ...botSlots], claims);
+    // Settle the humans' avatars here too: createGame sees them in the
+    // shuffled seating below, where room order no longer breaks a tie.
+    humans.forEach((name, index) => claims.set(name, avatars[index] ?? null));
+    const botAvatars = avatars.slice(humans.length);
+    const botNames = pickBotNames(botAvatars, humans);
+    botNames.forEach((name, index) => claims.set(name, botAvatars[index] ?? null));
+    // A random seating, so a random player leads the first round.
+    const players = shuffledSeating([...humans, ...botNames]);
+
+    const game = wizardGameService.createGame(
+      room.id,
+      players,
+      claims,
+      setup.maxRounds,
+      setup.pace,
+      setup.options,
+      room.turnTimeoutMs,
+    );
+    assignBotPersonalities(game.players, setup.botLevel);
+    if (game.options?.mode === "roles") {
+      assignRoles(
+        game.players,
+        new Map(room.players.map((player) => [player.username, player.role])),
+      );
+    }
+
+    game.status = "playing";
+
+    if (!wizardSessionManager.saveGameIfAbsent(game)) {
+      return null;
+    }
+
+    const humanPlayerIds = db
+      .prepare(`
+        SELECT user_id AS userId
+        FROM room_players
+        WHERE room_id = ?
+      `)
+      .all(room.id) as { userId: number }[];
+
+    // A guest room's games count for no one, so they are not even begun.
+    if (room.inviteCode === null) {
+      for (const { userId } of humanPlayerIds) {
+        playerStatsRepository.initializeForUser(userId);
+        playerStatsRepository.incrementGamesPlayed(userId);
+      }
+
+      if (setup.countCreated) {
+        playerStatsRepository.initializeForUser(room.createdBy);
+        playerStatsRepository.incrementGamesCreated(room.createdBy);
+      }
+    }
+
+    wizardLobbyManager.setRoomStatus(room.id, "playing");
+
+    void wizardGameRunner.run(room.id);
+
+    return game;
+  };
+
+  // Each tick, the Quick Play tables that can start get a room of their own
+  // and a game at the standard settings (quickPlayQueue.ts).
+  const startQuickPlayTables = (): void => {
+    const now = Date.now();
+
+    for (const match of quickPlayQueue.takeMatches(now)) {
+      const [first, ...others] = match.players;
+
+      try {
+        const room = wizardLobbyManager.createRoom(
+          QUICK_PLAY_ROOM_NAME,
+          first!.userId,
+          first!.username,
+          match.players.length + match.botCount,
+          true,
+          30_000,
+          false,
+          DEFAULT_GAME_OPTIONS,
+        );
+
+        for (const seeker of others) {
+          wizardLobbyManager.joinRoom(room.id, seeker.username);
+        }
+
+        const seated = wizardLobbyManager.getRoomById(room.id)!;
+        startGame(seated, {
+          botCount: match.botCount,
+          allNpcs: false,
+          maxRounds: quickPlayRounds(match.players.length + match.botCount),
+          pace: QUICK_PLAY_PACE,
+          options: DEFAULT_GAME_OPTIONS,
+          botLevel: DEFAULT_BOT_LEVEL,
+          countCreated: false,
+        });
+
+        quickPlayQueue.setMatched(
+          match.players.map((seeker) => seeker.userId),
+          room.id,
+          now,
+        );
+      } catch (error) {
+        console.error("[wizard] Quick Play table failed:", error);
+      }
+    }
+  };
+
+  // The logged-in player behind a request, or null for none or a guest:
+  // guests play at an invited table only.
+  const quickPlayUser = async (request: FastifyRequest): Promise<
+    { userId: number; username: string } | null
+  > => {
+    try {
+      await request.jwtVerify();
+    } catch {
+      return null;
+    }
+
+    const tokenUser = request.user as {
+      sub?: string | number;
+      username?: string;
+      guest?: boolean;
+    };
+    const userId = Number(tokenUser.sub);
+
+    if (tokenUser.guest || !tokenUser.username || !Number.isInteger(userId) || userId <= 0) {
+      return null;
+    }
+
+    return { userId, username: tokenUser.username };
+  };
+
+  server.post("/quick-play", async (request, reply) => {
+    const user = await quickPlayUser(request);
+
+    if (!user) {
+      return reply.status(401).send({ error: "Log in to use Quick Play" });
+    }
+
+    // A player already at a table, waiting or playing, finishes there first.
+    const seated = wizardLobbyManager
+      .getRooms()
+      .map(withQuitPlayers)
+      .some((room) =>
+        room.players.some(
+          (player) =>
+            player.username === user.username &&
+            !("quit" in player && player.quit),
+        ),
+      );
+
+    if (seated) {
+      return reply.status(409).send({ error: "Leave your room first" });
+    }
+
+    quickPlayQueue.join(user.userId, user.username, Date.now());
+
+    return reply.send(quickPlayQueue.status(user.userId, Date.now()));
+  });
+
+  // The page asks every second; asking keeps the search alive.
+  server.get("/quick-play", async (request, reply) => {
+    const user = await quickPlayUser(request);
+
+    if (!user) {
+      return reply.status(401).send({ error: "Log in to use Quick Play" });
+    }
+
+    return reply.send(quickPlayQueue.status(user.userId, Date.now()));
+  });
+
+  server.delete("/quick-play", async (request, reply) => {
+    const user = await quickPlayUser(request);
+
+    if (!user) {
+      return reply.status(401).send({ error: "Log in to use Quick Play" });
+    }
+
+    quickPlayQueue.leave(user.userId);
+
+    return reply.send({ state: "idle" });
+  });
+
+  const quickPlayTimer = setInterval(startQuickPlayTables, QUICK_PLAY_TICK_MS);
+  quickPlayTimer.unref();
+  server.addHook("onClose", async () => {
+    clearInterval(quickPlayTimer);
+  });
 
   server.get("/lobby", async (request, reply) => {
     try {
@@ -382,6 +613,9 @@ export default async function wizardRoutes(
       { ...DEFAULT_GAME_OPTIONS, mode: body.mode ?? "classic" },
     );
 
+    // Opening a room ends a Quick Play search.
+    quickPlayQueue.leave(Number(tokenUser.sub));
+
     return reply.send(room);
   });
 
@@ -469,6 +703,11 @@ export default async function wizardRoutes(
     }
 
     const result = wizardLobbyManager.joinRoom(body.roomId, username);
+
+    // Taking a seat ends a Quick Play search.
+    if (result.success) {
+      quickPlayQueue.leave(userId);
+    }
 
     if (!result.success) {
       if (result.reason === "not-found") {
@@ -1076,7 +1315,11 @@ export default async function wizardRoutes(
         return reply.status(401).send({ error: "Unauthorized" });
       }
 
-      const tokenUser = request.user as { username?: string; guest?: boolean };
+      const tokenUser = request.user as {
+        sub?: string | number;
+        username?: string;
+        guest?: boolean;
+      };
 
       if (!tokenUser.username || tokenUser.guest) {
         return reply.status(401).send({ error: "User identity missing" });
@@ -1102,6 +1345,8 @@ export default async function wizardRoutes(
               : { error: "This invitation is no longer valid" },
         );
       }
+
+      quickPlayQueue.leave(Number(tokenUser.sub));
 
       return reply.send({ roomId });
     },
@@ -1269,38 +1514,14 @@ export default async function wizardRoutes(
       });
     }
 
-    // Avatars first, so each bot can be named to suit its avatar; the bots'
-    // avatars then go to createGame as claims, so it keeps these assignments.
-    // Bot slots are placeholders ending in " NPC", which no player can register.
-    const humans = room.players.map((player) =>
-      allNpcs ? `${player.username}${BOT_NAME_SUFFIX}` : player.username,
-    );
-    const claims = new Map<string, AvatarId | null>(
-      room.players.map((player, index) => [humans[index]!, player.avatar]),
-    );
-    const botSlots = Array.from(
-      { length: allNpcs ? botCount - 1 : botCount },
-      (_, index) => `bot slot ${index} NPC`,
-    );
-    const avatars = assignAvatars([...humans, ...botSlots], claims);
-    // Settle the humans' avatars here too: createGame sees them in the
-    // shuffled seating below, where room order no longer breaks a tie.
-    humans.forEach((name, index) => claims.set(name, avatars[index] ?? null));
-    const botAvatars = avatars.slice(humans.length);
-    const botNames = pickBotNames(botAvatars, humans);
-    botNames.forEach((name, index) => claims.set(name, botAvatars[index] ?? null));
-    // A random seating, so a random player leads the first round.
-    const players = shuffledSeating([...humans, ...botNames]);
-
     try {
-      const game = wizardGameService.createGame(
-        room.id,
-        players,
-        claims,
+      const game = startGame(room, {
+        botCount,
+        allNpcs,
         maxRounds,
-        clampPace(body.pace),
+        pace: clampPace(body.pace),
         // What the start button sent, falling back to what the room saved.
-        normalizeGameOptions({
+        options: normalizeGameOptions({
           mode: room.options.mode,
           wizardWins: body.wizardWins ?? room.options.wizardWins,
           blindFirstRound: body.blindFirstRound ?? room.options.blindFirstRound,
@@ -1310,46 +1531,15 @@ export default async function wizardRoutes(
               : room.options.missedTurnsToQuit,
           lastPredictionLimited: body.lastPredictionLimited ?? room.options.lastPredictionLimited,
         }),
-        room.turnTimeoutMs,
-      );
-      assignBotPersonalities(game.players, normalizeBotLevel(body.botLevel));
-      if (game.options?.mode === "roles") {
-        assignRoles(
-          game.players,
-          new Map(room.players.map((player) => [player.username, player.role])),
-        );
-      }
+        botLevel: normalizeBotLevel(body.botLevel),
+        countCreated: true,
+      });
 
-      game.status = "playing";
-
-      if (!wizardSessionManager.saveGameIfAbsent(game)) {
+      if (!game) {
         return reply.status(409).send({
           error: "A game already exists for this room",
         });
       }
-
-      const humanPlayerIds = db
-        .prepare(`
-          SELECT user_id AS userId
-          FROM room_players
-          WHERE room_id = ?
-        `)
-        .all(room.id) as { userId: number }[];
-
-      // A guest room's games count for no one, so they are not even begun.
-      if (room.inviteCode === null) {
-        for (const { userId } of humanPlayerIds) {
-          playerStatsRepository.initializeForUser(userId);
-          playerStatsRepository.incrementGamesPlayed(userId);
-        }
-
-        playerStatsRepository.initializeForUser(room.createdBy);
-        playerStatsRepository.incrementGamesCreated(room.createdBy);
-      }
-
-      wizardLobbyManager.setRoomStatus(room.id, "playing");
-
-      void wizardGameRunner.run(room.id);
 
       return reply.status(201).send(
         wizardGameService.getPublicGameState(game, seatNameFor(username, game.players) ?? username),

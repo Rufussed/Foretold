@@ -3726,6 +3726,51 @@ button {
   justify-self: end;
 }
 
+/* Quick Play mirrors Create Room in the left column. */
+.lobby-title-row .quick-play-button {
+  grid-column: 1;
+  justify-self: start;
+}
+
+/* The search under the title row while Quick Play looks for a table. */
+.quick-play-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin: -12px 0 20px;
+  padding: 6px 8px 6px 16px;
+
+  border: 1px solid rgba(206, 139, 53, 0.45);
+
+  background: rgba(75, 40, 13, 0.4);
+
+  color: #f4ead8;
+}
+
+.quick-play-bar[hidden] {
+  display: none;
+}
+
+.quick-play-text {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Smaller than the other secondary buttons, and solid enough to find. */
+.quick-play-bar .secondary-action {
+  height: 30px;
+
+  padding: 0 14px;
+
+  border-color: rgba(206, 139, 53, 0.7);
+
+  background: rgba(161, 94, 24, 0.35);
+
+  color: #f4ead8;
+}
+
 .lobby-title-row h1 {
   margin: 0;
 
@@ -4803,6 +4848,11 @@ button {
 
   .lobby-title-row h1 {
     font-size: 2.2rem;
+  }
+
+  /* The title first, then the two buttons. */
+  .lobby-title-row > div {
+    order: -1;
   }
 
   .create-room-button {
