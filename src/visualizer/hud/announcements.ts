@@ -236,6 +236,7 @@ const ROLE_TEXTS: Record<RoleAction["role"] | PaidText, [MessageKey, MessageKey,
   collect: ["ann.youCollect", "ann.collectsYours", "ann.collects"],
   unpaid: ["ann.youCollectNothing", "ann.collectsNothingYours", "ann.collectsNothing"],
   smith: ["ann.youForge", "ann.youForge", "ann.forges"],
+  merchant: ["ann.yourMarket", "ann.market", "ann.market"],
   block: ["ann.youBlock", "ann.blocksYours", "ann.blocks"],
   blockFree: ["ann.youBlockFree", "ann.blocksFreeYours", "ann.blocksFree"],
 };
@@ -251,8 +252,24 @@ const textsFor = (action: RoleAction) => {
   return ROLE_TEXTS[action.points === undefined || !paid ? action.role : action.points ? paid[0] : paid[1]];
 };
 
-// Seeds and sheep change hands once the trick is won.
-const AT_TRICK_END: RoleAction["role"][] = ["farmer", "shepherd"];
+// Seeds and sheep change hands, and markets open, once the trick is won.
+const AT_TRICK_END: RoleAction["role"][] = ["farmer", "shepherd", "merchant"];
+
+// A Merchant's market in one line: who paid them and whom they paid, e.g.
+// "+10 from Rufus, Anna · −5 to Carl".
+function marketTrades(action: RoleAction, local: string): string {
+  const trades = action.trades ?? [];
+  const side = (paid: boolean, key: MessageKey, you: MessageKey): string => {
+    const these = trades.filter((trade) => (trade.points < 0) !== paid);
+    if (!these.length) return "";
+    const points = Math.abs(these.reduce((sum, trade) => sum + trade.points, 0));
+    const names = these.map((trade) => (trade.player === local ? t(you) : announcedName(trade.player))).join(", ");
+    return t(key, { points: String(points), names });
+  };
+  return [side(true, "ann.marketFrom", "ann.marketFromYou"), side(false, "ann.marketTo", "ann.marketToYou")]
+    .filter(Boolean)
+    .join(" \u00b7 ");
+}
 
 // The powers of a Roles game used since the last snapshot (modes/roles/):
 // the Thief's steal, the Servant's service, the Fisher's catch, a Farmer's
@@ -276,6 +293,11 @@ function roleMessages(
   return (now.roleActions ?? []).slice(said).map((action) => {
     const card = cardName(action.card);
     const values = { name: announcedName(action.by), victim: announcedName(action.on), card, points: String(action.points ?? 0) };
+    if (action.role === "merchant") {
+      const trades = marketTrades(action, local);
+      const text = action.by === local ? t("ann.yourMarket", { trades }) : t("ann.market", { ...values, trades });
+      return { text, username: action.by, atTrickEnd: true };
+    }
     const [youUse, usedOnYou, used] = textsFor(action);
     const text = action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values);
     return { text, username: action.by, atTrickEnd: AT_TRICK_END.includes(action.role) };
@@ -289,6 +311,7 @@ const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
   farmer: "ann.harvested",
   shepherd: "ann.sheepPaid",
   smith: "ann.blocked",
+  merchant: "ann.marketLabel",
 };
 
 // When a round has just been scored: a result per player, the round's best
@@ -325,7 +348,11 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
       // Points another player's power took are a loss of their own: robbed by
       // a Thief, a Servant's tip, a Fisher's catch, a Farmer's harvest, a
       // Shepherd's sheep.
-      const label = points < 0 ? t(LOSS_LABELS[role as RoleAction["role"]]) : t(`role.${role as RoleAction["role"]}`);
+      // A market is a market whoever gains: the Merchant, those paying him
+      // and those he pays.
+      const label = points < 0 || role === "merchant"
+        ? t(LOSS_LABELS[role as RoleAction["role"]])
+        : t(`role.${role as RoleAction["role"]}`);
       lines.push({ label, value: signed(points) });
       score += points;
     }

@@ -7,6 +7,7 @@ import { WizardGameService } from "../../services/wizardGameService.js";
 import type { RoleId } from "./roles.js";
 import { SEED_POINTS } from "./farmer.js";
 import { CATCH_POINTS } from "./fisher.js";
+import { MARKET_POINTS } from "./merchant.js";
 import { SERVANT_BONUS, SERVICE_POINTS } from "./servant.js";
 import { SHEEP_POINTS } from "./shepherd.js";
 import { BLOCK_POINTS } from "./smith.js";
@@ -571,5 +572,168 @@ describe("the Smith in a game", () => {
     expect(score("farmer")).toBe(30 + 2 * SEED_POINTS - BLOCK_POINTS);
     expect(score("smith")).toBe(120 - 2 * SEED_POINTS + BLOCK_POINTS);
     expect(find(game, "smith").armor).toBe(0);
+  });
+});
+
+describe("the Merchant in a game", () => {
+  const find = (game: { players: GamePlayer[] }, name: string) => game.players.find((p) => p.username === name)!;
+  const startAt = (points: number) => (players: GamePlayer[]) => {
+    for (const player of players) player.score = points;
+  };
+
+  it("is paid by every card his 7 beats and pays every card that beats it", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "ben", card: card(4) },
+        { name: "merchant", card: card(7), role: "merchant" },
+        { name: "cid", card: card(10) },
+      ],
+      startAt(50),
+    );
+
+    expect(trick.winnerUsername).toBe("cid");
+    expect(score("merchant")).toBe(50 + MARKET_POINTS);
+    expect(score("ana")).toBe(50 - MARKET_POINTS);
+    expect(score("ben")).toBe(50 - MARKET_POINTS);
+    expect(score("cid")).toBe(50 + MARKET_POINTS);
+    expect(trick.roleActions?.[0]).toMatchObject({
+      role: "merchant",
+      by: "merchant",
+      points: MARKET_POINTS,
+      trades: [
+        { player: "ana", points: MARKET_POINTS },
+        { player: "ben", points: MARKET_POINTS },
+        { player: "cid", points: -MARKET_POINTS },
+      ],
+    });
+  });
+
+  it("opens a market with a trump 7, and none with a 7 off the lead suit", () => {
+    const trump = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(13) },
+        { name: "merchant", card: card(7, "Blue"), role: "merchant" },
+        { name: "ben", card: card(9) },
+      ],
+      startAt(50),
+      "Blue",
+    );
+    expect(trump.score("merchant")).toBe(50 + 2 * MARKET_POINTS);
+
+    const offSuit = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(13) },
+        { name: "merchant", card: card(7, "Blue"), role: "merchant" },
+        { name: "ben", card: card(9) },
+      ],
+      startAt(50),
+    );
+    expect(offSuit.score("merchant")).toBe(50);
+    expect(offSuit.trick.roleActions ?? []).toEqual([]);
+  });
+
+  it("leaves Wizards and Jesters out, and pays even below 0", () => {
+    const { score } = playTrick("roles", [
+      { name: "ana", card: card(9) },
+      { name: "merchant", card: card(7), role: "merchant" },
+      { name: "ben", card: card(0) },
+      { name: "cid", card: card(14) },
+    ]);
+
+    expect(score("merchant")).toBe(-MARKET_POINTS);
+    expect(score("ana")).toBe(MARKET_POINTS);
+    expect(score("ben")).toBe(0);
+    expect(score("cid")).toBe(0);
+  });
+
+  it("takes nothing from a player at 0", () => {
+    const { score, trick } = playTrick("roles", [
+      { name: "ana", card: card(3) },
+      { name: "merchant", card: card(7), role: "merchant" },
+      { name: "ben", card: card(2) },
+    ]);
+
+    expect(score("merchant")).toBe(0);
+    expect(score("ana")).toBe(0);
+    expect(trick.roleActions?.[0]?.points).toBe(0);
+  });
+
+  it("trades with the 1 a Thief left him for his 7", () => {
+    const { score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "merchant", card: card(7), role: "merchant" },
+        { name: "thief", card: card(1), role: "thief" },
+        { name: "ben", card: card(9) },
+      ],
+      startAt(50),
+    );
+
+    // Every other card beats the 1, the Thief's 7 among them.
+    expect(score("merchant")).toBe(50 - STEAL_POINTS - 3 * MARKET_POINTS);
+    expect(score("thief")).toBe(50 + STEAL_POINTS + MARKET_POINTS);
+    expect(score("ana")).toBe(50 + MARKET_POINTS);
+    expect(score("ben")).toBe(50 + MARKET_POINTS);
+  });
+
+  it("a Smith in armour who would pay uses up a piece, and nothing moves", () => {
+    const { game, trick, score } = playTrick(
+      "roles",
+      [
+        { name: "smith", card: card(3), role: "smith" },
+        { name: "merchant", card: card(7), role: "merchant" },
+        { name: "ben", card: card(2) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        find({ players }, "smith").armor = 1;
+      },
+    );
+
+    expect(find(game, "smith").armor).toBe(0);
+    expect(score("smith")).toBe(50);
+    expect(score("merchant")).toBe(50 + MARKET_POINTS);
+    expect(trick.roleActions?.at(-1)).toMatchObject({ role: "smith", by: "smith", on: "merchant", points: 0 });
+  });
+
+  it("a Smith who beats the 7 is paid and keeps his armour", () => {
+    const { game, score } = playTrick(
+      "roles",
+      [
+        { name: "merchant", card: card(7), role: "merchant" },
+        { name: "smith", card: card(12), role: "smith" },
+        { name: "ben", card: card(2) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        find({ players }, "smith").armor = 1;
+      },
+    );
+
+    expect(find(game, "smith").armor).toBe(1);
+    expect(score("smith")).toBe(50 + MARKET_POINTS);
+  });
+
+  it("two Merchants: the trump 7 wins both markets", () => {
+    const { score } = playTrick(
+      "roles",
+      [
+        { name: "first", card: card(7), role: "merchant" },
+        { name: "second", card: card(7, "Blue"), role: "merchant" },
+        { name: "ben", card: card(9, "Green") },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    // first pays second at both markets; ben's off-suit 9 loses to both 7s.
+    expect(score("first")).toBe(50 - 2 * MARKET_POINTS + MARKET_POINTS);
+    expect(score("second")).toBe(50 + 2 * MARKET_POINTS + MARKET_POINTS);
+    expect(score("ben")).toBe(50 - 2 * MARKET_POINTS);
   });
 });

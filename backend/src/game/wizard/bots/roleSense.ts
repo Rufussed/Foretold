@@ -4,6 +4,7 @@ import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
 import { powerOn } from "../modes/roles/rolePlay.js";
 import { armorOf, playPower, rolesOf } from "../modes/roles/rolePowers.js";
 import { roleCard, type RoleId } from "../modes/roles/roles.js";
+import { trades } from "../modes/roles/merchant.js";
 import { sheepOut } from "../modes/roles/shepherd.js";
 import { stealSpots } from "../modes/roles/thief.js";
 import { WizardRules } from "../services/wizardRules.js";
@@ -23,8 +24,11 @@ export interface Play {
 // Roughly the tricks a role's card brings in a bid. The Fisher picks the
 // winner when played early, the Thief often steals one, the Servant's luck
 // depends on the next player, the Farmer's 4 and the Shepherd's 5 bring
-// points, not tricks, and the Smith's 6 forges armour.
-const BID_VALUE: Record<RoleId, number> = { thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0 };
+// points, not tricks, the Smith's 6 forges armour, and the Merchant's 7
+// trades.
+const BID_VALUE: Record<RoleId, number> = {
+  thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0,
+};
 
 const isRoles = (game: WizardGameState): boolean =>
   normalizeGameOptions(game.options).mode === "roles";
@@ -107,6 +111,22 @@ function forgesNow(game: WizardGameState, card: Card): boolean {
   return roleOfBot(game) === "smith" && powerOn(trick, trick.length - 1, "smith", game.trumpSuit, rolesOf(game));
 }
 
+// A Merchant's 7 as the trick's last card, with its power on and a market
+// that pays: more cards it beats than cards that beat it.
+function profitableMarket(game: WizardGameState, card: Card): boolean {
+  const trick = trickAfter(game, card);
+  const last = trick.length - 1;
+
+  if (roleOfBot(game) !== "merchant" || last < game.players.length - 1
+    || !powerOn(trick, last, "merchant", game.trumpSuit, rolesOf(game))) {
+    return false;
+  }
+
+  const market = trades(trick, currentPlayer(game).username, game.trumpSuit);
+
+  return market.filter((trade) => trade.sells).length > market.filter((trade) => !trade.sells).length;
+}
+
 // A Shepherd is paid only by winning with their own 5: once sheep are out,
 // the 5 that takes the trick so far. The more sheep are out, the more it
 // risks: as the last card with one, from one before last with two, from two
@@ -128,6 +148,8 @@ function collectingFive(game: WizardGameState, winners: Play[]): Play | undefine
 // with nothing that wins, a Servant's 2 as a gamble on the next card. Not
 // wanting them: a Farmer's 4 or a Shepherd's 5 that loses, so a seed or a
 // sheep goes to someone else, or a Smith's 6 that loses and forges armour.
+// Either way, a Merchant's 7 that closes the trick with a market that pays,
+// when it wins or loses as wanted.
 export function rolePick(
   game: WizardGameState,
   legal: Play[],
@@ -135,11 +157,14 @@ export function rolePick(
   losers: Play[],
   wantsTricks: boolean,
 ): Play | undefined {
+  const trading = (wantsTricks ? winners : losers).find(({ card }) => profitableMarket(game, card));
+
   if (!wantsTricks) {
-    return losers.find(({ card }) => givesAway(game, card) || forgesNow(game, card));
+    return trading ?? losers.find(({ card }) => givesAway(game, card) || forgesNow(game, card));
   }
 
-  return collectingFive(game, winners)
+  return trading
+    ?? collectingFive(game, winners)
     ?? legal.find(({ card }) => powerAhead(game, card, "fisher"))
     ?? (winners.length ? undefined : legal.find(({ card }) => servesNext(game, card)));
 }

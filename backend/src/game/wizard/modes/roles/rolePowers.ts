@@ -3,6 +3,7 @@ import type { Suit } from "../../models/card.js";
 import type { GamePlayer, PlayedCard, WizardGameState } from "../../models/wizardGame.js";
 import { WizardRules } from "../../services/wizardRules.js";
 import { harvest, plant, plantedBy } from "./farmer.js";
+import { MARKET_POINTS, marketsIn, trades } from "./merchant.js";
 import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
 import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
@@ -186,6 +187,47 @@ function applyShepherding(game: WizardGameState, winner: GamePlayer): RoleAction
   return actions;
 }
 
+// The Merchants' markets at the end of a trick, once every swap is done.
+// Whoever sells pays the Merchant, never more than they have; the Merchant
+// pays whoever buys in full, even below 0. A Smith in armour who would pay
+// uses up a piece instead, and nothing moves.
+function applyMarkets(game: WizardGameState): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+  const playerNamed = (username: string) => game.players.find((player) => player.username === username);
+
+  for (const { merchant, card } of marketsIn(trick.playedCards, game.trumpSuit, rolesOf(game))) {
+    const done: { player: string; points: number }[] = [];
+    const blocks: RoleAction[] = [];
+
+    for (const trade of trades(trick.playedCards, merchant, game.trumpSuit)) {
+      if (!trade.sells) {
+        const buyer = playerNamed(merchant);
+        const seller = playerNamed(trade.player);
+        if (buyer && seller) {
+          addBonus(seller, "merchant", MARKET_POINTS);
+          addBonus(buyer, "merchant", -MARKET_POINTS);
+        }
+        done.push({ player: trade.player, points: -MARKET_POINTS });
+      } else if (armorOf(game)(trade.player)) {
+        block(playerNamed(trade.player));
+        // A block that bounces nothing back.
+        blocks.push({ role: "smith", by: trade.player, on: merchant, card: trade.card, points: 0 });
+      } else {
+        done.push({ player: trade.player, points: movePoints(game, trade.player, merchant, "merchant", MARKET_POINTS) });
+      }
+    }
+
+    if (done.length) {
+      const points = done.reduce((sum, trade) => sum + trade.points, 0);
+      actions.push({ role: "merchant", by: merchant, on: merchant, card, points, trades: done });
+    }
+    actions.push(...blocks);
+  }
+
+  return actions;
+}
+
 // When a trick is won in a Roles game: what the powers used in it bring, or
 // cost, straight onto the scores.
 export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
@@ -201,7 +243,7 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
     }
   }
 
-  const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner)];
+  const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game)];
 
   if (atTrickEnd.length) {
     trick.roleActions = [...(trick.roleActions ?? []), ...atTrickEnd];

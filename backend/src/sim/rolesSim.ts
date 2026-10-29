@@ -1,5 +1,6 @@
-// Balance check for the Roles mode: full 5-player games of bots, one role
-// each, in a shuffled seat order every game, next to as many Classic games as
+// Balance check for the Roles mode: full games of bots, one role each, in a
+// shuffled seat order every game; with more roles than a table's 6 seats,
+// 6 of them drawn at random each game, next to as many Classic games as
 // a baseline. Not a test: no pass or fail, only numbers to compare after a
 // rule change. Run from backend/: npm run sim -- 10000 [adept|apprentice|mixed]
 // Mixed gives each seat a random personality every game, and splits each
@@ -71,12 +72,15 @@ function playGame(mode: GameMode, seats: Seat[], level: BotLevel): GamePlayer[] 
   return game.players;
 }
 
+// The most seats at a Wizard table.
+const TABLE_SEATS = 6;
+
 // Each seat's results over many games; a shared win counts as a part.
 function run(mode: GameMode, seats: Seat[], games: number, level: BotLevel): Map<string, Stat> {
   const stats = new Map<string, Stat>();
 
   for (let g = 0; g < games; g++) {
-    const order = shuffled(seats);
+    const order = shuffled(seats).slice(0, TABLE_SEATS);
     const players = playGame(mode, order, level);
     const best = Math.max(...players.map((player) => player.score));
     const winners = players.filter((player) => player.score === best).length;
@@ -126,11 +130,12 @@ const level = normalizeBotLevel(process.argv[3] ?? "adept");
 const roles = ROLES.map((role) => role.id);
 const byWins = (stats: Map<string, Stat>) => [...stats].sort((a, b) => b[1].wins / b[1].games - a[1].wins / a[1].games);
 
-console.log(`${games} games per mode, ${roles.length} bots (${level}), a full game each\n`);
+const seated = Math.min(roles.length, TABLE_SEATS);
+console.log(`${games} games per mode, ${seated} of ${roles.length} roles per game (${level}), a full game each; fair win rate ${percent(1 / seated)}\n`);
 console.log(`${"role".padEnd(19)} | win rate | avg score | median | bid hit | tricks/game | role gain | role loss`);
 for (const [seat, stat] of byWins(run("roles", roles, games, level))) {
   console.log(row(seat, stat));
 }
-for (const [seat, stat] of byWins(run("classic", roles.map(() => "classic" as const), games, level))) {
+for (const [seat, stat] of byWins(run("classic", roles.slice(0, seated).map(() => "classic" as const), games, level))) {
   console.log(row(seat, stat));
 }
