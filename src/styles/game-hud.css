@@ -962,3 +962,9 @@
     height: 38px;
   }
 }
+
+/* A player who quit the game, whose seat the server now plays: their line
+   in the table's player list dims (visualizer/hud/player-list.ts). */
+.hud-opponent.has-quit .hud-opponent-face {
+  opacity: 0.45;
+}

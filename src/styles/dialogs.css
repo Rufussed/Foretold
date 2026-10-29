@@ -1,0 +1,69 @@
+/* Windows added to the body, outside #app: the navbar's help, the Roles
+   help, Leave Table at the game and Start game's summary of the settings. */
+
+/* The windows are added to the body, outside #app, which lies at 9999. */
+#navbar-help,
+#roles-help {
+  z-index: 10000;
+}
+
+/* Leave Table's choice at the game (visualizer/leave-dialog.ts), in front of
+   the table's HUD. */
+#visualizer-leave-dialog {
+  z-index: 200;
+}
+
+#visualizer-leave-dialog .home-modal-copy + .home-modal-copy {
+  margin-top: 12px;
+}
+
+.visualizer-leave-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 26px;
+}
+
+.visualizer-leave-actions button {
+  padding: 12px 18px;
+}
+
+/* Start game's last look at the settings (components/start-summary.ts),
+   added to the body, outside #app, which lies at 9999. Defaults are muted,
+   the host's own choices gold. */
+#room-start-summary {
+  z-index: 10000;
+}
+
+.start-summary-list {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px 18px;
+  margin: 0;
+  text-align: left;
+}
+
+.start-summary-list dt {
+  color: rgba(244, 235, 217, 0.52);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  line-height: 1.9;
+  text-transform: uppercase;
+}
+
+.start-summary-list dd {
+  margin: 0;
+  color: rgba(230, 218, 196, 0.72);
+  line-height: 1.6;
+}
+
+.start-summary-list dd.is-changed {
+  color: #e0a14d;
+}
+
+.start-summary-note {
+  margin-top: 22px;
+  font-size: 14px;
+}
+

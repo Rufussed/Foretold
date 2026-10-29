@@ -4,6 +4,8 @@
 @import "./styles/game.css";
 @import "./styles/game-hud.css";
 @import "./styles/home.css";
+@import "./styles/navbar.css";
+@import "./styles/dialogs.css";
 @import "./styles/lobby.css";
 @import "./styles/room.css";
 @import "./styles/profile.css";
