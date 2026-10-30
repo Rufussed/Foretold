@@ -86,6 +86,9 @@ export interface TableCards {
   selectedKey(): string | null;
   toggleRaised(key: string): void;
   setRaised(key: string, raised: boolean): void;
+  // Calls back once no Roles swap is waiting or moving in the trick: at once
+  // if none is.
+  whenSwapsDone(done: () => void): void;
   positionOf(key: string): THREE.Vector3 | null;
   startDrag(key: string): void;
   dragTo(key: string, world: THREE.Vector3): void;
@@ -215,6 +218,9 @@ export function createTableCards(
   // A swap waiting for the card just played to land: the places after it, and
   // when it starts.
   let swapWaiting: { places: string[]; at: number } | null = null;
+  let swapWaiters: (() => void)[] = [];
+  const swapping = () =>
+    !!swapWaiting || [...cards.values()].some((entry) => entry.swap && !suppressed.has(entry.key));
   let pending: { key: string; since: number } | null = null;
   let hovered: string | null = null;
   let leading: string | null = null;
@@ -561,6 +567,7 @@ export function createTableCards(
           entry.object.visible = false;
           entry.placed = false;
           entry.flight = null;
+          entry.swap = null;
           continue;
         }
 
@@ -605,6 +612,13 @@ export function createTableCards(
         // The leader gets the thick, turning gold ring; pointing at a card
         // keeps the plain hover outline.
         applyOutlineStyle(entry, isLeading && !pointed);
+      }
+
+      // A finished swap lets whatever waits on it go on (the trick's gather).
+      if (swapWaiters.length > 0 && !swapping()) {
+        const waiters = swapWaiters;
+        swapWaiters = [];
+        waiters.forEach((done) => done());
       }
     },
 
@@ -718,6 +732,11 @@ export function createTableCards(
       // One card is read at a time.
       for (const other of cards.values()) other.raised = false;
       entry.raised = raise;
+    },
+
+    whenSwapsDone(done) {
+      if (swapping()) swapWaiters.push(done);
+      else done();
     },
 
     selectedKey() {

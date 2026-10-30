@@ -12,11 +12,11 @@ import type { Placement } from "../../../visualizer/placement";
 
 export const TRICK_SWAP = {
   // The pause after the card just played has landed, before the swap starts.
-  pauseSeconds: 0.3,
+  pauseSeconds: 0.15,
   // Up out of the trick, across, and down into the new place.
-  riseSeconds: 0.35,
-  travelSeconds: 0.8,
-  dropSeconds: 0.35,
+  riseSeconds: 0.25,
+  travelSeconds: 0.55,
+  dropSeconds: 0.25,
   // How high each card rises, in card lengths: one higher than the other, so
   // they pass over each other rather than through.
   highLengths: 1.0,

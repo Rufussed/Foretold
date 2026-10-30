@@ -546,7 +546,8 @@ export function createCardTable({
       const roundOver = state.players.every((player) => player.handCount === 0);
       const won = state.players.find((player) => player.username === winner);
       const burstColor = won ? burstColorFor(won.tricksWon, won.prediction) : burstColorFor(0, null);
-      startReward(destinationFor(winner), roundOver, burstColor, done);
+      // A Roles swap still under way finishes before the cards are gathered.
+      cards.whenSwapsDone(() => startReward(destinationFor(winner), roundOver, burstColor, done));
     },
     refused: () => {
       cards.cancelPlay();
