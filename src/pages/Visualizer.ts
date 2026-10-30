@@ -23,6 +23,7 @@ import { createSabotageThiefPrompt, type SabotageThiefPrompt } from "../modes/sa
 import { createSabotageDevKeys, type SabotageDevKeys } from "../modes/sabotage/dev/sabotage-dev-keys";
 import { createSuitViewer, type SuitViewer } from "../modes/sabotage/dev/suit-viewer";
 import { isSabotageGame, setSabotageGame } from "../modes/sabotage/sabotage-game";
+import { createRoleLabels, type RoleLabels } from "../modes/roles/role-labels";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -102,6 +103,7 @@ export async function renderVisualizerPage(
   let fishPrompt: FishPrompt | null = null;
   let stealPrompt: StealPrompt | null = null;
   let powerPrompt: PowerPrompt | null = null;
+  let roleLabels: RoleLabels | null = null;
   let gameHud: GameHud | null = null;
   let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
@@ -147,6 +149,7 @@ export async function renderVisualizerPage(
     fishPrompt?.dispose();
     stealPrompt?.dispose();
     powerPrompt?.dispose();
+    roleLabels?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
     timeoutNotice?.dispose();
@@ -577,6 +580,17 @@ export async function renderVisualizerPage(
       const sync = live ? createSeatSync(players, layout.clockwiseSeats) : null;
       seatSync = sync;
 
+      // A Roles game: each other player's role above their head (modes/roles/).
+      if (sync && localUsername && latestState?.options?.mode === "roles") {
+        roleLabels = createRoleLabels({
+          parent: environment,
+          localUsername,
+          seatOf: (username) => sync.seatOf(username),
+          headOf: (seat) => players.headPosition(seat),
+          headRadiusOf: (seat) => players.headRadius(seat),
+        });
+      }
+
       // Cards: the stack and dealing, every player's hand, the trick and the
       // trump. Plays go to the game socket.
       cardTable = createCardTable({
@@ -647,6 +661,7 @@ export async function renderVisualizerPage(
     },
       onUpdate: (deltaSeconds) => {
         cardTable?.update(deltaSeconds);
+        roleLabels?.update(director.tableState());
         aiEmotes?.update(deltaSeconds);
         trigger?.update(deltaSeconds);
       },
