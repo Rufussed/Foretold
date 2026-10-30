@@ -208,7 +208,8 @@ export class WizardRules {
 
   // A Yellow Wizard with no card of the lead suit who plays a yellow card
   // above the lead card makes yellow the lead suit for the rest of the trick,
-  // unless yellow is trumps or already led.
+  // unless yellow is trumps or already led, or a Red Wizard's shield came
+  // first (see redShield).
   getLeadSuit(
     playedCards: TrickPlay[],
     trumpSuit: Suit | null = null,
@@ -223,19 +224,28 @@ export class WizardRules {
       return null;
     }
 
+    // Played in order: a Yellow Wizard's switch counts unless a Red Wizard's
+    // red card has already shielded a red lead, which holds to the trick's end.
     const isYellowWizard = roles?.isYellowWizard;
     if (isYellowWizard && firstRelevantCard.suit !== "Yellow" && trumpSuit !== "Yellow") {
-      const switched = playedCards.slice(leadIndex + 1).some(
-        (play) =>
-          play.card.suit === "Yellow" &&
-          !isWizard(play.card) &&
-          !isJester(play.card) &&
-          play.card.value > firstRelevantCard.value &&
-          isYellowWizard(play),
-      );
+      let shielded = false;
 
-      if (switched) {
-        return "Yellow";
+      for (const play of playedCards.slice(leadIndex + 1)) {
+        const numbered = !isWizard(play.card) && !isJester(play.card);
+
+        if (
+          !shielded &&
+          numbered &&
+          play.card.suit === "Yellow" &&
+          play.card.value > firstRelevantCard.value &&
+          isYellowWizard(play)
+        ) {
+          return "Yellow";
+        }
+
+        if (firstRelevantCard.suit === "Red" && numbered && play.card.suit === "Red" && roles?.isRedWizard?.(play)) {
+          shielded = true;
+        }
       }
     }
 

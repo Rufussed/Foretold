@@ -10,11 +10,12 @@ import type { RoleId } from "../roles.js";
 //   Yellow Wizard  with no card of the lead suit, a yellow card above the
 //                  lead card makes yellow the lead suit (wizardRules.getLeadSuit)
 //   Red Wizard     a red card of theirs on a red lead means no trumps count
-//                  in that trick, for anyone (wizardRules.redShield)
+//                  in that trick, for anyone, and no Yellow Wizard can turn
+//                  the lead after it (wizardRules.redShield)
 // Each also earns points for a trick won with the Wizard of their colour.
 
 export const COLOUR_WIZARDS = {
-  blueWizard: { suit: "Blue", bonus: 20 },
+  blueWizard: { suit: "Blue", bonus: 10 },
   greenWizard: { suit: "Green", bonus: 10 },
   yellowWizard: { suit: "Yellow", bonus: 10 },
   redWizard: { suit: "Red", bonus: 10 },

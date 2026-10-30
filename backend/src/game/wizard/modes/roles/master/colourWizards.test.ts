@@ -9,12 +9,12 @@ const player = (username: string, role: RoleId) => ({ username, role }) as unkno
 const trick = (cards: ReturnType<typeof play>[]) => ({ playedCards: cards, winnerUsername: null });
 
 describe("the colour Wizards' bonus", () => {
-  it("pays each for a trick won with the Wizard of their colour: Blue 20, the others 10", () => {
-    expect(colourWizardBonus(trick([play("ann", 14, "Blue")]), player("ann", "blueWizard"))).toBe(20);
+  it("pays each for a trick won with the Wizard of their colour: 10 each", () => {
+    expect(colourWizardBonus(trick([play("ann", 14, "Blue")]), player("ann", "blueWizard"))).toBe(10);
     expect(colourWizardBonus(trick([play("ann", 14, "Green")]), player("ann", "greenWizard"))).toBe(10);
     expect(colourWizardBonus(trick([play("ann", 14, "Yellow")]), player("ann", "yellowWizard"))).toBe(10);
     expect(colourWizardBonus(trick([play("ann", 14, "Red")]), player("ann", "redWizard"))).toBe(10);
-    expect(COLOUR_WIZARDS.blueWizard.bonus).toBe(20);
+    expect(COLOUR_WIZARDS.blueWizard.bonus).toBe(10);
   });
 
   it("pays nothing for another colour's Wizard, another card, or another role", () => {

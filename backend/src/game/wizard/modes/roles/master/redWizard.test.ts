@@ -33,7 +33,15 @@ describe("the Red Wizard's shield", () => {
     expect(winner(play("bo", 5, "Red"), play("yw", 9, "Red"), play("cy", 2, "Blue"))).toBe("cy");
   });
 
-  it("ends when a Yellow Wizard turns the lead to yellow", () => {
-    expect(winner(play("bo", 5, "Red"), play("rw", 9, "Red"), play("yw", 6, "Yellow"), play("cy", 2, "Blue"))).toBe("cy");
+  it("holds against a Yellow Wizard who comes after: the lead stays red", () => {
+    const plays = [play("bo", 5, "Red"), play("rw", 9, "Red"), play("yw", 6, "Yellow"), play("cy", 2, "Blue")];
+    expect(rules.getLeadSuit(plays, "Blue", roles)).toBe("Red");
+    expect(winner(...plays)).toBe("rw");
+  });
+
+  it("never starts when a Yellow Wizard turned the lead first", () => {
+    const plays = [play("bo", 5, "Red"), play("yw", 6, "Yellow"), play("rw", 9, "Red"), play("cy", 2, "Blue")];
+    expect(rules.getLeadSuit(plays, "Blue", roles)).toBe("Yellow");
+    expect(winner(...plays)).toBe("cy");
   });
 });
