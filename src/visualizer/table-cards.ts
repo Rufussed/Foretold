@@ -4,7 +4,7 @@ import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
 import { isSabotageGame } from "../modes/sabotage/sabotage-game";
-import { TRICK_SWAP, swapPlacement } from "../modes/roles/trick-swap";
+import { TRICK_SWAP, swapPlacement } from "../modes/roles/mechanics/trick-swap";
 import { CARD_HANDLING as SABOTAGE_CARD_HANDLING, PLAYED_CARDS } from "../modes/sabotage/sabotage-config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
 import { paced } from "./pace";
@@ -29,7 +29,7 @@ export interface TableCards {
   // flyFromHand: cards played from your own hand by the server (your NPC, when
   // watching), which rise and fly from where they sit like other players' do.
   // byOwner: the same cards in the places they are shown in, when a Roles
-  // power has swapped two of them (modes/roles/trick-swap.ts); they trade
+  // power has swapped two of them (modes/roles/mechanics/trick-swap.ts); they trade
   // places once the card just played has landed.
   setTrick(
     cards: readonly Card[],

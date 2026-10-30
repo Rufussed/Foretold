@@ -1,8 +1,8 @@
 import * as THREE from "three";
-import type { Card } from "../../../backend/src/game/wizard/models/card";
-import type { PlayedCard } from "../../../backend/src/game/wizard/models/wizardGame";
-import { paced } from "../../visualizer/pace";
-import type { Placement } from "../../visualizer/placement";
+import type { Card } from "../../../../backend/src/game/wizard/models/card";
+import type { PlayedCard } from "../../../../backend/src/game/wizard/models/wizardGame";
+import { paced } from "../../../visualizer/pace";
+import type { Placement } from "../../../visualizer/placement";
 
 // A Roles game's swaps in the trick: a Thief's 1 taking a card, a Servant's 2
 // receiving the next one, a Fisher fishing. The server only swaps who owns the

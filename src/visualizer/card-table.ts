@@ -14,7 +14,7 @@ import { BURST, CARD_HANDLING, TRICK_REWARD } from "./config";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
-import { cardsByOwner } from "../modes/roles/trick-swap";
+import { cardsByOwner } from "../modes/roles/mechanics/trick-swap";
 import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
