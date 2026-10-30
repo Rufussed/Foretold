@@ -16,7 +16,17 @@ describe("assignRoles", () => {
 
     const roles = Object.fromEntries(game.players.map((player) => [player.username, player.role]));
     const last = ROLES.at(-1)!.id;
-    expect(roles).toEqual({ alice: "thief", bob: last, "Merlin NPC": last });
+    const beforeLast = ROLES.at(-2)!.id;
+    expect(roles).toEqual({ alice: "thief", bob: last, "Merlin NPC": beforeLast });
+  });
+
+  it("never draws the same role twice, basic and master roles alike", () => {
+    const names = ["a NPC", "b NPC", "c NPC", "d NPC", "e NPC", "f NPC"];
+    for (let run = 0; run < 50; run++) {
+      const game = new WizardGameService().createGame(1, names);
+      assignRoles(game.players, new Map());
+      expect(new Set(game.players.map((player) => player.role)).size).toBe(names.length);
+    }
   });
 
   it("draws every role, the last one included", () => {

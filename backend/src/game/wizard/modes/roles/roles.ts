@@ -1,31 +1,39 @@
 // The roles of the Roles mode: each wizard picks one before the game and
-// keeps it to the end. A role's power belongs to one number card, the one
-// given here. These seven are open to everyone; roles to be earned by playing
-// come later. Like modes.ts it must stay free of Node-only code, because Vite
+// keeps it to the end. The basic roles' powers belong to one number card, the
+// one given here; they are open to everyone. The master roles, the colour
+// Wizards (master/), have no card; they are open for testing now and will
+// have to be earned. Like modes.ts it must stay free of Node-only code, because Vite
 // bundles it into the browser.
 
 import type { Card } from "../../models/card.js";
 
 export const ROLES = [
-  { id: "thief", card: 1 },
-  { id: "servant", card: 2 },
-  { id: "fisher", card: 3 },
-  { id: "farmer", card: 4 },
-  { id: "shepherd", card: 5 },
-  { id: "smith", card: 6 },
-  { id: "merchant", card: 7 },
+  { id: "thief", kind: "basic", card: 1 },
+  { id: "servant", kind: "basic", card: 2 },
+  { id: "fisher", kind: "basic", card: 3 },
+  { id: "farmer", kind: "basic", card: 4 },
+  { id: "shepherd", kind: "basic", card: 5 },
+  { id: "smith", kind: "basic", card: 6 },
+  { id: "merchant", kind: "basic", card: 7 },
   // No card of its own: the Blue Wizard sees how many blue cards each
   // opponent holds (master/blueWizard.ts). Open to everyone for now; to be unlocked
   // with Blue colour points later.
-  { id: "blueWizard", card: null },
+  { id: "blueWizard", kind: "master", card: null },
   // No card of its own either: the Green Wizard's green cards count 3 higher
   // (master/greenWizard.ts). Open to everyone for now, like the Blue Wizard.
-  { id: "greenWizard", card: null },
+  { id: "greenWizard", kind: "master", card: null },
   // And the Yellow Wizard, who can make yellow the lead suit.
-  { id: "yellowWizard", card: null },
+  { id: "yellowWizard", kind: "master", card: null },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];
+
+export type RoleKind = (typeof ROLES)[number]["kind"];
+
+// The roles of one kind, in their order.
+export const rolesOfKind = (kind: RoleKind) => ROLES.filter((role) => role.kind === kind);
+
+export const roleKind = (id: RoleId): RoleKind => ROLES.find((role) => role.id === id)?.kind ?? "basic";
 
 export const isRoleId = (value: unknown): value is RoleId =>
   ROLES.some((role) => role.id === value);

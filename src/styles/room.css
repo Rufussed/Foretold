@@ -357,7 +357,15 @@
 /* The host's role, under the row of choices, in its middle. */
 .room-start-controls .room-role-field {
   grid-row: 2;
-  grid-column: 3 / span 2;
+}
+
+/* The basic and the master roles side by side, in the middle. */
+.room-start-controls .room-role-basic {
+  grid-column: 2 / span 2;
+}
+
+.room-start-controls .room-role-master {
+  grid-column: 4 / span 2;
 }
 
 .room-start-controls .room-role-field[hidden],
@@ -371,7 +379,7 @@
   display: flex;
   flex-direction: column;
   align-self: center;
-  gap: 7px;
+  gap: 14px;
 
   min-width: 200px;
   margin-top: 12px;
@@ -393,13 +401,20 @@
 /* "Role" in the Roles colour, so it stands out from the scene; above the
    list, centred, for those who are not the host. */
 .room-role-field > span:first-child,
-.room-role-own > span:first-child {
+.room-role-own-choice > span:first-child {
   color: rgb(var(--mode-color));
 }
 
 /* Bold, brighter and with a heavier shadow, as the scene behind would
    otherwise swallow it. */
-.room-role-own > span:first-child {
+/* Each list in it, the basic roles over the master roles: its title over it. */
+.room-role-own-choice {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.room-role-own-choice > span:first-child {
   color: rgb(155, 95, 215);
   font-size: 0.85rem;
   font-weight: 700;

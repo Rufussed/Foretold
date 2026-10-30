@@ -27,7 +27,7 @@ import {
 } from "../services/auth";
 import { serverError, type ServerError } from "../i18n/server-error";
 import { gameModeBadge, gameModeName } from "../utils/game-mode";
-import { ROLES, isRoleId, type RoleId } from "../../backend/src/game/wizard/modes/roles/roles";
+import { isRoleId, roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
@@ -42,13 +42,26 @@ export function destroyRoomPage(): void {
   activeRoom = null;
 }
 
-// The role list's options: a prompt, then each role with its card's number.
-function roleOptions(): string {
+// A role list's options: a prompt, then each role of its kind with its card's
+// number; a master role has no card, so shows its name alone.
+function roleOptions(kind: RoleKind): string {
   return [
     `<option value="" selected disabled>${t("room.role.choose")}</option>`,
-    // A role with no card of its own (the Blue Wizard) shows its name alone.
-    ...ROLES.map(({ id, card }) => `<option value="${id}">${card === null ? "" : `${card} · `}${t(`role.${id}`)}</option>`),
+    ...rolesOfKind(kind).map(({ id, card }) => `<option value="${id}">${card === null ? "" : `${card} · `}${t(`role.${id}`)}</option>`),
   ].join("");
+}
+
+// A role list with its title and its "?", for the basic or the master roles.
+function roleChoice(kind: RoleKind, className: string, hidden = false): string {
+  return `
+    <label class="${className} room-role-${kind} mode-roles"${hidden ? " hidden" : ""}>
+      <span>${t(kind === "master" ? "room.role.master" : "room.role.basic")}</span>
+      <span class="room-role-row">
+        <select class="room-role-select" data-kind="${kind}">${roleOptions(kind)}</select>
+        ${rolesHelpButton(kind)}
+      </span>
+    </label>
+  `;
 }
 
 export async function renderRoomPage(
@@ -156,13 +169,8 @@ export async function renderRoomPage(
             ></p>
             <div class="room-start-controls">
 
-              <label class="room-role-field mode-roles" hidden>
-                <span>${t("room.role")}</span>
-                <span class="room-role-row">
-                  <select class="room-role-select">${roleOptions()}</select>
-                  ${rolesHelpButton()}
-                </span>
-              </label>
+              ${roleChoice("basic", "room-role-field", true)}
+              ${roleChoice("master", "room-role-field", true)}
 
               <div class="room-start-column">
                 <div class="room-start-pair">
@@ -277,13 +285,10 @@ export async function renderRoomPage(
             hidden
           ></p>
 
-          <label id="room-role-own" class="room-role-own mode-roles" hidden>
-            <span>${t("room.role")}</span>
-            <span class="room-role-row">
-              <select class="room-role-select">${roleOptions()}</select>
-              ${rolesHelpButton()}
-            </span>
-          </label>
+          <div id="room-role-own" class="room-role-own mode-roles" hidden>
+            ${roleChoice("basic", "room-role-own-choice")}
+            ${roleChoice("master", "room-role-own-choice")}
+          </div>
 
           <p
             id="room-waiting"
@@ -323,23 +328,26 @@ export async function renderRoomPage(
   // A Roles room's role, chosen from a list: in the host's settings, or on
   // its own for everyone else (modes/roles/roles.ts). It is saved to the room,
   // so the others see it; anyone who chooses none gets one at random.
-  const hostRoleEl = element<HTMLLabelElement>(".room-role-field");
-  const ownRoleEl = element<HTMLLabelElement>("#room-role-own");
+  // One role, from either list: the basic roles or the master roles.
+  const hostRoleEls = [...container.querySelectorAll<HTMLLabelElement>(".room-role-field")];
+  const ownRoleEl = element<HTMLDivElement>("#room-role-own");
   const roleSelects = [...container.querySelectorAll<HTMLSelectElement>(".room-role-select")];
   let chosenRole: RoleId | null = null;
   for (const button of container.querySelectorAll<HTMLButtonElement>(".roles-help-button")) {
     button.addEventListener("click", (event) => {
       // Inside the role's label, which would otherwise open the list.
       event.preventDefault();
-      openRolesHelp();
+      openRolesHelp(button.dataset.kind === "master" ? "master" : "basic");
     });
   }
-  // Both lists show the same choice, with its power as the hint.
+  // The lists of the role's kind show the choice, with its power as the
+  // hint; the other kind's lists go back to their prompt.
   const showRole = (role: RoleId | null) => {
     chosenRole = role;
     for (const select of roleSelects) {
-      select.value = role ?? "";
-      select.title = role ? t(`role.${role}.power`) : "";
+      const shown = role && roleKind(role) === select.dataset.kind ? role : null;
+      select.value = shown ?? "";
+      select.title = shown ? t(`role.${shown}.power`) : "";
     }
   };
   // One save at a time, so a quick change of mind lands last. Until a poll
@@ -552,7 +560,7 @@ export async function renderRoomPage(
 
     const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
     const isRoles = options.mode === "roles";
-    hostRoleEl.hidden = !isRoles;
+    for (const roleEl of hostRoleEls) roleEl.hidden = !isRoles;
     // The role the room has for this player, unless a change is on its way.
     const savedRole = room.players.find((player) => player.username === user.username)?.role ?? null;
     if (savedRole !== chosenRole && Date.now() > roleSyncAfter) {
