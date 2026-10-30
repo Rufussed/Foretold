@@ -18,6 +18,10 @@ interface SocketMessage {
 	type?: string;
 	prediction?: number;
 	cardIndex?: number;
+	// fish_card: the place in the trick of the card a Fisher takes.
+	spot?: number;
+	// play_card: the place in the trick of the card a Thief's trump 1 takes.
+	stealSpot?: number;
 	suit?: string;
 	emote?: string;
 }
@@ -220,6 +224,7 @@ export function registerWizardSocket(
 					const current = currentGame.players[currentGame.currentPlayerIndex];
 					if (
 						currentGame.phase !== "finished" &&
+						currentGame.phase !== "fishing" &&
 						currentGame.turnTimeoutMs !== null &&
 						currentGame.turnDeadlineAt === null &&
 						current?.username === username
@@ -274,7 +279,23 @@ export function registerWizardSocket(
 							throw new Error("It is not your turn");
 						}
 
-						gameService.playCard(currentGame, message.cardIndex);
+						if (
+							message.stealSpot !== undefined &&
+							(typeof message.stealSpot !== "number" || !Number.isInteger(message.stealSpot))
+						) {
+							throw new Error("Invalid card");
+						}
+
+						gameService.playCard(currentGame, message.cardIndex, false, message.stealSpot);
+					} else if (message.type === "fish_card") {
+						if (
+							typeof message.spot !== "number" ||
+							!Number.isInteger(message.spot)
+						) {
+							throw new Error("Invalid card");
+						}
+
+						gameService.fishCard(currentGame, username, message.spot);
 					} else if (message.type === "choose_trump") {
 						if (!isSuit(message.suit)) {
 							throw new Error("Invalid suit");

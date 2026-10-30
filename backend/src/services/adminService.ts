@@ -23,14 +23,15 @@ export interface AdminUser {
 }
 
 // Who may use the admin page: the usernames in ADMIN_USERNAMES (comma
-// separated, any case). Unset, nobody is an admin.
+// separated), spelled exactly as the account is, capitals included, so a
+// "rufus" made beside "Rufus" is not an admin. Unset, nobody is an admin.
 export function isAdminUsername(username: string): boolean {
   const admins = (process.env.ADMIN_USERNAMES ?? "")
     .split(",")
-    .map((name) => name.trim().toLowerCase())
+    .map((name) => name.trim())
     .filter(Boolean);
 
-  return admins.includes(username.toLowerCase());
+  return admins.includes(username);
 }
 
 export const adminService = {

@@ -1,0 +1,1024 @@
+/* The Home page: top bar, navigation, the Play button, the sign-in and
+   sign-up windows, the rules board and the footer. */
+
+/* =========================================================
+   HOME
+   ========================================================= */
+
+.home-page {
+  position: relative;
+  min-height: 100vh;
+  color: white;
+  background: transparent;
+  overflow: visible;
+}
+
+.home-scene-shade {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: none;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(3, 5, 4, 0.22) 0%,
+      rgba(3, 4, 3, 0.08) 28%,
+      transparent 60%
+    ),
+    linear-gradient(
+      180deg,
+      rgba(2, 3, 3, 0.24) 0%,
+      transparent 22%,
+      transparent 78%,
+      rgba(2, 3, 2, 0.42) 100%
+    ),
+    radial-gradient(
+      circle at 50% 47%,
+      transparent 50%,
+      rgba(0, 0, 0, 0.08) 100%
+    );
+}
+
+/* ---------------------------------------------------------
+   Top bar
+   --------------------------------------------------------- */
+.home-logo {
+  width: 150px;
+  height: auto;
+  display: block;
+}
+
+.home-topbar {
+  position: relative;
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 10px clamp(24px, 4.5vw, 76px) 28px;
+}
+
+.home-brand {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+
+  color: #f8ecd4;
+  text-decoration: none;
+
+  /* Into the left margin, away from the Story button; the nav stays put. */
+  transform: translateX(calc(-1 * clamp(8px, 2.5vw, 40px)));
+}
+
+.home-brand > span {
+  display: block;
+}
+
+.home-brand strong,
+.home-brand small {
+  display: block;
+}
+
+.home-brand strong {
+  font-family: "Cinzel Variable", serif;
+  font-size: 15px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.home-brand small {
+  margin-top: 3px;
+
+  color: #b89d79;
+  font-family: "Cinzel Variable", serif;
+  font-size: 8px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+.home-account-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-left: auto;
+}
+
+.home-account-button {
+  border: 0;
+  background: transparent;
+
+  padding: 11px 17px;
+
+  color: inherit;
+  font-family: "Cinzel Variable", serif;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-decoration: none;
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition:
+    color 180ms ease,
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.home-account-button:hover {
+  color: #ffbd62;
+}
+
+/* Keep "Log out" and the rest on one line; a long username gives way. */
+.home-account-actions > .home-account-button {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* The wizard name as its owner wrote it: names are case-sensitive, and
+   Cinzel has no lowercase, so it takes the text font, as in the navbar. */
+.home-account-actions > a.home-account-button {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: none;
+  flex-shrink: 1;
+  min-width: 0;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The other language, shown quietly beside the account buttons. */
+.home-language-button {
+  padding-inline: 10px;
+
+  color: #9a8b75;
+}
+
+.home-signup-button {
+  border: 1px solid rgba(214, 154, 64, 0.58);
+
+  background: rgba(10, 10, 8, 0.44);
+}
+
+.home-signup-button:hover {
+  border-color: #e4a348;
+  background: rgba(74, 38, 8, 0.55);
+}
+
+/* ---------------------------------------------------------
+   Main navigation
+   --------------------------------------------------------- */
+
+.home-top-nav {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  margin-left: clamp(20px, 4vw, 64px);
+  transform: translateX(-4ch);
+}
+
+.home-top-nav button {
+  border: 0;
+  background: transparent;
+
+  padding: 8px 5px;
+
+  color: #c9b99f;
+  font-family: "Cinzel Variable", serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition: color 180ms ease;
+}
+
+.home-top-nav button:hover {
+  color: #efa94a;
+}
+
+.home-top-nav span {
+  width: 3px;
+  height: 3px;
+
+  transform: rotate(45deg);
+
+  background: #95632e;
+}
+
+/* ---------------------------------------------------------
+   Play button
+   --------------------------------------------------------- */
+
+.home-table-action {
+  position: absolute;
+  z-index: 10;
+
+  top: 43%;
+  left: 51%;
+
+  /* The welcome sits above Play Now, both centred on the same line, so a long
+     name grows the welcome to both sides and leaves the button its size. */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+
+  transform: translate(-50%, -50%);
+}
+
+/* Letter spacing also lands after the last letter, which pushes the visible
+   label left of centre; take that trailing space back off. */
+.home-table-action .home-play-button > span:last-child {
+  margin-right: -0.25em;
+}
+
+.home-welcome {
+  /* The right margin takes back the letter spacing after the last letter,
+     as on the button, so the text sits truly centred. */
+  margin: 0 -0.06em 4px 0;
+
+  color: #f6e7cf;
+  font-family: "Cinzel Variable", serif;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+}
+
+.home-play-button {
+  position: relative;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: auto;
+
+  overflow: hidden;
+
+  border: 1px solid #bb7022;
+
+  background:
+    linear-gradient(
+      180deg,
+      #9a4c14,
+      #663008
+    );
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 207, 121, 0.34),
+    inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+    0 8px 30px rgba(0, 0, 0, 0.48),
+    0 0 24px rgba(211, 101, 18, 0.12);
+
+  padding: 10.5px 16.5px;
+
+  color: #f6e7cf;
+  font-family: "Cinzel Variable", serif;
+  font-size: 16.5px;
+  font-weight: 400;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease,
+    filter 180ms ease;
+}
+
+.home-play-button:hover {
+  transform: translateY(-2px);
+
+  filter: brightness(1.13);
+
+  box-shadow:
+    0 12px 38px rgba(0, 0, 0, 0.55),
+    0 0 30px rgba(211, 101, 18, 0.2);
+}
+
+.home-play-button:active {
+  transform: translateY(0);
+}
+
+.home-button-flare {
+  position: absolute;
+  inset: 0;
+
+  transform: translateX(-110%);
+
+  background:
+    linear-gradient(
+      100deg,
+      transparent 30%,
+      rgba(255, 220, 153, 0.18),
+      transparent 70%
+    );
+
+  transition: transform 550ms ease;
+}
+
+.home-play-button:hover .home-button-flare {
+  transform: translateX(110%);
+}
+
+/* ---------------------------------------------------------
+   Footer
+   --------------------------------------------------------- */
+
+.home-footer {
+  position: absolute;
+  z-index: 10;
+
+  bottom: 26px;
+  left: clamp(24px, 4.5vw, 76px);
+
+  display: flex;
+  gap: 20px;
+
+  color: #746b5c;
+
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-footer p {
+  margin: 0;
+}
+
+.home-footer button {
+  border: 0;
+  background: transparent;
+
+  margin: -5px 0;
+  padding: 5px;
+
+  color: #746b5c;
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+
+  cursor: pointer;
+
+  transition: color 180ms ease;
+}
+
+.home-footer button:hover {
+  color: #efa94a;
+}
+
+/* ---------------------------------------------------------
+   Modal
+   --------------------------------------------------------- */
+
+.home-modal-backdrop {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+
+  display: grid;
+  place-items: center;
+
+  padding: 24px;
+
+  animation: home-fade-in 180ms ease both;
+  backdrop-filter: var(--ui-blur);
+}
+
+.home-modal {
+  position: relative;
+
+  width: min(520px, calc(100vw - 48px));
+
+  /* See-through like the lobby panels, a bit darker for reading. */
+  background: rgba(12, 13, 11, 0.95);
+
+  box-shadow: var(--ui-shadow);
+
+  padding: 48px;
+
+  text-align: center;
+
+  animation: home-modal-in 240ms ease both;
+  /* Denser than --ui-blur: the Home scene behind is busy. */
+  backdrop-filter: blur(12px);
+}
+
+.home-modal h2 {
+  margin: 0 0 18px;
+
+  color: #e09a38;
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.home-modal-copy {
+  margin: 0;
+
+  color: #e6dac4;
+
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.home-modal-link {
+  color: #e0a14d;
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 161, 77, 0.45);
+  text-underline-offset: 3px;
+}
+
+.home-modal-link:hover {
+  color: #ffbd62;
+}
+
+/* ---------------------------------------------------------
+   Modal close button
+   --------------------------------------------------------- */
+
+.home-close-button {
+  position: absolute;
+  z-index: 1;
+
+  top: 18px;
+  right: 18px;
+
+  width: 32px;
+  height: 32px;
+
+  border: 0;
+  background: transparent;
+
+  cursor: pointer;
+}
+
+.home-close-button span {
+  position: absolute;
+
+  top: 15px;
+  left: 8px;
+
+  width: 16px;
+  height: 1px;
+
+  transform: rotate(45deg);
+
+  background: #9b8d77;
+}
+
+.home-close-button span:last-child {
+  transform: rotate(-45deg);
+}
+
+/* ---------------------------------------------------------
+   Authentication forms
+   --------------------------------------------------------- */
+
+.home-auth-form {
+  display: grid;
+  gap: 15px;
+
+  margin-top: 25px;
+
+  text-align: left;
+}
+
+.home-auth-form label {
+  color: #9f947f;
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.home-auth-form input {
+  box-sizing: border-box;
+
+  width: 100%;
+
+  margin-top: 7px;
+
+  outline: 0;
+
+  border: 1px solid #373329;
+
+  background: #090a08;
+
+  padding: 12px 13px;
+
+  color: #eee2cc;
+
+  font-size: 14px;
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.home-auth-form input:focus {
+  border-color: #a86322;
+
+  box-shadow:
+    0 0 0 2px rgba(168, 99, 34, 0.14);
+}
+
+.home-modal-primary {
+  border: 1px solid #a66122;
+
+  background:
+    linear-gradient(
+      #874513,
+      #5a2908
+    );
+
+  padding: 13px 19px;
+
+  color: #f6e7cf;
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.16em;
+  text-align: center;
+  text-transform: uppercase;
+
+  cursor: pointer;
+}
+
+.home-auth-form .home-modal-primary {
+  margin-top: 4px;
+}
+
+.home-auth-message {
+  min-height: 18px;
+
+  margin: 12px 0 0;
+
+  color: #d69a40;
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.home-switch-auth {
+  border: 0;
+  background: none;
+
+  margin-top: 18px;
+
+  color: #9a8b75;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+.home-switch-auth:hover {
+  color: #d99a47;
+}
+
+/* ---------------------------------------------------------
+   Board
+   --------------------------------------------------------- */
+
+.home-modal:has(.home-board) {
+  width: min(650px, calc(100vw - 48px));
+}
+
+.home-board {
+  margin-top: 22px;
+
+  text-align: left;
+}
+
+.home-board-compose {
+  margin-top: 14px;
+  border-top: 1px solid rgba(188, 125, 49, 0.18);
+  padding-top: 14px;
+}
+
+.home-board-compose .home-modal-copy {
+  margin: 0;
+}
+
+.home-board-open {
+  width: 100%;
+  border: 1px dashed rgba(188, 125, 49, 0.4);
+  background: none;
+  padding: 11px 13px;
+  color: #e0a14d;
+  font-family: "Cinzel Variable", serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease;
+}
+
+.home-board-open:hover {
+  border-color: rgba(224, 161, 77, 0.75);
+  background: rgba(191, 125, 47, 0.08);
+}
+
+.home-board-form {
+  display: grid;
+  gap: 9px;
+}
+
+.home-board-form[hidden],
+.home-board-open[hidden] {
+  display: none;
+}
+
+.home-board-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.home-board-actions .home-switch-auth {
+  margin: 0;
+}
+
+.home-board-form textarea {
+  box-sizing: border-box;
+
+  width: 100%;
+  min-height: 78px;
+
+  resize: vertical;
+  outline: 0;
+
+  border: 1px solid #373329;
+
+  background: #090a08;
+
+  padding: 11px 13px;
+
+  color: #eee2cc;
+
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.home-board-form textarea:focus {
+  border-color: #a86322;
+
+  box-shadow:
+    0 0 0 2px rgba(168, 99, 34, 0.14);
+}
+
+.home-board-form-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.home-board-count {
+  color: #7d735f;
+
+  font-size: 11px;
+}
+
+.home-board-form .home-auth-message {
+  min-height: 0;
+  margin: 0;
+}
+
+.home-board-inline-link {
+  border: 0;
+  background: none;
+
+  padding: 0;
+
+  color: #e0a14d;
+
+  font: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(224, 161, 77, 0.45);
+  text-underline-offset: 3px;
+
+  cursor: pointer;
+}
+
+.home-board-inline-link:hover {
+  color: #ffbd62;
+}
+
+.home-board-list {
+  max-height: min(55vh, 500px);
+
+  margin: 18px 0 0;
+  padding: 0 8px 0 0;
+
+  overflow-y: auto;
+
+  list-style: none;
+}
+
+.home-board-post {
+  border-top: 1px solid rgba(188, 125, 49, 0.18);
+
+  padding: 13px 0;
+}
+
+.home-board-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 9px;
+}
+
+.home-board-meta strong {
+  color: #e0a14d; /* same gold as the "Log in" link */
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.home-board-meta span {
+  color: #7d735f;
+
+  font-size: 12px;
+}
+
+.home-board-delete {
+  margin-left: auto;
+
+  border: 0;
+  background: none;
+
+  padding: 0;
+
+  color: #8d7f69;
+
+  font-size: 11px;
+
+  cursor: pointer;
+}
+
+.home-board-delete:hover {
+  color: #e07a4a;
+}
+
+.home-board-text {
+  margin: 6px 0 0;
+
+  color: #e6dac4;
+
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.home-board-status {
+  margin: 14px 0 0;
+
+  color: #9a8b75;
+
+  font-size: 13px;
+  text-align: center;
+}
+
+.home-board-status:empty {
+  display: none;
+}
+
+.home-board > .home-switch-auth {
+  display: block;
+
+  margin: 12px auto 0;
+}
+
+/* Four menu entries have to fit beside each other on a narrow phone. */
+@media (max-width: 420px) {
+  .home-top-nav {
+    gap: 9px;
+  }
+
+  .home-top-nav button {
+    letter-spacing: 0.1em;
+  }
+}
+
+/* ---------------------------------------------------------
+   Rules
+   --------------------------------------------------------- */
+
+.home-rules-content {
+  max-height: min(62vh, 560px);
+  margin-top: 25px;
+  padding-right: 10px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.home-story {
+  max-height: min(62vh, 560px);
+  margin-top: 25px;
+  padding-right: 10px;
+  overflow-y: auto;
+  text-align: left;
+}
+
+.home-story .home-modal-copy + .home-modal-copy {
+  margin-top: 16px;
+}
+
+.home-rules-section {
+  border-top: 1px solid #2d2b24;
+  padding: 16px 0 2px;
+}
+
+.home-rules-section:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.home-rules-section h3 {
+  margin: 0 0 7px;
+
+  color: #e0a14d;
+
+  font-family: "Cinzel Variable", serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-rules-section p,
+.home-rules-section li {
+  color: #e6dac4;
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+.home-rules-section p {
+  margin: 0 0 9px;
+}
+
+.home-rules-section ol {
+  margin: 8px 0 9px;
+  padding-left: 21px;
+}
+
+.home-rules-section li::marker {
+  color: #b36e27;
+}
+
+.home-scoring-example {
+  border-left: 2px solid #b36e27;
+  margin: 12px 0 3px;
+  padding-left: 12px;
+}
+
+.home-scoring-example strong {
+  color: #e0a14d;
+  font-family: "Cinzel Variable", serif;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.home-scoring-example p {
+  margin-top: 4px;
+}
+
+/* ---------------------------------------------------------
+   Animations
+   --------------------------------------------------------- */
+
+@keyframes home-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes home-modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+}
+
+/* ---------------------------------------------------------
+   Responsive
+   --------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .home-page {
+    background-position: 57% center;
+  }
+
+  .home-scene-shade {
+    background:
+      linear-gradient(
+        180deg,
+        rgba(3, 4, 3, 0.38),
+        transparent 27%,
+        rgba(2, 3, 2, 0.05) 55%,
+        rgba(2, 3, 2, 0.5) 100%
+      ),
+      linear-gradient(
+        90deg,
+        rgba(2, 3, 2, 0.08),
+        transparent
+      );
+  }
+
+  .home-topbar {
+    padding: 10px 18px 19px;
+  }
+
+  .home-brand strong {
+    font-size: 11px;
+  }
+
+  .home-brand small {
+    display: none;
+  }
+
+  .home-account-actions {
+    gap: 2px;
+  }
+
+  .home-account-button {
+    padding: 9px 8px;
+    font-size: 9px;
+  }
+
+  .home-top-nav {
+    position: absolute;
+
+    top: 63px;
+    left: 18px;
+
+    margin: 0;
+    transform: none;
+  }
+
+  .home-table-action {
+    top: 45%;
+  }
+
+  .home-play-button {
+    padding: 10.5px 16.5px;
+  }
+
+  .home-footer {
+    bottom: 11px;
+    left: 24px;
+  }
+
+  .home-footer button {
+    display: none;
+  }
+
+  .home-modal {
+    box-sizing: border-box;
+
+    max-height: calc(100svh - 40px);
+
+    overflow-y: auto;
+
+    padding: 39px 27px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-page *,
+  .home-page *::before,
+  .home-page *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
+

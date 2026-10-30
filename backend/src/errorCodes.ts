@@ -38,6 +38,7 @@ const MESSAGES = {
   avatarTaken: ["That avatar is taken"],
   unknownAvatar: ["Unknown avatar"],
   avatarLocked: ["Avatars can only be changed before the game starts"],
+  roleLocked: ["Roles can only be chosen before the game starts"],
   onlyHostRules: ["Only the host can choose the rule variations"],
   rulesLocked: ["Rule variations can only be changed before the game starts"],
   gameExists: ["A game already exists for this room"],
@@ -46,6 +47,8 @@ const MESSAGES = {
   createGameFailed: ["Could not create game"],
   createGuestFailed: ["Could not create guest game"],
   noGuestGame: ["No guest game to leave"],
+  quickPlayLogIn: ["Log in to use Quick Play"],
+  quickPlaySeated: ["Leave your room first"],
 
   // Guest rooms and their invite links
   guestRoomOnly: ["This is a guest room. Only its invite link leads in."],

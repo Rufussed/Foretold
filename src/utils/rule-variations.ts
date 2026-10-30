@@ -21,6 +21,7 @@ export function describeRuleVariations(
   const chosen = [
     options.blindFirstRound ? t("rules.blindFirstRound") : null,
     options.wizardWins === "last" ? t("rules.lastWizardWins") : null,
+    options.lastPredictionLimited ? null : t("rules.lastPredictionFree"),
     options.missedTurnsToQuit === null
       ? t("rules.noMissedTurnsQuit")
       : options.missedTurnsToQuit !== DEFAULT_GAME_OPTIONS.missedTurnsToQuit

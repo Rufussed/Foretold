@@ -1,0 +1,960 @@
+/* The game HUD (Rufus's area): everything drawn over the 3D table, from the
+   score panel and player list to the announcements and round results. */
+
+/* ---------------------------------------------------------
+   GAME HUD
+   --------------------------------------------------------- */
+
+.visualizer-page .hud-panel {
+  position: absolute;
+  z-index: 1;
+  margin: 0;
+  padding: 10px 12px;
+  color: rgba(244, 235, 217, 0.9);
+  font-size: 13px;
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  box-shadow: var(--ui-shadow);
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .hud-panel[hidden] {
+  display: none;
+}
+
+/* Top right: the whole game. One width for everything in the column: the
+   music selector, the four buttons (sized from it) and the score box. Wide
+   enough for the longest NPC name in full ("Nostradamus NPC"). */
+.visualizer-page {
+  --hud-column-width: 152px;
+  /* Four buttons and three 2px gaps fill the column exactly. */
+  --hud-button: calc((var(--hud-column-width) - 6px) / 4);
+}
+
+.visualizer-page .hud-status {
+  /* Under the toolbar (.hud-toolbar: top 16px, then the 26px selector, a 6px
+     gap and a row of buttons) with a gap. The buttons are not part of this
+     box: it holds the round and the scores. */
+  top: calc(16px + 26px + 6px + var(--hud-button) + 8px);
+  right: 16px;
+  /* The same width as the toolbar above it: the music selector, the row of
+     four buttons and this box all line up (see --hud-column-width). */
+  width: var(--hud-column-width);
+  box-sizing: border-box;
+  padding: 8px 6px;
+}
+
+.hud-round {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.hud-scores {
+  margin-top: 1.2em; /* a line's gap below the round, where the column titles were */
+  /* A grid: the names take what the box leaves after the score column, which
+     sits at the box's right edge (visualizer/hud/game-status-panel.ts cuts a
+     name that does not fit). */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  column-gap: 6px;
+}
+
+.hud-scores thead,
+.hud-scores tbody,
+.hud-scores tr {
+  display: contents;
+}
+
+.hud-scores th:first-child,
+.hud-scores td:first-child {
+  width: auto;
+  overflow: hidden;
+  /* Long names are cut with a dash by visualizer/hud/game-status-panel.ts;
+     this is only the backstop. */
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.hud-scores th {
+  padding: 2px 1px;
+  color: rgba(221, 177, 110, 0.78);
+  font-size: 10px;
+  font-weight: 400;
+  text-align: left;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.hud-scores th:not(:first-child),
+.hud-scores td:not(:first-child) {
+  text-align: right;
+}
+
+.hud-scores td {
+  padding: 3px 1px;
+}
+
+.hud-scores tr.is-you td {
+  color: #ffd54f;
+  font-weight: 400;
+}
+
+/* A labelled count: this round's prediction or tricks won. */
+.hud-stat {
+  display: grid;
+  justify-items: center;
+  line-height: 1.15;
+  
+}
+
+.hud-stat-label {
+  color: #9fb0c8;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hud-stat-value {
+  font-size: 20px;
+  font-weight: 400;
+}
+
+/* Bottom left: every player, you included, one compact line each. Tighter than the
+   default panel padding, since it carries a row per player and has to stay
+   clear of the table. */
+.visualizer-page .hud-opponents {
+  bottom: 16px;
+  left: 16px;
+  display: grid;
+  /* Names, then predictions and tricks. One grid for the whole panel, so the
+     name column is as wide as the longest name and every row lines up. */
+  grid-template-columns: auto minmax(16px, auto) minmax(16px, auto);
+  column-gap: 10px;
+  row-gap: 4px;
+  padding: 8px 10px;
+}
+
+/* Each row, and the headings, lay their cells on the panel's columns. */
+.hud-opponent {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
+  align-items: center;
+}
+
+/* The numbers end at their column's right edge, under their heading's end. */
+.hud-opponent .hud-stat {
+  justify-items: end;
+}
+
+.hud-opponent-face {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  margin: 0;
+}
+
+.hud-opponent-face img {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  background: rgb(255 255 255 / 12%);
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* Names show in full, wrapping onto a second line rather than being cut off. */
+.hud-opponent-face figcaption {
+  max-width: 96px;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* In the bottom-left panel only, the headshot sits on the same line as the
+   name rather than above it. Scoped to .hud-opponent because the round's
+   results board reuses .hud-opponent-face and wants the stacked version. */
+.hud-opponent .hud-opponent-face {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.hud-opponent .hud-opponent-face img {
+  width: 26px;
+  height: 26px;
+}
+
+/* One line, cut by opponent-grid.ts to ten characters and a full stop; the
+   ellipsis is a backstop for ten wide characters. */
+.hud-opponent .hud-opponent-face figcaption {
+  max-width: none;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
+}
+
+/* A Roles game: the role over the name, both lines together as tall as the
+   picture beside them. */
+.hud-opponent .hud-opponent-face figcaption.has-role {
+  display: grid;
+  font-size: 12px;
+  line-height: 15px;
+}
+
+.hud-opponent .hud-opponent-face:has(figcaption.has-role) img {
+  width: 30px;
+  height: 30px;
+}
+
+.hud-opponent .hud-opponent-face figcaption.has-role span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.hud-opponent .hud-stat-label {
+  font-size: 10px;
+}
+
+/* Out of sight, still spoken: each row keeps its own label so a screen reader
+   says which number it is reading, while only the headings are shown. */
+.hud-stat-label.is-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The headings: one line each, right-aligned to the end of their own column -
+   Play Order to the names' end, the others to their numbers' - and stepped,
+   Tricks on top and Play Order at the bottom, so each can run back over the
+   columns before it without meeting another. */
+.hud-opponent-headings {
+  grid-template-rows: repeat(3, auto);
+  row-gap: 2px;
+  margin-bottom: 4px;
+}
+
+.hud-opponent-headings .hud-stat-label {
+  justify-self: end;
+  /* The panel's own text colour, as the names are. */
+  color: inherit;
+  font-size: 9px;
+  font-weight: 400;
+  /* A little room under the letters, where the guide line runs, and more
+     above. */
+  padding: 7px 0 1px;
+  line-height: 1.15;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.hud-opponent-headings .hud-heading-tricks {
+  grid-row: 1;
+  grid-column: 1 / 4;
+}
+
+.hud-opponent-headings .hud-heading-predictions {
+  grid-row: 2;
+  grid-column: 1 / 3;
+}
+
+.hud-opponent-headings .hud-heading-order {
+  grid-row: 3;
+  grid-column: 1 / 2;
+}
+
+/* Faint lines tying each heading to its column (see player-list-guides.ts). */
+.hud-opponent-guides {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  fill: none;
+  stroke: rgb(244 235 217 / 22%);
+  stroke-width: 1;
+}
+
+/* Whose move it is: a yellow ring round the headshot and a yellow line
+   under the name. */
+.hud-opponent.is-current .hud-opponent-face img {
+  box-shadow: 0 0 0 2px #ffd54f;
+}
+
+.hud-opponent.is-current .hud-opponent-face figcaption {
+  text-decoration: underline;
+  text-decoration-color: #ffd54f;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* Your own line in the list. */
+.hud-opponent.is-you .hud-opponent-face figcaption {
+  color: #ffd54f;
+}
+
+.hud-opponent .hud-stat-value {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+/* Tricks won against the prediction, in the colours of the tesseract's burst
+   (BURST in config.ts): green short of it, gold on it, red over it. */
+.hud-stat[data-standing="under"] .hud-stat-value {
+  color: rgb(38 165 52);
+}
+
+.hud-stat[data-standing="met"] .hud-stat-value {
+  color: rgb(255 199 71);
+}
+
+.hud-stat[data-standing="over"] .hud-stat-value {
+  color: rgb(214 52 48);
+}
+
+/* The music selector and the row of buttons above the score panel: music,
+   all sound, install, then fullscreen at the corner. A row of their own, so a
+   button a browser cannot offer leaves no gap. */
+.visualizer-page .hud-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  /* Two rows: the music source, then the buttons. Four 30px buttons with 2px
+     between them fill the second row exactly, so the selector, the buttons and
+     the score box below share one width. */
+  width: var(--hud-column-width);
+  box-sizing: border-box;
+  gap: 6px 2px;
+  place-items: center;
+  padding: 0;
+  color: rgba(244, 235, 217, 0.9);
+}
+
+.visualizer-page .music-toggle,
+.visualizer-page .music-source-toggle,
+.visualizer-page .effects-toggle,
+.visualizer-page .install-toggle,
+.visualizer-page .fullscreen-toggle {
+  display: grid;
+  place-items: center;
+  width: var(--hud-button);
+  height: var(--hud-button);
+  padding: 0;
+  color: rgba(244, 235, 217, 0.9);
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .music-source-toggle {
+  box-sizing: border-box;
+  /* The whole top row of the toolbar, wide enough for "Music: Wizardy vibe". */
+  flex: 1 0 100%;
+  height: 26px;
+  min-height: 0;
+  padding: 0 3px;
+  border: 1px solid rgba(180, 119, 47, 0.3);
+  background: rgba(5, 6, 5, 0.72);
+  color: rgba(248, 240, 224, 0.9);
+  font: inherit;
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.visualizer-page .music-toggle:hover,
+.visualizer-page .music-source-toggle:hover,
+.visualizer-page .effects-toggle:hover,
+.visualizer-page .install-toggle:hover,
+.visualizer-page .fullscreen-toggle:hover {
+  background: rgba(191, 125, 47, 0.12);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+.visualizer-page .music-toggle svg,
+.visualizer-page .effects-toggle svg,
+.visualizer-page .install-toggle svg,
+.visualizer-page .fullscreen-toggle svg {
+  /* Grows with the buttons. */
+  width: calc(var(--hud-button) * 0.6);
+  height: calc(var(--hud-button) * 0.6);
+}
+
+.visualizer-page .install-toggle[hidden] {
+  display: none;
+}
+
+/* How to install, where the browser has no dialog for it (see
+   visualizer/install-toggle.ts): under the toolbar; a tap closes it. */
+.visualizer-page .install-help {
+  position: absolute;
+  top: 100px;
+  right: 26px;
+  z-index: 5;
+  max-width: min(260px, calc(100% - 32px));
+  padding: 10px 12px;
+  color: rgba(244, 235, 217, 0.95);
+  background: var(--ui-bg-solid);
+  border: var(--ui-edge-strong);
+  border-radius: 4px;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+/* What's going on, top centre (see hud/announcer.ts). */
+.visualizer-page .hud-announcer {
+  /* A dark feathered shadow reaching 15px out from the box: solid at 80% for
+     the first 7px or so, then fading to nothing over the rest (an 11px spread
+     with an 8px blur centred on its edge). The box sits above the music
+     selector and the buttons, so this darkens whatever lies beneath it,
+     around its own coloured border. */
+  --announcer-shadow: 0 0 8px 11px rgba(0, 0, 0, 0.8);
+  position: absolute;
+  top: 16px;
+  /* Centred in the page by auto margins between its two edges, with no
+     transform to disagree with the entrance animation. */
+  /* --announce-offset (set in hud/announcer.ts) shifts it sideways by moving
+     both edges the same way. */
+  right: calc(0px - var(--announce-offset, 0px));
+  left: var(--announce-offset, 0px);
+  /* Announcements, the round's score cards and the winner sit over every
+     other part of the game screen. Only the guest sign-up prompt (which
+     follows the winner and must stay clickable) and the rotate-your-phone
+     cover go above. */
+  z-index: 15;
+  width: max-content;
+  /* Wide enough to take a long line on a few rows, never narrower than a
+     readable column and never wider than the screen. */
+  max-width: min(calc(100% - 32px), max(280px, min(560px, calc(100% - 560px))));
+  margin: 0 auto;
+  /* Tighter as the window shrinks (see visualizer/hud-scale.ts). */
+  padding: calc(13px * var(--hud-scale)) calc(19px * var(--hud-scale));
+  color: rgba(244, 235, 217, 0.92);
+  font-size: 17px;
+  font-weight: 600; /* the one place bold is kept: the announcement box */
+  line-height: 1.35;
+  text-align: center;
+  /* The same box as the HUD panels (.hud-panel). */
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  box-shadow: var(--announcer-shadow);
+  transform: none;
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .hud-announcer[hidden] {
+  display: none;
+}
+
+/* A new announcement springs in from nothing, overshoots a little, then
+   settles at full size (the class is re-added by announcer.ts each time). */
+.visualizer-page .hud-announcer.is-popping {
+  transform-origin: top center;
+  animation: hud-announcer-pop 0.45s cubic-bezier(0.34, 1.2, 0.5, 1) both;
+}
+
+@keyframes hud-announcer-pop {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .hud-announcer.is-popping {
+    animation: none;
+  }
+}
+
+.hud-announcer-text {
+  margin: 0;
+  white-space: pre-line; /* round results put the total on its own line */
+}
+
+/* In a round (who predicts, whose turn): a border with a bright glint running
+   round it, and a soft glow, in the colour of the character the announcement is
+   about (set as data-character by announcer.ts); gold for goatman, and when it's
+   about no one. The angle is a registered property so the gradient's start can
+   be animated. */
+@property --gold-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+.visualizer-page .hud-announcer {
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
+}
+
+.visualizer-page [data-character="forest-elf"] {
+  --border-dark: #14501f;
+  --border-mid: #4ade5a;
+  --border-glint: #d6ffd0;
+  --border-glow: rgb(74 222 90 / 35%);
+  /* The emoticons in the green of her face (sampled from her texture). */
+  --emoticon-tint: #87923a;
+}
+
+.visualizer-page [data-character="kungfu-girl"] {
+  --border-dark: #8a3a08;
+  --border-mid: #ff9a2e;
+  --border-glint: #ffe0b0;
+  --border-glow: rgb(255 154 46 / 35%);
+  /* The emoticons a shade more orange than the border. */
+  --emoticon-tint: #ff7a14;
+}
+
+/* Dark metal: a grey border with a silver glint. */
+.visualizer-page [data-character="black-witch"] {
+  --border-dark: #2a2d33;
+  --border-mid: #8c939e;
+  --border-glint: #f2f6fc;
+  --border-glow: rgb(140 147 158 / 30%);
+}
+
+.visualizer-page [data-character="demon"] {
+  --border-dark: #084845;
+  --border-mid: #14b8aa;
+  --border-glint: #a6ece6;
+  --border-glow: rgb(20 184 170 / 30%);
+  /* The emoticons bluer and darker than the border. */
+  --emoticon-tint: #0d8296;
+}
+
+.visualizer-page [data-character="blind-wizard"] {
+  --border-dark: #260f48;
+  --border-mid: #7040c0;
+  --border-glint: #c4acee;
+  --border-glow: rgb(112 64 192 / 30%);
+  /* The emoticons a little darker than the border. */
+  --emoticon-tint: #4a2488;
+}
+
+/* The trump colour announcement: the border in the suit's own colour. */
+.visualizer-page .hud-announcer[data-suit="red"] {
+  --border-dark: #6b1414;
+  --border-mid: #e53935;
+  --border-glint: #ffc9c4;
+  --border-glow: rgb(229 57 53 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-suit="green"] {
+  --border-dark: #14501f;
+  --border-mid: #43a047;
+  --border-glint: #d6ffd0;
+  --border-glow: rgb(67 160 71 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-suit="blue"] {
+  --border-dark: #0d3a78;
+  --border-mid: #1e88e5;
+  --border-glint: #cfe6ff;
+  --border-glow: rgb(30 136 229 / 35%);
+}
+
+.visualizer-page .hud-announcer[data-suit="yellow"] {
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
+}
+
+.visualizer-page .hud-announcer.is-ingame {
+  box-shadow:
+    0 0 14px var(--border-glow),
+    var(--announcer-shadow);
+}
+
+.visualizer-page .hud-announcer.is-ingame::before {
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  pointer-events: none;
+  content: "";
+  background: conic-gradient(
+    from var(--gold-angle),
+    var(--border-dark),
+    var(--border-mid) 15%,
+    var(--border-glint) 25%,
+    var(--border-mid) 35%,
+    var(--border-dark) 50%,
+    var(--border-mid) 75%,
+    var(--border-dark)
+  );
+  border-radius: inherit;
+  /* Only the 2px ring shows: the gradient clipped to the border box, minus the content box. */
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: hud-gold-border 4s linear infinite;
+}
+
+@keyframes hud-gold-border {
+  to {
+    --gold-angle: 360deg;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .hud-announcer.is-ingame::before,
+  .hud-game-winner-face::after {
+    animation: none;
+  }
+}
+
+/* Round results: a board of equal cards, three to a row, centred on screen at
+   the top. (Phones: below the score panel instead, see announcer.ts.) */
+/* The cards carry their own boxes, so the banner itself has none. */
+.visualizer-page .hud-announcer.has-results {
+  /* The results cards are not the announcement box: regular weight. */
+  font-weight: 400;
+  width: max-content;
+  max-width: calc(100% - 32px);
+  padding: 0;
+  text-align: left;
+  background: none;
+  border: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+/* Up to three equal cards to a row; a shorter last row is centred. */
+.hud-results {
+  --card-width: 150px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(3 * var(--card-width) + 2 * 10px);
+}
+
+/* A result card waiting its turn. visibility, not display: it must keep its
+   place in the centred, wrapping row so the cards already revealed do not move
+   when this one appears. The fade is on opacity, which visibility cannot
+   animate on its own. */
+.hud-result.is-unrevealed {
+  visibility: hidden;
+  opacity: 0;
+}
+
+/* Headshot and name on one line, the breakdown below it. */
+.hud-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-content: start;
+  box-sizing: border-box;
+  width: var(--card-width);
+  gap: 10px;
+  padding: 10px;
+  /* The same box as the HUD panels (.hud-panel). */
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  backdrop-filter: var(--ui-blur);
+  animation: hud-result-in 0.3s ease-out;
+  transition: opacity 220ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hud-result {
+    transition: none;
+  }
+}
+
+/* The round's best score: yellow, with a crown on the headshot. */
+.hud-result.is-winner {
+  background: rgba(120, 95, 10, 0.5);
+  border-color: rgba(221, 177, 110, 0.8);
+}
+
+.hud-result.is-winner .hud-result-total {
+  color: #ffd54f;
+}
+
+.hud-results .hud-result-face {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-self: start;
+}
+
+.hud-result.is-winner .hud-result-face::before {
+  content: "";
+  position: absolute;
+  top: -13px;
+  left: 18px;
+  width: 20px;
+  height: 20px;
+  background:
+    linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
+    url("../assets/emoticons/crown.webp") center / contain no-repeat;
+  background-blend-mode: color, normal;
+  mask: url("../assets/emoticons/crown.webp") center / contain no-repeat;
+  -webkit-mask: url("../assets/emoticons/crown.webp") center / contain no-repeat;
+  transform: translateX(-50%);
+}
+
+.hud-results .hud-result-face img {
+  width: 36px;
+  height: 36px;
+}
+
+.hud-results .hud-result-face figcaption {
+  max-width: none;
+  font-size: 13px;
+  text-align: left;
+}
+
+.hud-result-summary {
+  margin: 0;
+  color: rgba(244, 235, 217, 0.8);
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: left;
+}
+
+/* How the points came about, on one line: the bonus and the tricks, or how
+   far off the prediction was. */
+.hud-result-lines {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin: 0;
+  color: rgba(244, 235, 217, 0.62);
+  font-size: 11px;
+  line-height: 1.35;
+  text-align: left;
+}
+
+.hud-result-lines b {
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The round's points as one number. */
+.hud-result-total {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+  text-align: right;
+}
+
+.hud-result-lines [data-sign="positive"],
+.hud-result-total[data-sign="positive"] {
+  color: #4caf50;
+}
+
+.hud-result-lines [data-sign="negative"],
+.hud-result-total[data-sign="negative"] {
+  color: #ef5350;
+}
+
+@keyframes hud-result-in {
+  from { opacity: 0; transform: scale(0.94); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* A total just added to: flashes three times, green for points won, red for lost. */
+.hud-scores td.is-gain {
+  animation: hud-flash-gain 0.4s steps(1, end) 3;
+}
+
+.hud-scores td.is-loss {
+  animation: hud-flash-loss 0.4s steps(1, end) 3;
+}
+
+@keyframes hud-flash-gain {
+  0% { color: #4caf50; }
+  50% { color: inherit; }
+}
+
+@keyframes hud-flash-loss {
+  0% { color: #ef5350; }
+  50% { color: inherit; }
+}
+
+/* Mid-width screens: the banner stays centred and at the top edge, narrowed
+   so it clears the nav column on the left and the score panel on the right
+   (room kept on both sides, so it stays centred); the results board goes
+   full width. */
+@media (max-width: 1100px) {
+  .visualizer-page .hud-announcer {
+    max-width: min(calc(100% - 32px), max(280px, calc(100% - 380px)));
+    font-size: 15px;
+  }
+
+  .visualizer-page .hud-announcer.has-results {
+    max-width: calc(100% - 32px);
+  }
+}
+
+/* Narrow screens: still centred at the top, just smaller. */
+@media (max-width: 640px) {
+  .visualizer-page .hud-announcer {
+    font-size: 13px;
+  }
+}
+
+/* Dev builds: what went wrong in the 3D view (see diagnostics.ts). */
+.visualizer-page .visualizer-diagnostics {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  z-index: 5;
+  width: min(520px, calc(100% - 32px));
+  max-height: 60%;
+  overflow: auto;
+  padding: 12px 14px;
+  color: white;
+  font-size: 12px;
+  background: rgb(120 20 20 / 90%);
+  border-radius: 10px;
+  transform: translateX(-50%);
+}
+
+.visualizer-page .visualizer-diagnostics[hidden] {
+  display: none;
+}
+
+.visualizer-diagnostics-title {
+  margin: 0 28px 6px 0;
+  font-weight: 400;
+}
+
+.visualizer-diagnostics pre {
+  margin: 0;
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.visualizer-page .visualizer-diagnostics-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: auto;
+  padding: 2px 8px;
+  font-size: 18px;
+  background: transparent;
+}
+
+/* Game over: the winner's headshot, large, under the announcement, with a big
+   crown on top. A tie shows everyone on the top score, each crowned. */
+.hud-game-winner {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 14px;
+}
+
+.hud-game-winner-face {
+  /* Gold unless the winner's character sets its own colours (those rules
+     outrank this one, so goatman, who has none, stays gold). */
+  --border-dark: #8a5d12;
+  --border-mid: #ffd54f;
+  --border-glint: #fff3b0;
+  --border-glow: rgb(255 196 64 / 35%);
+  position: relative;
+  margin: 0;
+  padding-top: 34px;
+}
+
+/* The border is left clear for the ring drawn over it below. */
+.hud-game-winner-face img {
+  display: block;
+  width: 128px;
+  height: 128px;
+  background: rgb(255 255 255 / 12%);
+  border: 3px solid transparent;
+  border-radius: 50%;
+  box-shadow: 0 0 14px var(--border-glow);
+  object-fit: cover;
+}
+
+/* The same turning ring as the in-game announcement, in the winner's colour. */
+.hud-game-winner-face::after {
+  position: absolute;
+  inset: 34px 0 0;
+  padding: 3px;
+  pointer-events: none;
+  content: "";
+  background: conic-gradient(
+    from var(--gold-angle),
+    var(--border-dark),
+    var(--border-mid) 15%,
+    var(--border-glint) 25%,
+    var(--border-mid) 35%,
+    var(--border-dark) 50%,
+    var(--border-mid) 75%,
+    var(--border-dark)
+  );
+  border-radius: 50%;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  animation: hud-gold-border 4s linear infinite;
+}
+
+.hud-game-winner .hud-game-winner-face::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 56px;
+  height: 56px;
+  background:
+    linear-gradient(var(--emoticon-tint, var(--border-mid)), var(--emoticon-tint, var(--border-mid))),
+    url("../assets/emoticons/crown.webp") center / contain no-repeat;
+  background-blend-mode: color, normal;
+  mask: url("../assets/emoticons/crown.webp") center / contain no-repeat;
+  -webkit-mask: url("../assets/emoticons/crown.webp") center / contain no-repeat;
+  transform: translateX(-50%);
+  /* Over the ring (::after), which would otherwise paint on top. */
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .hud-game-winner-face img {
+    width: 88px;
+    height: 88px;
+  }
+
+  .hud-game-winner .hud-game-winner-face::before {
+    width: 38px;
+    height: 38px;
+  }
+}
+
+/* A player who quit the game, whose seat the server now plays: their line
+   in the table's player list dims (visualizer/hud/player-list.ts). */
+.hud-opponent.has-quit .hud-opponent-face {
+  opacity: 0.45;
+}

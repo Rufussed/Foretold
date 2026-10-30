@@ -6,6 +6,18 @@ import { clampPace, paced } from "../gameplayPace.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
 import { isPlayedByServer, recordMissedTurn } from "./playerQuit.js";
 import { isBotName } from "../models/bot.js";
+import type { WizardGameState } from "../models/wizardGame.js";
+import { FISHING_TIMEOUT_MS } from "../modes/roles/fisher.js";
+import { botFishingSpot, randomFishingSpot } from "../modes/roles/rolePowers.js";
+
+// One Fisher's choice in one trick: changes once they have fished.
+const fishingKey = (game: WizardGameState): string =>
+  [
+    game.phase,
+    game.currentRound,
+    game.players[game.currentPlayerIndex]?.username ?? "",
+    game.currentTrick.roleActions?.length ?? 0,
+  ].join(":");
 
 export type GameStateBroadcaster = (
   roomId: number,
@@ -86,6 +98,11 @@ export class WizardGameRunner {
           this.broadcast(roomId);
 
           await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+          continue;
+        }
+
+        if (game.phase === "fishing") {
+          await this.runFishing(roomId, game, pace);
           continue;
         }
 
@@ -315,6 +332,7 @@ export class WizardGameRunner {
             currentGame,
             cardIndex,
             !isBotName(decisionPlayer.username),
+            this.botService.chooseStealSpot(currentGame, cardIndex),
           );
 
           currentGame.turnDeadlineAt = null;
@@ -331,6 +349,62 @@ export class WizardGameRunner {
       this.runningRooms.delete(roomId);
     }
 }
+
+  // A Fisher choosing a card from a complete trick (modes/roles/fisher.ts).
+  // A bot, or a seat the server plays, chooses after a moment. A human has
+  // FISHING_TIMEOUT_MS, whatever the room's turn timer, and then a card is
+  // picked for them at random; that is no missed turn.
+  private async runFishing(
+    roomId: number,
+    game: WizardGameState,
+    pace: number,
+  ): Promise<void> {
+    const fisher = game.players[game.currentPlayerIndex];
+
+    if (!fisher) {
+      return;
+    }
+
+    const key = fishingKey(game);
+    const byServer = isPlayedByServer(fisher);
+
+    if (byServer) {
+      await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
+    } else {
+      if (game.turnDeadlineAt === null) {
+        game.turnDeadlineAt = Date.now() + FISHING_TIMEOUT_MS;
+        wizardSessionManager.saveGame(game);
+        this.broadcast(roomId);
+      }
+
+      await this.waitForDecision(
+        roomId,
+        Math.max(0, game.turnDeadlineAt - Date.now()),
+      );
+    }
+
+    const current = wizardSessionManager.getGame(roomId);
+
+    // The Fisher chose meanwhile, or the time has not run out yet.
+    if (!current || fishingKey(current) !== key) {
+      return;
+    }
+    if (!byServer && Date.now() < (current.turnDeadlineAt ?? 0)) {
+      return;
+    }
+
+    const spot = byServer
+      ? botFishingSpot(current)
+      : randomFishingSpot(current);
+
+    this.gameService.fishCard(current, fisher.username, spot);
+
+    current.turnDeadlineAt = null;
+    wizardSessionManager.saveGame(current);
+    this.broadcast(roomId);
+
+    await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+  }
 
   notifyAction(roomId: number): void {
     this.decisionWakeups.get(roomId)?.();

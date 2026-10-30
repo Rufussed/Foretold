@@ -68,6 +68,9 @@ export class UserService {
     return user;
   }
 
+  // Names are found in any case, so "carlos" signs in as "Carlos". Sign-up
+  // keeps names that differ only in case apart; for any made before that,
+  // the older account is used.
   static getUserByUsername(username: string): User | null {
     const statement = db.prepare(`
       SELECT
@@ -78,12 +81,29 @@ export class UserService {
         email,
         created_at
       FROM users
-      WHERE username = ?
+      WHERE LOWER(username) = LOWER(?)
+      ORDER BY id
+      LIMIT 1
     `);
 
     const row = statement.get(username) as UserRow | undefined;
 
     return row ? mapUser(row) : null;
+  }
+
+  // Whether a name is taken in any case: "rufus" is taken when "Rufus"
+  // exists, so no one can pass for another player by changing capitals.
+  static isUsernameTaken(username: string): boolean {
+    const row = db
+      .prepare(`
+        SELECT 1
+        FROM users
+        WHERE LOWER(username) = LOWER(?)
+        LIMIT 1
+      `)
+      .get(username);
+
+    return row !== undefined;
   }
 
   // Emails are compared without case, as people type them either way. If two

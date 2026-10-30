@@ -8,7 +8,7 @@ import {
 export function renderLoginPage(container: HTMLElement): void {
   container.innerHTML = `
     <main class="page">
-      <h1>Wizard Platform</h1>
+      <h1>Foretold</h1>
 
       <section class="panel">
         <h2>Login</h2>

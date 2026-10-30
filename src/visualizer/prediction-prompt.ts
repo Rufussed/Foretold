@@ -1,4 +1,5 @@
 import { forbiddenPrediction } from "../../backend/src/game/wizard/gameplayRules";
+import { normalizeGameOptions } from "../../backend/src/game/wizard/gameOptions";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { t } from "../i18n";
 
@@ -103,7 +104,8 @@ export function createPredictionPrompt(
 
       // The round number is also the number of cards dealt.
       const cardsDealt = state.currentRound;
-      const forbidden = forbiddenPrediction(state.players, cardsDealt);
+      const limited = normalizeGameOptions(state.options).lastPredictionLimited;
+      const forbidden = forbiddenPrediction(state.players, cardsDealt, limited);
       if (builtFor !== `${cardsDealt}:${forbidden}`) buildOptions(cardsDealt, forbidden);
       roundEl.textContent = t(cardsDealt === 1 ? "game.roundOneCard" : "game.roundCards", {
         round: String(state.currentRound),

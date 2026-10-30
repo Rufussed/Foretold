@@ -1,0 +1,331 @@
+/* The navbar on every page outside the game (components/Navbar.ts): logo,
+   links, account buttons, the help "?" and the hints under them. Also the
+   gold glow when a game has started without its player. */
+
+.lobby-header {
+  position: relative;
+  z-index: 2;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  min-height: 82px;
+  padding: 15px clamp(24px, 5vw, 80px);
+
+  border-bottom: 1px solid rgba(191, 125, 47, 0.2);
+
+  background: var(--ui-bg);
+  backdrop-filter: var(--ui-blur);
+}
+
+.lobby-brand {
+  display: flex;
+  align-items: center;
+
+  width: 120px;
+
+  text-decoration: none;
+}
+
+.lobby-brand img {
+  display: block;
+
+  width: auto;
+  height: 88px;
+}
+
+.lobby-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.lobby-nav a {
+  color: rgba(244, 234, 216, 0.76);
+
+  font-size: 0.82rem;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: none;
+
+  text-decoration: none;
+
+  transition:
+    color 160ms ease,
+    text-shadow 160ms ease;
+}
+
+.lobby-nav a:hover {
+  color: #e0a14d;
+
+  text-shadow:
+    0 0 12px rgba(210, 130, 40, 0.35);
+}
+
+.lobby-nav span {
+  width: 1px;
+  height: 16px;
+
+  background: rgba(191, 125, 47, 0.32);
+}
+
+.lobby-account {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  white-space: nowrap;
+}
+
+.lobby-account a,
+.lobby-account button {
+  border: var(--ui-edge);
+  background: rgba(10, 10, 8, 0.45);
+  color: rgba(244, 235, 217, 0.88);
+  padding: 8px 14px;
+  font-family: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.lobby-account a:hover,
+.lobby-account button:hover {
+  border-color: rgba(191, 125, 47, 0.65);
+  background: rgba(191, 125, 47, 0.12);
+  color: #fff;
+}
+.lobby-username {
+  border-radius: 4px; /* match the buttons beside it */
+  white-space: nowrap;
+  flex-shrink: 0;
+  max-width: 120px;
+
+  color: rgba(244, 234, 216, 0.58);
+
+  font-size: 0.82rem;
+  letter-spacing: 0.08em;
+
+  white-space: nowrap;
+}
+
+/* A long name ends in "…" inside the link, so the link itself can show its
+   hint below. */
+.lobby-username-text {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* A game the player is seated in has started without them (see
+   services/started-game.ts): their name, in the navbar and on Home, and the
+   Take your seat button on Profile take the look of Play Now on Home and glow
+   softly, asking to be pressed. So does Start game once every seat in the
+   room is taken (pages/Room.ts). */
+.lobby-account .lobby-username-alert,
+.profile-heading-actions a.profile-take-seat,
+.room-start-button.is-ready {
+  border: 1px solid #bb7022;
+  background: linear-gradient(180deg, #9a4c14, #663008);
+  color: #f6e7cf;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 207, 121, 0.34),
+    inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+    0 0 18px rgba(211, 101, 18, 0.3);
+  animation: lobby-username-glow 2.4s ease-in-out infinite;
+}
+
+.lobby-account .lobby-username-alert:hover,
+.profile-heading-actions a.profile-take-seat:hover,
+.room-start-button.is-ready:hover:not(:disabled) {
+  border-color: #bb7022;
+  background: linear-gradient(180deg, #9a4c14, #663008);
+  color: #fff;
+  filter: brightness(1.13);
+}
+
+@keyframes lobby-username-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 207, 121, 0.34),
+      inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+      0 0 10px rgba(211, 101, 18, 0.2);
+  }
+
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 207, 121, 0.34),
+      inset 0 -5px 14px rgba(37, 11, 0, 0.5),
+      0 0 24px rgba(211, 101, 18, 0.55);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lobby-account .lobby-username-alert,
+  .home-account-actions > a.home-account-alert,
+  .profile-heading-actions a.profile-take-seat,
+  .room-start-button.is-ready {
+    animation: none;
+  }
+}
+
+.profile-heading-actions a.profile-take-seat[hidden] {
+  display: none;
+}
+
+/* On Home the name stays plain text; only its letters turn gold and glow. */
+.home-account-actions > a.home-account-alert {
+  color: #ffbd62;
+  animation: home-account-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes home-account-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 6px rgba(255, 189, 98, 0.35);
+  }
+
+  50% {
+    text-shadow:
+      0 0 10px rgba(255, 189, 98, 0.85),
+      0 0 22px rgba(211, 101, 18, 0.6);
+  }
+}
+
+.lobby-account-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+
+  color: #e0a14d;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  text-decoration: none;
+
+  padding: 6px 10px;
+}
+
+/* The other language, quieter than the account buttons, as on Home. */
+.lobby-account .lobby-language-button {
+  color: #9a8b75;
+}
+
+/* The logo with the "?" of the help window, set well apart so it does not
+   read as a question about the logo. */
+.lobby-brand-group {
+  display: flex;
+  align-items: center;
+  gap: clamp(28px, 4vw, 56px);
+}
+
+.lobby-brand-group .lobby-brand {
+  width: auto;
+}
+
+/* The "?" of the help window, shaped like the account buttons. */
+.lobby-help-button {
+  position: relative;
+  flex-shrink: 0;
+
+  padding: 8px 14px;
+
+  border: var(--ui-edge);
+  border-radius: 4px;
+  background: rgba(10, 10, 8, 0.45);
+
+  color: #e0a14d;
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.2;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease;
+}
+
+.lobby-help-button:hover,
+.lobby-help-button:focus-visible {
+  border-color: rgba(191, 125, 47, 0.65);
+  background: rgba(191, 125, 47, 0.12);
+  color: #ffbd62;
+}
+
+/* The "?" and the "<" side by side. */
+.lobby-help-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* The "<" back button: the help button's frame, a bigger and bolder sign
+   at the same height. */
+.lobby-back-button {
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 0.8;
+}
+
+/* The hints under the navbar's logo, links and buttons, from their
+   data-tooltip. They start at the left edge of what they belong to, and on
+   the right side at its right edge, so they stay on the screen. */
+.lobby-header [data-tooltip] {
+  position: relative;
+}
+
+.lobby-header [data-tooltip]::after {
+  content: attr(data-tooltip);
+
+  position: absolute;
+  z-index: 5;
+  top: calc(100% + 10px);
+  left: 0;
+
+  padding: 8px 12px;
+
+  border: var(--ui-edge);
+  border-radius: 4px;
+  background: rgba(12, 13, 11, 0.95);
+  box-shadow: var(--ui-shadow);
+
+  color: #e6dac4;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  line-height: 1.4;
+  /* Two lines at most, so it stays on a phone screen. */
+  width: max-content;
+  max-width: 240px;
+  white-space: normal;
+
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+
+.lobby-header [data-tooltip]:hover::after,
+.lobby-header [data-tooltip]:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.lobby-account [data-tooltip]::after {
+  left: auto;
+  right: 0;
+}

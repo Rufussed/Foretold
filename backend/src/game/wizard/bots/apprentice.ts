@@ -3,6 +3,7 @@ import { SUITS } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
+import { isRoleCard } from "./roleSense.js";
 
 const rules = new WizardRules();
 
@@ -55,6 +56,8 @@ export function blindPrediction(game: WizardGameState): number {
 // The first bot: it bids one trick per Wizard, 12 or 13 in hand, then plays
 // the first legal card it holds, with no plan for reaching its bid. Hands are
 // in the order they were dealt, so in practice that is a random legal card.
+// In a Roles game it has no plan either, but believes in its role's card: it
+// bids a trick for it and plays it as soon as it may, helpful or not.
 export const apprentice: BotStrategy = {
   chooseTrumpSuit: chooseLongestSuit,
 
@@ -63,15 +66,16 @@ export const apprentice: BotStrategy = {
       return blindPrediction(game);
     }
 
-    return currentPlayer(game).hand.filter((card) => card.value >= 12).length;
+    return currentPlayer(game).hand.filter((card) => card.value >= 12 || isRoleCard(game, card)).length;
   },
 
   chooseCardIndex(game) {
     const player = currentPlayer(game);
     const leadSuit = rules.getLeadSuit(game.currentTrick.playedCards);
-    const playableIndex = player.hand.findIndex((card: Card) =>
-      rules.isValidCardPlay(card, player.hand, leadSuit),
-    );
+    const playable = (card: Card) => rules.isValidCardPlay(card, player.hand, leadSuit);
+    // In a Roles game it believes in its role's card, and plays it first.
+    const roleIndex = player.hand.findIndex((card) => playable(card) && isRoleCard(game, card));
+    const playableIndex = roleIndex !== -1 ? roleIndex : player.hand.findIndex(playable);
 
     if (playableIndex === -1) {
       throw new Error("Bot has no legal card to play");

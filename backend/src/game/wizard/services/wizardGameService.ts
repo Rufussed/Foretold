@@ -12,6 +12,13 @@ import { isJester, isWizard } from "../models/card.js";
 import { isBotName } from "../models/bot.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
+import {
+  applyFishing,
+  applyRolePowers,
+  applyRoundEndPowers,
+  applyTrickEndPowers,
+  startFishing,
+} from "../modes/roles/rolePowers.js";
 
 import type {
   GamePlayer,
@@ -224,6 +231,9 @@ export class WizardGameService {
     game: WizardGameState,
     cardIndex: number,
     byServer = false,
+    // A Thief's trump 1: the place in the trick of the card to take
+    // (modes/roles/thief.ts); the one just before when left out.
+    stealSpot?: number,
   ): void {
     // This method validates and records one play. A complete trick is resolved
     // immediately, while the caller advances to the next trick afterward.
@@ -279,19 +289,48 @@ export class WizardGameService {
 
     const playedCard: PlayedCard = {
       username: currentPlayer.username,
+      playedBy: currentPlayer.username,
       card,
       ...(byServer ? { byServer: true as const } : {}),
     };
 
     game.currentTrick.playedCards.push(playedCard);
 
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      applyRolePowers(game, stealSpot);
+    }
+
     if (game.currentTrick.playedCards.length === game.players.length) {
-      this.resolveTrick(game);
+      this.completeTrick(game);
       return;
     }
 
     game.currentPlayerIndex =
       (game.currentPlayerIndex + 1) % game.players.length;
+  }
+
+  // A complete trick is resolved, unless a Fisher of a Roles game still has
+  // a card to choose (modes/roles/fisher.ts): then that is the next move.
+  private completeTrick(game: WizardGameState): void {
+    if (
+      normalizeGameOptions(game.options).mode === "roles" &&
+      startFishing(game)
+    ) {
+      return;
+    }
+
+    game.phase = "playing";
+    this.resolveTrick(game);
+  }
+
+  // The Fisher whose move it is takes the card at this place in the trick.
+  fishCard(
+    game: WizardGameState,
+    username: string,
+    spot: number,
+  ): void {
+    applyFishing(game, username, spot);
+    this.completeTrick(game);
   }
 
   // A trick won with a card of a colour, for the winner's colour points
@@ -352,6 +391,10 @@ export class WizardGameService {
     }
 
     winner.tricksWon += 1;
+
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      applyTrickEndPowers(game, winner);
+    }
     this.recordColorTrick(game, winner);
     game.currentTrick.winnerUsername = winnerUsername;
     game.currentPlayerIndex = winnerIndex;
@@ -402,7 +445,14 @@ export class WizardGameService {
     }
 
     // The last predictor can't make the predictions add up to the tricks.
-    if (prediction === forbiddenPrediction(game.players, game.currentRound)) {
+    if (
+      prediction ===
+      forbiddenPrediction(
+        game.players,
+        game.currentRound,
+        normalizeGameOptions(game.options).lastPredictionLimited,
+      )
+    ) {
       throw new Error(
         `The last prediction can't be ${prediction}: predictions can't add up to the ${game.currentRound} tricks this round`,
       );
@@ -432,6 +482,9 @@ export class WizardGameService {
     }
 
     this.scoreCalculator.updatePlayerScores(game);
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      applyRoundEndPowers(game);
+    }
 
     if (game.currentRound === game.totalRounds) {
       game.status = "finished";
@@ -492,6 +545,10 @@ export class WizardGameService {
           score: player.score,
           roundScores: player.roundScores,
           quit: player.quit === true,
+          role: player.role ?? null,
+          seeds: player.seeds ?? {},
+          sheep: player.sheep ?? {},
+          armor: player.armor ?? 0,
         };
       }),
       currentRound: game.currentRound,

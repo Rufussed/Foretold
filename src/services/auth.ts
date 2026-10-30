@@ -32,6 +32,8 @@ export interface InviteInfo {
   players: number;
   maxPlayers: number;
   status: "waiting" | "playing";
+  // The game played there; none from an older server, which is Classic.
+  mode?: string;
 }
 
 interface ServerErrorBody {
@@ -284,17 +286,24 @@ export async function getCurrentUser(): Promise<User> {
     throw new Error("Not logged in");
   }
 
-  // An invalid token is removed immediately so protected routes cannot keep
-  // treating the browser as authenticated.
+  // An invalid token (401) or a deleted account (404) is removed at once, so
+  // protected routes cannot keep treating the browser as signed in. Any other
+  // failure - a server restarting, a moment without signal - keeps the login:
+  // dropping it then let an invited guest's login in the same browser take
+  // over the host's tab.
   const response = await fetch(`${API_BASE}/users/me`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
   });
 
-  if (!response.ok) {
+  if (response.status === 401 || response.status === 404) {
     logout();
     throw new Error("Session expired or invalid");
+  }
+
+  if (!response.ok) {
+    throw new Error("Could not reach the server");
   }
 
   return response.json() as Promise<User>;

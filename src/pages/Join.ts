@@ -1,5 +1,6 @@
 import { t, getLanguage, setLanguage } from "../i18n";
 import { escapeHtml } from "../utils/escape-html";
+import { gameModeBadge, gameModeOf } from "../utils/game-mode";
 import {
   getInvite,
   getInvitedGuestRoomId,
@@ -71,7 +72,7 @@ export async function renderJoinPage(container: HTMLElement, code: string): Prom
     <h1 class="join-title">
       ${t("join.title", {
         host: escapeHtml(invite.hostName),
-        room: `<span class="room-intro-name">${escapeHtml(invite.roomName)}</span>`,
+        room: `<span class="room-intro-name">${escapeHtml(invite.roomName)}</span>${gameModeBadge(gameModeOf(invite))}`,
       })}
     </h1>
     <p class="join-seats">

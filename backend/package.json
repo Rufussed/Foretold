@@ -8,6 +8,7 @@
     "start": "tsx src/server.ts",
     "build": "tsc && node -e \"require('node:fs').copyFileSync('src/db/schema.sql','dist/db/schema.sql')\"",
     "typecheck": "tsc --noEmit",
+    "sim": "tsx src/sim/rolesSim.ts",
     "test": "vitest"
   },
   "engines": {

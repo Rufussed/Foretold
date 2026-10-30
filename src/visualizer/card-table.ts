@@ -45,6 +45,9 @@ export interface CardTableOptions {
   // Called when another player's card takes the lead in the trick, with the
   // player who was leading.
   onOvertaken?(previousLeader: string): void;
+  // Before a card is sent: the card a Thief's trump 1 takes, if there is a
+  // choice (steal-prompt.ts); null when the turn passed before a choice.
+  chooseSteal?(cardIndex: number): Promise<number | null | undefined>;
 }
 
 export interface CardTable {
@@ -91,6 +94,7 @@ export function createCardTable({
   headRadiusOf,
   onDealDone,
   onOvertaken,
+  chooseSteal,
 }: CardTableOptions): CardTable {
   const cameraPosition = new THREE.Vector3();
   const factory = createCardFactory(environment);
@@ -120,9 +124,17 @@ export function createCardTable({
     // The server identifies a card by its index in the hand it dealt, not by
     // the order you've arranged your cards in.
     const cardIndex = localPlayer(game)?.hand.findIndex((card) => cardKey(card) === key) ?? -1;
-    if (cardIndex === -1 || !game.send({ type: "play_card", cardIndex })) {
+    if (cardIndex === -1) {
       cards.cancelPlay();
+      return;
     }
+    // A Thief's trump 1 asks which card to take first.
+    void (chooseSteal?.(cardIndex) ?? Promise.resolve(undefined)).then((stealSpot) => {
+      const sent =
+        stealSpot !== null &&
+        game.send({ type: "play_card", cardIndex, ...(stealSpot === undefined ? {} : { stealSpot }) });
+      if (!sent) cards.cancelPlay();
+    });
   };
 
   const controls = createCardControls({

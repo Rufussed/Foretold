@@ -3,6 +3,8 @@
 // their effects). Like gameplayPace.ts it must stay free of Node-only code,
 // because Vite bundles it into the browser.
 
+import { isGameMode, type GameMode } from "./modes/modes.js";
+
 export type WizardWins = "first" | "last";
 
 // How many turns in a row a player may let the timer run out on before they
@@ -16,6 +18,9 @@ export const isMissedTurnsToQuit = (value: unknown): value is MissedTurnsToQuit 
   MISSED_TURNS_OPTIONS.some((option) => option === value);
 
 export interface WizardGameOptions {
+  // Which game is played (modes/modes.ts). Classic unless the host chose
+  // another.
+  mode: GameMode;
   // When more than one Wizard is played in a trick, whether the first or the
   // last one played takes it. "first" is the official rule.
   wizardWins: WizardWins;
@@ -24,23 +29,32 @@ export interface WizardGameOptions {
   blindFirstRound: boolean;
   // Missed turns in a row that count as leaving the game; null for never.
   missedTurnsToQuit: MissedTurnsToQuit;
+  // The last player to predict in a round may not make everyone's predictions
+  // add up to the round's tricks, so at least one player must miss. false
+  // lets them choose anything (gameplayRules.ts).
+  lastPredictionLimited: boolean;
 }
 
 // What every new room starts with: the official rules (you see your own
 // cards, the first Wizard wins). The host can switch variations on per room.
 export const DEFAULT_GAME_OPTIONS: WizardGameOptions = {
+  mode: "classic",
   wizardWins: "first",
   blindFirstRound: false,
   missedTurnsToQuit: 5,
+  lastPredictionLimited: true,
 };
 
 // How the game was played before the variations existed: the official rules.
 // What an older saved game with no options recorded at all is read as, so a
 // game in progress never changes its rules when the defaults do.
 export const LEGACY_GAME_OPTIONS: WizardGameOptions = {
+  mode: "classic",
   wizardWins: "first",
   blindFirstRound: false,
   missedTurnsToQuit: null,
+  // Before it was a choice, the last prediction was always limited.
+  lastPredictionLimited: true,
 };
 
 // The options to actually use, given whatever arrived from a client or an
@@ -54,11 +68,14 @@ export const normalizeGameOptions = (
     Record<keyof WizardGameOptions, unknown>
   >;
   return {
+    mode: isGameMode(raw.mode) ? raw.mode : fallback.mode,
     wizardWins: raw.wizardWins === "last" || raw.wizardWins === "first" ? raw.wizardWins : fallback.wizardWins,
     blindFirstRound: typeof raw.blindFirstRound === "boolean" ? raw.blindFirstRound : fallback.blindFirstRound,
     missedTurnsToQuit: isMissedTurnsToQuit(raw.missedTurnsToQuit)
       ? raw.missedTurnsToQuit
       : fallback.missedTurnsToQuit,
+    lastPredictionLimited:
+      typeof raw.lastPredictionLimited === "boolean" ? raw.lastPredictionLimited : fallback.lastPredictionLimited,
   };
 };
 

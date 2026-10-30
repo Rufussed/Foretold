@@ -6,6 +6,12 @@ import { formatDateTime } from "../utils/format-date-time";
 import { escapeHtml } from "../utils/escape-html";
 import { t } from "../i18n";
 import { serverError, type ServerError } from "../i18n/server-error";
+import { GAME_MODES } from "../../backend/src/game/wizard/modes/modes";
+import {
+  QUICK_PLAY_FULL_TABLE,
+  type QuickPlayStatus,
+} from "../../backend/src/game/wizard/services/quickPlayQueue";
+import { gameModeBadge, gameModeName, gameModeOf } from "../utils/game-mode";
 
 interface LobbyRoom {
   id: number;
@@ -22,6 +28,8 @@ interface LobbyRoom {
   maxPlayers: number;
   status: "waiting" | "playing";
   isPublic: boolean;
+  // The game played there; an older server sends none, which is Classic.
+  options?: { mode?: string };
 }
 
 type LobbyData = {
@@ -31,6 +39,9 @@ type LobbyData = {
 // How often the room list asks again, so rooms other players open or fill
 // show up without a reload.
 const ROOMS_REFRESH_MS = 5000;
+
+// How often a Quick Play search asks the server; asking keeps it alive.
+const QUICK_PLAY_POLL_MS = 1000;
 
 // A guest's username is a generated id, so they are listed as a stranger.
 function playerLabel(username: string): string {
@@ -54,6 +65,14 @@ export async function renderLobbyPage(
 
       <section class="lobby-content">
         <div class="lobby-title-row">
+          <button
+            type="button"
+            class="create-room-button quick-play-button"
+            id="quick-play-button"
+          >
+            ${t("lobby.quickPlay")}
+          </button>
+
           <div>
 
             <h1>${t("nav.glade")}</h1>
@@ -67,6 +86,18 @@ export async function renderLobbyPage(
           >
             <span>+</span>
             ${t("lobby.createRoom")}
+          </button>
+        </div>
+
+        <div class="quick-play-bar" id="quick-play-bar" hidden>
+          <span class="quick-play-text" id="quick-play-text"></span>
+
+          <button
+            type="button"
+            class="secondary-action"
+            id="quick-play-cancel"
+          >
+            ${t("lobby.quickPlayCancel")}
           </button>
         </div>
 
@@ -129,6 +160,27 @@ export async function renderLobbyPage(
                 required
               />
             </label>
+
+            <fieldset class="room-form-field">
+              <legend>${t("lobby.mode")}</legend>
+
+              <div class="game-mode-options">
+                ${GAME_MODES.map(
+                  (mode) => `
+                    <label class="game-mode-option mode-${mode}">
+                      <input
+                        type="radio"
+                        name="mode"
+                        value="${mode}"
+                        ${mode === "classic" ? "checked" : ""}
+                      />
+                      <span class="game-mode-name">${gameModeName(mode)}</span>
+                      <span class="game-mode-description">${t(`mode.${mode}.description`)}</span>
+                    </label>
+                  `,
+                ).join("")}
+              </div>
+            </fieldset>
 
             <label class="room-form-field" for="roomVisibility">
               <span>${t("lobby.visibility")}</span>
@@ -368,10 +420,13 @@ export async function renderLobbyPage(
           const playerCount =
             `${room.players.length}/${room.maxPlayers}`;
 
+          const mode = gameModeOf(room.options);
+
           return `
-            <article class="room-row">
+            <article class="room-row mode-${mode}">
               <strong class="room-name">
-                ${escapeHtml(room.name)}
+                <span class="room-name-text">${escapeHtml(room.name)}</span>
+                ${gameModeBadge(mode)}
               </strong>
 
               <div class="room-created">
@@ -728,6 +783,7 @@ export async function renderLobbyPage(
       const isPublic = visibility === "true";
       // A guest room: hidden, its guests come by invite link.
       const isGuestRoom = visibility === "guest";
+      const mode = formData.get("mode") ?? "classic";
 
       if (!name) {
         return;
@@ -759,6 +815,7 @@ export async function renderLobbyPage(
                 maxPlayers,
                 isPublic,
                 isGuestRoom,
+                mode,
               }),
             },
           );
@@ -800,6 +857,108 @@ export async function renderLobbyPage(
       }
     },
   );
+
+  // Quick Play: the server finds the table (backend quickPlayQueue.ts). The
+  // bar shows the search while the page asks about it every second, and the
+  // player goes to the game once one starts.
+  const quickPlayButton =
+    document.querySelector<HTMLButtonElement>("#quick-play-button");
+  const quickPlayBar =
+    document.querySelector<HTMLDivElement>("#quick-play-bar");
+  const quickPlayText =
+    document.querySelector<HTMLSpanElement>("#quick-play-text");
+  const quickPlayCancel =
+    document.querySelector<HTMLButtonElement>("#quick-play-cancel");
+
+  let quickPlayTimer: number | undefined;
+
+  function formatWait(waitedMs: number): string {
+    const seconds = Math.floor(waitedMs / 1000);
+
+    return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  }
+
+  function showQuickPlay(status: QuickPlayStatus): void {
+    if (status.state === "matched") {
+      window.location.hash = `#/game/${status.roomId}/visualizer`;
+      return;
+    }
+
+    const searching = status.state === "searching";
+
+    if (quickPlayBar) {
+      quickPlayBar.hidden = !searching;
+    }
+
+    if (quickPlayButton) {
+      quickPlayButton.disabled = searching;
+    }
+
+    if (searching && quickPlayText) {
+      quickPlayText.textContent = t("lobby.quickPlaySearching", {
+        time: formatWait(status.waitedMs),
+        count: String(status.playersFound),
+        max: String(QUICK_PLAY_FULL_TABLE),
+      });
+    }
+
+    window.clearTimeout(quickPlayTimer);
+
+    if (searching) {
+      quickPlayTimer = window.setTimeout(pollQuickPlay, QUICK_PLAY_POLL_MS);
+    }
+  }
+
+  async function quickPlayRequest(method: "GET" | "POST" | "DELETE"): Promise<QuickPlayStatus> {
+    const response = await fetch(`${API_BASE}/wizard/quick-play`, {
+      method,
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = (await response.json()) as QuickPlayStatus & ServerError;
+
+    if (!response.ok) {
+      throw new Error(serverError(data, "lobby.quickPlayFailed"));
+    }
+
+    return data;
+  }
+
+  // Stops once the page is left; a failed ask tries again a second later.
+  async function pollQuickPlay(): Promise<void> {
+    if (!quickPlayBar?.isConnected) {
+      return;
+    }
+
+    try {
+      showQuickPlay(await quickPlayRequest("GET"));
+    } catch {
+      quickPlayTimer = window.setTimeout(pollQuickPlay, QUICK_PLAY_POLL_MS);
+    }
+  }
+
+  quickPlayButton?.addEventListener("click", async () => {
+    quickPlayButton.disabled = true;
+
+    try {
+      showQuickPlay(await quickPlayRequest("POST"));
+    } catch (error) {
+      quickPlayButton.disabled = false;
+      alert(error instanceof Error ? error.message : t("lobby.quickPlayFailed"));
+    }
+  });
+
+  quickPlayCancel?.addEventListener("click", async () => {
+    window.clearTimeout(quickPlayTimer);
+
+    try {
+      showQuickPlay(await quickPlayRequest("DELETE"));
+    } catch {
+      showQuickPlay({ state: "idle" });
+    }
+  });
+
+  // A search begun before a reload goes on.
+  void pollQuickPlay();
 
   void loadRooms();
 

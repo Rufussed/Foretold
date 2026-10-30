@@ -26,6 +26,9 @@ import {
   endGuestSession,
 } from "../services/auth";
 import { serverError, type ServerError } from "../i18n/server-error";
+import { gameModeBadge, gameModeName } from "../utils/game-mode";
+import { ROLES, isRoleId, type RoleId } from "../../backend/src/game/wizard/modes/roles/roles";
+import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -37,6 +40,14 @@ let activeRoom: { destroy(): void } | null = null;
 export function destroyRoomPage(): void {
   activeRoom?.destroy();
   activeRoom = null;
+}
+
+// The role list's options: a prompt, then each role with its card's number.
+function roleOptions(): string {
+  return [
+    `<option value="" selected disabled>${t("room.role.choose")}</option>`,
+    ...ROLES.map(({ id, card }) => `<option value="${id}">${card} · ${t(`role.${id}`)}</option>`),
+  ].join("");
 }
 
 export async function renderRoomPage(
@@ -94,8 +105,6 @@ export async function renderRoomPage(
       <main class="room-content">
 
         <section class="room-title-row">
-          <a href="#/lobby" class="room-back-button">${t("common.back")}</a>
-
           <h1 id="room-intro" class="room-intro">${t("room.welcome")}</h1>
         </section>
 
@@ -128,6 +137,7 @@ export async function renderRoomPage(
             ></div>
 
           </div>
+
           <p
             id="room-message"
             class="room-message"
@@ -144,6 +154,14 @@ export async function renderRoomPage(
               hidden
             ></p>
             <div class="room-start-controls">
+
+              <label class="room-role-field mode-roles" hidden>
+                <span>${t("room.role")}</span>
+                <span class="room-role-row">
+                  <select class="room-role-select">${roleOptions()}</select>
+                  ${rolesHelpButton()}
+                </span>
+              </label>
 
               <div class="room-start-column">
                 <div class="room-start-pair">
@@ -212,6 +230,14 @@ export async function renderRoomPage(
                   </label>
 
                   <label>
+                    <span>${t("room.lastPrediction")}</span>
+                    <select id="room-last-prediction">
+                      <option value="true" selected>${t("room.lastPrediction.limited")}</option>
+                      <option value="false">${t("room.lastPrediction.free")}</option>
+                    </select>
+                  </label>
+
+                  <label>
                     <span>${t("room.missedTurns")}</span>
                     <select id="room-missed-turns">
                       ${MISSED_TURNS_OPTIONS.map(
@@ -250,6 +276,14 @@ export async function renderRoomPage(
             hidden
           ></p>
 
+          <label id="room-role-own" class="room-role-own mode-roles" hidden>
+            <span>${t("room.role")}</span>
+            <span class="room-role-row">
+              <select class="room-role-select">${roleOptions()}</select>
+              ${rolesHelpButton()}
+            </span>
+          </label>
+
           <p
             id="room-waiting"
             class="room-waiting"
@@ -285,6 +319,60 @@ export async function renderRoomPage(
   // chose, or as a stranger when playing alone.
   const greeting = guestUsername !== null ? displayName(guestUsername) : user.username;
   const startEl = element<HTMLDivElement>("#room-start");
+  // A Roles room's role, chosen from a list: in the host's settings, or on
+  // its own for everyone else (modes/roles/roles.ts). It is saved to the room,
+  // so the others see it; anyone who chooses none gets one at random.
+  const hostRoleEl = element<HTMLLabelElement>(".room-role-field");
+  const ownRoleEl = element<HTMLLabelElement>("#room-role-own");
+  const roleSelects = [...container.querySelectorAll<HTMLSelectElement>(".room-role-select")];
+  let chosenRole: RoleId | null = null;
+  for (const button of container.querySelectorAll<HTMLButtonElement>(".roles-help-button")) {
+    button.addEventListener("click", (event) => {
+      // Inside the role's label, which would otherwise open the list.
+      event.preventDefault();
+      openRolesHelp();
+    });
+  }
+  // Both lists show the same choice, with its power as the hint.
+  const showRole = (role: RoleId | null) => {
+    chosenRole = role;
+    for (const select of roleSelects) {
+      select.value = role ?? "";
+      select.title = role ? t(`role.${role}.power`) : "";
+    }
+  };
+  // One save at a time, so a quick change of mind lands last. Until a poll
+  // started after the last save has come back, the room's older answer is
+  // not taken over the choice just made.
+  let roleSave = Promise.resolve();
+  let roleSyncAfter = 0;
+  for (const select of roleSelects) {
+    select.addEventListener("change", () => {
+      const role = isRoleId(select.value) ? select.value : null;
+      showRole(role);
+      roleSyncAfter = Number.POSITIVE_INFINITY;
+      roleSave = roleSave.then(async () => {
+        if (destroyed) return;
+        try {
+          const response = await fetch(`${API_BASE}/wizard/lobby/${roomId}/role`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({ role }),
+          });
+          if (!response.ok) {
+            const data = (await response.json()) as ServerError;
+            showMessage(serverError(data, "room.saveFailed"));
+          }
+        } catch (error) {
+          console.warn("[room] saving the role failed:", error);
+        }
+        roleSyncAfter = Date.now() + POLL_MS * 2;
+      });
+    });
+  }
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
   // How well the NPCs play. See botLevels.ts.
@@ -292,9 +380,14 @@ export async function renderRoomPage(
   // How fast the game plays out, for everyone in it: the server's pauses and
   // the table's animations both scale by it. See gameplayPace.ts.
   const paceEl = element<HTMLSelectElement>("#room-pace");
+  // Which game is played: chosen in Create Room and kept by the room, shown
+  // here by the badge after its name. See modes/modes.ts.
+  const roomMode = () => normalizeGameOptions(room?.options, DEFAULT_GAME_OPTIONS).mode;
   // The rule variations, for everyone in the game. See gameOptions.ts.
   const wizardWinsEl = element<HTMLSelectElement>("#room-wizard-wins");
   const blindFirstRoundEl = element<HTMLSelectElement>("#room-blind-first-round");
+  // Whether the last prediction may make them all add up to the tricks.
+  const lastPredictionEl = element<HTMLSelectElement>("#room-last-prediction");
   // Missed turns in a row before a player counts as gone and a bot takes the
   // seat; "off" for never. See gameOptions.ts and the backend's playerQuit.ts.
   const missedTurnsEl = element<HTMLSelectElement>("#room-missed-turns");
@@ -306,6 +399,7 @@ export async function renderRoomPage(
   const chosenOptions = () => ({
     wizardWins: wizardWinsEl.value,
     blindFirstRound: blindFirstRoundEl.value === "true",
+    lastPredictionLimited: lastPredictionEl.value === "true",
     missedTurnsToQuit: missedTurnsEl.value === "off" ? null : Number(missedTurnsEl.value),
     turnTimeoutMs: turnTimeoutEl.value === "none" ? null : Number(turnTimeoutEl.value),
   });
@@ -413,7 +507,11 @@ export async function renderRoomPage(
     // Three lines, easier to take in on a small screen: the room's name in
     // gold, who's here, and the invitation to pick a portrait.
     introEl.innerHTML = [
-      t("room.intro", { room: `<span class="room-intro-name">${escapeHtml(roomName)}</span>` }),
+      t("room.intro", {
+        room: `<span class="room-intro-name">${escapeHtml(roomName)}</span>${gameModeBadge(
+          normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS).mode,
+        )}`,
+      }),
       present,
       t("room.chooseAvatar", { name: escapeHtml(greeting) }),
     ]
@@ -452,12 +550,21 @@ export async function renderRoomPage(
     waitingEl.hidden = isHost;
 
     const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
+    const isRoles = options.mode === "roles";
+    hostRoleEl.hidden = !isRoles;
+    // The role the room has for this player, unless a change is on its way.
+    const savedRole = room.players.find((player) => player.username === user.username)?.role ?? null;
+    if (savedRole !== chosenRole && Date.now() > roleSyncAfter) {
+      showRole(savedRole);
+    }
+    ownRoleEl.hidden = !isRoles || isHost;
     variationsSummaryEl.hidden = isHost;
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {
       optionsLoaded = true;
       wizardWinsEl.value = options.wizardWins;
       blindFirstRoundEl.value = String(options.blindFirstRound);
+      lastPredictionEl.value = String(options.lastPredictionLimited);
       missedTurnsEl.value = String(options.missedTurnsToQuit ?? "off");
       turnTimeoutEl.value = room.turnTimeoutMs === null ? "none" : String(room.turnTimeoutMs);
     }
@@ -646,6 +753,7 @@ export async function renderRoomPage(
   };
   wizardWinsEl.addEventListener("change", saveOptions);
   blindFirstRoundEl.addEventListener("change", saveOptions);
+  lastPredictionEl.addEventListener("change", saveOptions);
   missedTurnsEl.addEventListener("change", saveOptions);
   turnTimeoutEl.addEventListener("change", saveOptions);
 
@@ -658,10 +766,15 @@ export async function renderRoomPage(
   // Start game first shows everything chosen, as nothing can change once the
   // game runs; the game itself starts from there (startGame).
   const summaryRows = (): StartSummaryRow[] => {
-    const wizards = (room?.players ?? []).map((player) =>
-      player.username === user.username ? greeting : displayName(player.username),
-    );
+    // In a Roles room each wizard's role follows their name.
+    const mode = roomMode();
+    const isRoles = mode === "roles";
+    const wizards = (room?.players ?? []).map((player) => {
+      const name = player.username === user.username ? greeting : displayName(player.username);
+      return isRoles && player.role ? `${name} (${t(`role.${player.role}`)})` : name;
+    });
     const rows: StartSummaryRow[] = [
+      { label: t("lobby.mode"), value: gameModeName(mode), changed: mode !== "classic" },
       { label: t("start.wizards"), value: wizards.join(", ") },
       { label: t("room.bots"), value: chosen(botsEl).value },
     ];
@@ -676,6 +789,7 @@ export async function renderRoomPage(
       { label: t("room.missedTurns"), ...chosen(missedTurnsEl) },
       { label: t("room.firstRound"), ...chosen(blindFirstRoundEl) },
       { label: t("room.wizardWins"), ...chosen(wizardWinsEl) },
+      { label: t("room.lastPrediction"), ...chosen(lastPredictionEl) },
     );
     return rows;
   };

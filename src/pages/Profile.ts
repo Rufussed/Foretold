@@ -41,6 +41,8 @@ const PLAYER_LEVELS: { name: MessageKey; fullGames: number }[] = [
 
 interface PlayerLevel {
   name: string;
+  // The next level's number, counting the first as 1; none at the top.
+  next?: number;
   // 0–1 of the way from this level to the next, by whichever of full games
   // or points is further along.
   progress: number;
@@ -73,6 +75,7 @@ function getPlayerLevel(
 
   return {
     name: t(level.name),
+    next: index + 2,
     progress: Math.min(1, Math.max(0, byGames, byPoints)),
   };
 }
@@ -368,8 +371,8 @@ export async function renderProfilePage(
   const levelProgressLine = `
     <div class="profile-level-progress">
       ${
-        playerLevel.progress < 1
-          ? `<span class="profile-level-label">${t("profile.levelNextLabel")}</span>`
+        playerLevel.progress < 1 && playerLevel.next
+          ? `<span class="profile-level-label">${t("profile.levelNextLabel", { level: String(playerLevel.next) })}</span>`
           : ""
       }
       <span class="profile-level-bar" aria-hidden="true">
@@ -844,7 +847,7 @@ export async function renderProfilePage(
       </section>
 
       <footer class="profile-footer">
-        <span>Wizard Platform</span>
+        <span>Foretold</span>
         <span>${t("profile.title")}</span>
       </footer>
 

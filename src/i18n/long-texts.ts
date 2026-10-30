@@ -1,4 +1,12 @@
 import { getLanguage } from "./index";
+import {
+  QUICK_PLAY_FULL_TABLE,
+  QUICK_PLAY_NPCS_AFTER_MS,
+  QUICK_PLAY_TABLE_AFTER_MS,
+} from "../../backend/src/game/wizard/services/quickPlayQueue";
+
+// Quick Play's waits in seconds, for the Glade's help.
+const quickPlaySeconds = (ms: number): number => ms / 1000;
 
 export type HelpPage = "lobby" | "profile" | "room" | "admin";
 
@@ -50,7 +58,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        The hidden knowledge was studied deeply by the Magi of the
+        Thousands of years later, the hidden knowledge was studied deeply by the Magi of the
         city of Babylon. When some of these Magi began to acquire
         great magical power, they fled Babylon and crossed the sea
         to settle in a faraway land to the north.
@@ -82,7 +90,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        The cards are here. And you too can foretell the future.
+        It is FORETOLD. The cards are here. And you too can foretell the future.
       </p>
     </div>
   `,
@@ -127,7 +135,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        Das verborgene Wissen wurde von den Magiern der Stadt
+        Tausende Jahre später wurde das verborgene Wissen von den Magiern der Stadt
         Babylon eingehend studiert. Als einige dieser Magier große
         magische Kräfte erlangten, flohen sie aus Babylon,
         überquerten das Meer und ließen sich in einem fernen Land
@@ -161,7 +169,7 @@ const about = {
       </p>
 
       <p class="home-modal-copy">
-        Die Karten sind hier. Und auch du kannst die Zukunft
+        Es ist FORETOLD. Die Karten sind hier. Und auch du kannst die Zukunft
         vorhersagen.
       </p>
     </div>
@@ -661,12 +669,48 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
+        <h3>Quick Play</h3>
+        <p>
+          Quick Play finds you a table without setting anything up. It is
+          always Classic, short and quick: half the rounds of a full game
+          at Fast speed, with 30 seconds per turn and the official rules.
+          Its games count for your record like any other.
+        </p>
+        <p>
+          It looks for ${QUICK_PLAY_FULL_TABLE} wizards and starts the
+          moment it has them. The longer the wait, the smaller the table
+          it accepts: ${QUICK_PLAY_FULL_TABLE - 1} after
+          ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[5])} seconds,
+          4 after ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[4])} and
+          3 after ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[3])}. After
+          ${quickPlaySeconds(QUICK_PLAY_NPCS_AFTER_MS)} seconds NPCs, a mix
+          of Apprentices and Adepts, fill the empty seats up to
+          ${QUICK_PLAY_FULL_TABLE}, even if you are searching alone.
+        </p>
+        <p>
+          Cancel stops the search, and so does opening or joining a room.
+          Only signed-up wizards can use Quick Play.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Opening a table</h3>
+        <p>
+          For a game your way, there is Create Room: you choose the game,
+          the number of players, the rules, the rounds and the NPCs
+          yourself.
+        </p>
         <p>
           Create Room sets up a new table. A public room is open to
           everyone: any wizard can see it here and join. A private room
           is for your friends only: only they see it in the Glade, and
           only they can join.
+        </p>
+        <p>
+          You also choose the game. Classic is Wizard as printed. In
+          Roles, every wizard chooses a role before the game, like the
+          Thief or the Fisher, and uses its power when they play its
+          card. Each room shows its game in a small tag under its name.
         </p>
         <p>
           A guest room is for bringing friends who have no account yet.
@@ -737,13 +781,52 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
+        <h3>Schnelles Spiel</h3>
+        <p>
+          Schnelles Spiel findet einen Tisch für dich, ohne dass du etwas
+          einstellen musst. Es ist immer Klassisch, kurz und zügig: die
+          Hälfte der Runden einer ganzen Partie bei schnellem Tempo, mit
+          30 Sekunden pro Zug und den offiziellen Regeln. Seine Partien
+          zählen für deine Bilanz wie jede andere.
+        </p>
+        <p>
+          Es sucht ${QUICK_PLAY_FULL_TABLE} Zauberer und beginnt, sobald
+          es sie hat. Je länger die Wartezeit, desto kleiner darf der
+          Tisch sein: ${QUICK_PLAY_FULL_TABLE - 1} nach
+          ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[5])} Sekunden,
+          4 nach ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[4])} und
+          3 nach ${quickPlaySeconds(QUICK_PLAY_TABLE_AFTER_MS[3])}. Nach
+          ${quickPlaySeconds(QUICK_PLAY_NPCS_AFTER_MS)} Sekunden füllen
+          NPCs, Lehrlinge und Adepten gemischt, die freien Plätze bis
+          ${QUICK_PLAY_FULL_TABLE} auf, auch wenn du allein suchst.
+        </p>
+        <p>
+          Abbrechen beendet die Suche, ebenso das Eröffnen eines Raums
+          oder der Beitritt zu einem. Schnelles Spiel steht nur
+          angemeldeten Zauberern offen.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Einen Tisch eröffnen</h3>
+        <p>
+          Für eine Partie nach deinen Wünschen gibt es Raum erstellen:
+          Du wählst das Spiel, die Zahl der Spieler, die Regeln, die
+          Runden und die NPCs selbst.
+        </p>
         <p>
           Mit Raum erstellen richtest du einen neuen Tisch ein. Ein
           öffentlicher Raum steht allen offen: Jeder Zauberer sieht ihn
           hier und kann beitreten. Ein privater Raum ist nur für deinen
           Freundeskreis: Nur deine Freunde sehen ihn auf der Lichtung,
           und nur sie können beitreten.
+        </p>
+        <p>
+          Du wählst auch das Spiel. Klassisch ist Wizard wie gedruckt. Bei
+          Rollen wählt jeder Zauberer vor der Partie eine Rolle, etwa den
+          Dieb oder den Fischer, und nutzt ihre Kraft, wenn er ihre Karte
+          spielt. Jeder Raum zeigt sein Spiel in einem kleinen Schild
+          unter seinem Namen.
         </p>
         <p>
           Ein Gästeraum ist für Freunde, die noch kein Konto haben.
@@ -989,7 +1072,8 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       <section class="home-rules-section">
         <h3>For the host</h3>
         <p>
-          The wizard who created the room sets up the game. NPCs fill the
+          The wizard who created the room sets up the game, starting
+          with which one: Classic or Roles. NPCs fill the
           empty seats, as a game needs 3 to 6 players; alone, you can give
           every seat to an NPC and watch. Choose how well they play, the
           rounds (a full game, or fewer for a short one), the game speed
@@ -1039,7 +1123,8 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       <section class="home-rules-section">
         <h3>Für den Gastgeber</h3>
         <p>
-          Wer den Raum erstellt hat, richtet die Partie ein. NPCs füllen
+          Wer den Raum erstellt hat, richtet die Partie ein, zuerst das
+          Spiel: Klassisch oder Rollen. NPCs füllen
           die freien Plätze, denn eine Partie braucht 3 bis 6 Spieler;
           allein kannst du jeden Platz einem NPC geben und zuschauen.
           Wähle, wie gut sie spielen, die Runden (eine ganze Partie oder
