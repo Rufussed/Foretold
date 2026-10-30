@@ -34,6 +34,7 @@ const BID_VALUE: Record<RoleId, number> = {
   // No card either; its boost is in every trick it plays (master/greenWizard.ts).
   greenWizard: 0,
   yellowWizard: 0,
+  redWizard: 0,
 };
 
 const isRoles = (game: WizardGameState): boolean =>

@@ -19,6 +19,9 @@ export interface TrickRoles {
   // Whether this card was played by a Yellow Wizard, whose yellow card above
   // the lead card makes yellow the lead suit.
   isYellowWizard?(play: TrickPlay): boolean;
+  // Whether this card was played by a Red Wizard, whose red card on a red
+  // lead means no trumps count in that trick.
+  isRedWizard?(play: TrickPlay): boolean;
 }
 
 export class WizardRules {
@@ -151,6 +154,8 @@ export class WizardRules {
 
     //Handles if Wizard is play first, there is no Suit
     const leadSuit = this.getLeadSuit(playedCards, trumpSuit, roles);
+    // A Red Wizard's red card on a red lead: the trick has no trumps.
+    const trump = this.redShield(playedCards, trumpSuit, roles) ? null : trumpSuit;
 
     // Handle Wizards before ordinary card comparison, since which of several
     // Wizards wins is a game option rather than a card comparison.
@@ -174,7 +179,7 @@ export class WizardRules {
         this.compareCards(
           currentPlay.card,
           winningPlay.card,
-          trumpSuit,
+          trump,
           leadSuit,
           roles?.boostOf?.(currentPlay) ?? 0,
           roles?.boostOf?.(winningPlay) ?? 0,
@@ -188,6 +193,19 @@ export class WizardRules {
   }
 
   //Added here to establish if First to Draw plays a Wizard, no LEad card, if plays Jester, it passes to the next player to lead.
+  // Whether a Red Wizard has played a red card on a red lead (after any
+  // Yellow Wizard's switch): then no trumps count in this trick, for anyone.
+  redShield(playedCards: TrickPlay[], trumpSuit: Suit | null, roles?: TrickRoles): boolean {
+    const isRedWizard = roles?.isRedWizard;
+    if (!isRedWizard || this.getLeadSuit(playedCards, trumpSuit, roles) !== "Red") {
+      return false;
+    }
+
+    return playedCards.some(
+      (play) => play.card.suit === "Red" && !isWizard(play.card) && !isJester(play.card) && isRedWizard(play),
+    );
+  }
+
   // A Yellow Wizard with no card of the lead suit who plays a yellow card
   // above the lead card makes yellow the lead suit for the rest of the trick,
   // unless yellow is trumps or already led.

@@ -12,6 +12,7 @@ import { blueLead, blueTrickChance } from "./master/blueWizardSense.js";
 import { colourWizardWin } from "./master/colourWizardSense.js";
 import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 import { greenStrength } from "./master/greenWizardSense.js";
+import { redLead } from "./master/redWizardSense.js";
 
 const rules = new WizardRules();
 
@@ -76,7 +77,10 @@ export const adept: BotStrategy = {
 
     // A colour Wizard takes a trick with their colour's Wizard for its bonus,
     // and a Blue Wizard leads by what it knows of the blue cards.
-    const colourPlay = colourWizardWin(game, winners, wantsTricks) ?? blueLead(game, legal, wantsTricks);
+    const colourPlay =
+      colourWizardWin(game, winners, wantsTricks) ??
+      blueLead(game, legal, wantsTricks) ??
+      redLead(game, legal, wantsTricks);
     if (colourPlay) return colourPlay.index;
 
     // Leading: its best card to take the trick, or its lowest to give it

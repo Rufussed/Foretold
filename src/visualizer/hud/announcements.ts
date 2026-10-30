@@ -67,6 +67,8 @@ export function followSuitMessage(state: PublicWizardGameState): string {
 const rules = new WizardRules();
 const leadSuitOf = (state: PublicWizardGameState) =>
   rules.getLeadSuit(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
+const redShieldOf = (state: PublicWizardGameState) =>
+  rules.redShield(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
 
 // The player the standing line is about, whose colour its border takes: whoever's
 // move it is. Null when it isn't about one player.
@@ -236,6 +238,16 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     const by = switcher.playedBy ?? switcher.username;
     messages.push({
       text: by === local ? t("ann.youTurnLead") : t("ann.turnsLead", { name: announcedName(by) }),
+      username: by,
+    });
+  }
+
+  // A Roles Red Wizard's red card on a red lead: no trumps in this trick.
+  const shieldedBy = next.currentTrick.playedCards.at(-1);
+  if (sameTrick && shieldedBy && !redShieldOf(previous) && redShieldOf(next)) {
+    const by = shieldedBy.playedBy ?? shieldedBy.username;
+    messages.push({
+      text: by === local ? t("ann.youRedShield") : t("ann.redShield", { name: announcedName(by) }),
       username: by,
     });
   }

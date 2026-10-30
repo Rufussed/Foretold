@@ -41,6 +41,8 @@ export function trades(
   }
 
   const leadSuit = rules.getLeadSuit(playedCards, trumpSuit, roles);
+  // A Red Wizard's red card on a red lead: no trumps in this trick.
+  const trump = rules.redShield(playedCards, trumpSuit, roles) ? null : trumpSuit;
 
   return playedCards.flatMap((played) => {
     if (played === own || !canBeTaken(played)) {
@@ -51,7 +53,7 @@ export function trades(
     const compared = rules.compareCards(
       own.card,
       played.card,
-      trumpSuit,
+      trump,
       leadSuit,
       roles?.boostOf?.(own) ?? 0,
       roles?.boostOf?.(played) ?? 0,
