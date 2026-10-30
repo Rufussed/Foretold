@@ -6,10 +6,11 @@ import { WizardRules } from "../services/wizardRules.js";
 import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
-import { crowdFactor, strength, trickChance } from "./handStrength.js";
+import { crowdFactor, trickChance } from "./handStrength.js";
 import { sabotagePick } from "../modes/sabotage/bots/index.js";
 import { blueLead, blueTrickChance, blueWizardWin } from "./blueWizardSense.js";
 import { greenBoostIn } from "../modes/roles/greenWizard.js";
+import { greenStrength, greenWizardWin } from "./greenWizardSense.js";
 
 const rules = new WizardRules();
 
@@ -52,7 +53,7 @@ export const adept: BotStrategy = {
     }
 
     const byStrength = (a: { card: Card }, b: { card: Card }) =>
-      strength(a.card, trumpSuit) - strength(b.card, trumpSuit);
+      greenStrength(game, a.card) - greenStrength(game, b.card);
     const weakest = (plays: typeof legal) => [...plays].sort(byStrength)[0]!;
     const strongest = (plays: typeof legal) => [...plays].sort(byStrength).at(-1)!;
 
@@ -72,9 +73,12 @@ export const adept: BotStrategy = {
 
     if (sabotagePlay) return sabotagePlay.index;
 
-    // A Blue Wizard takes a trick with the blue Wizard for its bonus, and
-    // leads by what it knows of the blue cards.
-    const bluePlay = blueWizardWin(game, winners, wantsTricks) ?? blueLead(game, legal, wantsTricks);
+    // A Blue or Green Wizard takes a trick with their colour's Wizard for its
+    // bonus, and a Blue Wizard leads by what it knows of the blue cards.
+    const bluePlay =
+      blueWizardWin(game, winners, wantsTricks) ??
+      greenWizardWin(game, winners, wantsTricks) ??
+      blueLead(game, legal, wantsTricks);
     if (bluePlay) return bluePlay.index;
 
     // Leading: its best card to take the trick, or its lowest to give it
