@@ -42,6 +42,8 @@ export interface TableDirectorOptions {
   announceTrump(state: PublicWizardGameState): void;
   // The finished trick's gather and tesseract; done once it has gone.
   playTrickReward(done: () => void): void;
+  // The cards a Thief swapped trade places; done once they have.
+  playThiefSwap(done: () => void): void;
 }
 
 // A step that never reports back (a hidden tab pauses animation) mustn't stall
@@ -53,6 +55,35 @@ const STEP_TIMEOUT_MS = 30000;
 const onlyDeadlineChanged = (previous: PublicWizardGameState, next: PublicWizardGameState) =>
   JSON.stringify({ ...previous, turnDeadlineAt: null }) ===
   JSON.stringify({ ...next, turnDeadlineAt: null });
+
+// The same move as before, but for the player a Thief's winner has chosen so
+// far: the camera is on that player and must not be turned back.
+const onlyThiefTargetChanged = (previous: PublicWizardGameState, next: PublicWizardGameState) => {
+  const before = previous.currentTrick.power;
+  const after = next.currentTrick.power;
+  if (before?.kind !== "thief" || after?.kind !== "thief" || before.resolved || after.resolved) return false;
+  const bare = (state: PublicWizardGameState) =>
+    JSON.stringify({
+      ...state,
+      turnDeadlineAt: null,
+      currentTrick: { ...state.currentTrick, power: { ...state.currentTrick.power, target: null } },
+    });
+  return bare(previous) === bare(next);
+};
+
+// A Thief's swap has happened: both cards are in their new hands.
+const thiefSwapped = (state: PublicWizardGameState | null) => {
+  const power = state?.currentTrick.power;
+  return power?.kind === "thief" && power.resolved && power.targetIndex != null;
+};
+
+// Only the cards in hand differ: a test shortcut swapped one, so the table
+// just shows it, with no turn to replay.
+const onlyHandsChanged = (previous: PublicWizardGameState, next: PublicWizardGameState) => {
+  const bare = (state: PublicWizardGameState) =>
+    JSON.stringify({ ...state, turnDeadlineAt: null, players: state.players.map((p) => ({ ...p, hand: null })) });
+  return bare(previous) === bare(next) && JSON.stringify(previous.players) !== JSON.stringify(next.players);
+};
 
 const trickComplete = (state: PublicWizardGameState) =>
   !!state.currentTrick.winnerUsername && state.currentTrick.playedCards.length === state.players.length;
@@ -141,6 +172,23 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       return;
     }
 
+    if (previous && onlyHandsChanged(previous, next)) {
+      table = next;
+      hud = next;
+      options.applyTable();
+      options.applyHud();
+      return;
+    }
+
+    // The winner has picked a player: the target is told, the camera stays.
+    if (previous && onlyThiefTargetChanged(previous, next)) {
+      table = next;
+      hud = next;
+      options.applyTable();
+      options.applyHud();
+      return;
+    }
+
     hideTurn();
     options.stopBlindTour?.();
 
@@ -190,6 +238,17 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       return;
     }
 
+    // A Thief's cards trade places, while the swap is announced; the camera
+    // comes back to the middle once they have.
+    if (thiefSwapped(next) && !thiefSwapped(previous)) {
+      showTable(next);
+      showHud(next);
+      await step((done) => options.playThiefSwap(done));
+      await announcer();
+      await announceTurn(next);
+      return;
+    }
+
     const played = next.currentTrick.playedCards.length > previous.currentTrick.playedCards.length;
     const playedBy = played ? next.currentTrick.playedCards.at(-1)?.username : undefined;
     showTable(next);
@@ -233,6 +292,20 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       // Once the game is over nothing more is played out.
       const last = queue.at(-1) ?? table;
       if (last?.phase === "finished") return;
+      // A test shortcut changed a card in hand: show it now, whatever the table
+      // is busy with, by putting the new hands into every state still to be shown.
+      if (last && onlyHandsChanged(last, state)) {
+        for (const shown of [table, hud, ...queue]) {
+          if (!shown) continue;
+          for (const player of shown.players) {
+            const changed = state.players.find((other) => other.username === player.username);
+            if (changed) player.hand = changed.hand;
+          }
+        }
+        options.applyTable();
+        options.applyHud();
+        return;
+      }
       queue.push(state);
       void run();
     },

@@ -8,7 +8,8 @@ import {
   normalizeGameOptions,
   type WizardGameOptions,
 } from "../gameOptions.js";
-import { isJester, isWizard, powerOf } from "../models/card.js";
+import type { CardValue } from "../models/card.js";
+import { SEER_VALUE, THIEF_VALUE, TRICKSTER_VALUE, isJester, isWizard, powerOf } from "../models/card.js";
 import { GAMEPLAY_RULES } from "../gameplayRulesConfig.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
@@ -315,7 +316,11 @@ export class WizardGameService {
     )?.card;
     const kind = winningCard ? powerOf(winningCard) : null;
 
-    if (kind && GAMEPLAY_RULES.cardPowersEnabled) {
+    // The last trick of a round leaves nothing to swap, so the Thief does
+    // nothing then.
+    const nothingToSteal = kind === "thief" && winner.hand.length === 0;
+
+    if (kind && GAMEPLAY_RULES.cardPowersEnabled && !nothingToSteal) {
       game.currentTrick.power = {
         kind,
         username: winnerUsername,
@@ -323,6 +328,8 @@ export class WizardGameService {
         target: null,
         from: null,
         to: null,
+        ownIndex: null,
+        targetIndex: null,
       };
     }
 
@@ -373,6 +380,10 @@ export class WizardGameService {
   ): void {
     const power = this.pendingPowerOf(game, username);
 
+    if (power.kind === "thief") {
+      throw new Error("The Thief takes a card, not a prediction");
+    }
+
     if (!Number.isInteger(choice.prediction)) {
       throw new Error("Prediction must be a whole number");
     }
@@ -413,9 +424,99 @@ export class WizardGameService {
     game.phase = "playing";
   }
 
+  // Test shortcut (WIZARD_DEV_TOOLS only): puts the card of this value (a Thief,
+  // Trickster or Seer) in the trump suit into this player's hand, in place of
+  // the card at `index`. Cards stay unique: if someone else holds that card, the
+  // two cards trade places.
+  devGiveCard(game: WizardGameState, username: string, value: CardValue, index = 0): void {
+    const me = game.players.find((player) => player.username === username);
+
+    const replaced = me?.hand[index];
+
+    if (!me || !replaced) {
+      throw new Error("You have no card there");
+    }
+
+    // A Fool or Wizard keeps the suit of the card it replaces, which decides
+    // whose art it shows; the powers take the trump suit.
+    const suit = value === 0 || value === 14 ? replaced.suit : game.trumpSuit ?? replaced.suit;
+    const holder = game.players.find((player) =>
+      player.hand.some((held) => held.suit === suit && held.value === value),
+    );
+
+    if (holder) {
+      const at = holder.hand.findIndex((held) => held.suit === suit && held.value === value);
+      holder.hand[at] = replaced;
+    }
+
+    me.hand[index] = { suit, value };
+  }
+
+  // The Thief's first step: the player whose hand will be robbed. Chosen again
+  // if the winner changes their mind before taking a card.
+  chooseThiefTarget(game: WizardGameState, username: string, targetName: string): void {
+    const power = this.pendingPowerOf(game, username);
+
+    if (power.kind !== "thief") {
+      throw new Error("Only the Thief takes a card");
+    }
+
+    const target = game.players.find((player) => player.username === targetName);
+
+    if (!target || target.username === username) {
+      throw new Error("Choose another player");
+    }
+
+    if (target.hand.length === 0) {
+      throw new Error("That player has no cards to take");
+    }
+
+    power.target = target.username;
+  }
+
+  // The Thief's second step: one of the winner's cards for one of the target's,
+  // swapped where they stand. The winner picks the target's card unseen.
+  stealCard(
+    game: WizardGameState,
+    username: string,
+    choice: { ownIndex: number; targetIndex: number },
+  ): void {
+    const power = this.pendingPowerOf(game, username);
+
+    if (power.kind !== "thief") {
+      throw new Error("Only the Thief takes a card");
+    }
+
+    const winner = game.players.find((player) => player.username === username);
+    const target = game.players.find((player) => player.username === power.target);
+
+    if (!winner || !target) {
+      throw new Error("Choose a player to take from");
+    }
+
+    const { ownIndex, targetIndex } = choice;
+    const ownCard = winner.hand[ownIndex];
+    const targetCard = target.hand[targetIndex];
+
+    if (!Number.isInteger(ownIndex) || !Number.isInteger(targetIndex) || !ownCard || !targetCard) {
+      throw new Error("Choose a card from each hand");
+    }
+
+    winner.hand[ownIndex] = targetCard;
+    target.hand[targetIndex] = ownCard;
+    power.ownIndex = ownIndex;
+    power.targetIndex = targetIndex;
+    power.resolved = true;
+    game.phase = "playing";
+  }
+
   // The winner left it alone, or ran out of time.
   skipPower(game: WizardGameState, username: string): void {
     const power = this.pendingPowerOf(game, username);
+
+    if (power.kind === "thief") {
+      power.target = null;
+    }
 
     power.resolved = true;
     game.phase = "playing";

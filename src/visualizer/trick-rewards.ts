@@ -116,7 +116,7 @@ export function createTrickRewards(
     update(deltaSeconds) {
       // The gather-and-fly sequence, at the game's pace: the director waits on
       // the same durations, so the two must scale together.
-      const gather = paced(TRICK_REWARD.gatherSeconds);
+      const gatherFull = paced(TRICK_REWARD.gatherSeconds);
       const grow = paced(TRICK_REWARD.growSeconds);
       const float = paced(TRICK_REWARD.floatSeconds);
       const swell = paced(TRICK_REWARD.swellSeconds);
@@ -128,6 +128,8 @@ export function createTrickRewards(
         const reward = rewards[index];
         reward.elapsed += deltaSeconds;
         const t = reward.elapsed;
+        // A tesseract sent with no cards to gather starts at once.
+        const gather = reward.plan.cards.length ? gatherFull : 0;
         const point = toLocal(reward.plan.point);
 
         // The cards shrink into the point.

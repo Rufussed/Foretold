@@ -50,10 +50,10 @@ export function elementIcon(
   return loadIcon(`${element}:${tint ?? ""}`, `icons/${element}.webp`, tint);
 }
 
-// The symbols of the four cards outside the plain ranks: the Fool, the Seer,
-// the Trickster and the Wizard. Drawn white in the art, so they take the
+// The symbols of the five cards outside the plain ranks: the Fool, the Seer,
+// the Thief, the Trickster and the Wizard. Drawn white in the art, so they take the
 // special colour here, the same yellow as their titles.
-export type PowerSymbol = "fool" | "seer" | "trickster" | "wizard";
+export type PowerSymbol = "fool" | "seer" | "thief" | "trickster" | "wizard";
 
 // The fifth element, spirit: a circle with a cross, left white.
 export const spiritIcon = (): Promise<HTMLImageElement | HTMLCanvasElement> =>

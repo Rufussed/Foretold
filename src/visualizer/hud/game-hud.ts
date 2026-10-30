@@ -18,7 +18,8 @@ export interface GameHudOptions extends AnnouncerOptions {
   onPredictionChanged?(byOther: boolean): void;
   // The same moment, for the burst on that player: red if an opponent's
   // Trickster changed it, gold if the player's own Seer did.
-  onPredictionEffect?(username: string, byOther: boolean): void;
+  // `source` is whose Trickster it was.
+  onPredictionEffect?(username: string, byOther: boolean, source?: string): void;
 }
 
 export interface GameHud extends HudPart {
@@ -45,9 +46,9 @@ export function createGameHud(
   // After the panel, so a round's scores are held back before it redraws.
   const announcer = createAnnouncer(root, game, statusPanel, {
     ...options,
-    onPredictionChange: (username, byOther) => {
+    onPredictionChange: (username, byOther, source) => {
       playerList.revealPrediction(username, byOther);
-      options.onPredictionEffect?.(username, byOther);
+      options.onPredictionEffect?.(username, byOther, source);
     },
   });
   const playerList = createPlayerList(root, game, options);

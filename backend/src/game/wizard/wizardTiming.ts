@@ -30,6 +30,10 @@ export const WIZARD_TIMING = {
   // so the table can show and announce what it did.
   afterPowerHoldMs: 2000,
 
+  // The same after a Thief's swap, which the table plays out in full: the two
+  // cards crossing, then the target's fan settling back.
+  afterThiefHoldMs: 4000,
+
   // After any move is broadcast, before the runner looks at the game again: a
   // beat for the table to show what just happened rather than the next move
   // landing on top of it.

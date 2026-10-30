@@ -37,28 +37,28 @@ function lastTrick(plays: [Card, Card, Card]): WizardGameState {
 
 describe("Seer and Trickster powers", () => {
   it("starts a power when a trick is won with a Seer, and not with other cards", () => {
-    const seer = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const seer = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(seer);
     expect(seer.currentTrick.power).toMatchObject({ kind: "seer", username: "alice", resolved: false });
 
-    const trickster = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const trickster = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(trickster);
     expect(trickster.currentTrick.power).toMatchObject({ kind: "trickster", username: "bob" });
 
-    const plain = lastTrick([card("Red", 9), card("Red", 3), card("Red", 2)]);
+    const plain = lastTrick([card("Red", 7), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(plain);
     expect(plain.currentTrick.power).toBeUndefined();
   });
 
   it("gives no power when the Seer loses the trick", () => {
-    const game = lastTrick([card("Red", 8), card("Red", 12), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 12), card("Red", 2)]);
     service.resolveTrick(game);
     expect(game.currentTrick.winnerUsername).toBe("bob");
     expect(game.currentTrick.power).toBeUndefined();
   });
 
   it("holds the trick until the power is used", () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(game);
 
     expect(service.hasPendingPower(game)).toBe(true);
@@ -69,7 +69,7 @@ describe("Seer and Trickster powers", () => {
   });
 
   it("lets a Seer change its owner's prediction by one", () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(game);
     service.beginPower(game);
 
@@ -82,7 +82,7 @@ describe("Seer and Trickster powers", () => {
   });
 
   it("changes nothing, and names no target, when the number stays", () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(game);
     service.beginPower(game);
 
@@ -93,7 +93,7 @@ describe("Seer and Trickster powers", () => {
   });
 
   it("lets a Trickster change an opponent's prediction, never its owner's", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game);
     service.beginPower(game);
 
@@ -107,7 +107,7 @@ describe("Seer and Trickster powers", () => {
   });
 
   it("keeps the new prediction within one step and within the round", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game);
     service.beginPower(game);
 
@@ -121,7 +121,7 @@ describe("Seer and Trickster powers", () => {
   });
 
   it("only lets the winner use the power, and only while it is waiting", () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(game);
 
     // Not yet begun.
@@ -136,7 +136,7 @@ describe("Seer and Trickster powers", () => {
   });
 
   it("scores the round on the changed prediction", () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     game.players[0]!.tricksWon = 1;
     service.resolveTrick(game); // alice now has 2 tricks, predicted 1
     service.beginPower(game);
@@ -150,7 +150,7 @@ describe("Seer and Trickster powers", () => {
 
 describe("bots using the powers", () => {
   const seerGame = () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(game);
     return game;
   };
@@ -177,7 +177,7 @@ describe("bots using the powers", () => {
   });
 
   it("has an adept Trickster push a player off a number they could still reach", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game);
     // carol has won her 2 and predicted 2 with no tricks left: +1 or -1 both miss.
     game.players[2]!.prediction = 2;
@@ -193,7 +193,7 @@ describe("bots using the powers", () => {
   });
 
   it("has an apprentice leave the Trickster alone", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game);
 
     expect(apprentice.choosePower(game).target).toBeNull();
@@ -202,7 +202,7 @@ describe("bots using the powers", () => {
 
 describe("the Adept's reasoning about powers", () => {
   const seerGame = () => {
-    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    const game = lastTrick([card("Red", 10), card("Red", 3), card("Red", 2)]);
     service.resolveTrick(game);
     return game;
   };
@@ -244,7 +244,7 @@ describe("the Adept's reasoning about powers", () => {
   });
 
   it("has a Trickster knock a hit off its number, the leader first", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game); // bob wins with the Trickster
     const [alice, , carol] = game.players;
     for (const player of game.players) player.hand = [];
@@ -257,7 +257,7 @@ describe("the Adept's reasoning about powers", () => {
   });
 
   it("has a Trickster pick whoever stands to lose most when nobody leads", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game);
     const [alice, , carol] = game.players;
     for (const player of game.players) player.hand = [];
@@ -268,7 +268,7 @@ describe("the Adept's reasoning about powers", () => {
   });
 
   it("never helps a player: the nudge always lowers their expected score", () => {
-    const game = lastTrick([card("Blue", 2), card("Blue", 7), card("Blue", 1)]);
+    const game = lastTrick([card("Blue", 2), card("Blue", 9), card("Blue", 1)]);
     service.resolveTrick(game);
     for (const player of game.players) player.hand = [];
     game.players[0]!.prediction = 1; game.players[0]!.tricksWon = 3; // already off
@@ -291,11 +291,59 @@ describe("the Adept's reasoning about powers", () => {
       { username: "Morgana NPC", card: card("Red", 2) },
     ];
     const merlin = game.players[1]!;
-    merlin.hand = [card("Red", 5), card("Red", 8)]; // both would win; 8 is the Seer
+    merlin.hand = [card("Red", 5), card("Red", 10)]; // both would win; 10 is the Seer
     merlin.prediction = 1;
     merlin.tricksWon = 1; // already has what it asked for
 
     const index = adept.chooseCardIndex(game);
-    expect(merlin.hand[index]).toEqual(card("Red", 8));
+    expect(merlin.hand[index]).toEqual(card("Red", 10));
+  });
+});
+
+describe("Thief", () => {
+  // alice wins with the Thief while every player still holds cards.
+  function thiefGame(): WizardGameState {
+    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    game.players[0]!.hand = [card("Blue", 1), card("Blue", 2)];
+    game.players[1]!.hand = [card("Green", 5), card("Green", 6)];
+    game.players[2]!.hand = [card("Yellow", 7), card("Yellow", 9)];
+    service.resolveTrick(game);
+    service.beginPower(game);
+    return game;
+  }
+
+  it("does nothing on the last trick of a round", () => {
+    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    service.resolveTrick(game);
+    expect(game.currentTrick.power).toBeUndefined();
+  });
+
+  it("swaps one card of the winner's for one of the target's, where they stand", () => {
+    const game = thiefGame();
+    service.chooseThiefTarget(game, "alice", "bob");
+    expect(game.currentTrick.power?.target).toBe("bob");
+
+    service.stealCard(game, "alice", { ownIndex: 0, targetIndex: 1 });
+    expect(game.players[0]!.hand).toEqual([card("Green", 6), card("Blue", 2)]);
+    expect(game.players[1]!.hand).toEqual([card("Green", 5), card("Blue", 1)]);
+    expect(game.currentTrick.power).toMatchObject({ resolved: true, ownIndex: 0, targetIndex: 1 });
+    expect(game.phase).toBe("playing");
+  });
+
+  it("refuses yourself, a bad index, and anyone else's turn", () => {
+    const game = thiefGame();
+    expect(() => service.chooseThiefTarget(game, "alice", "alice")).toThrow();
+    expect(() => service.chooseThiefTarget(game, "bob", "carol")).toThrow();
+    service.chooseThiefTarget(game, "alice", "carol");
+    expect(() => service.stealCard(game, "alice", { ownIndex: 5, targetIndex: 0 })).toThrow();
+    expect(() => service.usePower(game, "alice", { prediction: 1 })).toThrow();
+  });
+
+  it("can be declined, forgetting the target", () => {
+    const game = thiefGame();
+    service.chooseThiefTarget(game, "alice", "bob");
+    service.skipPower(game, "alice");
+    expect(game.currentTrick.power).toMatchObject({ resolved: true, target: null });
+    expect(game.players[0]!.hand).toEqual([card("Blue", 1), card("Blue", 2)]);
   });
 });

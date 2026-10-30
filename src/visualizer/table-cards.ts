@@ -60,10 +60,24 @@ export interface TableCards {
   // Hides the trump card until a different trump is set or a deal begins.
   suppressTrump(): void;
 
+  // Hides these hand cards, while they stay counted in the fan, until each is
+  // released: a card taken by a Thief arrives by flight, not by appearing.
+  // Unlike a deal's hold, the hand keeps turning with the camera meanwhile.
+  holdForSwap(keys: readonly string[]): void;
+  releaseSwapped(key: string): void;
+  // Where a hand card is, in environment space; null if it isn't showing.
+  placementOf(key: string): Placement | null;
+  // The slots a hand of `count` cards would sit on, riding with the camera as
+  // your hand does.
+  frameSlots(count: number): Placement[];
+
   // The hand card under a ray, if any.
   cardAt(raycaster: THREE.Raycaster): string | null;
   setHovered(key: string | null): void;
+  // The hand card the pointer is on, else the one raised to be read.
+  selectedKey(): string | null;
   toggleRaised(key: string): void;
+  setRaised(key: string, raised: boolean): void;
   positionOf(key: string): THREE.Vector3 | null;
   startDrag(key: string): void;
   dragTo(key: string, world: THREE.Vector3): void;
@@ -280,7 +294,9 @@ export function createTableCards(
   // The trick as last set, so a card flies from the hand only once.
   let trickOrderShown = new Set<string>();
 
-  const visibleHand = () => handOrder.filter((key) => key !== pending?.key && !held.has(key));
+  let swapHeld = new Set<string>();
+  const visibleHand = () =>
+    handOrder.filter((key) => key !== pending?.key && !held.has(key) && !swapHeld.has(key));
 
   // A hand card's slot: centred for the whole hand, cards still being dealt
   // included, so each lands where it stays and nothing shifts mid-deal.
@@ -525,6 +541,37 @@ export function createTableCards(
       entry.object.visible = true;
     },
 
+    holdForSwap(keys) {
+      swapHeld = new Set(keys);
+    },
+
+    releaseSwapped(key) {
+      if (!swapHeld.delete(key)) return;
+      const entry = cards.get(key);
+      const slot = handSlotFor(key);
+      if (!entry || !slot) return;
+      applyPlacement(entry.object, slot);
+      entry.placed = true;
+      entry.object.visible = true;
+    },
+
+    placementOf(key) {
+      const object = cards.get(key)?.object;
+      if (!object?.visible) return null;
+      return { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone() };
+    },
+
+    frameSlots(count) {
+      return centredSlots(handSlots, count).map((slot) => {
+        if (handYaw === 0) return { position: slot.position.clone(), quaternion: slot.quaternion.clone(), scale: slot.scale.clone() };
+        return {
+          position: turnAbout(slot.position.clone(), handYaw),
+          quaternion: new THREE.Quaternion().setFromAxisAngle(up, handYaw).multiply(slot.quaternion),
+          scale: slot.scale.clone(),
+        };
+      });
+    },
+
     holdTrump(isHeld) {
       trumpHeld = isHeld;
       if (isHeld) trumpSuppressed = false;
@@ -581,6 +628,19 @@ export function createTableCards(
       // One card is read at a time.
       for (const other of cards.values()) other.raised = false;
       entry.raised = raise;
+    },
+
+    selectedKey() {
+      const shown = visibleHand();
+      if (hovered && shown.includes(hovered)) return hovered;
+      return shown.find((key) => cards.get(key)?.raised) ?? null;
+    },
+
+    setRaised(key, raised) {
+      const entry = cards.get(key);
+      if (!entry) return;
+      for (const other of cards.values()) other.raised = false;
+      entry.raised = raised;
     },
 
     positionOf(key) {

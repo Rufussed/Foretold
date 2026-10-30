@@ -47,8 +47,8 @@ export interface PlayedCard {
   card: Card;
 }
 
-// What winning a trick with a Seer or a Trickster did. It starts unresolved,
-// while the winner decides; resolving it fills in the rest.
+// What winning a trick with a Seer, a Trickster or a Thief did. It starts
+// unresolved, while the winner decides; resolving it fills in the rest.
 export interface TrickPower {
   kind: CardPower;
   // Who won the trick with the card, and so who uses the power.
@@ -59,12 +59,18 @@ export interface TrickPower {
   target: string | null;
   from: number | null;
   to: number | null;
+  // The Thief's swap: the winner picks a player first (target is set then, so
+  // that player can be told), then a card of their own and one of the target's.
+  // These are the hand positions that traded places, null until it happens.
+  // Cards themselves are never recorded here: everyone sees this.
+  ownIndex?: number | null;
+  targetIndex?: number | null;
 }
 
 export interface TrickState {
   playedCards: PlayedCard[];
   winnerUsername: string | null;
-  // Set when the winning card was a Seer or a Trickster.
+  // Set when the winning card was a Seer, a Trickster or a Thief.
   power?: TrickPower;
 }
 

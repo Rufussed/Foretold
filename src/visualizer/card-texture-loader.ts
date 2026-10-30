@@ -3,6 +3,7 @@ import type { Card } from "../../backend/src/game/wizard/models/card";
 import { cardFile } from "./card-art-files";
 import { elementIcon, powerSymbol, type PowerSymbol } from "./card-icons";
 import { sharpenImage } from "./card-sharpen";
+import { embossPrint } from "./card-emboss";
 import { wearCard } from "./card-wear";
 import { prepareCardBack, type FacePrint } from "./card-back";
 import { cardElement, cardFontReady, cardLabel, drawCardPrint, isSpecialCard } from "./card-label";
@@ -49,23 +50,27 @@ async function cardPrint(card: Card): Promise<FacePrint> {
   const badgeGap = symbolName === "trickster" ? CARDS.tricksterBadgeGap : CARDS.badgeGap;
   const badgeScale = (symbolName && CARDS.symbolScales[symbolName]) || 1;
   const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card) };
-  return (context, width, height) => drawCardPrint(context, width, height, print);
+  if (!CARDS.embossEnabled) return (context, width, height) => drawCardPrint(context, width, height, print);
+  return (context, width, height) =>
+    embossPrint(context, width, height, (target, pass) => drawCardPrint(target, width, height, print, pass));
 }
 
 // The symbol a card carries, if it is one of the four that have one: the Fool
-// and the Wizard, and the Seer and the Trickster among the ranks.
+// and the Wizard, and the Seer, the Thief and the Trickster among the ranks.
 function cardSymbol(card: Card): PowerSymbol | undefined {
   if (card.value === 0) return "fool";
   if (card.value === 14) return "wizard";
-  const power = powerOf(card);
-  return power ?? undefined;
+  return powerOf(card) ?? undefined;
 }
 
 // The card's title, in the language being played: its rank in the hierarchy,
-// or Fool and Wizard for the two outside it.
+// or Fool and Wizard for the two outside it. Earth's and air's Wizards are
+// women, so those two are the Sorceress; fire's and water's the Sorcerer.
+const SORCERESSES = ["earth", "air"];
+
 function cardTitle(card: Card): string {
   if (card.value === 0) return t("card.jester");
-  if (card.value === 14) return t("card.wizard");
+  if (card.value === 14) return t(SORCERESSES.includes(cardElement(card)) ? "card.sorceress" : "card.sorcerer");
   return t(`rank.${card.value}` as MessageKey);
 }
 

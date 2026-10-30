@@ -29,16 +29,18 @@ export interface Card {
   suit: Suit;
 }
 
-// Two of the thirteen ranks carry a power, which fires when a trick is won with
+// Three of the thirteen ranks carry a power, which fires when a trick is won with
 // that card (see cardPowers.ts). They follow suit and rank like any other card.
-export const TRICKSTER_VALUE = 7;
-export const SEER_VALUE = 8;
+export const THIEF_VALUE = 8;
+export const TRICKSTER_VALUE = 9;
+export const SEER_VALUE = 10;
 
-export type CardPower = "seer" | "trickster";
+export type CardPower = "seer" | "trickster" | "thief";
 
 export function powerOf(card: Card): CardPower | null {
   if (card.value === SEER_VALUE) return "seer";
   if (card.value === TRICKSTER_VALUE) return "trickster";
+  if (card.value === THIEF_VALUE) return "thief";
   return null;
 }
 

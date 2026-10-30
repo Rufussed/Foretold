@@ -19,6 +19,9 @@ import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/backg
 import { EMOTES } from "../visualizer/config";
 import { createGuestSignupPrompt, type GuestSignupPrompt } from "../visualizer/guest-signup-prompt";
 import { createHudScale } from "../visualizer/hud-scale";
+import { createThiefPrompt, type ThiefPrompt } from "../visualizer/thief-prompt";
+import { createDevThiefKey, type DevThiefKey } from "../visualizer/dev-thief-key";
+import { createSuitViewer, type SuitViewer } from "../visualizer/suit-viewer";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -103,6 +106,9 @@ export async function renderVisualizerPage(
   let fullscreenToggle: FullscreenToggle | null = null;
   let iphonePrompts: { dispose(): void } | null = null;
   let hudScale: { dispose(): void } | null = null;
+  let suitViewer: SuitViewer | null = null;
+  let thiefPrompt: ThiefPrompt | null = null;
+  let devThiefKey: DevThiefKey | null = null;
   let guestPrompt: GuestSignupPrompt | null = null;
   let hourglass: TurnHourglass | null = null;
   let hourglassTurns: HourglassTurns | null = null;
@@ -119,6 +125,9 @@ export async function renderVisualizerPage(
     fullscreenToggle?.dispose();
     iphonePrompts?.dispose();
     hudScale?.dispose();
+    suitViewer?.dispose();
+    thiefPrompt?.dispose();
+    devThiefKey?.dispose();
     victoryTimers.forEach((timer) => window.clearTimeout(timer));
     guestPrompt?.dispose();
     music?.dispose();
@@ -182,6 +191,7 @@ export async function renderVisualizerPage(
     fullscreenToggle = createFullscreenToggle(toolbar, pageEl);
     iphonePrompts = createIPhoneAppPrompts(pageEl);
     hudScale = createHudScale(pageEl);
+    if (import.meta.env.DEV) suitViewer = createSuitViewer(pageEl);
     if (isGuestGame) guestPrompt = createGuestSignupPrompt(pageEl, getGuestUsername() ?? "");
   }
 
@@ -333,6 +343,7 @@ export async function renderVisualizerPage(
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
       powerPrompt?.applyState();
+      thiefPrompt?.applyState();
       gameHud?.applyState();
       hourglassTurns?.applyState();
       timeoutNotice?.applyState();
@@ -355,6 +366,10 @@ export async function renderVisualizerPage(
     stopBlindTour: () => blindTour.stop(),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
     announceTrump: (state) => gameHud?.announceTrump(state),
+    playThiefSwap: (done) => {
+      if (cardTable) cardTable.playThiefSwap(done);
+      else done();
+    },
     playTrickReward: (done) => {
       // The NPCs react as the trick is won.
       const state = director.tableState();
@@ -377,6 +392,7 @@ export async function renderVisualizerPage(
 
   const page = container.querySelector<HTMLElement>(".visualizer-page");
   if (gameConnection && page) {
+    if (import.meta.env.DEV) devThiefKey = createDevThiefKey(gameConnection, () => cardTable?.cards.selectedKey() ?? null);
     // Bidding waits until every card has been dealt.
     // Prompts open once your turn has been announced.
     // Your move's time ran out: the game is making it, so the prompts close.
@@ -392,6 +408,11 @@ export async function renderVisualizerPage(
     powerPrompt = createPowerPrompt(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
+    // Winning with the Thief: pick a player, then a card of yours and one of theirs.
+    thiefPrompt = createThiefPrompt(page, {
+      heist: () => cardTable?.heist ?? null,
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
+    });
     // The banner's gameplay lines wait until every card, trump included, has landed.
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
@@ -401,10 +422,17 @@ export async function renderVisualizerPage(
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
       // A Seer or Trickster changed a prediction. Your own Seer's change gets the
-      // bright chime and a gold burst, as for a tesseract on target; an opponent's
-      // Trickster the falling chime and a red burst on its target's head.
-      onPredictionChanged: (byOther) => cardTable?.playChime(byOther ? "lose" : "win"),
-      onPredictionEffect: (username, byOther) => cardTable?.burstOnPlayer(username, byOther),
+      // bright chime and a gold burst, as for a tesseract on target. A Trickster
+      // sends a red tesseract from its player's head to its target's, which bursts
+      // red with the falling chime when it arrives.
+      onPredictionChanged: (byOther) => {
+        // A Trickster's tesseract brings its own falling chime when it lands.
+        if (!byOther) cardTable?.playChime("win");
+      },
+      onPredictionEffect: (username, byOther, source) => {
+        if (byOther && source) cardTable?.sendTesseract(source, username);
+        else cardTable?.burstOnPlayer(username, byOther);
+      },
     });
 
     // Your move's countdown starts once your table has shown you your turn.
@@ -426,6 +454,7 @@ export async function renderVisualizerPage(
         predictionPrompt?.applyState();
         trumpPrompt?.applyState();
         powerPrompt?.applyState();
+        thiefPrompt?.applyState();
       },
     });
 
@@ -511,11 +540,19 @@ export async function renderVisualizerPage(
         headOf: (seat) => players.headPosition(seat),
         headTurnOf: (seat) => players.headQuaternion(seat),
         headRadiusOf: (seat) => players.headRadius(seat),
+        lookAt: (username, done, seconds) =>
+          turnCamera ? turnCamera.lookAt(username, done, seconds) : done(),
+        notice: (text) => gameHud?.notice(text),
         onDealDone: () => director.dealt(),
         // An NPC whose card was leading shows it did not like being beaten.
         onOvertaken: (previousLeader) => {
           if (trigger) reactToOvertake(previousLeader, trigger, (username) => sync?.seatOf(username) ?? null);
         },
+      });
+      cardTable.heist.onChange(() => {
+        thiefPrompt?.applyState();
+        // The announcement box tells the winner what to do at each step.
+        gameHud?.applyState();
       });
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizardCards = cardTable.cards;
@@ -620,6 +657,7 @@ export async function renderVisualizerPage(
         predictionPrompt?.refused(refusal);
         trumpPrompt?.refused(refusal);
         powerPrompt?.refused(refusal);
+        cardTable?.heist.refused();
         gameHud?.refused(message.error ?? "");
       }
       },

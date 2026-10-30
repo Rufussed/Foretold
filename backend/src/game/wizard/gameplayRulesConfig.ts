@@ -6,7 +6,7 @@ export const GAMEPLAY_RULES = {
   // player must miss. false lets them choose anything.
   lastPredictionCannotMatchTricks: true,
 
-  // The Seer and the Trickster (ranks 8 and 7) are ordinary cards with a power
+  // The Seer and the Trickster (ranks 10 and 9) are ordinary cards with a power
   // for whoever wins a trick with one: the Seer moves the winner's own
   // prediction, the Trickster an opponent's, by one either way. false makes
   // them plain cards.

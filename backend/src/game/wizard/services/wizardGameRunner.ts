@@ -73,7 +73,11 @@ export class WizardGameRunner {
           // been used, only a short hold is left.
           const powerUsed = !!game.currentTrick.power?.resolved;
           await this.wait(
-            powerUsed ? WIZARD_TIMING.afterPowerHoldMs : WIZARD_TIMING.trickHoldMs,
+            powerUsed
+              ? game.currentTrick.power?.kind === "thief" && game.currentTrick.power.target
+                ? WIZARD_TIMING.afterThiefHoldMs
+                : WIZARD_TIMING.afterPowerHoldMs
+              : WIZARD_TIMING.trickHoldMs,
             pace,
           );
 
@@ -244,6 +248,14 @@ export class WizardGameRunner {
 
           if (timedOutHuman) {
             this.gameService.skipPower(stillDeciding, decisionPlayer.username);
+          } else if (stillDeciding.currentTrick.power?.kind === "thief") {
+            // Named first, so the target is told, then the card is taken.
+            const theft = this.botService.chooseThiefSwap(stillDeciding);
+            this.gameService.chooseThiefTarget(stillDeciding, decisionPlayer.username, theft.target);
+            wizardSessionManager.saveGame(stillDeciding);
+            this.broadcast(roomId);
+            await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
+            this.gameService.stealCard(stillDeciding, decisionPlayer.username, theft);
           } else {
             const choice = this.botService.chooseCardPower(stillDeciding);
 

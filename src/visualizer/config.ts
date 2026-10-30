@@ -650,6 +650,22 @@ export const CARDS = {
   // label height. 0 is a hard edge.
   outlineFeather: 0.1,
 
+  // Whether the print on a face is embossed at all; false prints it flat,
+  // and the settings below wait unused.
+  embossEnabled: false,
+
+  // The emboss on everything printed on a face, lit from above: how far the
+  // edges are shifted to make the rims, as a fraction of the face's width
+  // (never under 1px), the alpha (0 to 255) from which the print counts as
+  // solid when the rims are cut, then how strong the white rim along the top
+  // edges and the dark rim along the bottom edges are, 0 to 1, and the dark
+  // rim's colour.
+  embossDepth: 0.004,
+  embossThreshold: 128,
+  embossLight: 0.9,
+  embossShade: 0.85,
+  embossShadeColor: "#2a2a2a",
+
   // The element icon under each number: its width as a fraction of the label
   // height (a tall icon is shrunk to fit the same height), the gap above it as
   // a fraction of the label height, and its black outline as a fraction of the
@@ -680,7 +696,7 @@ export const CARDS = {
   // How much larger a symbol is on a Fool or Wizard, which has no number.
   soloSymbolScale: 1.3,
   // Extra scale for single symbols that read small beside the others.
-  symbolScales: { seer: 1.1, fool: 1.1 } as Record<string, number>,
+  symbolScales: { seer: 1.1, fool: 1.1, thief: 1.15 } as Record<string, number>,
   badgeGap: 0.24,
   // The gap above the Trickster's mask, which has a flat top and needs less than
   // the Seer's round eye.
@@ -879,6 +895,36 @@ export const OPPONENT_PLAYS = {
 
   // Travelling to its played-card slot, turning face up into place on the way.
   travelSeconds: 0.6,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
+// THIEF  (winning a trick with it swaps a card with another player's)
+// ══════════════════════════════════════════════════════════════════════════
+export const THIEF = {
+  // The target's fan, shown to the winner: it rises to sit over their own
+  // fan, this many card lengths above it, in this many seconds.
+  fanLiftLengths: 1.7,
+  // And this much higher again, in metres, so the cards to choose from are clear
+  // of your own fan.
+  fanExtraMetres: 0.75,
+  fanSeconds: 1.1,
+  // The fan comes up to its final height first, in the first share of that
+  // time, then moves across to the winner; going home it moves across first
+  // and then drops.
+  fanRiseShare: 0.4,
+
+  // The two cards trading places: how long they take, how high they rise
+  // along the way, in card lengths, and how far each passes to its side of the
+  // other (your own card to your left), in card widths.
+  swapSeconds: 1.6,
+  swapArcLengths: 1.0,
+  swapPassWidths: 0.3,
+  // The shares of that time for each leg, the drop taking what is left: up out
+  // of its hand, turning flat, travelling flat, turning to face its way.
+  swapLegs: [0.2, 0.12, 0.3, 0.12] as const,
+
+  // The camera's turn to the target and back, in seconds at the normal pace.
+  cameraSeconds: 1.5,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

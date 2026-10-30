@@ -167,6 +167,7 @@ export function createPowerPrompt(
     const open =
       state?.phase === "power" &&
       !!power &&
+      power.kind !== "thief" &&
       !power.resolved &&
       power.username === game.localUsername &&
       canAct(game) &&

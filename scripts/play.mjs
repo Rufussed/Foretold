@@ -243,7 +243,8 @@ function start(name, command, commandArgs, options, onLine = () => {}) {
 
 const mode = await chooseMode();
 const urls = mode.open.map(origin);
-const backendEnv = { HOST: mode.listen, CORS_ORIGINS: mode.origins.join(",") };
+// WIZARD_DEV_TOOLS turns on the server's test shortcuts (see devGiveThief).
+const backendEnv = { HOST: mode.listen, CORS_ORIGINS: mode.origins.join(","), WIZARD_DEV_TOOLS: "1" };
 const viteArgs = ["vite", "--port", String(FRONTEND_PORT), "--strictPort", ...(mode.viteHost ? ["--host", mode.viteHost] : [])];
 
 printConnectHelp(mode);

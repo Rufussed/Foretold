@@ -212,7 +212,7 @@ const rules = {
         <p>
           Each element has thirteen ranks, from lowest to highest:
           Peasant, Farmer, Citizen, Soldier, Merchant, Priest,
-          Trickster, Seer, Noble, General, Heir, Consort and Monarch.
+          General, Thief, Trickster, Seer, Heir, Consort and Monarch.
           Each card shows its title across the middle.
         </p>
         <p>
@@ -229,6 +229,12 @@ const rules = {
           it as it is uses no power. It works in any round, even the last
           trick. If a Wizard or a higher card wins the trick, there is no
           power.
+        </p>
+        <p>
+          The <strong>Thief</strong> also follows suit and rank, but win the
+          trick with it and you may swap one of your cards for one of another
+          player's, which you take without seeing it. It does nothing in a
+          round's last trick, when there is nothing left to swap.
         </p>
       </section>
 
@@ -436,8 +442,8 @@ const rules = {
         <h3>Ränge und Kräfte</h3>
         <p>
           Jedes Element hat dreizehn Ränge, vom niedrigsten zum höchsten:
-          Bauer, Landwirt, Bürger, Soldat, Händler, Priester, Trickser,
-          Seher, Adel, General, Erbe, Konsort und Monarch. Jede Karte
+          Bauer, Landwirt, Bürger, Soldat, Händler, Priester, General,
+          Dieb, Trickser, Seher, Erbe, Konsort und Monarch. Jede Karte
           trägt ihren Titel in der Mitte.
         </p>
         <p>
@@ -455,6 +461,13 @@ const rules = {
           gleich, wird keine Kraft eingesetzt. Die Kraft gilt in jeder
           Runde, auch im letzten Stich. Gewinnt ein Zauberer oder eine
           höhere Karte den Stich, gibt es keine Kraft.
+        </p>
+        <p>
+          Der <strong>Dieb</strong> bedient ebenfalls Farbe und zählt wie jede
+          andere Karte. Wer aber einen Stich mit ihm gewinnt, darf eine seiner
+          Karten gegen eine Karte eines Mitspielers tauschen, die er ungesehen
+          zieht. Im letzten Stich einer Runde bleibt er ohne Wirkung, da nichts
+          mehr zu tauschen ist.
         </p>
       </section>
 

@@ -68,7 +68,8 @@ export interface AnnouncerOptions {
   // An announcement that a player's prediction was changed has just come up:
   // the list swaps in the new number now (see player-list.ts).
   // byOther: it was another player's power that changed it (a Trickster).
-  onPredictionChange?(username: string, byOther: boolean): void;
+  // source: whose power it was.
+  onPredictionChange?(username: string, byOther: boolean, source?: string): void;
 }
 
 export function createAnnouncer(
@@ -228,10 +229,10 @@ export function createAnnouncer(
       if (!state) return;
 
       if (previous) {
-        for (const { changes, byOther, ...message } of eventMessages(previous, state, game.localUsername)) {
+        for (const { changes, byOther, source, ...message } of eventMessages(previous, state, game.localUsername)) {
           queue.push(
             changes
-              ? { ...message, onShow: () => options.onPredictionChange?.(changes, !!byOther) }
+              ? { ...message, onShow: () => options.onPredictionChange?.(changes, !!byOther, source) }
               : message,
           );
         }

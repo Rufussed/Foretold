@@ -3,7 +3,7 @@ import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
 import { wizardSessionManager } from "../services/wizardSessionManager.js";
 import { WizardGameRunner } from "../services/wizardGameRunner.js";
-import { SUITS, type Suit } from "../models/card.js";
+import { SEER_VALUE, SUITS, THIEF_VALUE, TRICKSTER_VALUE, type Suit } from "../models/card.js";
 import { isBotName, seatNameFor } from "../models/bot.js";
 import { isEmote } from "../models/emote.js";
 import { guestTableEmptied, guestTableJoined } from "../services/guestCleanup.js";
@@ -21,6 +21,11 @@ interface SocketMessage {
 	emote?: string;
 	// A Seer or Trickster's power: whose prediction, and what it becomes.
 	target?: string;
+	// A Thief's swap: the winner's card and the target's, by hand position.
+	ownIndex?: number;
+	// A test shortcut's card: the rank wanted.
+	value?: number;
+	targetIndex?: number;
 }
 
 function isSuit(value: unknown): value is Suit {
@@ -227,6 +232,32 @@ export function registerWizardSocket(
 					return;
 				}
 
+				// Test shortcut: swaps a card in your hand for a special one at any
+				// time, whoever's move it is, and leaves the move's clock alone.
+				if (message.type === "dev_give_card" && process.env.WIZARD_DEV_TOOLS) {
+					try {
+						const wanted: number[] = [0, THIEF_VALUE, TRICKSTER_VALUE, SEER_VALUE, 14];
+						if (message.value === undefined || !wanted.includes(message.value)) {
+							throw new Error("Invalid card");
+						}
+
+						gameService.devGiveCard(
+							currentGame,
+							username,
+							message.value as typeof THIEF_VALUE,
+							typeof message.cardIndex === "number" ? message.cardIndex : 0,
+						);
+						wizardSessionManager.saveGame(currentGame);
+						broadcastGameState(roomId, gameService);
+					} catch (error) {
+						sendJson(socket, {
+							type: "error",
+							error: error instanceof Error ? error.message : "Could not change the card",
+						});
+					}
+					return;
+				}
+
 				// Reject actions submitted after the current decision's deadline.
 				if (
 					currentGame.turnDeadlineAt !== null &&
@@ -272,6 +303,24 @@ export function registerWizardSocket(
 						gameService.playCard(currentGame, message.cardIndex);
 					} else if (message.type === "skip_power") {
 						gameService.skipPower(currentGame, username);
+					} else if (message.type === "choose_thief_target") {
+						if (typeof message.target !== "string") {
+							throw new Error("Invalid target");
+						}
+
+						gameService.chooseThiefTarget(currentGame, username, message.target);
+					} else if (message.type === "steal_card") {
+						if (
+							typeof message.ownIndex !== "number" ||
+							typeof message.targetIndex !== "number"
+						) {
+							throw new Error("Invalid card index");
+						}
+
+						gameService.stealCard(currentGame, username, {
+							ownIndex: message.ownIndex,
+							targetIndex: message.targetIndex,
+						});
 					} else if (message.type === "use_power") {
 						if (
 							typeof message.prediction !== "number" ||

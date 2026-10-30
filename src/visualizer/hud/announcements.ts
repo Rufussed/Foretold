@@ -1,5 +1,6 @@
 import { displayName } from "../../utils/display-name";
 import { gameWinners } from "./game-winner";
+import { thiefInstruction } from "../thief-instruction";
 import type { PublicGamePlayer, PublicWizardGameState, TrickPower } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { Card, CardPower, Suit } from "../../../backend/src/game/wizard/models/card";
 import { t, type MessageKey } from "../../i18n";
@@ -42,8 +43,9 @@ export function cardName(card: Card): string {
   return t("card.suitRank", { suit: suitName(card.suit), rank: t(`rank.${card.value}` as MessageKey) });
 }
 
-// "Seer" or "Trickster".
-export const powerName = (kind: CardPower): string => t(kind === "seer" ? "rank.8" : "rank.7");
+// "Seer", "Trickster" or "Thief", by their rank in the hierarchy.
+export const powerName = (kind: CardPower): string =>
+  t(kind === "seer" ? "rank.10" : kind === "trickster" ? "rank.9" : "rank.8");
 
 // "A Wizard was turned up for trumps", or a Jester.
 export const turnedUpMessage = (card: Card | null) =>
@@ -88,6 +90,9 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       const power = state.currentTrick.power;
       if (!current || !power) return null;
       const name = powerName(power.kind);
+      // The Thief's winner is walked through the swap step by step.
+      const steps = power.kind === "thief" && current === local ? thiefInstruction() : null;
+      if (steps) return steps;
       return current === local
         ? t("ann.usePower", { power: name })
         : t("ann.usingPower", { name: announcedName(current), power: name });
@@ -136,6 +141,8 @@ export interface EventMessage {
   // A Trickster at work: someone else's prediction was changed, not the
   // player's own.
   byOther?: boolean;
+  // Whose power changed it, for the Trickster's tesseract to fly from.
+  source?: string;
 }
 
 // What a resolved power did, for the banner. A power left alone just says so,
@@ -143,6 +150,13 @@ export interface EventMessage {
 function powerMessage(power: TrickPower, local: string): string {
   const mine = power.username === local;
   const kind = powerName(power.kind);
+
+  if (power.kind === "thief" && power.target !== null) {
+    const target = announcedName(power.target);
+    const name = announcedName(power.username);
+    if (mine) return t("ann.youThiefUsed", { target });
+    return power.target === local ? t("ann.thiefUsedOnYou", { name }) : t("ann.thiefUsed", { name, target });
+  }
 
   if (power.target === null || power.from === null || power.to === null) {
     return mine
@@ -212,7 +226,9 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     messages.push({
       text: powerMessage(power, local),
       username: power.username,
-      ...(power.target ? { changes: power.target, byOther: power.target !== power.username } : {}),
+      ...(power.target && power.kind !== "thief"
+        ? { changes: power.target, byOther: power.target !== power.username, source: power.username }
+        : {}),
     });
   }
 

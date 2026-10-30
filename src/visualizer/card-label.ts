@@ -36,6 +36,11 @@ export const cardFontReady = (): Promise<unknown> =>
     document.fonts.load(`${NAME_WEIGHT} 1em ${NAME_FONT}`),
   ]);
 
+// Which part of the print to draw: just the black outline with its feathered
+// shadow, just the coloured fill, or both (the outline first, so the fill
+// sits on top of its inner half).
+export type PrintPass = "outline" | "fill" | "both";
+
 export interface CardPrint {
   label: string;
   // CSS colour the number is filled with.
@@ -58,20 +63,22 @@ export interface CardPrint {
 // An outlined, feathered line of text: the black outline first, so the fill
 // sits on top of its inner half. Stroked twice because a shadow is faint on
 // its own: the second pass thickens the fade.
-function inkText(context: CanvasRenderingContext2D, text: string, x: number, y: number, fill: string, feather: number): void {
+function inkText(context: CanvasRenderingContext2D, text: string, x: number, y: number, fill: string, feather: number, pass: PrintPass): void {
   context.fillStyle = fill;
-  context.shadowColor = "#000000";
-  context.shadowBlur = feather;
-  context.strokeText(text, x, y);
-  context.strokeText(text, x, y);
-  context.shadowColor = "transparent";
-  context.shadowBlur = 0;
-  context.fillText(text, x, y);
+  if (pass !== "fill") {
+    context.shadowColor = "#000000";
+    context.shadowBlur = feather;
+    context.strokeText(text, x, y);
+    context.strokeText(text, x, y);
+    context.shadowColor = "transparent";
+    context.shadowBlur = 0;
+  }
+  if (pass !== "outline") context.fillText(text, x, y);
 }
 
 // Draws the print onto a face `width` pixels wide and `height` tall, which is
 // what its size and margins are measured against.
-export function drawCardPrint(context: CanvasRenderingContext2D, width: number, height: number, print: CardPrint): void {
+export function drawCardPrint(context: CanvasRenderingContext2D, width: number, height: number, print: CardPrint, pass: PrintPass = "both"): void {
   const { label, color, icon, badge, badgeScale = 1, badgeGap = CARDS.badgeGap, name } = print;
   if (!label && !badge && !name) return;
 
@@ -122,22 +129,22 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   const centres = CARDS.bothCorners ? [centerOffset, width - centerOffset] : [width - centerOffset];
 
   for (const center of centres) {
-    if (label) inkText(context, label, center - penOffset, top, color, feather);
+    if (label) inkText(context, label, center - penOffset, top, color, feather, pass);
 
-    if (icon && label) drawIcon(context, icon, center, iconTop, iconStyle);
+    if (icon && label) drawIcon(context, icon, center, iconTop, iconStyle, pass);
 
-    if (badge) drawIcon(context, badge, center, symbolTop, { ...iconStyle, box: symbolBox });
+    if (badge) drawIcon(context, badge, center, symbolTop, { ...iconStyle, box: symbolBox }, pass);
   }
 
   // A card with a symbol has a yellow title like it; the rest take the number's
   // colour.
-  if (name) drawName(context, width, height, name, badge ? CARDS.specialColor : color);
+  if (name) drawName(context, width, height, name, badge ? CARDS.specialColor : color, pass);
 }
 
 // The card's title across its middle, in the number's font and outline.
 // It is as large as the numbers unless that would run wider than the share of
 // the card allowed, and then it is shrunk to fit.
-function drawName(context: CanvasRenderingContext2D, width: number, height: number, name: string, color: string): void {
+function drawName(context: CanvasRenderingContext2D, width: number, height: number, name: string, color: string, pass: PrintPass): void {
   let size = Math.round(width * CARDS.nameSize);
   context.font = `${NAME_WEIGHT} ${size}px ${NAME_FONT}, serif`;
   const measured = context.measureText(name).width;
@@ -158,7 +165,7 @@ function drawName(context: CanvasRenderingContext2D, width: number, height: numb
   const ink = context.measureText(name);
   const baseline =
     height * (0.5 + CARDS.nameDropFraction) + (ink.actualBoundingBoxAscent - ink.actualBoundingBoxDescent) / 2;
-  inkText(context, name, width / 2, baseline, color, size * CARDS.outlineFeather);
+  inkText(context, name, width / 2, baseline, color, size * CARDS.outlineFeather, pass);
   context.textAlign = "left";
 }
 
@@ -180,10 +187,15 @@ export function drawIcon(
   centerX: number,
   top: number,
   { box, outline, feather }: IconStyle,
+  pass: PrintPass = "both",
 ): void {
   const scale = Math.min(box / icon.width, box / icon.height);
   const w = icon.width * scale;
   const h = icon.height * scale;
+  if (pass === "fill") {
+    context.drawImage(icon, centerX - w / 2, top, w, h);
+    return;
+  }
   const pad = Math.ceil(outline) + 1;
 
   const stamp = document.createElement("canvas");
@@ -207,5 +219,5 @@ export function drawIcon(
   }
   context.shadowColor = "transparent";
   context.shadowBlur = 0;
-  context.drawImage(icon, centerX - w / 2, top, w, h);
+  if (pass !== "outline") context.drawImage(icon, centerX - w / 2, top, w, h);
 }
