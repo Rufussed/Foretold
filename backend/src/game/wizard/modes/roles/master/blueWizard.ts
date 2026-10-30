@@ -1,6 +1,6 @@
-import type { Card } from "../../models/card.js";
-import { isJester, isWizard } from "../../models/card.js";
-import type { GamePlayer } from "../../models/wizardGame.js";
+import type { Card } from "../../../models/card.js";
+import { isJester, isWizard } from "../../../models/card.js";
+import type { GamePlayer } from "../../../models/wizardGame.js";
 
 // The Blue Wizard: a role with no card. Whoever plays it sees how many blue
 // cards every hand hidden from them holds - not which, and not their numbers.

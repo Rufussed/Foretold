@@ -10,7 +10,7 @@ import {
 // to someone else.
 export type TrickPlay = { username: string; playedBy?: string; card: Card };
 
-// What roles change in a trick's rules (modes/roles/trickRoles.ts); nothing
+// What roles change in a trick's rules (modes/roles/master/trickRoles.ts); nothing
 // when left out.
 export interface TrickRoles {
   // How much a played card's rank is raised against cards of its own suit:
@@ -71,7 +71,7 @@ export class WizardRules {
   // Return a positive value when the first card wins, a negative value when
   // the second wins, and zero when neither card outranks the other.
   // firstBoost and secondBoost raise a card's rank against a card of its own
-  // suit: a Roles Green Wizard's green cards (modes/roles/greenWizard.ts). A
+  // suit: a Roles Green Wizard's green cards (modes/roles/master/greenWizard.ts). A
   // boosted card that only draws level loses.
   compareCards(
     firstCard: Card,

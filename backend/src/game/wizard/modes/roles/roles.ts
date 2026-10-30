@@ -15,11 +15,11 @@ export const ROLES = [
   { id: "smith", card: 6 },
   { id: "merchant", card: 7 },
   // No card of its own: the Blue Wizard sees how many blue cards each
-  // opponent holds (blueWizard.ts). Open to everyone for now; to be unlocked
+  // opponent holds (master/blueWizard.ts). Open to everyone for now; to be unlocked
   // with Blue colour points later.
   { id: "blueWizard", card: null },
   // No card of its own either: the Green Wizard's green cards count 3 higher
-  // (greenWizard.ts). Open to everyone for now, like the Blue Wizard.
+  // (master/greenWizard.ts). Open to everyone for now, like the Blue Wizard.
   { id: "greenWizard", card: null },
   // And the Yellow Wizard, who can make yellow the lead suit.
   { id: "yellowWizard", card: null },

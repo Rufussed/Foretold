@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import type { GamePlayer } from "../../models/wizardGame.js";
+import type { GamePlayer } from "../../../models/wizardGame.js";
 import { COLOUR_WIZARDS, colourWizardBonus } from "./colourWizards.js";
-import { play } from "./roleTestHelpers.js";
-import type { RoleId } from "./roles.js";
+import { play } from "../roleTestHelpers.js";
+import type { RoleId } from "../roles.js";
 
 const player = (username: string, role: RoleId) => ({ username, role }) as unknown as GamePlayer;
 const trick = (cards: ReturnType<typeof play>[]) => ({ playedCards: cards, winnerUsername: null });

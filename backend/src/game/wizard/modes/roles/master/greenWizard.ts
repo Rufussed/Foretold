@@ -1,5 +1,5 @@
-import type { Card } from "../../models/card.js";
-import { isJester, isWizard } from "../../models/card.js";
+import type { Card } from "../../../models/card.js";
+import { isJester, isWizard } from "../../../models/card.js";
 
 // The Green Wizard: every green card they hold counts 3 higher against other
 // green cards: a 7 is a 10, a 12 a 15, beating even a 13. A boosted card that

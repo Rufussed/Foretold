@@ -1,9 +1,9 @@
-import type { Card } from "../models/card.js";
-import type { WizardGameState } from "../models/wizardGame.js";
-import { blueCardCount, isBlueCard } from "../modes/roles/blueWizard.js";
-import { currentPlayer } from "./personality.js";
-import { strength } from "./handStrength.js";
-import { roleOfBot, type Play } from "./roleSense.js";
+import type { Card } from "../../models/card.js";
+import type { WizardGameState } from "../../models/wizardGame.js";
+import { blueCardCount, isBlueCard } from "../../modes/roles/master/blueWizard.js";
+import { currentPlayer } from "../personality.js";
+import { strength } from "../handStrength.js";
+import { roleOfBot, type Play } from "../roleSense.js";
 
 // How the Adept plays the Blue Wizard (modes/roles/blueWizard.ts). It uses
 // only what a human Blue Wizard is shown: how many blue cards each opponent

@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import { WizardRules } from "../../services/wizardRules.js";
+import { WizardRules } from "../../../services/wizardRules.js";
 import { trickRolesIn } from "./trickRoles.js";
-import { play } from "./roleTestHelpers.js";
-import type { RoleId } from "./roles.js";
+import { play } from "../roleTestHelpers.js";
+import type { RoleId } from "../roles.js";
 
 const rules = new WizardRules();
 const game = (roles: Record<string, RoleId>) => ({

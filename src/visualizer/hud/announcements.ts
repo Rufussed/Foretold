@@ -7,7 +7,7 @@ import type { RoleAction } from "../../../backend/src/game/wizard/modes/roles/ro
 import { playerOf, powerOn, type RoleOf } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
 import { isSabotageGame } from "../../modes/sabotage/sabotage-game";
 import { WizardRules } from "../../../backend/src/game/wizard/services/wizardRules";
-import { trickRolesIn } from "../../../backend/src/game/wizard/modes/roles/trickRoles";
+import { trickRolesIn } from "../../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import {
   elementName,
   powerEvent,

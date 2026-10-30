@@ -8,10 +8,10 @@ import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
 import { crowdFactor, trickChance } from "./handStrength.js";
 import { sabotagePick } from "../modes/sabotage/bots/index.js";
-import { blueLead, blueTrickChance } from "./blueWizardSense.js";
-import { colourWizardWin } from "./colourWizardSense.js";
-import { trickRolesIn } from "../modes/roles/trickRoles.js";
-import { greenStrength } from "./greenWizardSense.js";
+import { blueLead, blueTrickChance } from "./master/blueWizardSense.js";
+import { colourWizardWin } from "./master/colourWizardSense.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
+import { greenStrength } from "./master/greenWizardSense.js";
 
 const rules = new WizardRules();
 

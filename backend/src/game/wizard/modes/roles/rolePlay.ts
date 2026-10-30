@@ -2,7 +2,7 @@ import { isJester, isWizard, type Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
 import { WizardRules } from "../../services/wizardRules.js";
 import { roleCard, type RoleId } from "./roles.js";
-import { trickRolesOf } from "./trickRoles.js";
+import { trickRolesOf } from "./master/trickRoles.js";
 
 const rules = new WizardRules();
 

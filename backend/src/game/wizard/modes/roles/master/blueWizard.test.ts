@@ -1,9 +1,9 @@
 import { describe, it, expect } from "vitest";
 
-import type { GamePlayer } from "../../models/wizardGame.js";
+import type { GamePlayer } from "../../../models/wizardGame.js";
 import { blueCardCount, blueSight } from "./blueWizard.js";
-import { card } from "./roleTestHelpers.js";
-import type { RoleId } from "./roles.js";
+import { card } from "../roleTestHelpers.js";
+import type { RoleId } from "../roles.js";
 
 const player = (username: string, role: RoleId, hand = [card(3, "Blue")]): GamePlayer =>
   ({ username, role, hand }) as unknown as GamePlayer;

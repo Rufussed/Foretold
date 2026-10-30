@@ -15,8 +15,8 @@ import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
 import { cardsByOwner } from "../modes/roles/mechanics/trick-swap";
-import { applyBlueSight } from "../modes/roles/mechanics/blue-sight";
-import { trickRolesIn } from "../../backend/src/game/wizard/modes/roles/trickRoles";
+import { applyBlueSight } from "../modes/roles/master/blue-sight";
+import { trickRolesIn } from "../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
@@ -408,7 +408,7 @@ export function createCardTable({
       state.currentTrick.playedCards,
       state.trumpSuit,
       normalizeGameOptions(state.options).wizardWins,
-      // A Roles game's colour Wizards change the rules (trickRoles.ts).
+      // A Roles game's colour Wizards change the rules (modes/roles/master/trickRoles.ts).
       trickRolesIn(state),
     );
     const leadingPlay = state.currentTrick.playedCards.find((played) => played.username === leader);

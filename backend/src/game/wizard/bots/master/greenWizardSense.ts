@@ -1,8 +1,8 @@
-import type { Card } from "../models/card.js";
-import type { WizardGameState } from "../models/wizardGame.js";
-import { GREEN_BOOST, isGreenCard } from "../modes/roles/greenWizard.js";
-import { strength } from "./handStrength.js";
-import { roleOfBot } from "./roleSense.js";
+import type { Card } from "../../models/card.js";
+import type { WizardGameState } from "../../models/wizardGame.js";
+import { GREEN_BOOST, isGreenCard } from "../../modes/roles/master/greenWizard.js";
+import { strength } from "../handStrength.js";
+import { roleOfBot } from "../roleSense.js";
 
 // How the Adept plays the Green Wizard (modes/roles/greenWizard.ts): its
 // green cards count 3 higher, so it ranks them that way when it picks its

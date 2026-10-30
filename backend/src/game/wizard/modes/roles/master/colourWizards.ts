@@ -1,7 +1,7 @@
-import type { Card, Suit } from "../../models/card.js";
-import { isWizard } from "../../models/card.js";
-import type { GamePlayer, TrickState } from "../../models/wizardGame.js";
-import type { RoleId } from "./roles.js";
+import type { Card, Suit } from "../../../models/card.js";
+import { isWizard } from "../../../models/card.js";
+import type { GamePlayer, TrickState } from "../../../models/wizardGame.js";
+import type { RoleId } from "../roles.js";
 
 // The colour Wizards: roles with no card of their own, one for each colour
 // whose Wizard they are. Their powers:

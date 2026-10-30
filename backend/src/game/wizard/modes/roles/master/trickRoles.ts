@@ -1,8 +1,8 @@
-import type { WizardGameOptions } from "../../gameOptions.js";
-import type { TrickRoles } from "../../services/wizardRules.js";
+import type { WizardGameOptions } from "../../../gameOptions.js";
+import type { TrickRoles } from "../../../services/wizardRules.js";
 import { GREEN_BOOST, isGreenCard } from "./greenWizard.js";
-import type { RoleOf } from "./rolePlay.js";
-import type { RoleId } from "./roles.js";
+import type { RoleOf } from "../rolePlay.js";
+import type { RoleId } from "../roles.js";
 
 // What the roles change in a trick's rules, for wizardRules: a Green Wizard's
 // green cards count higher (greenWizard.ts), and a Yellow Wizard can make

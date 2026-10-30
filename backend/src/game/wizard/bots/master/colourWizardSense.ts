@@ -1,6 +1,6 @@
-import type { WizardGameState } from "../models/wizardGame.js";
-import { isColourWizard, isOwnWizardCard } from "../modes/roles/colourWizards.js";
-import { roleOfBot, type Play } from "./roleSense.js";
+import type { WizardGameState } from "../../models/wizardGame.js";
+import { isColourWizard, isOwnWizardCard } from "../../modes/roles/master/colourWizards.js";
+import { roleOfBot, type Play } from "../roleSense.js";
 
 // A colour Wizard (modes/roles/colourWizards.ts) wanting a trick takes one
 // with the Wizard of their colour when that wins: the trick brings its bonus

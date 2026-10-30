@@ -4,7 +4,7 @@ import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { isRoleCard } from "./roleSense.js";
-import { trickRolesIn } from "../modes/roles/trickRoles.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 
 const rules = new WizardRules();
 

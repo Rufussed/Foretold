@@ -20,8 +20,8 @@ import {
   startFishing,
 } from "../modes/roles/rolePowers.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
-import { blueSight } from "../modes/roles/blueWizard.js";
-import { trickRolesIn } from "../modes/roles/trickRoles.js";
+import { blueSight } from "../modes/roles/master/blueWizard.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 
 import type {
   GamePlayer,
@@ -375,7 +375,7 @@ export class WizardGameService {
       game.currentTrick.playedCards,
       game.trumpSuit,
       normalizeGameOptions(game.options).wizardWins,
-      // A Roles game's colour Wizards change the rules (trickRoles.ts).
+      // A Roles game's colour Wizards change the rules (modes/roles/master/trickRoles.ts).
       trickRolesIn(game),
     );
 

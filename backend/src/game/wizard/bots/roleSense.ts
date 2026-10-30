@@ -4,7 +4,7 @@ import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
 import { powerOn } from "../modes/roles/rolePlay.js";
 import { armorOf, playPower, rolesOf } from "../modes/roles/rolePowers.js";
 import { roleCard, type RoleId } from "../modes/roles/roles.js";
-import { trickRolesIn } from "../modes/roles/trickRoles.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 import { trades } from "../modes/roles/merchant.js";
 import { sheepOut } from "../modes/roles/shepherd.js";
 import { stealSpots } from "../modes/roles/thief.js";
@@ -31,7 +31,7 @@ const BID_VALUE: Record<RoleId, number> = {
   thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0,
   // No card of its own; its sight is used in blueWizardSense.ts.
   blueWizard: 0,
-  // No card either; its boost is in every trick it plays (greenWizard.ts).
+  // No card either; its boost is in every trick it plays (master/greenWizard.ts).
   greenWizard: 0,
   yellowWizard: 0,
 };
