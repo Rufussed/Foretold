@@ -347,3 +347,46 @@ describe("Thief", () => {
     expect(game.players[0]!.hand).toEqual([card("Blue", 1), card("Blue", 2)]);
   });
 });
+
+describe("Bots with a Thief", () => {
+  // alice has won with the Thief; bob wants most tricks, carol none.
+  function afterThief(hand: Card[]): WizardGameState {
+    const game = lastTrick([card("Red", 8), card("Red", 3), card("Red", 2)]);
+    game.trumpSuit = "Red";
+    game.players[0]!.hand = hand;
+    game.players[1]!.hand = [card("Green", 5), card("Green", 6)];
+    game.players[2]!.hand = [card("Yellow", 7), card("Yellow", 9)];
+    service.resolveTrick(game);
+    return game;
+  }
+
+  it("the Apprentice short of tricks gives its weakest and robs who wants the most", () => {
+    const game = afterThief([card("Blue", 1), card("Blue", 13)]);
+    game.players[0]!.prediction = 2; // one more trick wanted
+    const swap = apprentice.chooseThief(game)!;
+    expect(swap.target).toBe("bob");
+    expect(game.players[0]!.hand[swap.ownIndex]).toEqual(card("Blue", 1));
+  });
+
+  it("the Apprentice with enough gives its strongest and robs who wants the fewest", () => {
+    const game = afterThief([card("Blue", 1), card("Blue", 13)]);
+    game.players[0]!.tricksWon = 3;
+    const swap = apprentice.chooseThief(game)!;
+    expect(swap.target).toBe("carol");
+    expect(game.players[0]!.hand[swap.ownIndex]).toEqual(card("Blue", 13));
+  });
+
+  it("the Adept gives away its strongest card when its hand will overshoot", () => {
+    const game = afterThief([card("Red", 13), card("Red", 12)]);
+    game.players[0]!.prediction = 0;
+    const swap = adept.chooseThief(game)!;
+    expect(game.players[0]!.hand[swap.ownIndex]).toEqual(card("Red", 13));
+  });
+
+  it("the Adept leaves the Thief unused when its hand is about right", () => {
+    const game = afterThief([card("Blue", 1), card("Blue", 2)]);
+    game.players[0]!.prediction = 0;
+    game.players[0]!.tricksWon = 0;
+    expect(adept.chooseThief(game)).toBeNull();
+  });
+});

@@ -4,7 +4,7 @@ import type { WizardGameState } from "../models/wizardGame.js";
 import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.js";
 import { strategyFor } from "../bots/index.js";
 import { currentPlayer } from "../bots/personality.js";
-import { thiefSwap, type PowerChoice, type ThiefSwap } from "../bots/powers.js";
+import type { PowerChoice, ThiefSwap } from "../bots/powers.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 // Makes the moves of whoever's turn it is, as their bot personality would
@@ -40,8 +40,10 @@ export class WizardBotService {
     return strategyFor(currentPlayer(game)).chooseCardIndex(game);
   }
 
-  chooseThiefSwap(game: WizardGameState): ThiefSwap {
-    return thiefSwap(game);
+  // What the bot does with a Thief it has just won with: a swap decided by its
+  // level's own reasoning, or null to leave it unused.
+  chooseThiefSwap(game: WizardGameState): ThiefSwap | null {
+    return strategyFor(currentPlayer(game)).chooseThief(game);
   }
 
   chooseCardPower(game: WizardGameState): PowerChoice {

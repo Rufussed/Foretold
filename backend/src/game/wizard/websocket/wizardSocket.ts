@@ -25,6 +25,8 @@ interface SocketMessage {
 	ownIndex?: number;
 	// A test shortcut's card: the rank wanted.
 	value?: number;
+	// A test shortcut's choice of who a bot's Thief robs.
+	mode?: string;
 	targetIndex?: number;
 }
 
@@ -303,6 +305,12 @@ export function registerWizardSocket(
 						gameService.playCard(currentGame, message.cardIndex);
 					} else if (message.type === "skip_power") {
 						gameService.skipPower(currentGame, username);
+					} else if (message.type === "dev_bot_thief" && process.env.WIZARD_DEV_TOOLS) {
+						gameService.devBotThief(
+							currentGame,
+							username,
+							message.mode === "other" ? "other" : "me",
+						);
 					} else if (message.type === "choose_thief_target") {
 						if (typeof message.target !== "string") {
 							throw new Error("Invalid target");

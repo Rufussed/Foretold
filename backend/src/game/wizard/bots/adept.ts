@@ -7,6 +7,7 @@ import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { crowdFactor, strength, trickChance } from "./handStrength.js";
 import { expectedSeerChoice, expectedTricksterChoice } from "./powerReasoning.js";
+import { expectedThief } from "./thiefReasoning.js";
 
 const rules = new WizardRules();
 
@@ -105,6 +106,9 @@ export const adept: BotStrategy = {
     if (tricksters.length > 0) return weakest(tricksters).index;
     return weakest(winners).index;
   },
+
+  // Reasons about whether its hand will deliver its prediction (thiefReasoning.ts).
+  chooseThief: expectedThief,
 
   choosePower(game) {
     return game.currentTrick.power?.kind === "seer"

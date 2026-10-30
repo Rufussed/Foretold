@@ -83,7 +83,7 @@ export interface CardTable {
   playChime(outcome: "win" | "lose"): void;
   // A burst of rays on a player, as when a tesseract dives into them: on their
   // head, or in front of the camera if it is you. Red when an opponent changed
-  // their prediction, gold when they changed their own.
+  // their prediction, green when they changed their own (a Seer).
   burstOnPlayer(username: string, byOther: boolean): void;
   // A Trickster's blow: a red tesseract flies from one player's head (the
   // camera, if it is you) to another's, and on reaching them bursts red with
@@ -574,7 +574,7 @@ export function createCardTable({
     },
 
     burstOnPlayer(username, byOther) {
-      const color = byOther ? BURST.overColor : BURST.color;
+      const color = byOther ? BURST.overColor : BURST.underColor;
       if (game && username === game.localUsername) {
         const eye = view.camera.getWorldPosition(new THREE.Vector3());
         const forward = view.camera.getWorldDirection(new THREE.Vector3());

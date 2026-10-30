@@ -47,7 +47,8 @@ async function cardPrint(card: Card): Promise<FacePrint> {
   // The Fool and Wizard are outside the ranks, so they have no number: just
   // their symbol and title.
   const label = special ? "" : cardLabel(card);
-  const badgeGap = symbolName === "trickster" ? CARDS.tricksterBadgeGap : CARDS.badgeGap;
+  const badgeGap =
+    symbolName === "trickster" ? CARDS.tricksterBadgeGap : symbolName === "thief" ? CARDS.thiefBadgeGap : CARDS.badgeGap;
   const badgeScale = (symbolName && CARDS.symbolScales[symbolName]) || 1;
   const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card) };
   if (!CARDS.embossEnabled) return (context, width, height) => drawCardPrint(context, width, height, print);

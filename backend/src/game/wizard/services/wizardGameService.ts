@@ -9,6 +9,7 @@ import {
   type WizardGameOptions,
 } from "../gameOptions.js";
 import type { CardValue } from "../models/card.js";
+import { isBotName } from "../models/bot.js";
 import { SEER_VALUE, THIEF_VALUE, TRICKSTER_VALUE, isJester, isWizard, powerOf } from "../models/card.js";
 import { GAMEPLAY_RULES } from "../gameplayRulesConfig.js";
 import { ScoreCalculator } from "./wizardScoreCalculator.js";
@@ -434,7 +435,7 @@ export class WizardGameService {
     const replaced = me?.hand[index];
 
     if (!me || !replaced) {
-      throw new Error("You have no card there");
+      throw new Error("[dev] You have no card there");
     }
 
     // A Fool or Wizard keeps the suit of the card it replaces, which decides
@@ -450,6 +451,44 @@ export class WizardGameService {
     }
 
     me.hand[index] = { suit, value };
+  }
+
+  // Test shortcut (WIZARD_DEV_TOOLS only): a bot leads a trump Thief, to watch
+  // one being used: robbing you ("me"), or another bot ("other", the bystander's
+  // view). It wins if nothing higher is played. Any cards already played in the
+  // trick go back to their players' hands first, so it works at any moment.
+  devBotThief(game: WizardGameState, username: string, mode: "me" | "other"): void {
+    if (game.phase !== "playing") {
+      throw new Error("[dev] Only while cards are being played");
+    }
+
+    // What each hand will hold once the trick's cards are back.
+    const holds = (player: GamePlayer) =>
+      player.hand.length + game.currentTrick.playedCards.filter((played) => played.username === player.username).length;
+
+    const thief = game.players.find((player) => isBotName(player.username) && holds(player) >= 2);
+    const victim =
+      mode === "me"
+        ? game.players.find((player) => player.username === username)
+        : game.players.find((player) => isBotName(player.username) && player !== thief && holds(player) > 0);
+
+    if (!thief || !victim) {
+      throw new Error(
+        "[dev] Needs a bot holding two or more cards (round 2 or later)" +
+          (mode === "other" ? ", and a second bot to rob" : ""),
+      );
+    }
+
+    // Put the trick's cards back, so every hand is as it was before the trick.
+    for (const played of game.currentTrick.playedCards) {
+      game.players.find((player) => player.username === played.username)?.hand.push(played.card);
+    }
+    game.currentTrick = { playedCards: [], winnerUsername: null };
+
+    this.devGiveCard(game, thief.username, THIEF_VALUE, 0);
+    game.currentPlayerIndex = game.players.indexOf(thief);
+    game.devThiefTarget = victim.username;
+    this.playCard(game, 0);
   }
 
   // The Thief's first step: the player whose hand will be robbed. Chosen again

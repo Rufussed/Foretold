@@ -3,7 +3,7 @@ import { SUITS } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
-import { seerChoice } from "./powers.js";
+import { seerChoice, simpleThief } from "./powers.js";
 
 const rules = new WizardRules();
 
@@ -80,6 +80,9 @@ export const apprentice: BotStrategy = {
 
     return playableIndex;
   },
+
+  // It always takes the swap, by a simple rule (see simpleThief).
+  chooseThief: simpleThief,
 
   // It only mends its own prediction with the Seer, and leaves the Trickster.
   choosePower(game) {

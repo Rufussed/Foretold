@@ -251,6 +251,15 @@ export class WizardGameRunner {
           } else if (stillDeciding.currentTrick.power?.kind === "thief") {
             // Named first, so the target is told, then the card is taken.
             const theft = this.botService.chooseThiefSwap(stillDeciding);
+            if (!theft) {
+              // Nothing to gain: left unused.
+              this.gameService.skipPower(stillDeciding, decisionPlayer.username);
+              stillDeciding.turnDeadlineAt = null;
+              wizardSessionManager.saveGame(stillDeciding);
+              this.broadcast(roomId);
+              await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+              continue;
+            }
             this.gameService.chooseThiefTarget(stillDeciding, decisionPlayer.username, theft.target);
             wizardSessionManager.saveGame(stillDeciding);
             this.broadcast(roomId);

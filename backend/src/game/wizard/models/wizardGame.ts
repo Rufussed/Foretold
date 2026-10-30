@@ -96,6 +96,8 @@ export interface WizardGameState {
   options?: WizardGameOptions;
   turnDeadlineAt: number | null;
   turnTimeoutMs: TurnTimeoutMs;
+  // Test shortcut only: the player a bot's Thief must rob (see devBotThief).
+  devThiefTarget?: string | null;
 }
 
 // This is the client-safe projection of WizardGameState. Other players' cards

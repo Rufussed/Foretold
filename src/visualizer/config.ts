@@ -670,7 +670,7 @@ export const CARDS = {
   // height (a tall icon is shrunk to fit the same height), the gap above it as
   // a fraction of the label height, and its black outline as a fraction of the
   // number's outline.
-  iconSize: 0.8,
+  iconSize: 0.704,
   iconGap: 0.3,
   iconOutline: 0.6,
 
@@ -695,12 +695,16 @@ export const CARDS = {
   symbolSize: 0.9,
   // How much larger a symbol is on a Fool or Wizard, which has no number.
   soloSymbolScale: 1.3,
+  // And moved left by this much, as a fraction of the label height.
+  soloSymbolShift: 0.12,
   // Extra scale for single symbols that read small beside the others.
   symbolScales: { seer: 1.1, fool: 1.1, thief: 1.15 } as Record<string, number>,
   badgeGap: 0.24,
   // The gap above the Trickster's mask, which has a flat top and needs less than
   // the Seer's round eye.
-  tricksterBadgeGap: 0.05,
+  tricksterBadgeGap: 0.13,
+  // The Thief's mask, a little closer to the element icon than the others.
+  thiefBadgeGap: 0.16,
 
   // Gap from the card's top and side edges to the outlined number, as a
   // fraction of the label height. 0 puts the outline's edge on the card's;
@@ -712,6 +716,13 @@ export const CARDS = {
   // label height: it moves the numbers and icons down without moving them in
   // from the sides.
   labelTopMargin: 0.3,
+  // A number of two digits (10 to 13) is set this much of the size of the
+  // others, with its top level with theirs.
+  twoDigitScale: 0.8,
+  // Then each is nudged by this many pixels (on a face 512 wide): single digits
+  // a pixel smaller, two digit numbers a pixel bigger.
+  oneDigitAdjustPx: -1,
+  twoDigitAdjustPx: 1,
 
   // The card back's print, over the art's gold ring. Sizes are fractions of the
   // card's width; the ring's own place was measured off the art, whose circle
@@ -916,7 +927,7 @@ export const THIEF = {
   // The two cards trading places: how long they take, how high they rise
   // along the way, in card lengths, and how far each passes to its side of the
   // other (your own card to your left), in card widths.
-  swapSeconds: 1.6,
+  swapSeconds: 3,
   swapArcLengths: 1.0,
   swapPassWidths: 0.3,
   // The shares of that time for each leg, the drop taking what is left: up out
@@ -924,7 +935,7 @@ export const THIEF = {
   swapLegs: [0.2, 0.12, 0.3, 0.12] as const,
 
   // The camera's turn to the target and back, in seconds at the normal pace.
-  cameraSeconds: 1.5,
+  cameraSeconds: 2,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

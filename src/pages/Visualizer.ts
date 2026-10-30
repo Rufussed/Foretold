@@ -422,7 +422,7 @@ export async function renderVisualizerPage(
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
       // A Seer or Trickster changed a prediction. Your own Seer's change gets the
-      // bright chime and a gold burst, as for a tesseract on target. A Trickster
+      // bright chime and a green burst. A Trickster
       // sends a red tesseract from its player's head to its target's, which bursts
       // red with the falling chime when it arrives.
       onPredictionChanged: (byOther) => {
@@ -658,6 +658,8 @@ export async function renderVisualizerPage(
         trumpPrompt?.refused(refusal);
         powerPrompt?.refused(refusal);
         cardTable?.heist.refused();
+        // The test shortcuts say why they could not do it.
+        if (refusal.startsWith("[dev]")) gameHud?.notice(refusal);
         gameHud?.refused(message.error ?? "");
       }
       },

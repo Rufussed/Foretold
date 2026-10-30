@@ -58,7 +58,7 @@ const unknownWins = (tricksLeft: number, players: number): number[] =>
 
 // The bot's own future wins, from the cards it still holds (or, played blind
 // and unable to read them, the same unknown guess).
-function ownWins(game: WizardGameState): number[] {
+export function ownWins(game: WizardGameState): number[] {
   const me = currentPlayer(game);
   const players = game.players.length;
 

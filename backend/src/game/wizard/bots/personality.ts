@@ -1,7 +1,7 @@
 import type { Suit } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { isBlindRound, normalizeGameOptions } from "../gameOptions.js";
-import type { PowerChoice } from "./powers.js";
+import type { PowerChoice, ThiefSwap } from "./powers.js";
 
 // The decisions a bot makes, each for the player whose turn it is.
 export interface BotStrategy {
@@ -12,6 +12,9 @@ export interface BotStrategy {
   chooseCardIndex(game: WizardGameState): number;
   // What to do with the Seer or Trickster it has just won a trick with.
   choosePower(game: WizardGameState): PowerChoice;
+  // What to do with a Thief it has just won a trick with: a swap, or null to
+  // leave it unused.
+  chooseThief(game: WizardGameState): ThiefSwap | null;
 }
 
 export function currentPlayer(game: WizardGameState) {

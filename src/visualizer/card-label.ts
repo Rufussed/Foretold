@@ -83,7 +83,8 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   if (!label && !badge && !name) return;
 
   const size = Math.round(width * CARDS.labelSize);
-  context.font = `${size}px ${CARD_FONT}, serif`;
+  // The numbers are set in the same face as the titles.
+  context.font = `${NAME_WEIGHT} ${size}px ${NAME_FONT}, serif`;
   context.textAlign = "left";
   context.textBaseline = "alphabetic";
   context.lineJoin = "round";
@@ -94,7 +95,6 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   // Place by the glyphs' measured edges rather than the font's line box, which
   // pads above the digits, so the gap is the same from the top and the sides.
   // The gap runs to the outside of the outline.
-  const glyphs = context.measureText(label);
   const inset = size * CARDS.labelMargin + context.lineWidth / 2;
   // Every number is centred on the same point, which is the middle of the
   // widest two-digit one, so "7" and "13" share an origin and the icon below
@@ -105,7 +105,19 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   // actualBoundingBoxRight right of it; the pen goes where that centres.
   // The same top for every number, so the icons line up from card to card.
   const top = inset + size * CARDS.labelTopMargin + wide.actualBoundingBoxAscent;
-  const penOffset = (glyphs.actualBoundingBoxRight - glyphs.actualBoundingBoxLeft) / 2;
+  // A two digit number is set smaller, outline included, with its top level with
+  // the others, and centred on the same point.
+  // Each is then nudged by a pixel or so, on a face 512 pixels wide.
+  const labelPx =
+    Math.round(size * (label.length > 1 ? CARDS.twoDigitScale : 1)) +
+    (label.length > 1 ? CARDS.twoDigitAdjustPx : CARDS.oneDigitAdjustPx);
+  const scale = labelPx / size;
+  const baseFont = context.font;
+  const baseLine = context.lineWidth;
+  context.font = `${NAME_WEIGHT} ${labelPx}px ${NAME_FONT}, serif`;
+  const set = context.measureText(label);
+  const penOffset = (set.actualBoundingBoxRight - set.actualBoundingBoxLeft) / 2;
+  context.font = baseFont;
 
   const feather = size * CARDS.outlineFeather;
   const iconStyle = {
@@ -129,11 +141,21 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   const centres = CARDS.bothCorners ? [centerOffset, width - centerOffset] : [width - centerOffset];
 
   for (const center of centres) {
-    if (label) inkText(context, label, center - penOffset, top, color, feather, pass);
+    if (label) {
+      context.font = `${NAME_WEIGHT} ${labelPx}px ${NAME_FONT}, serif`;
+      context.lineWidth = baseLine * scale;
+      // Raised by what the smaller digits lost in height, so the tops still line up.
+      const baseline = top - wide.actualBoundingBoxAscent * (1 - scale);
+      inkText(context, label, center - penOffset, baseline, color, feather * scale, pass);
+      context.font = baseFont;
+      context.lineWidth = baseLine;
+    }
 
     if (icon && label) drawIcon(context, icon, center, iconTop, iconStyle, pass);
 
-    if (badge) drawIcon(context, badge, center, symbolTop, { ...iconStyle, box: symbolBox }, pass);
+    // A symbol on its own (the Fool, the Wizard) sits a little to the left.
+    const symbolCentre = label ? center : center - size * CARDS.soloSymbolShift;
+    if (badge) drawIcon(context, badge, symbolCentre, symbolTop, { ...iconStyle, box: symbolBox }, pass);
   }
 
   // A card with a symbol has a yellow title like it; the rest take the number's
