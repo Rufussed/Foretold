@@ -14,6 +14,7 @@ import { BURST, CARD_HANDLING, TRICK_REWARD } from "./config";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
+import { cardsByOwner } from "../modes/roles/trick-swap";
 import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
@@ -367,14 +368,16 @@ export function createCardTable({
     const origins = new Map<string, Placement>();
     for (const played of state.currentTrick.playedCards) {
       const key = cardKey(played.card);
+      // Who played it: after a Roles swap the owner is someone else.
+      const player = played.playedBy ?? played.username;
       if (!knownTrick || knownTrick.has(key) || deal.dealing) continue;
       if (blindRound) {
-        const holder = holderOf(played.username);
+        const holder = holderOf(player);
         if (holder !== null) origins.set(key, blind.heldAt(holder));
         continue;
       }
-      if (played.username === game.localUsername) continue;
-      const seat = seatOf(played.username);
+      if (player === game.localUsername) continue;
+      const seat = seatOf(player);
       if (seat === null) continue;
       const showing = opponents.visibleCount(seat);
       const from = centredSlots(layout.handFor(seat), showing)[showing - 1];
@@ -385,10 +388,16 @@ export function createCardTable({
       canAct(game)
         ? []
         : state.currentTrick.playedCards
-            .filter((played) => played.username === game.localUsername)
+            .filter((played) => (played.playedBy ?? played.username) === game.localUsername)
             .map((played) => cardKey(played.card)),
     );
-    cards.setTrick(state.currentTrick.playedCards.map((played) => played.card), origins, fromHand);
+    cards.setTrick(
+      state.currentTrick.playedCards.map((played) => played.card),
+      origins,
+      fromHand,
+      // A Roles swap: each card in the place of the player who now owns it.
+      cardsByOwner(state.currentTrick.playedCards),
+    );
     // Only now, so a card just played flies from where it was, dropped or held.
     blind.set(holdings);
     knownTrick = new Set(state.currentTrick.playedCards.map((played) => cardKey(played.card)));

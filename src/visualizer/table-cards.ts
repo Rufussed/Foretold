@@ -4,6 +4,7 @@ import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
 import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { TRICK_SWAP, swapPlacement } from "../modes/roles/trick-swap";
 import { CARD_HANDLING as SABOTAGE_CARD_HANDLING, PLAYED_CARDS } from "../modes/sabotage/sabotage-config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
 import { paced } from "./pace";
@@ -27,10 +28,14 @@ export interface TableCards {
   // of it first, then turns into place on its played-card slot.
   // flyFromHand: cards played from your own hand by the server (your NPC, when
   // watching), which rise and fly from where they sit like other players' do.
+  // byOwner: the same cards in the places they are shown in, when a Roles
+  // power has swapped two of them (modes/roles/trick-swap.ts); they trade
+  // places once the card just played has landed.
   setTrick(
     cards: readonly Card[],
     origins?: ReadonlyMap<string, Placement>,
     flyFromHand?: ReadonlySet<string>,
+    byOwner?: readonly Card[],
   ): void;
   // How many players are at the table, which decides how many of the six
   // played-card slots the trick uses: they are taken from the middle, so a
@@ -121,6 +126,8 @@ interface TableCard {
   drag: THREE.Vector3 | null; // environment-local position while dragged
   placed: boolean;
   flight: { from: Placement; startedAt: number } | null; // another player's play
+  // Trading places with another card in the trick (a Roles swap).
+  swap: { from: Placement; startedAt: number; high: boolean } | null;
 }
 
 const smooth = (x: number) => {
@@ -202,6 +209,12 @@ export function createTableCards(
   const cards = new Map<string, TableCard>();
   let handOrder: string[] = [];
   let trickOrder: string[] = [];
+  // The trick's cards by the place each is shown in: the order played, until a
+  // Roles power swaps two (see setTrick's byOwner).
+  let trickPlaces: string[] = [];
+  // A swap waiting for the card just played to land: the places after it, and
+  // when it starts.
+  let swapWaiting: { places: string[]; at: number } | null = null;
   let pending: { key: string; since: number } | null = null;
   let hovered: string | null = null;
   let leading: string | null = null;
@@ -251,6 +264,7 @@ export function createTableCards(
       drag: null,
       placed: false,
       flight: null,
+      swap: null,
     };
     cards.set(key, entry);
     return entry;
@@ -343,8 +357,43 @@ export function createTableCards(
       const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
     }
-    const slot = inPlay[trickOrder.indexOf(entry.key)];
+    const slot = inPlay[trickPlaces.indexOf(entry.key)];
     return slot ? { slot, lift: 0 } : null;
+  };
+
+  // A swapped card's move into its new place; false once it has arrived.
+  const swapInTrick = (entry: TableCard, slot: Placement): boolean => {
+    const swap = entry.swap;
+    if (!swap) return false;
+    const now = swapPlacement(swap.from, slot, clock - swap.startedAt, swap.high, up, factory.length);
+    if (now) {
+      applyPlacement(entry.object, now);
+      return true;
+    }
+    entry.swap = null;
+    applyPlacement(entry.object, slot);
+    return false;
+  };
+
+  // Starts the waiting swap: every card whose place changes moves, the first
+  // on the higher path.
+  const startSwap = () => {
+    if (!swapWaiting) return;
+    let high = true;
+    trickPlaces.forEach((key, index) => {
+      if (swapWaiting!.places[index] === key) return;
+      const entry = cards.get(key);
+      if (!entry) return;
+      entry.flight = null;
+      entry.swap = {
+        from: { position: entry.object.position.clone(), quaternion: entry.object.quaternion.clone(), scale: entry.object.scale.clone() },
+        startedAt: clock,
+        high,
+      };
+      high = !high;
+    });
+    trickPlaces = swapWaiting.places;
+    swapWaiting = null;
   };
 
   return {
@@ -424,7 +473,8 @@ export function createTableCards(
       }
     },
 
-    setTrick(cardsPlayed, origins, flyFromHand) {
+    setTrick(cardsPlayed, origins, flyFromHand, byOwner) {
+      const previousPlaces = trickPlaces;
       trickOrder = cardsPlayed.map(cardKey);
       for (const key of [...suppressed]) {
         if (!trickOrder.includes(key)) suppressed.delete(key);
@@ -447,6 +497,33 @@ export function createTableCards(
       }
       if (pending && trickOrder.includes(pending.key)) pending = null;
       trickOrderShown = new Set(trickOrder);
+
+      // Cards already on the table keep their places for now, and a new one
+      // lands in its own turn's place; if the owners say otherwise, the cards
+      // trade places once the newest has landed.
+      const owned = (byOwner ?? cardsPlayed).map(cardKey);
+      const shown = trickOrder.map((key, index) => previousPlaces[index] ?? key);
+      const sameCards = shown.length === new Set(shown).size && shown.every((key) => trickOrder.includes(key));
+      const settled = sameCards ? shown : trickOrder;
+      trickPlaces = settled;
+      const waiting = swapWaiting;
+      swapWaiting = null;
+      if (owned.join() !== settled.join()) {
+        // When the cards just played have landed: one from another hand at
+        // the end of its flight, your own once it has glided into place.
+        const landing = trickOrder
+          .filter((key) => !previousPlaces.includes(key))
+          .map((key) => {
+            const flight = cards.get(key)?.flight;
+            return flight
+              ? flight.startedAt + paced(OPPONENT_PLAYS.liftSeconds) + paced(OPPONENT_PLAYS.travelSeconds)
+              : clock + paced(OPPONENT_PLAYS.travelSeconds);
+          });
+        const lands = Math.max(clock, ...landing);
+        // A repeat of the same state keeps the swap's start where it was.
+        const at = waiting?.places.join() === owned.join() ? waiting.at : lands + paced(TRICK_SWAP.pauseSeconds);
+        swapWaiting = { places: owned, at };
+      }
     },
 
     setHandFrame(yaw, pivot) {
@@ -475,6 +552,8 @@ export function createTableCards(
         pending = null;
       }
 
+      if (swapWaiting && clock >= swapWaiting.at) startSwap();
+
       const follow = 1 - Math.exp(-CARD_HANDLING.followSpeed * deltaSeconds);
       for (const entry of cards.values()) {
         const target = targetOf(entry);
@@ -493,6 +572,11 @@ export function createTableCards(
         if (flyFromHand(entry, target.slot)) {
           entry.object.visible = true;
           entry.outline.visible = false;
+          continue;
+        }
+
+        if (swapInTrick(entry, target.slot)) {
+          entry.object.visible = true;
           continue;
         }
 
