@@ -8,6 +8,7 @@ import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } f
 import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
 import { blueWizardBonus } from "./blueWizard.js";
+import { greenBoostIn, greenWizardBonus } from "./greenWizard.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
 import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
@@ -201,7 +202,7 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
     const done: { player: string; points: number }[] = [];
     const blocks: RoleAction[] = [];
 
-    for (const trade of trades(trick.playedCards, merchant, game.trumpSuit)) {
+    for (const trade of trades(trick.playedCards, merchant, game.trumpSuit, greenBoostIn(game))) {
       if (!trade.sells) {
         const buyer = playerNamed(merchant);
         const seller = playerNamed(trade.player);
@@ -244,8 +245,9 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
     }
   }
 
-  // A Blue Wizard who won with the blue Wizard.
+  // A Blue Wizard who won with the blue Wizard, a Green Wizard with the green.
   addBonus(winner, "blueWizard", blueWizardBonus(trick, winner));
+  addBonus(winner, "greenWizard", greenWizardBonus(trick, winner));
 
   const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game)];
 
@@ -350,7 +352,7 @@ export function botFishingSpot(game: WizardGameState): number {
 
     fish(copy, fisher?.username ?? "", spot);
 
-    return rules.determineTrickWinner(copy, game.trumpSuit, wizardWins) === fisher?.username;
+    return rules.determineTrickWinner(copy, game.trumpSuit, wizardWins, greenBoostIn(game)) === fisher?.username;
   };
   const wantsTricks = (fisher?.prediction ?? 0) > (fisher?.tricksWon ?? 0);
   // A Smith in armour would only block the catch.

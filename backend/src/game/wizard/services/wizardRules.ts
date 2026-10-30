@@ -6,6 +6,9 @@ import {
   type Suit,
 } from "../models/card.js";
 
+// How much a played card's rank is raised against cards of its own suit.
+export type CardBoost = (play: { username: string; card: Card }) => number;
+
 export class WizardRules {
   // A Wizard or Jester turned as trump does not establish a trump suit.
   getTrumpSuit(trumpCard: Card | null): Suit | null {
@@ -55,12 +58,20 @@ export class WizardRules {
 
   // Return a positive value when the first card wins, a negative value when
   // the second wins, and zero when neither card outranks the other.
+  // firstBoost and secondBoost raise a card's rank against a card of its own
+  // suit: a Roles Green Wizard's green cards (modes/roles/greenWizard.ts). A
+  // boosted card that only draws level loses.
   compareCards(
     firstCard: Card,
     secondCard: Card,
     trumpSuit: Suit | null,
     leadSuit: Suit | null,
+    firstBoost = 0,
+    secondBoost = 0,
   ): number {
+    const byRank = () =>
+      firstCard.value + firstBoost - (secondCard.value + secondBoost) || secondBoost - firstBoost;
+
     if (isWizard(firstCard)) {
       return 1;
     }
@@ -90,7 +101,7 @@ export class WizardRules {
     }
 
     if (firstIsTrump && secondIsTrump) {
-      return firstCard.value - secondCard.value;
+      return byRank();
     }
 
     const firstFollowsLead =
@@ -107,7 +118,7 @@ export class WizardRules {
     }
 
     if (firstFollowsLead && secondFollowsLead) {
-      return firstCard.value - secondCard.value;
+      return byRank();
     }
 
     return 0;
@@ -116,10 +127,13 @@ export class WizardRules {
   // Determine the winner from cards played in turn order. When several
   // Wizards are played, the game's wizardWins option picks the first or the
   // last of them.
+  // boostOf: how much a played card's rank is raised (see compareCards);
+  // none when left out.
   determineTrickWinner(
     playedCards: Array<{ username: string; card: Card }>,
     trumpSuit: Suit | null,
     wizardWins: WizardWins,
+    boostOf?: CardBoost,
   ): string | null {
     if (playedCards.length === 0) {
       return null;
@@ -152,6 +166,8 @@ export class WizardRules {
           winningPlay.card,
           trumpSuit,
           leadSuit,
+          boostOf?.(currentPlay) ?? 0,
+          boostOf?.(winningPlay) ?? 0,
         ) > 0
       ) {
         winningPlay = currentPlay;

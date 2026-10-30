@@ -9,6 +9,7 @@ import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./rol
 import { crowdFactor, strength, trickChance } from "./handStrength.js";
 import { sabotagePick } from "../modes/sabotage/bots/index.js";
 import { blueLead, blueTrickChance, blueWizardWin } from "./blueWizardSense.js";
+import { greenBoostIn } from "../modes/roles/greenWizard.js";
 
 const rules = new WizardRules();
 
@@ -60,7 +61,7 @@ export const adept: BotStrategy = {
     // Which cards would take the trick as it stands, powers included. Only
     // for the last player is that final; anyone after may still beat it.
     const winsNow = ({ card }: { card: Card }) =>
-      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins) === player.username;
+      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins, greenBoostIn(game)) === player.username;
     const winners = legal.filter(winsNow);
     const losers = legal.filter((play) => !winsNow(play));
     const rolePlay = rolePick(game, legal, winners, losers, wantsTricks);

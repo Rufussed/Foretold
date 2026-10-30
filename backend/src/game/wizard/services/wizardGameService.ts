@@ -21,6 +21,7 @@ import {
 } from "../modes/roles/rolePowers.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { blueSight } from "../modes/roles/blueWizard.js";
+import { greenBoostIn } from "../modes/roles/greenWizard.js";
 
 import type {
   GamePlayer,
@@ -372,6 +373,8 @@ export class WizardGameService {
       game.currentTrick.playedCards,
       game.trumpSuit,
       normalizeGameOptions(game.options).wizardWins,
+      // A Roles Green Wizard's green cards count higher.
+      greenBoostIn(game),
     );
 
     if (!winnerUsername) {
