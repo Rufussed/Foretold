@@ -7,6 +7,7 @@ import { MARKET_POINTS, marketsIn, trades } from "./merchant.js";
 import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
 import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
+import { blueWizardBonus } from "./blueWizard.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
 import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
@@ -242,6 +243,9 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
       action.points = movePoints(game, action.on, winner.username, "fisher", CATCH_POINTS);
     }
   }
+
+  // A Blue Wizard who won with the blue Wizard.
+  addBonus(winner, "blueWizard", blueWizardBonus(trick, winner));
 
   const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game)];
 
