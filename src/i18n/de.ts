@@ -112,6 +112,8 @@ export const de: Record<MessageKey, string> = {
   "mode.classic.description": "Wizard wie gedruckt: Sag deine Stiche genau an.",
   "mode.roles": "Rollen",
   "mode.roles.description": "Wähle vor der Partie eine Rolle, etwa den Dieb oder den Fischer, und nutze ihre Kraft, wenn du ihre Karte spielst.",
+  "mode.sabotage": "Sabotage",
+  "mode.sabotage.description": "Vier Elemente und Karten mit Kräften: Gewinne einen Stich mit dem Dieb, dem Trickser oder dem Seher, um eine Karte zu tauschen oder eine Ansage zu verschieben.",
   "lobby.maxPlayers": "Plätze am Tisch",
   "lobby.empty": "Keine Räume offen",
   "lobby.emptyHint": "Eröffne den ersten Tisch und starte eine Partie.",

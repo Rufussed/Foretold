@@ -19,6 +19,7 @@ import {
   applyTrickEndPowers,
   startFishing,
 } from "../modes/roles/rolePowers.js";
+import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 
 import type {
   GamePlayer,
@@ -399,6 +400,10 @@ export class WizardGameService {
     game.currentTrick.winnerUsername = winnerUsername;
     game.currentPlayerIndex = winnerIndex;
 
+    if (normalizeGameOptions(game.options).mode === "sabotage") {
+      earnCardPower(game, winner);
+    }
+
     return winnerUsername;
   }
 
@@ -574,6 +579,10 @@ export class WizardGameService {
   }
 
   advanceAfterTrick(game: WizardGameState): void {
+    if (hasPendingPower(game)) {
+      throw new Error("The trick's power has not been used yet");
+    }
+
     const allHandsEmpty = game.players.every(
       (player) => player.hand.length === 0,
     );

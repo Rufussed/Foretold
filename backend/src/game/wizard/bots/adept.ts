@@ -6,46 +6,17 @@ import { WizardRules } from "../services/wizardRules.js";
 import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
+import { crowdFactor, strength, trickChance } from "./handStrength.js";
+import { sabotagePick } from "../modes/sabotage/bots/index.js";
 
 const rules = new WizardRules();
-
-// The chance a card takes a trick, against two opponents. Trumps beat every
-// other suit, so even a middling one often wins; outside trumps only the top
-// cards do.
-function trickChance(card: Card, trumpSuit: Suit | null): number {
-  if (isWizard(card)) return 1;
-  if (isJester(card)) return 0;
-
-  if (card.suit === trumpSuit) {
-    if (card.value >= 12) return 0.9;
-    if (card.value >= 9) return 0.65;
-    if (card.value >= 5) return 0.4;
-    return 0.2;
-  }
-
-  if (card.value === 13) return 0.7;
-  if (card.value === 12) return 0.5;
-  if (card.value === 11) return 0.3;
-  return 0;
-}
-
-// Every extra opponent is another chance of a higher card, so a card that is
-// not a Wizard is worth less the more players there are.
-const crowdFactor = (playerCount: number): number => 1 - 0.12 * (playerCount - 3);
-
-// How good a card is to hold: Wizards above trumps above other suits, Jesters
-// below everything.
-function strength(card: Card, trumpSuit: Suit | null): number {
-  if (isWizard(card)) return 100;
-  if (isJester(card)) return -1;
-  return (card.suit === trumpSuit ? 20 : 0) + card.value;
-}
 
 // The second bot: it bids on the chance each card has of winning, counting
 // trumps and the number of opponents, then plays to make that bid exactly.
 // While it still needs tricks it plays to win them, and once it has them it
 // plays to lose, getting rid of its dangerous cards when it safely can. In a
-// Roles game it knows its role and what its card does (roleSense.ts).
+// Roles game it knows its role and what its card does (roleSense.ts); in a
+// Sabotage game, what a Seer or Trickster brings (modes/sabotage/bots/).
 export const adept: BotStrategy = {
   chooseTrumpSuit: chooseLongestSuit,
 
@@ -94,6 +65,10 @@ export const adept: BotStrategy = {
     const rolePlay = rolePick(game, legal, winners, losers, wantsTricks);
 
     if (rolePlay) return rolePlay.index;
+
+    const sabotagePlay = sabotagePick(game, winners, losers, wantsTricks, weakest);
+
+    if (sabotagePlay) return sabotagePlay.index;
 
     // Leading: its best card to take the trick, or its lowest to give it
     // away, keeping a Jester back for a trick it can't otherwise lose.

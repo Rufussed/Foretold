@@ -9,12 +9,18 @@ import { isEmote } from "../models/emote.js";
 import { guestTableEmptied, guestTableJoined } from "../services/guestCleanup.js";
 import { withErrorCode } from "../../../errorCodes.js";
 import { hasQuit, recordOwnMove } from "../services/playerQuit.js";
+import {
+	handleSabotageDevCard,
+	handleSabotageMove,
+	type SabotageMessage,
+} from "../modes/sabotage/sabotageMessages.js";
 
 interface SocketQuery {
 	token?: string;
 }
 
-interface SocketMessage {
+// Sabotage's own fields are in modes/sabotage/sabotageMessages.ts.
+interface SocketMessage extends SabotageMessage {
 	type?: string;
 	prediction?: number;
 	cardIndex?: number;
@@ -237,6 +243,21 @@ export function registerWizardSocket(
 					return;
 				}
 
+				// Test shortcut of a Sabotage game, outside the turn order.
+				try {
+					if (handleSabotageDevCard(currentGame, username, message)) {
+						wizardSessionManager.saveGame(currentGame);
+						broadcastGameState(roomId, gameService);
+						return;
+					}
+				} catch (error) {
+					sendJson(socket, {
+						type: "error",
+						error: error instanceof Error ? error.message : "Could not change the card",
+					});
+					return;
+				}
+
 				// Reject actions submitted after the current decision's deadline.
 				if (
 					currentGame.turnDeadlineAt !== null &&
@@ -296,6 +317,12 @@ export function registerWizardSocket(
 						}
 
 						gameService.fishCard(currentGame, username, message.spot);
+					} else if (
+						handleSabotageMove(currentGame, username, message, (game, cardIndex) =>
+							gameService.playCard(game, cardIndex),
+						)
+					) {
+						// A Sabotage power (modes/sabotage/sabotageMessages.ts).
 					} else if (message.type === "choose_trump") {
 						if (!isSuit(message.suit)) {
 							throw new Error("Invalid suit");

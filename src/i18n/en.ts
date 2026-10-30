@@ -111,6 +111,8 @@ export const en = {
   "mode.classic.description": "Wizard as printed: predict your tricks exactly.",
   "mode.roles": "Roles",
   "mode.roles.description": "Choose a role before the game, like the Thief or the Fisher, and use its power when you play its card.",
+  "mode.sabotage": "Sabotage",
+  "mode.sabotage.description": "Four elements and cards with powers: win a trick with the Thief, the Trickster or the Seer to swap a card or move a prediction.",
   "lobby.maxPlayers": "Maximum players",
   "lobby.empty": "No rooms available",
   "lobby.emptyHint": "Create the first table and start a game.",

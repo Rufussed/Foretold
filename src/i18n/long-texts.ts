@@ -1073,7 +1073,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>For the host</h3>
         <p>
           The wizard who created the room sets up the game, starting
-          with which one: Classic or Roles. NPCs fill the
+          with which one: Classic, Roles or Sabotage. NPCs fill the
           empty seats, as a game needs 3 to 6 players; alone, you can give
           every seat to an NPC and watch. Choose how well they play, the
           rounds (a full game, or fewer for a short one), the game speed
@@ -1124,7 +1124,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>Für den Gastgeber</h3>
         <p>
           Wer den Raum erstellt hat, richtet die Partie ein, zuerst das
-          Spiel: Klassisch oder Rollen. NPCs füllen
+          Spiel: Klassisch, Rollen oder Sabotage. NPCs füllen
           die freien Plätze, denn eine Partie braucht 3 bis 6 Spieler;
           allein kannst du jeden Platz einem NPC geben und zuschauen.
           Wähle, wie gut sie spielen, die Runden (eine ganze Partie oder

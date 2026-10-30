@@ -3,7 +3,7 @@
 // its own folder beside this file. Like gameOptions.ts it must stay free of
 // Node-only code, because Vite bundles it into the browser.
 
-export const GAME_MODES = ["classic", "roles"] as const;
+export const GAME_MODES = ["classic", "roles", "sabotage"] as const;
 
 export type GameMode = (typeof GAME_MODES)[number];
 

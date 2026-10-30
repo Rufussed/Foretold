@@ -9,6 +9,8 @@ import { isBotName } from "../models/bot.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { FISHING_TIMEOUT_MS } from "../modes/roles/fisher.js";
 import { botFishingSpot, randomFishingSpot } from "../modes/roles/rolePowers.js";
+import { beginPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
+import { runSabotagePowerDecision } from "../modes/sabotage/powerDecision.js";
 
 // One Fisher's choice in one trick: changes once they have fished.
 const fishingKey = (game: WizardGameState): string =>
@@ -82,14 +84,36 @@ export class WizardGameRunner {
             game.players.length
         ) {
           // Keep the completed trick visible briefly before clearing it and
-          // moving the winner into the lead position.
-          await this.wait(WIZARD_TIMING.trickHoldMs, pace);
+          // moving the winner into the lead position. In Sabotage a trick won
+          // with a Seer, Trickster or Thief is held for its winner's power
+          // first; once that has been used, only a short hold is left.
+          const power = game.currentTrick.sabotagePower;
+          await this.wait(
+            power?.resolved
+              ? power.kind === "thief" && power.target
+                ? WIZARD_TIMING.afterThiefHoldMs
+                : WIZARD_TIMING.afterPowerHoldMs
+              : WIZARD_TIMING.trickHoldMs,
+            pace,
+          );
 
           const currentGame =
             wizardSessionManager.getGame(roomId);
 
           if (!currentGame) {
             return;
+          }
+
+          if (hasPendingPower(currentGame)) {
+            // The winner chooses next: the same turn machinery as any move,
+            // with the winner already the current player.
+            beginPower(currentGame);
+            currentGame.turnDeadlineAt = null;
+            wizardSessionManager.saveGame(currentGame);
+            this.broadcast(roomId);
+
+            await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+            continue;
           }
 
           this.gameService.advanceAfterTrick(currentGame);
@@ -228,6 +252,30 @@ export class WizardGameRunner {
         // If a human timed out, clear the deadline before making the
         // decision so the next turn can receive its own deadline.
         
+        // --------------------------------------------------
+        // SABOTAGE POWER (modes/sabotage/powerDecision.ts)
+        // --------------------------------------------------
+
+        if (decisionGame.phase === "power") {
+          // A bot is seen to think about it; a human whose time ran out
+          // leaves it alone.
+          if (!timedOutHuman) {
+            await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
+          }
+
+          await runSabotagePowerDecision({
+            roomId,
+            decisionPlayer: decisionPlayer.username,
+            deadline: decisionGame.turnDeadlineAt,
+            timedOutHuman,
+            broadcast: () => this.broadcast(roomId),
+            wait: (milliseconds) => this.wait(milliseconds, pace),
+          });
+
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+          continue;
+        }
+
         // --------------------------------------------------
         // BOT TRUMP SELECTION
         if (decisionGame.phase === "trump-selection") {
