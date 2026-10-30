@@ -14,7 +14,7 @@ const CARD_FILES = import.meta.glob("../../../assets/sabotage-cards/**/*.webp", 
 }) as Record<string, string>;
 
 export function cardFile(path: string): string {
-  const url = CARD_FILES[`../assets/cards/${path}`];
+  const url = CARD_FILES[`../../../assets/sabotage-cards/${path}`];
   // A missing file is a mistake in the naming below or a card that was never
   // scanned; say so rather than handing three.js undefined and drawing a blank.
   if (!url) throw new Error(`No card art at ${path}`);

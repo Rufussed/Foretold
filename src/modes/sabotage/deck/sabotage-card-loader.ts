@@ -16,7 +16,9 @@ import { CARDS } from "../sabotage-config";
 // has its number printed on as it loads (see card-label.ts), and the back its
 // title and ring icons (see card-back.ts).
 
-const BACK_URL = cardFile("back/backCard.webp");
+// Looked up on first use, not as this file loads: the shared loader imports
+// it for every game, so a missing file must not stop a Classic table.
+const backUrl = (): string => cardFile("back/backCard.webp");
 
 // air-1.webp … air-13.webp, air-jester.webp, air-wizard.webp — named for the
 // suit's element. Jesters are value 0 and Wizards 14, matching the game rules.
@@ -186,7 +188,7 @@ const faceId = (card: Card): string => `${cardLabel(card)}${cardTint(card) ?? ""
 export const cardArtTexture = (card: Card): THREE.Texture =>
   load(cardArtUrl(card), faceId(card), () => cardPrint(card), cardTint(card));
 
-export const cardBackTexture = (): THREE.Texture => load(BACK_URL, "back", prepareCardBack);
+export const cardBackTexture = (): THREE.Texture => load(backUrl(), "back", prepareCardBack);
 
 // The same texture, but resolving once its image has actually arrived, so the
 // prefetch queue holds one card open at a time instead of starting the whole
