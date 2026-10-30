@@ -15,6 +15,7 @@ import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
 import { cardsByOwner } from "../modes/roles/mechanics/trick-swap";
+import { applyBlueSight } from "../modes/roles/mechanics/blue-sight";
 import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
@@ -563,6 +564,16 @@ export function createCardTable({
       heist.update(deltaSeconds);
       cards.update(deltaSeconds);
       blind.update();
+      // A Roles Blue Wizard's sight: the blue cards of hidden hands.
+      if (game) {
+        applyBlueSight(game.state(), {
+          localUsername: game.localUsername,
+          seatOf,
+          visibleCount: (seat) => opponents.visibleCount(seat),
+          cardObject: (seat, index) => opponents.cardObject(seat, index),
+          localBlindCard: () => blind.localCard(),
+        });
+      }
       rewards.update(deltaSeconds);
       burst.update(deltaSeconds);
       // crown.update(deltaSeconds);

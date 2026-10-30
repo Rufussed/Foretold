@@ -136,6 +136,9 @@ export interface PublicGamePlayer {
   avatar: AvatarId;
   hand: Card[];
   handCount: number;
+  // Told only to a Blue Wizard, for a hand hidden from them: how many of its
+  // cards are blue (modes/roles/blueWizard.ts).
+  blueCards?: number;
   prediction: number | null;
   tricksWon: number;
   score: number;

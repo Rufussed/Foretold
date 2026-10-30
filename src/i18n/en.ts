@@ -155,6 +155,8 @@ export const en = {
   "role.smith.power": "Play your 6: you forge a piece of armour (3 at most), kept from round to round. Each piece blocks one power used against you and is used up: a steal, a service or a catch of your card, or one seed or one sheep you would pay for, or a payment to a Merchant's market. The attacker pays you 5 points for each block; a Merchant pays nothing, the trade just does not happen.",
   "role.merchant": "Merchant",
   "role.merchant.power": "Play your 7: when the trick ends, you trade with every card in it, whoever wins. Every card that loses to yours pays you 5 points, and you pay 5 points to every card that beats yours, even if that takes you below 0. Wizards and Jesters do not trade. If a Thief, a Servant or a Fisher takes your 7, you trade with the card they leave you.",
+  "role.blueWizard": "Blue Wizard",
+  "role.blueWizard.power": "No card of your own: you see how many blue cards every other player holds. Their cards show blue to you, front and back, though never which card or its number; in a blind round, so does your own if it is blue. Wizards and Jesters are never blue.",
   "role.shepherd": "Shepherd",
   "role.shepherd.power": "Play your 5, in any suit: whoever wins the trick takes one of your 3 sheep. When you win a trick with your 5, everyone holding your sheep pays you 20 points per sheep, and your sheep come home.",
   "room.bots": "NPCs",

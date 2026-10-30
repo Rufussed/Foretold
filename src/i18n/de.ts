@@ -156,6 +156,8 @@ export const de: Record<MessageKey, string> = {
   "role.smith.power": "Spiel deine 6: Du schmiedest ein Rüstungsteil (höchstens 3), das von Runde zu Runde bleibt. Jedes Teil blockt eine Kraft gegen dich und ist dann verbraucht: einen Diebstahl, einen Dienst oder einen Fang deiner Karte, oder einen Samen oder ein Schaf, für das du zahlen müsstest, oder eine Zahlung an den Markt eines Händlers. Der Angreifer zahlt dir 5 Punkte pro Block; ein Händler zahlt nichts, der Handel fällt einfach aus.",
   "role.merchant": "Händler",
   "role.merchant.power": "Spiel deine 7: Am Ende des Stichs handelst du mit jeder Karte darin, egal wer gewinnt. Jede Karte, die gegen deine verliert, zahlt dir 5 Punkte, und jeder Karte, die deine schlägt, zahlst du 5 Punkte, auch wenn du dabei unter 0 fällst. Zauberer und Narren handeln nicht. Nimmt dir ein Dieb, ein Diener oder ein Fischer deine 7, handelst du mit der Karte, die er dir dafür lässt.",
+  "role.blueWizard": "Blauer Zauberer",
+  "role.blueWizard.power": "Keine eigene Karte: Du siehst, wie viele blaue Karten jeder andere Spieler hält. Ihre Karten erscheinen dir blau, vorne und hinten, aber nie welche Karte oder ihre Zahl; in einer Blindrunde auch deine eigene, wenn sie blau ist. Zauberer und Narren sind nie blau.",
   "role.shepherd": "Hirte",
   "role.shepherd.power": "Spiel deine 5, in jeder Farbe: Wer den Stich gewinnt, bekommt eines deiner 3 Schafe. Gewinnst du einen Stich mit deiner 5, zahlen dir alle mit deinen Schafen 20 Punkte pro Schaf, und deine Schafe kommen heim.",
   "room.bots": "NPCs",

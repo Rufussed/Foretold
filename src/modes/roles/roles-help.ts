@@ -16,7 +16,7 @@ export function openRolesHelp(): void {
         ${ROLES.map(
           ({ id, card }) => `
             <section class="home-rules-section">
-              <h3><span class="roles-help-card">${card}</span>${t(`role.${id}`)}</h3>
+              <h3>${card === null ? "" : `<span class="roles-help-card">${card}</span>`}${t(`role.${id}`)}</h3>
               <p>${t(`role.${id}.power`)}</p>
             </section>
           `,

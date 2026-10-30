@@ -8,6 +8,7 @@ import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
 import { crowdFactor, strength, trickChance } from "./handStrength.js";
 import { sabotagePick } from "../modes/sabotage/bots/index.js";
+import { blueLead, blueTrickChance } from "./blueWizardSense.js";
 
 const rules = new WizardRules();
 
@@ -27,7 +28,7 @@ export const adept: BotStrategy = {
 
     const crowd = crowdFactor(game.players.length);
     const expected = currentPlayer(game).hand.reduce((total, card) => {
-      const chance = trickChance(card, game.trumpSuit) + roleBidValue(game, card);
+      const chance = blueTrickChance(game, card, trickChance(card, game.trumpSuit) + roleBidValue(game, card));
       return total + (isWizard(card) ? chance : chance * crowd);
     }, 0);
 
@@ -69,6 +70,10 @@ export const adept: BotStrategy = {
     const sabotagePlay = sabotagePick(game, winners, losers, wantsTricks, weakest);
 
     if (sabotagePlay) return sabotagePlay.index;
+
+    // A Blue Wizard leads by what it knows of the blue cards.
+    const bluePlay = blueLead(game, legal, wantsTricks);
+    if (bluePlay) return bluePlay.index;
 
     // Leading: its best card to take the trick, or its lowest to give it
     // away, keeping a Jester back for a trick it can't otherwise lose.

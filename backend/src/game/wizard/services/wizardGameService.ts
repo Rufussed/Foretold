@@ -20,6 +20,7 @@ import {
   startFishing,
 } from "../modes/roles/rolePowers.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
+import { blueSight } from "../modes/roles/blueWizard.js";
 
 import type {
   GamePlayer,
@@ -539,6 +540,11 @@ export class WizardGameService {
       players: game.players.map((player) => {
         const isRequester = player.username === username;
         const handVisible = blindRound ? !isRequester : isRequester;
+        // A Blue Wizard is told the blue cards of hands hidden from them.
+        const blueSightOf = (of: GamePlayer, visible: boolean) => {
+          const blueCards = blueSight(requestingPlayer, of, visible);
+          return blueCards === undefined ? {} : { blueCards };
+        };
 
         return {
           username: player.username,
@@ -554,6 +560,7 @@ export class WizardGameService {
           seeds: player.seeds ?? {},
           sheep: player.sheep ?? {},
           armor: player.armor ?? 0,
+          ...blueSightOf(player, handVisible),
         };
       }),
       currentRound: game.currentRound,

@@ -14,6 +14,10 @@ export const ROLES = [
   { id: "shepherd", card: 5 },
   { id: "smith", card: 6 },
   { id: "merchant", card: 7 },
+  // No card of its own: the Blue Wizard sees how many blue cards each
+  // opponent holds (blueWizard.ts). Open to everyone for now; to be unlocked
+  // with Blue colour points later.
+  { id: "blueWizard", card: null },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];
@@ -21,13 +25,17 @@ export type RoleId = (typeof ROLES)[number]["id"];
 export const isRoleId = (value: unknown): value is RoleId =>
   ROLES.some((role) => role.id === value);
 
-// The number card a role's power belongs to.
-export const roleCard = (id: RoleId): number =>
-  ROLES.find((role) => role.id === id)?.card ?? 0;
+// The number card a role's power belongs to; null for a role with none (the
+// Blue Wizard), which no card can match.
+export const roleCard = (id: RoleId): number | null =>
+  ROLES.find((role) => role.id === id)?.card ?? null;
 
 // A role's power at work in a trick, for the players to be told about.
+// The roles whose power acts in a trick: all but the Blue Wizard, who only sees.
+export type ActingRoleId = Exclude<RoleId, "blueWizard">;
+
 export interface RoleAction {
-  role: RoleId;
+  role: ActingRoleId;
   // Who used the power, and on whom.
   by: string;
   on: string;

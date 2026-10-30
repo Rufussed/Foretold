@@ -46,7 +46,8 @@ export function destroyRoomPage(): void {
 function roleOptions(): string {
   return [
     `<option value="" selected disabled>${t("room.role.choose")}</option>`,
-    ...ROLES.map(({ id, card }) => `<option value="${id}">${card} · ${t(`role.${id}`)}</option>`),
+    // A role with no card of its own (the Blue Wizard) shows its name alone.
+    ...ROLES.map(({ id, card }) => `<option value="${id}">${card === null ? "" : `${card} · `}${t(`role.${id}`)}</option>`),
   ].join("");
 }
 

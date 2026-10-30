@@ -28,6 +28,8 @@ export interface Play {
 // trades.
 const BID_VALUE: Record<RoleId, number> = {
   thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0,
+  // No card of its own; its sight is used in blueWizardSense.ts.
+  blueWizard: 0,
 };
 
 const isRoles = (game: WizardGameState): boolean =>
