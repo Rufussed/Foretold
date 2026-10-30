@@ -65,6 +65,11 @@ export interface AnnouncerOptions {
   seatOf?(username: string): number | null;
   // The table's width on screen, in pixels, which the seat offsets are a share of.
   tableWidthPx?(): number;
+  // An announcement that a player's prediction was changed (a Sabotage Seer
+  // or Trickster) has just come up: the list swaps in the new number now (see
+  // player-list.ts). byOther: another player's power changed it (a
+  // Trickster); source: whose power it was.
+  onPredictionChange?(username: string, byOther: boolean, source?: string): void;
 }
 
 export function createAnnouncer(
@@ -224,7 +229,13 @@ export function createAnnouncer(
       if (!state) return;
 
       if (previous) {
-        for (const message of eventMessages(previous, state, game.localUsername)) queue.push(message);
+        for (const { changes, byOther, source, ...message } of eventMessages(previous, state, game.localUsername)) {
+          queue.push(
+            changes
+              ? { ...message, onShow: () => options.onPredictionChange?.(changes, !!byOther, source) }
+              : message,
+          );
+        }
 
         const results = roundResults(previous, state);
         if (results.length) {

@@ -3,6 +3,8 @@ import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { CARD_HANDLING as SABOTAGE_CARD_HANDLING, PLAYED_CARDS } from "../modes/sabotage/sabotage-config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
 import { paced } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
@@ -60,10 +62,25 @@ export interface TableCards {
   // Hides the trump card until a different trump is set or a deal begins.
   suppressTrump(): void;
 
+  // For a Sabotage Thief's swap (modes/sabotage/heist/). Hides these hand
+  // cards, while they stay counted in the fan, until each is released: a card
+  // taken by a Thief arrives by flight, not by appearing. Unlike a deal's
+  // hold, the hand keeps turning with the camera meanwhile.
+  holdForSwap(keys: readonly string[]): void;
+  releaseSwapped(key: string): void;
+  // Where a hand card is, in environment space; null if it isn't showing.
+  placementOf(key: string): Placement | null;
+  // The slots a hand of `count` cards would sit on, riding with the camera as
+  // your hand does.
+  frameSlots(count: number): Placement[];
+
   // The hand card under a ray, if any.
   cardAt(raycaster: THREE.Raycaster): string | null;
   setHovered(key: string | null): void;
+  // The hand card the pointer is on, else the one raised to be read.
+  selectedKey(): string | null;
   toggleRaised(key: string): void;
+  setRaised(key: string, raised: boolean): void;
   positionOf(key: string): THREE.Vector3 | null;
   startDrag(key: string): void;
   dragTo(key: string, world: THREE.Vector3): void;
@@ -149,6 +166,35 @@ export function createTableCards(
   // per frame.
   let inUse = centredPlayedSlots(playerCount);
   const playedSlotsInUse = () => inUse;
+
+  // A Sabotage table: the played slots as they are drawn when `count` cards
+  // are in play. The first card goes to the middle and the rest spread out
+  // about it as they arrive: with `count` cards they take the middle `count`
+  // slots, so the group stays centred on the full set. The fewer cards, the
+  // bigger (see PLAYED_CARDS), with the spacing spread by the same amount to
+  // keep the gaps, and raised by half the extra height so a card grows upward
+  // from where its bottom edge was. Built once per count.
+  const scaledPlayed = new Map<number, readonly Placement[]>();
+  const playedSlotsFor = (count: number): readonly Placement[] => {
+    if (!isSabotageGame()) return playedSlotsInUse();
+    const shown = Math.max(1, Math.min(count, playerCount));
+    const cached = scaledPlayed.get(shown);
+    if (cached) return cached;
+
+    // The biggest with one card, smaller for each more, never below authored.
+    const factor = Math.max(1, PLAYED_CARDS.oneCard - PLAYED_CARDS.stepPerCard * (shown - 1));
+    const middle = centroid(playedSlots);
+    const slots = centredPlayedSlots(shown).map((slot) => ({
+      position: middle
+        .clone()
+        .add(slot.position.clone().sub(middle).multiplyScalar(factor))
+        .addScaledVector(up, ((factor - 1) / 2) * factory.length * slot.scale.z),
+      quaternion: slot.quaternion,
+      scale: slot.scale.clone().multiplyScalar(factor),
+    }));
+    scaledPlayed.set(shown, slots);
+    return slots;
+  };
   const trumpSlot = layout.trump;
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
   const liftFor = (slot: Placement) => CARD_HANDLING.raiseLengths * factory.length * slot.scale.z;
@@ -252,7 +298,9 @@ export function createTableCards(
   // The trick as last set, so a card flies from the hand only once.
   let trickOrderShown = new Set<string>();
 
-  const visibleHand = () => handOrder.filter((key) => key !== pending?.key && !held.has(key));
+  let swapHeld = new Set<string>();
+  const visibleHand = () =>
+    handOrder.filter((key) => key !== pending?.key && !held.has(key) && !swapHeld.has(key));
 
   // A hand card's slot: centred for the whole hand, cards still being dealt
   // included, so each lands where it stays and nothing shifts mid-deal.
@@ -279,9 +327,18 @@ export function createTableCards(
   const targetOf = (entry: TableCard): { slot: Placement; lift: number } | null => {
     if (visibleHand().includes(entry.key)) {
       const slot = handSlotFor(entry.key);
-      return slot ? { slot, lift: entry.raised ? liftFor(slot) : 0 } : null;
+      if (!slot) return null;
+      if (!entry.raised) return { slot, lift: 0 };
+      if (!isSabotageGame()) return { slot, lift: liftFor(slot) };
+      // On a Sabotage table a raised card also grows to be read; the scale
+      // eases with the rest.
+      const raised = { ...slot, scale: slot.scale.clone().multiplyScalar(SABOTAGE_CARD_HANDLING.raisedScale) };
+      return { slot: raised, lift: liftFor(slot) };
     }
-    const inPlay = playedSlotsInUse();
+    // A card being played counts as in play already, so on a Sabotage table
+    // the others settle into their new size as it arrives.
+    const arriving = pending && !trickOrder.includes(pending.key) ? 1 : 0;
+    const inPlay = playedSlotsFor(trickOrder.length + arriving);
     if (pending?.key === entry.key) {
       const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
@@ -318,6 +375,7 @@ export function createTableCards(
       if (wanted === playerCount) return;
       playerCount = wanted;
       inUse = centredPlayedSlots(playerCount);
+      scaledPlayed.clear();
     },
 
     setTrump(card, trumpSuit) {
@@ -489,6 +547,37 @@ export function createTableCards(
       entry.object.visible = true;
     },
 
+    holdForSwap(keys) {
+      swapHeld = new Set(keys);
+    },
+
+    releaseSwapped(key) {
+      if (!swapHeld.delete(key)) return;
+      const entry = cards.get(key);
+      const slot = handSlotFor(key);
+      if (!entry || !slot) return;
+      applyPlacement(entry.object, slot);
+      entry.placed = true;
+      entry.object.visible = true;
+    },
+
+    placementOf(key) {
+      const object = cards.get(key)?.object;
+      if (!object?.visible) return null;
+      return { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone() };
+    },
+
+    frameSlots(count) {
+      return centredSlots(handSlots, count).map((slot) => {
+        if (handYaw === 0) return { position: slot.position.clone(), quaternion: slot.quaternion.clone(), scale: slot.scale.clone() };
+        return {
+          position: turnAbout(slot.position.clone(), handYaw),
+          quaternion: new THREE.Quaternion().setFromAxisAngle(up, handYaw).multiply(slot.quaternion),
+          scale: slot.scale.clone(),
+        };
+      });
+    },
+
     holdTrump(isHeld) {
       trumpHeld = isHeld;
       if (isHeld) trumpSuppressed = false;
@@ -545,6 +634,19 @@ export function createTableCards(
       // One card is read at a time.
       for (const other of cards.values()) other.raised = false;
       entry.raised = raise;
+    },
+
+    selectedKey() {
+      const shown = visibleHand();
+      if (hovered && shown.includes(hovered)) return hovered;
+      return shown.find((key) => cards.get(key)?.raised) ?? null;
+    },
+
+    setRaised(key, raised) {
+      const entry = cards.get(key);
+      if (!entry) return;
+      for (const other of cards.values()) other.raised = false;
+      entry.raised = raised;
     },
 
     positionOf(key) {

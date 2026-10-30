@@ -5,6 +5,13 @@ import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
 import { t, type MessageKey } from "../../i18n";
 import type { RoleAction } from "../../../backend/src/game/wizard/modes/roles/roles";
 import { playerOf, powerOn, type RoleOf } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { isSabotageGame } from "../../modes/sabotage/sabotage-game";
+import {
+  elementName,
+  powerEvent,
+  powerStatus,
+  sabotageCardName,
+} from "../../modes/sabotage/hud/sabotage-announcements";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
 // and no timing: announcer.ts decides when each line shows.
@@ -34,9 +41,11 @@ export const announcedName = (username: string): string =>
 
 const nameOf = (username: string, local: string) => (username === local ? t("ann.you") : announcedName(username));
 
-export const suitName = (suit: Suit): string => t(`suit.${suit}`);
+// A Sabotage game names its suits as elements (modes/sabotage/hud/).
+export const suitName = (suit: Suit): string => (isSabotageGame() ? elementName(suit) : t(`suit.${suit}`));
 
 export function cardName(card: Card): string {
+  if (isSabotageGame()) return sabotageCardName(card);
   if (card.value === 14) return t("card.wizard");
   if (card.value === 0) return t("card.jester");
   return t("card.suitValue", { suit: suitName(card.suit), value: String(card.value) });
@@ -44,7 +53,7 @@ export function cardName(card: Card): string {
 
 // "A Wizard was turned up for trumps", or a Jester.
 export const turnedUpMessage = (card: Card | null) =>
-  t(card?.value === 14 ? "game.wizardTurnedUp" : "game.jesterTurnedUp");
+  t(card?.value === 14 ? "game.wizardTurnedUp" : isSabotageGame() ? "sabotage.foolTurnedUp" : "game.jesterTurnedUp");
 
 // After the server refuses a card: the follow-suit rule, with the suit led.
 export function followSuitMessage(state: PublicWizardGameState): string {
@@ -88,6 +97,9 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
         return current === local ? t("ann.youLead") : t("ann.leads", { name: announcedName(current) });
       }
       return servantWaiting(state, local) ?? (current === local ? t("ann.yourTurn") : t("ann.turn", { name: announcedName(current) }));
+    case "power":
+      // A Sabotage trick won with a Seer, Trickster or Thief.
+      return powerStatus(state, local);
     case "fishing":
       if (!current) return null;
       return current === local ? t("ann.youFishing") : t("ann.fishing", { name: announcedName(current) });
@@ -129,15 +141,27 @@ function servantWaiting(state: PublicWizardGameState, local: string): string | n
 // choosing), so it says nothing here; the last round has no trump card at all.
 export function trumpMessage(state: PublicWizardGameState): string | null {
   const card = state.trumpCard;
-  if (!card) return t("ann.noTrump");
+  const sabotage = isSabotageGame();
+  if (!card) return t(sabotage ? "sabotage.ann.noTrump" : "ann.noTrump");
   if (card.value === 14 || card.value === 0) return null;
-  return state.trumpSuit ? t("ann.trumpIs", { suit: suitName(state.trumpSuit) }) : null;
+  return state.trumpSuit
+    ? t(sabotage ? "sabotage.ann.trumpIs" : "ann.trumpIs", { suit: suitName(state.trumpSuit) })
+    : null;
 }
 
 // A one-off announcement, and the player it's about.
 export interface EventMessage {
   text: string;
   username: string;
+  // A player whose prediction this announcement is about (a Sabotage Seer or
+  // Trickster changed it): the bottom-left list swaps in the new number as it
+  // is read out.
+  changes?: string;
+  // A Trickster at work: someone else's prediction was changed, not the
+  // player's own.
+  byOther?: boolean;
+  // Whose power changed it, for the Trickster's tesseract to fly from.
+  source?: string;
 }
 
 // One-off events between two snapshots, in the order they happened: new
@@ -196,6 +220,10 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   const roleEvents = roleMessages(previous, next, local);
   messages.push(...roleEvents.filter((message) => !message.atTrickEnd));
 
+  // A Sabotage power just used, or passed on.
+  const power = powerEvent(previous, next, local);
+  if (power) messages.push(power);
+
   const winner = next.currentTrick.winnerUsername;
   if (winner && previous.currentTrick.winnerUsername !== winner) {
     const played = next.currentTrick.playedCards.find((entry) => entry.username === winner);
@@ -206,7 +234,7 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
       : card.value === 14
         ? t("ann.withWizard")
         : card.value === 0
-          ? t("ann.withJester")
+          ? t(isSabotageGame() ? "sabotage.ann.withFool" : "ann.withJester")
           : t("ann.withCard", { card: cardName(card) });
     messages.push({
       text: `${wins}${withCard}`,

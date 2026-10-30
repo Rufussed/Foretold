@@ -9,6 +9,7 @@ import { createPlayerListGuides } from "./player-list-guides";
 import type { HudPart } from "./hud-part";
 import { createRoundStat, type RoundStat } from "./round-stats";
 import { t } from "../../i18n";
+import { createPredictionReveal } from "../../modes/sabotage/hud/prediction-reveal";
 
 interface Row {
   element: HTMLElement;
@@ -44,6 +45,17 @@ export interface PlayerListOptions {
   // Whether the current move's player has been announced. The highlight moves
   // to them then, not when their turn begins on the server.
   turnShown?(): boolean;
+  // A Sabotage game: a prediction already made was changed, by its player's
+  // Seer or an opponent's Trickster, just as the new number swells and
+  // flashes. byOther: it was an opponent's Trickster.
+  onPredictionChanged?(byOther: boolean): void;
+}
+
+// The list, with a way to bring a changed prediction on show.
+export interface PlayerListPart extends HudPart {
+  // The announcement of a prediction being changed is up: show the player's
+  // new number, swelling and flashing, until now still the old one.
+  revealPrediction(username: string, byOther?: boolean): void;
 }
 
 // Bottom left: every player, you included, in the order they predict this
@@ -56,7 +68,7 @@ export function createPlayerList(
   root: HTMLElement,
   game: GameConnection,
   options: PlayerListOptions = {},
-): HudPart {
+): PlayerListPart {
   const grid = document.createElement("section");
   grid.className = "hud-panel hud-opponents";
   grid.setAttribute("aria-label", t("game.players"));
@@ -82,6 +94,15 @@ export function createPlayerList(
   headings.append(tricksHeading, predictionsHeading, orderHeading);
 
   const rows = new Map<string, Row>();
+  // A changed prediction waits for its announcement (modes/sabotage/hud/).
+  const predictionReveal = createPredictionReveal((username, to, byOther) => {
+    const row = rows.get(username);
+    if (row) {
+      row.prediction.set(to);
+      row.prediction.flash();
+    }
+    options.onPredictionChanged?.(byOther);
+  });
   let order = "";
   // Who is highlighted: the player whose move was last announced.
   let highlighted: string | undefined;
@@ -206,7 +227,9 @@ export function createPlayerList(
               : displayName(player.username);
         }
         const played = holding ? player.roundScores.at(-1) : undefined;
-        const prediction = played ? played.prediction : player.prediction;
+        // Asked even while the scored round is held, so a pending change is settled.
+        const live = predictionReveal.shown(player.username, player.prediction, state.currentRound, holding);
+        const prediction = played ? played.prediction : live;
         const tricksWon = played ? played.tricksWon : player.tricksWon;
         row.prediction.set(prediction);
         row.won.set(tricksWon);
@@ -224,11 +247,15 @@ export function createPlayerList(
         }
       }
 
+      predictionReveal.drawn(state.currentRound, holding);
       grid.hidden = players.length === 0;
       guides.update();
     },
 
+    revealPrediction: predictionReveal.reveal,
+
     dispose() {
+      predictionReveal.dispose();
       guides.dispose();
       grid.remove();
     },

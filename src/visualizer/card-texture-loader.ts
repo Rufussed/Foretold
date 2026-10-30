@@ -2,10 +2,14 @@ import * as THREE from "three";
 import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
 import { sharpenImage } from "./card-sharpen";
 import { CARDS } from "./config";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import * as sabotageDeck from "../modes/sabotage/deck/sabotage-card-loader";
 
 // Loads the card art from src/assets/foretold_cards: one gem set per suit, one
 // file per card (topaz01.webp … topaz13.webp, topazJester.webp,
-// topazWizard.webp), plus the back shown on every face-down card.
+// topazWizard.webp), plus the back shown on every face-down card. A Sabotage
+// game has its own deck, with its numbers and titles printed on in code
+// (modes/sabotage/deck/).
 
 // Vite copies each file into the build with a hash of its contents in its name,
 // so re-made art reaches players as a new URL their cache cannot mistake for
@@ -94,14 +98,17 @@ function load(url: string): THREE.Texture {
   return texture;
 }
 
-export const cardArtTexture = (card: Card): THREE.Texture => load(cardArtUrl(card));
+export const cardArtTexture = (card: Card): THREE.Texture =>
+  isSabotageGame() ? sabotageDeck.cardArtTexture(card) : load(cardArtUrl(card));
 
-export const cardBackTexture = (): THREE.Texture => load(BACK_URL);
+export const cardBackTexture = (): THREE.Texture =>
+  isSabotageGame() ? sabotageDeck.cardBackTexture() : load(BACK_URL);
 
 // The same texture, but resolving once its image has actually arrived, so the
 // prefetch queue holds one card open at a time instead of starting the whole
 // deck at once. A failed download is forgotten, so a later card can retry it.
 export function preloadCardArt(card: Card): Promise<THREE.Texture> {
+  if (isSabotageGame()) return sabotageDeck.preloadCardArt(card);
   const url = cardArtUrl(card);
   load(url);
   const arrival = arrivals.get(url) ?? Promise.resolve(textures.get(url)!);

@@ -14,6 +14,13 @@ export interface GameHudOptions extends AnnouncerOptions {
   tableRound?(): number | undefined;
   // Whether the current move's player has been announced; see player-list.ts.
   turnShown?(): boolean;
+  // A Sabotage game: a prediction already made was changed, as it is
+  // announced; see player-list.ts.
+  onPredictionChanged?(byOther: boolean): void;
+  // The same moment, for the burst on that player: red if an opponent's
+  // Trickster changed it, gold if the player's own Seer did. `source` is whose
+  // Trickster it was.
+  onPredictionEffect?(username: string, byOther: boolean, source?: string): void;
 }
 
 export interface GameHud extends HudPart {
@@ -38,9 +45,18 @@ export function createGameHud(
 ): GameHud {
   const statusPanel = createGameStatusPanel(root, game);
   // After the panel, so a round's scores are held back before it redraws.
-  const announcer = createAnnouncer(root, game, statusPanel, options);
+  const announcer = createAnnouncer(root, game, statusPanel, {
+    ...options,
+    onPredictionChange: (username, byOther, source) => {
+      playerList.revealPrediction(username, byOther);
+      options.onPredictionEffect?.(username, byOther, source);
+    },
+  });
   const playerList = createPlayerList(root, game, options);
-  const parts = [statusPanel, announcer, playerList];
+  // The list before the announcer, so a changed prediction is waiting in it by
+  // the time the announcer says so (and, after the panel, a round's scores are
+  // held back).
+  const parts = [statusPanel, playerList, announcer];
 
   return {
     applyState: () => parts.forEach((part) => part.applyState()),

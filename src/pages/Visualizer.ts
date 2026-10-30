@@ -19,6 +19,10 @@ import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/backg
 import { EMOTES } from "../visualizer/config";
 import { createGuestSignupPrompt, type GuestSignupPrompt } from "../visualizer/guest-signup-prompt";
 import { createHudScale } from "../visualizer/hud-scale";
+import { createSabotageThiefPrompt, type SabotageThiefPrompt } from "../modes/sabotage/prompts/sabotage-thief-prompt";
+import { createSabotageDevKeys, type SabotageDevKeys } from "../modes/sabotage/dev/sabotage-dev-keys";
+import { createSuitViewer, type SuitViewer } from "../modes/sabotage/dev/suit-viewer";
+import { isSabotageGame, setSabotageGame } from "../modes/sabotage/sabotage-game";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -45,6 +49,7 @@ import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/pre
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { createFishPrompt, type FishPrompt } from "../visualizer/fish-prompt";
 import { createStealPrompt, type StealPrompt } from "../visualizer/steal-prompt";
+import { createPowerPrompt, type PowerPrompt } from "../modes/sabotage/prompts/power-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
@@ -96,6 +101,7 @@ export async function renderVisualizerPage(
   let trumpPrompt: TrumpPrompt | null = null;
   let fishPrompt: FishPrompt | null = null;
   let stealPrompt: StealPrompt | null = null;
+  let powerPrompt: PowerPrompt | null = null;
   let gameHud: GameHud | null = null;
   let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
@@ -106,6 +112,9 @@ export async function renderVisualizerPage(
   let fullscreenToggle: FullscreenToggle | null = null;
   let iphonePrompts: { dispose(): void } | null = null;
   let hudScale: { dispose(): void } | null = null;
+  let suitViewer: SuitViewer | null = null;
+  let thiefPrompt: SabotageThiefPrompt | null = null;
+  let devThiefKey: SabotageDevKeys | null = null;
   let guestPrompt: GuestSignupPrompt | null = null;
   let hourglass: TurnHourglass | null = null;
   let hourglassTurns: HourglassTurns | null = null;
@@ -116,12 +125,16 @@ export async function renderVisualizerPage(
 
   teardown = () => {
     destroyed = true;
+    setSabotageGame(null);
     musicToggle?.dispose();
     effectsToggle?.dispose();
     installToggle?.dispose();
     fullscreenToggle?.dispose();
     iphonePrompts?.dispose();
     hudScale?.dispose();
+    suitViewer?.dispose();
+    thiefPrompt?.dispose();
+    devThiefKey?.dispose();
     victoryTimers.forEach((timer) => window.clearTimeout(timer));
     guestPrompt?.dispose();
     music?.dispose();
@@ -133,6 +146,7 @@ export async function renderVisualizerPage(
     trumpPrompt?.dispose();
     fishPrompt?.dispose();
     stealPrompt?.dispose();
+    powerPrompt?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
     timeoutNotice?.dispose();
@@ -240,6 +254,15 @@ export async function renderVisualizerPage(
   }
 
   const live = latestState !== null && localUsername !== null;
+
+  // A Sabotage game has its own deck, prompts and look (modes/sabotage/); set
+  // before the scene is built so all of it knows.
+  setSabotageGame(latestState);
+  if (isSabotageGame()) {
+    pageEl?.classList.add("is-sabotage");
+    // Development aid: Shift+1..4 shows a whole suit of the deck.
+    if (import.meta.env.DEV && pageEl) suitViewer = createSuitViewer(pageEl);
+  }
 
   // Leave Table asks first while the player still plays their own seat:
   // leave for now, or quit and let the server play it (leave-dialog.ts).
@@ -359,6 +382,8 @@ export async function renderVisualizerPage(
       trumpPrompt?.applyState();
       fishPrompt?.applyState();
       stealPrompt?.applyState();
+      powerPrompt?.applyState();
+      thiefPrompt?.applyState();
       gameHud?.applyState();
       hourglassTurns?.applyState();
       timeoutNotice?.applyState();
@@ -381,6 +406,10 @@ export async function renderVisualizerPage(
     stopBlindTour: () => blindTour.stop(),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
     announceTrump: (state) => gameHud?.announceTrump(state),
+    playThiefSwap: (done) => {
+      if (cardTable) cardTable.playThiefSwap(done);
+      else done();
+    },
     playTrickReward: (done) => {
       // The NPCs react as the trick is won.
       const state = director.tableState();
@@ -403,6 +432,7 @@ export async function renderVisualizerPage(
 
   const page = container.querySelector<HTMLElement>(".visualizer-page");
   if (gameConnection && page) {
+    if (import.meta.env.DEV && isSabotageGame()) devThiefKey = createSabotageDevKeys(gameConnection, () => cardTable?.cards.selectedKey() ?? null);
     // Bidding waits until every card has been dealt.
     // Prompts open once your turn has been announced.
     // Your move's time ran out: the game is making it, so the prompts close.
@@ -420,6 +450,16 @@ export async function renderVisualizerPage(
     });
     // A Roles game's Thief picks the card their trump 1 takes.
     stealPrompt = createStealPrompt(page, hudConnection!);
+    // A Sabotage game: winning a trick with a Seer or Trickster, its winner
+    // chooses how to use it.
+    powerPrompt = createPowerPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
+    });
+    // A Sabotage game's Thief: pick a player, then a card of yours and one of theirs.
+    thiefPrompt = createSabotageThiefPrompt(page, {
+      heist: () => cardTable?.heist ?? null,
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
+    });
     // The banner's gameplay lines wait until every card, trump included, has landed.
     gameHud = createGameHud(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing,
@@ -428,6 +468,18 @@ export async function renderVisualizerPage(
       tableWidthPx: () => canvas.clientWidth * (sceneView?.tableWidthFraction() ?? 1),
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
+      // A Seer or Trickster changed a prediction. Your own Seer's change gets the
+      // bright chime and a green burst. A Trickster
+      // sends a red tesseract from its player's head to its target's, which bursts
+      // red with the falling chime when it arrives.
+      onPredictionChanged: (byOther) => {
+        // A Trickster's tesseract brings its own falling chime when it lands.
+        if (!byOther) cardTable?.playChime("win");
+      },
+      onPredictionEffect: (username, byOther, source) => {
+        if (byOther && source) cardTable?.sendTesseract(source, username);
+        else cardTable?.burstOnPlayer(username, byOther);
+      },
     });
 
     // Your move's countdown starts once your table has shown you your turn.
@@ -449,6 +501,8 @@ export async function renderVisualizerPage(
         predictionPrompt?.applyState();
         trumpPrompt?.applyState();
         fishPrompt?.applyState();
+        powerPrompt?.applyState();
+        thiefPrompt?.applyState();
       },
     });
 
@@ -534,6 +588,9 @@ export async function renderVisualizerPage(
         headOf: (seat) => players.headPosition(seat),
         headTurnOf: (seat) => players.headQuaternion(seat),
         headRadiusOf: (seat) => players.headRadius(seat),
+        lookAt: (username, done, seconds) =>
+          turnCamera ? turnCamera.lookAt(username, done, seconds) : done(),
+        notice: (text) => gameHud?.notice(text),
         onDealDone: () => director.dealt(),
         // A Thief's trump 1 asks which card to take before it is sent.
         chooseSteal: (cardIndex) => stealPrompt?.ask(cardIndex) ?? Promise.resolve(undefined),
@@ -541,6 +598,11 @@ export async function renderVisualizerPage(
         onOvertaken: (previousLeader) => {
           if (trigger) reactToOvertake(previousLeader, trigger, (username) => sync?.seatOf(username) ?? null);
         },
+      });
+      cardTable.heist.onChange(() => {
+        thiefPrompt?.applyState();
+        // The announcement box tells the winner what to do at each step.
+        gameHud?.applyState();
       });
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizardCards = cardTable.cards;
@@ -645,6 +707,10 @@ export async function renderVisualizerPage(
         predictionPrompt?.refused(refusal);
         trumpPrompt?.refused(refusal);
         fishPrompt?.refused(refusal);
+        powerPrompt?.refused(refusal);
+        cardTable?.heist.refused();
+        // The test shortcuts say why they could not do it.
+        if (refusal.startsWith("[dev]")) gameHud?.notice(refusal);
         gameHud?.refused(message.error ?? "");
       }
       },

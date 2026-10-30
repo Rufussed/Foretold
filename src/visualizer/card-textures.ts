@@ -2,6 +2,8 @@ import * as THREE from "three";
 import type { Card } from "../../backend/src/game/wizard/models/card";
 import { CARDS } from "./config";
 import { cardArtTexture, cardBackTexture } from "./card-texture-loader";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { sabotageTrumpColor } from "../modes/sabotage/sabotage-trump";
 
 // The one place the table asks for a card's look. Faces are the scanned
 // artwork in public/cards; card-texture-generator.ts holds the drawn-in-code
@@ -44,5 +46,7 @@ export { cardBackTexture };
 // card is its own suit; a Wizard or Jester takes the suit the round's first
 // player chooses. Grey with no suit.
 export function trumpColor(trumpSuit: string | null): string {
-  return trumpSuit ? CARDS.suitColors[trumpSuit] ?? CARDS.noTrumpColor : CARDS.noTrumpColor;
+  if (!trumpSuit) return CARDS.noTrumpColor;
+  // A Sabotage table colours its suits as elements.
+  return (isSabotageGame() ? sabotageTrumpColor(trumpSuit) : CARDS.suitColors[trumpSuit]) ?? CARDS.noTrumpColor;
 }

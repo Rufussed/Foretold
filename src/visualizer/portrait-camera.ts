@@ -1,6 +1,7 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { OPPONENT_PLAYS, PORTRAIT_CAMERA } from "./config";
-import { isTouchDevice } from "./device-limits";
+import { isIPad, isTouchDevice } from "./device-limits";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
 import { paced } from "./pace";
 
 // Camera behaviour for portrait screens only. The window is narrow there, so
@@ -49,7 +50,10 @@ export function createBlindTour(
   return {
     start(state) {
       const current = state.players[state.currentPlayerIndex]?.username;
-      if (!(isPortraitView() || isTouchDevice()) || !state.blindRound || state.phase !== "predictions") return;
+      // On a Sabotage table an iPad held landscape has room for the whole
+      // table, so it follows the laptop rule: portrait only.
+      const touchTour = isTouchDevice() && !(isSabotageGame() && isIPad());
+      if (!(isPortraitView() || touchTour) || !state.blindRound || state.phase !== "predictions") return;
       if (current !== localUsername) return;
 
       // Play order from the player after you, all the way round.

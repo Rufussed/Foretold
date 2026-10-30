@@ -12,6 +12,9 @@ export interface CardControlsOptions {
   canPlay(): boolean;
   // A card has gone from the hand to the play area.
   onPlay(key: string): void;
+  // True while the table is asking for a pick instead (a Thief's swap), which
+  // handles the pointer itself.
+  picking?(): boolean;
 }
 
 export interface CardControls {
@@ -79,7 +82,7 @@ export function createCardControls(options: CardControlsOptions): CardControls {
   };
 
   const onPointerDown = (event: PointerEvent) => {
-    if (event.button !== 0 || press) return;
+    if (event.button !== 0 || press || options.picking?.()) return;
     aim(event);
     const key = cards.cardAt(raycaster);
     if (!key) return;

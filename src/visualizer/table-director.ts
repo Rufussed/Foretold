@@ -2,6 +2,11 @@ import type { PublicWizardGameState } from "../../backend/src/game/wizard/models
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
 import { OPPONENT_PLAYS, TRICK_REWARD } from "./config";
 import { paced } from "./pace";
+import {
+  onlyHandsChanged,
+  onlyThiefTargetChanged,
+  thiefSwapped,
+} from "../modes/sabotage/heist/sabotage-director";
 
 export interface TableDirector {
   // What the card table shows now.
@@ -42,6 +47,8 @@ export interface TableDirectorOptions {
   announceTrump(state: PublicWizardGameState): void;
   // The finished trick's gather and tesseract; done once it has gone.
   playTrickReward(done: () => void): void;
+  // A Sabotage Thief's swapped cards trade places; done once they have.
+  playThiefSwap(done: () => void): void;
 }
 
 // A step that never reports back (a hidden tab pauses animation) mustn't stall
@@ -141,6 +148,16 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       return;
     }
 
+    // Sabotage: a test shortcut changed a card in hand, or a Thief's winner
+    // has picked a player (the target is told, the camera stays).
+    if (previous && (onlyHandsChanged(previous, next) || onlyThiefTargetChanged(previous, next))) {
+      table = next;
+      hud = next;
+      options.applyTable();
+      options.applyHud();
+      return;
+    }
+
     hideTurn();
     options.stopBlindTour?.();
 
@@ -190,6 +207,17 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       return;
     }
 
+    // A Sabotage Thief's cards trade places, while the swap is announced; the
+    // camera comes back to the middle once they have.
+    if (thiefSwapped(next) && !thiefSwapped(previous)) {
+      showTable(next);
+      showHud(next);
+      await step((done) => options.playThiefSwap(done));
+      await announcer();
+      await announceTurn(next);
+      return;
+    }
+
     const played = next.currentTrick.playedCards.length > previous.currentTrick.playedCards.length;
     const playedBy = played ? next.currentTrick.playedCards.at(-1)?.username : undefined;
     showTable(next);
@@ -233,6 +261,21 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       // Once the game is over nothing more is played out.
       const last = queue.at(-1) ?? table;
       if (last?.phase === "finished") return;
+      // A Sabotage test shortcut changed a card in hand: show it now, whatever
+      // the table is busy with, by putting the new hands into every state
+      // still to be shown.
+      if (last && onlyHandsChanged(last, state)) {
+        for (const shown of [table, hud, ...queue]) {
+          if (!shown) continue;
+          for (const player of shown.players) {
+            const changed = state.players.find((other) => other.username === player.username);
+            if (changed) player.hand = changed.hand;
+          }
+        }
+        options.applyTable();
+        options.applyHud();
+        return;
+      }
       queue.push(state);
       void run();
     },

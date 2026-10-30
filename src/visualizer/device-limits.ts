@@ -42,6 +42,13 @@ const boolParam = (name: string): boolean | null => {
 export const isTouchDevice = (): boolean =>
   window.matchMedia?.("(pointer: coarse)").matches ?? false;
 
+// Since iPadOS 13 Safari reports an iPad as a Mac, so a "Macintosh" with a
+// multi-touch screen counts too - no Mac has one. ?ipad=1 or ?ipad=0 overrides.
+export const isIPad = (): boolean =>
+  boolParam("ipad") ??
+  (/iPad/.test(navigator.userAgent) ||
+    (/Macintosh/.test(navigator.userAgent) && navigator.maxTouchPoints > 1));
+
 // The most buffer pixels per CSS pixel to draw.
 export const maxPixelRatio = (): number =>
   numberParam("ratio") ??
