@@ -21,6 +21,8 @@ export const ROLES = [
   // No card of its own either: the Green Wizard's green cards count 3 higher
   // (greenWizard.ts). Open to everyone for now, like the Blue Wizard.
   { id: "greenWizard", card: null },
+  // And the Yellow Wizard, who can make yellow the lead suit.
+  { id: "yellowWizard", card: null },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];
@@ -36,7 +38,7 @@ export const roleCard = (id: RoleId): number | null =>
 // A role's power at work in a trick, for the players to be told about.
 // The roles whose power acts in a trick as an action to announce: all but the
 // colour Wizards, whose powers are a sight and a boost.
-export type ActingRoleId = Exclude<RoleId, "blueWizard" | "greenWizard">;
+export type ActingRoleId = Exclude<RoleId, "blueWizard" | "greenWizard" | "yellowWizard">;
 
 export interface RoleAction {
   role: ActingRoleId;

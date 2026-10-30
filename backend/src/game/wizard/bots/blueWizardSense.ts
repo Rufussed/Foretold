@@ -1,6 +1,6 @@
 import type { Card } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
-import { blueCardCount, isBlueCard, isBlueWizardCard } from "../modes/roles/blueWizard.js";
+import { blueCardCount, isBlueCard } from "../modes/roles/blueWizard.js";
 import { currentPlayer } from "./personality.js";
 import { strength } from "./handStrength.js";
 import { roleOfBot, type Play } from "./roleSense.js";
@@ -68,9 +68,3 @@ export function blueLead(game: WizardGameState, legal: Play[], wantsTricks: bool
   return everyoneFollows && low.card.value <= 5 ? low : null;
 }
 
-// Wanting a trick, it takes one with the blue Wizard when that wins: the
-// trick brings its bonus (BLUE_WIZARD_BONUS) on top. Null otherwise.
-export function blueWizardWin(game: WizardGameState, winners: Play[], wantsTricks: boolean): Play | null {
-  if (!isBlueWizard(game) || !wantsTricks) return null;
-  return winners.find(({ card }) => isBlueWizardCard(card)) ?? null;
-}

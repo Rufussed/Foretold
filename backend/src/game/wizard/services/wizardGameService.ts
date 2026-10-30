@@ -21,7 +21,7 @@ import {
 } from "../modes/roles/rolePowers.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { blueSight } from "../modes/roles/blueWizard.js";
-import { greenBoostIn } from "../modes/roles/greenWizard.js";
+import { trickRolesIn } from "../modes/roles/trickRoles.js";
 
 import type {
   GamePlayer,
@@ -276,6 +276,8 @@ export class WizardGameService {
     //Handles if Wizard is play first, there is no Suit
     const leadSuit = this.rules.getLeadSuit(
       game.currentTrick.playedCards,
+      game.trumpSuit,
+      trickRolesIn(game),
     );
 
     if (
@@ -373,8 +375,8 @@ export class WizardGameService {
       game.currentTrick.playedCards,
       game.trumpSuit,
       normalizeGameOptions(game.options).wizardWins,
-      // A Roles Green Wizard's green cards count higher.
-      greenBoostIn(game),
+      // A Roles game's colour Wizards change the rules (trickRoles.ts).
+      trickRolesIn(game),
     );
 
     if (!winnerUsername) {

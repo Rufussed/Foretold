@@ -8,9 +8,10 @@ import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
 import { crowdFactor, trickChance } from "./handStrength.js";
 import { sabotagePick } from "../modes/sabotage/bots/index.js";
-import { blueLead, blueTrickChance, blueWizardWin } from "./blueWizardSense.js";
-import { greenBoostIn } from "../modes/roles/greenWizard.js";
-import { greenStrength, greenWizardWin } from "./greenWizardSense.js";
+import { blueLead, blueTrickChance } from "./blueWizardSense.js";
+import { colourWizardWin } from "./colourWizardSense.js";
+import { trickRolesIn } from "../modes/roles/trickRoles.js";
+import { greenStrength } from "./greenWizardSense.js";
 
 const rules = new WizardRules();
 
@@ -42,7 +43,7 @@ export const adept: BotStrategy = {
     const played = game.currentTrick.playedCards;
     const trumpSuit = game.trumpSuit;
     const { wizardWins } = normalizeGameOptions(game.options);
-    const leadSuit = rules.getLeadSuit(played);
+    const leadSuit = rules.getLeadSuit(played, trumpSuit, trickRolesIn(game));
 
     const legal: Play[] = player.hand
       .map((card, index) => ({ card, index }))
@@ -62,7 +63,7 @@ export const adept: BotStrategy = {
     // Which cards would take the trick as it stands, powers included. Only
     // for the last player is that final; anyone after may still beat it.
     const winsNow = ({ card }: { card: Card }) =>
-      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins, greenBoostIn(game)) === player.username;
+      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins, trickRolesIn(game)) === player.username;
     const winners = legal.filter(winsNow);
     const losers = legal.filter((play) => !winsNow(play));
     const rolePlay = rolePick(game, legal, winners, losers, wantsTricks);
@@ -73,13 +74,10 @@ export const adept: BotStrategy = {
 
     if (sabotagePlay) return sabotagePlay.index;
 
-    // A Blue or Green Wizard takes a trick with their colour's Wizard for its
-    // bonus, and a Blue Wizard leads by what it knows of the blue cards.
-    const bluePlay =
-      blueWizardWin(game, winners, wantsTricks) ??
-      greenWizardWin(game, winners, wantsTricks) ??
-      blueLead(game, legal, wantsTricks);
-    if (bluePlay) return bluePlay.index;
+    // A colour Wizard takes a trick with their colour's Wizard for its bonus,
+    // and a Blue Wizard leads by what it knows of the blue cards.
+    const colourPlay = colourWizardWin(game, winners, wantsTricks) ?? blueLead(game, legal, wantsTricks);
+    if (colourPlay) return colourPlay.index;
 
     // Leading: its best card to take the trick, or its lowest to give it
     // away, keeping a Jester back for a trick it can't otherwise lose.

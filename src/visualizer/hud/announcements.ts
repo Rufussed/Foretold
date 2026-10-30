@@ -6,6 +6,8 @@ import { t, type MessageKey } from "../../i18n";
 import type { RoleAction } from "../../../backend/src/game/wizard/modes/roles/roles";
 import { playerOf, powerOn, type RoleOf } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
 import { isSabotageGame } from "../../modes/sabotage/sabotage-game";
+import { WizardRules } from "../../../backend/src/game/wizard/services/wizardRules";
+import { trickRolesIn } from "../../../backend/src/game/wizard/modes/roles/trickRoles";
 import {
   elementName,
   powerEvent,
@@ -56,10 +58,15 @@ export const turnedUpMessage = (card: Card | null) =>
   t(card?.value === 14 ? "game.wizardTurnedUp" : isSabotageGame() ? "sabotage.foolTurnedUp" : "game.jesterTurnedUp");
 
 // After the server refuses a card: the follow-suit rule, with the suit led.
+// A Roles Yellow Wizard may have made yellow the lead suit.
 export function followSuitMessage(state: PublicWizardGameState): string {
-  const led = state.currentTrick.playedCards.find(({ card }) => card.value !== 0)?.card.suit;
+  const led = leadSuitOf(state);
   return led ? t("ann.followSuit", { suit: suitName(led) }) : t("ann.followSuitAny");
 }
+
+const rules = new WizardRules();
+const leadSuitOf = (state: PublicWizardGameState) =>
+  rules.getLeadSuit(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
 
 // The player the standing line is about, whose colour its border takes: whoever's
 // move it is. Null when it isn't about one player.
@@ -219,6 +226,19 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   // said after who won it.
   const roleEvents = roleMessages(previous, next, local);
   messages.push(...roleEvents.filter((message) => !message.atTrickEnd));
+
+  // A Roles Yellow Wizard just made yellow the lead suit.
+  const sameTrick =
+    next.currentTrick.playedCards.length > previous.currentTrick.playedCards.length &&
+    previous.currentTrick.playedCards.length > 0;
+  const switcher = next.currentTrick.playedCards.at(-1);
+  if (sameTrick && switcher && leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow") {
+    const by = switcher.playedBy ?? switcher.username;
+    messages.push({
+      text: by === local ? t("ann.youTurnLead") : t("ann.turnsLead", { name: announcedName(by) }),
+      username: by,
+    });
+  }
 
   // A Sabotage power just used, or passed on.
   const power = powerEvent(previous, next, local);

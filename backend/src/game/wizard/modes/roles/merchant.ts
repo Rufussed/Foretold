@@ -1,6 +1,6 @@
 import type { Card, Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
-import { WizardRules, type CardBoost } from "../../services/wizardRules.js";
+import { WizardRules, type TrickRoles } from "../../services/wizardRules.js";
 import { canBeTaken, playerOf, powerOn, type RoleOf } from "./rolePlay.js";
 
 const rules = new WizardRules();
@@ -32,7 +32,7 @@ export function trades(
   playedCards: PlayedCard[],
   merchant: string,
   trumpSuit: Suit | null,
-  boostOf?: CardBoost,
+  roles?: TrickRoles,
 ): { player: string; card: Card; sells: boolean }[] {
   const own = playedCards.find((played) => played.username === merchant);
 
@@ -40,7 +40,7 @@ export function trades(
     return [];
   }
 
-  const leadSuit = rules.getLeadSuit(playedCards);
+  const leadSuit = rules.getLeadSuit(playedCards, trumpSuit, roles);
 
   return playedCards.flatMap((played) => {
     if (played === own || !canBeTaken(played)) {
@@ -53,8 +53,8 @@ export function trades(
       played.card,
       trumpSuit,
       leadSuit,
-      boostOf?.(own) ?? 0,
-      boostOf?.(played) ?? 0,
+      roles?.boostOf?.(own) ?? 0,
+      roles?.boostOf?.(played) ?? 0,
     );
 
     return compared ? [{ player: played.username, card: played.card, sells: compared > 0 }] : [];

@@ -4,6 +4,7 @@ import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { isRoleCard } from "./roleSense.js";
+import { trickRolesIn } from "../modes/roles/trickRoles.js";
 
 const rules = new WizardRules();
 
@@ -71,7 +72,7 @@ export const apprentice: BotStrategy = {
 
   chooseCardIndex(game) {
     const player = currentPlayer(game);
-    const leadSuit = rules.getLeadSuit(game.currentTrick.playedCards);
+    const leadSuit = rules.getLeadSuit(game.currentTrick.playedCards, game.trumpSuit, trickRolesIn(game));
     const playable = (card: Card) => rules.isValidCardPlay(card, player.hand, leadSuit);
     // In a Roles game it believes in its role's card, and plays it first.
     const roleIndex = player.hand.findIndex((card) => playable(card) && isRoleCard(game, card));

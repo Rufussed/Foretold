@@ -4,7 +4,7 @@ import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
 import { powerOn } from "../modes/roles/rolePlay.js";
 import { armorOf, playPower, rolesOf } from "../modes/roles/rolePowers.js";
 import { roleCard, type RoleId } from "../modes/roles/roles.js";
-import { greenBoostIn } from "../modes/roles/greenWizard.js";
+import { trickRolesIn } from "../modes/roles/trickRoles.js";
 import { trades } from "../modes/roles/merchant.js";
 import { sheepOut } from "../modes/roles/shepherd.js";
 import { stealSpots } from "../modes/roles/thief.js";
@@ -33,6 +33,7 @@ const BID_VALUE: Record<RoleId, number> = {
   blueWizard: 0,
   // No card either; its boost is in every trick it plays (greenWizard.ts).
   greenWizard: 0,
+  yellowWizard: 0,
 };
 
 const isRoles = (game: WizardGameState): boolean =>
@@ -82,7 +83,7 @@ export function stealChoice(game: WizardGameState, card: Card): number | undefin
   const wizardWins = normalizeGameOptions(game.options).wizardWins;
   const wantsTricks = (player.prediction ?? 0) > player.tricksWon;
   const wins = (spot: number) =>
-    rules.determineTrickWinner(trickWith(game, card, spot), game.trumpSuit, wizardWins, greenBoostIn(game)) ===
+    rules.determineTrickWinner(trickWith(game, card, spot), game.trumpSuit, wizardWins, trickRolesIn(game)) ===
     player.username;
 
   return [...spots].reverse().find((spot) => wins(spot) === wantsTricks);
