@@ -4,10 +4,10 @@ import type { GamePlayer, PlayedCard, WizardGameState } from "../../models/wizar
 import { WizardRules } from "../../services/wizardRules.js";
 import { harvest, plant, plantedBy } from "./farmer.js";
 import { MARKET_POINTS, marketsIn, trades } from "./merchant.js";
-import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
+import { botCatch, CATCH_POINTS, fish, MISS_POINTS, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
 import { ALMS_POINTS, FAITH_POINTS, poorFor, priestsIn, royalsFor } from "./priest.js";
 import { battlesIn, PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
-import { BET_LOSS_POINTS, BET_WIN_POINTS, betsIn } from "./gambler.js";
+import { BET_LOSS_POINTS, BET_WIN_POINTS, betsIn, LUCKY_POINTS, luckIn } from "./gambler.js";
 import { FORESIGHT_POINTS, foresightsIn } from "./prophet.js";
 import { botGrant, dukeWinning, GRANT_POINTS, KEEP_POINTS } from "./duke.js";
 import { kingsPeace, playerOf, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
@@ -378,7 +378,8 @@ function applyBattles(game: WizardGameState, winner: GamePlayer): RoleAction[] {
 
 // The Gamblers' bets at the end of a trick. A 10 that won brings its Gambler
 // BET_WIN_POINTS; one that lost costs them BET_LOSS_POINTS, lost to the house
-// in full, even below 0. Either way the action is on the Gambler.
+// in full, even below 0. A 10 that won with no bet brings LUCKY_POINTS (an
+// action marked lucky). Either way the action is on the Gambler.
 function applyBets(game: WizardGameState, winner: GamePlayer): RoleAction[] {
   const actions: RoleAction[] = [];
   const trick = game.currentTrick;
@@ -393,6 +394,12 @@ function applyBets(game: WizardGameState, winner: GamePlayer): RoleAction[] {
       addBonus(player, "gambler", -BET_LOSS_POINTS);
       actions.push({ role: "gambler", by: gambler, on: gambler, card, points: -BET_LOSS_POINTS });
     }
+  }
+  for (const { gambler, card } of luckIn(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username)) {
+    const player = game.players.find((candidate) => candidate.username === gambler);
+    if (!player) continue;
+    addBonus(player, "gambler", LUCKY_POINTS);
+    actions.push({ role: "gambler", by: gambler, on: gambler, card, points: LUCKY_POINTS, lucky: true });
   }
 
   return actions;
@@ -470,10 +477,12 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
   for (const served of tippers(trick.roleActions, winner.username)) {
     movePoints(game, served, winner.username, "servant", SERVANT_BONUS);
   }
-  // A Fisher's catch that won them the trick is paid for by the player fished.
+  // Every Fisher's catch is paid for by the player fished: in full when it
+  // won the Fisher the trick, less when it did not.
   for (const action of trick.roleActions ?? []) {
-    if (action.role === "fisher" && action.by === winner.username) {
-      action.points = movePoints(game, action.on, winner.username, "fisher", CATCH_POINTS);
+    if (action.role === "fisher") {
+      const points = action.by === winner.username ? CATCH_POINTS : MISS_POINTS;
+      action.points = movePoints(game, action.on, action.by, "fisher", points);
     }
   }
 

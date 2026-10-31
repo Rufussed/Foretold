@@ -99,4 +99,6 @@ export interface RoleAction {
   // The King's peace (on is the King, card his trump 13): the players whose
   // powers it stopped, in the trick's order.
   stopped?: string[];
+  // A Gambler's 10 that won with no bet: luck, not a bet won (gambler.ts).
+  lucky?: true;
 }

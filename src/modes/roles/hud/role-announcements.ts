@@ -286,7 +286,9 @@ export function roleMessages(
     if (action.role === "gambler") {
       const points = String(Math.abs(action.points ?? 0));
       const won = (action.points ?? 0) > 0;
-      const text = won
+      const text = action.lucky
+        ? action.by === local ? t("ann.youLucky", { points }) : t("ann.lucky", { ...values, points })
+        : won
         ? action.by === local ? t("ann.youBetWon", { points }) : t("ann.betWon", { ...values, points })
         : action.by === local
           ? t("ann.youBetLost", { ...values, points })

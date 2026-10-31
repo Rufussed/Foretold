@@ -6,11 +6,11 @@ import { DEFAULT_GAME_OPTIONS } from "../../gameOptions.js";
 import { WizardGameService } from "../../services/wizardGameService.js";
 import type { RoleId } from "./roles.js";
 import { SEED_POINTS } from "./farmer.js";
-import { CATCH_POINTS } from "./fisher.js";
+import { CATCH_POINTS, MISS_POINTS } from "./fisher.js";
 import { MARKET_POINTS } from "./merchant.js";
 import { ALMS_POINTS, FAITH_POINTS } from "./priest.js";
 import { PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
-import { BET_LOSS_POINTS, BET_WIN_POINTS } from "./gambler.js";
+import { BET_LOSS_POINTS, BET_WIN_POINTS, LUCKY_POINTS } from "./gambler.js";
 import { GRANT_POINTS, KEEP_POINTS } from "./duke.js";
 import { FORESIGHT_POINTS } from "./prophet.js";
 import { PEACE_POINTS, TAX_POINTS } from "./king.js";
@@ -247,7 +247,7 @@ describe("the Fisher in a game", () => {
     expect(score("ben")).toBe(50 - CATCH_POINTS);
   });
 
-  it("takes nothing for a catch that does not win the trick", () => {
+  it("is paid for a catch even when it does not win the trick", () => {
     const { game, service, score } = playTrick(
       "roles",
       [
@@ -264,8 +264,8 @@ describe("the Fisher in a game", () => {
     service.fishCard(game, "fisher", 2);
 
     expect(game.currentTrick.winnerUsername).toBe("cara");
-    expect(score("fisher")).toBe(0);
-    expect(score("ben")).toBe(50);
+    expect(score("fisher")).toBe(MISS_POINTS);
+    expect(score("ben")).toBe(50 - MISS_POINTS);
   });
 
   it("refuses a card that cannot be fished, and anyone else's choice", () => {
@@ -1013,6 +1013,21 @@ describe("the Gambler in a game", () => {
     );
     expect(offSuit.score("gambler")).toBe(50);
     expect(offSuit.trick.playedCards[1]!.bet).toBeUndefined();
+  });
+
+  it("gets lucky points when the 10 wins with no bet", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "gambler", card: card(10), role: "gambler" },
+        { name: "ben", card: card(7) },
+      ],
+      startAt(50),
+    );
+
+    expect(score("gambler")).toBe(50 + LUCKY_POINTS);
+    expect(trick.roleActions?.find((action) => action.role === "gambler")?.lucky).toBe(true);
   });
 });
 

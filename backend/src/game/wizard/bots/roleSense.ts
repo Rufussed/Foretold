@@ -109,7 +109,8 @@ export function betChoice(game: WizardGameState, card: Card): boolean {
   const wizardWins = normalizeGameOptions(game.options).wizardWins;
   const winning = rules.determineTrickWinner(trick, game.trumpSuit, wizardWins, trickRolesIn(game)) === player.username;
   const left = game.players.length - trick.length;
-  return winning && (left === 0 || (card.suit === game.trumpSuit && left <= 1));
+  // A won bet pays 25 against 10 lost, so a fair chance is worth the bet.
+  return winning && (left === 0 || card.suit === game.trumpSuit || left <= 1);
 }
 
 // Whether a Prophet bot lowers its prediction with its 12: when the tricks

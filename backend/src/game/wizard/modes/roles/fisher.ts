@@ -6,9 +6,11 @@ import type { RoleAction } from "./roles.js";
 // How long a Fisher has to choose before a card is picked for them at random.
 export const FISHING_TIMEOUT_MS = 15_000;
 
-// What a catch takes from the player whose card was fished, when it wins the
-// Fisher the trick; never more than that player has.
+// What a catch takes from the player whose card was fished, paid at the end
+// of the trick: CATCH_POINTS when it wins the Fisher the trick, MISS_POINTS
+// when it does not; never more than that player has.
 export const CATCH_POINTS = 10;
+export const MISS_POINTS = 5;
 
 // The places in a complete trick the Fisher's 3 at `three` may fish from: any
 // card played after it, whoever holds it now, but no Wizard or Jester and not
