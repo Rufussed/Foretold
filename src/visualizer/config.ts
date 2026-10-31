@@ -179,6 +179,26 @@ export const CAMERA_FOLLOW = {
 };
 
 // ══════════════════════════════════════════════════════════════════════════
+// LOOK AROUND  (you turning the camera yourself; see look-around.ts)
+// ══════════════════════════════════════════════════════════════════════════
+
+export const LOOK_AROUND = {
+  // The mouse right at the screen's left or right edge turns the view that
+  // way: how close to the edge it must be, in pixels, and how fast it turns,
+  // in degrees a second. Leaving the edge hands the camera back.
+  edgePx: 4,
+  edgeDegreesPerSecond: 45,
+  // How fast the view eases over to where you look, and back when you let
+  // go: the share of the way left covered each second. The way back is
+  // slower, so the camera settles gently.
+  easeInPerSecond: 6,
+  easeBackPerSecond: 1.2,
+  // Holding the right mouse button, or two fingers, and dragging across the
+  // whole screen's width turns the view this far, in degrees.
+  dragDegreesPerScreen: 120,
+};
+
+// ══════════════════════════════════════════════════════════════════════════
 // PORTRAIT CAMERA  (see portrait-camera.ts)
 // ══════════════════════════════════════════════════════════════════════════
 
@@ -830,7 +850,11 @@ export const TRICK_REWARD = {
 
 export const ANNOUNCER = {
   // How long each announcement (a prediction, a won hand) stays up before the next.
+  // A Roles power at work never shows shorter than this, whatever the speed.
   messageSeconds: 2.5,
+  // A power that hit or paid you, used by someone else: this much longer, at
+  // any speed, with its own look and a chime.
+  aboutYouExtraSeconds: 1.5,
   // How long a rule reminder (after a card that can't be played) stays up at
   // most; it goes sooner if the next card is played first.
   noticeSeconds: 5,
@@ -1030,7 +1054,10 @@ export const SPARKS = {
   enabled: true,
   perTorchPerSecond: 3, // how many sparks each torch gives off
   maxParticles: 300, // most alive at once, across all torches; new ones wait for room
-  emitOffsetY: -0.35, // start this far below the torch's light, inside the flame
+  // Sparks are born anywhere up the top emitFlameFraction of the flame's
+  // height (1 is all of it, 0.5 the top half), measured from the flame mesh.
+  emitFlameFraction: 2 / 3,
+  emitOffsetY: -0.35, // a torch with no flame mesh: start this far below its light
   emitRadius: 0.1, // scatter of each spark's starting point
 
   lifeMinSeconds: 10, // each spark lives a random time between these

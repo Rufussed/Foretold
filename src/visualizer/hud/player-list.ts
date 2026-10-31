@@ -56,6 +56,10 @@ export interface PlayerListPart extends HudPart {
   // The announcement of a prediction being changed is up: show the player's
   // new number, swelling and flashing, until now still the old one.
   revealPrediction(username: string, byOther?: boolean): void;
+  // A Roles player's power just went off: their role lights in the list,
+  // red when it hit you, until clearRole when the trick is cleared.
+  flashRole(username: string, hitYou: boolean): void;
+  clearRole(username: string): void;
 }
 
 // Bottom left: every player, you included, in the order they predict this
@@ -212,11 +216,14 @@ export function createPlayerList(
           ].filter(Boolean).join(", ");
           caption.classList.toggle("has-role", !!player.role);
           if (player.role) {
-            const role = document.createElement("span");
+            // The same two spans kept, so a role's flare is not restarted.
+            const spans = caption.querySelectorAll("span");
+            const [role, name] = spans.length === 2
+              ? [spans[0]!, spans[1]!]
+              : [document.createElement("span"), document.createElement("span")];
             role.textContent = `${t(`role.${player.role}`)}:${marks}`;
-            const name = document.createElement("span");
             name.textContent = shortName(player.username);
-            caption.replaceChildren(role, name);
+            if (spans.length !== 2) caption.replaceChildren(role, name);
           } else {
             caption.textContent = shortName(player.username);
           }
@@ -253,6 +260,17 @@ export function createPlayerList(
     },
 
     revealPrediction: predictionReveal.reveal,
+
+    flashRole(username, hitYou) {
+      const caption = rows.get(username)?.element.querySelector("figcaption");
+      if (!caption) return;
+      caption.classList.add("is-role-flash");
+      caption.classList.toggle("is-role-hit", hitYou);
+    },
+
+    clearRole(username) {
+      rows.get(username)?.element.querySelector("figcaption")?.classList.remove("is-role-flash", "is-role-hit");
+    },
 
     dispose() {
       predictionReveal.dispose();

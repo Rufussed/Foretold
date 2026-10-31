@@ -24,6 +24,10 @@ import { createSabotageDevKeys, type SabotageDevKeys } from "../modes/sabotage/d
 import { createSuitViewer, type SuitViewer } from "../modes/sabotage/dev/suit-viewer";
 import { isSabotageGame, setSabotageGame } from "../modes/sabotage/sabotage-game";
 import { createRoleLabels, type RoleLabels } from "../modes/roles/role-labels";
+import { createRolesDevKeys, type RolesDevKeys } from "../modes/roles/dev/roles-dev-keys";
+import { createEventLog, type EventLog } from "../visualizer/hud/event-log";
+import { createLookAround, type LookAround } from "../visualizer/look-around";
+import { isAutoFollowOn, isLookAroundOn } from "../visualizer/camera-settings";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -117,6 +121,9 @@ export async function renderVisualizerPage(
   let suitViewer: SuitViewer | null = null;
   let thiefPrompt: SabotageThiefPrompt | null = null;
   let devThiefKey: SabotageDevKeys | null = null;
+  let rolesDevKeys: RolesDevKeys | null = null;
+  let eventLog: EventLog | null = null;
+  let lookAround: LookAround | null = null;
   let guestPrompt: GuestSignupPrompt | null = null;
   let hourglass: TurnHourglass | null = null;
   let hourglassTurns: HourglassTurns | null = null;
@@ -137,6 +144,9 @@ export async function renderVisualizerPage(
     suitViewer?.dispose();
     thiefPrompt?.dispose();
     devThiefKey?.dispose();
+    rolesDevKeys?.dispose();
+    eventLog?.dispose();
+    lookAround?.dispose();
     victoryTimers.forEach((timer) => window.clearTimeout(timer));
     guestPrompt?.dispose();
     music?.dispose();
@@ -436,6 +446,7 @@ export async function renderVisualizerPage(
   const page = container.querySelector<HTMLElement>(".visualizer-page");
   if (gameConnection && page) {
     if (import.meta.env.DEV && isSabotageGame()) devThiefKey = createSabotageDevKeys(gameConnection, () => cardTable?.cards.selectedKey() ?? null);
+    if (import.meta.env.DEV && latestState?.options?.mode === "roles") rolesDevKeys = createRolesDevKeys(gameConnection, () => cardTable?.cards.selectedKey() ?? null);
     // Bidding waits until every card has been dealt.
     // Prompts open once your turn has been announced.
     // Your move's time ran out: the game is making it, so the prompts close.
@@ -464,7 +475,10 @@ export async function renderVisualizerPage(
       blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
     // The banner's gameplay lines wait until every card, trump included, has landed.
+    // A Roles game keeps a log of what happened (hud/event-log.ts).
+    if (latestState?.options?.mode === "roles") eventLog = createEventLog(page);
     gameHud = createGameHud(page, hudConnection!, {
+      onLog: (round, entries) => eventLog?.add(round, entries),
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
       seatOf: (username) => seatSync?.seatOf(username) ?? null,
@@ -588,6 +602,8 @@ export async function renderVisualizerPage(
           seatOf: (username) => sync.seatOf(username),
           headOf: (seat) => players.headPosition(seat),
           headRadiusOf: (seat) => players.headRadius(seat),
+          onUse: (username, hitYou) => gameHud?.flashRole(username, hitYou),
+          onClear: (username) => gameHud?.clearRole(username),
         });
       }
 
@@ -624,6 +640,7 @@ export async function renderVisualizerPage(
       }
 
       // Live games: the camera turns toward players when the director says.
+      const roles = latestState?.options?.mode === "roles";
       if (sync && gameConnection) {
         turnCamera = createTurnCamera({
           view,
@@ -631,7 +648,20 @@ export async function renderVisualizerPage(
           layout,
           localUsername: gameConnection.localUsername,
           seatOf: (username) => sync.seatOf(username),
+          // A Roles game, for trying it out: the camera stays put unless you
+          // turn it yourself. Elsewhere, as switched (camera-settings.ts).
+          follows: () => !roles && isAutoFollowOn(),
         });
+        // A Roles game: you can look left and right yourself (look-around.ts).
+        const camera = turnCamera;
+        if (roles && isLookAroundOn()) {
+          lookAround = createLookAround({
+            canvas,
+            cameraYaw: () => view.cameraYaw(),
+            look: (yaw) => view.lookAround(yaw),
+            range: () => camera.range(),
+          });
+        }
       }
 
       const emoteTrigger = createEmoteTrigger(players, (emote) =>

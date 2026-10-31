@@ -15,6 +15,11 @@ export const ROLES = [
   { id: "shepherd", kind: "basic", card: 5 },
   { id: "smith", kind: "basic", card: 6 },
   { id: "merchant", kind: "basic", card: 7 },
+  // Every royal card (11, 12, 13) in a trick with the Priest's 8 pays faith.
+  { id: "priest", kind: "basic", card: 8 },
+  // The Warrior's 9: everyone pays when it wins; as a trump that loses, the
+  // Warrior pays everyone.
+  { id: "warrior", kind: "basic", card: 9 },
   // No card of its own: the Blue Wizard sees how many blue cards each
   // opponent holds (master/blueWizard.ts). Open to everyone for now; to be unlocked
   // with Blue colour points later.
@@ -70,6 +75,7 @@ export interface RoleAction {
   points?: number;
   // A Merchant's market, trade by trade: who paid the Merchant (points above
   // 0) or was paid by them (below 0). A trade a Smith's armour blocked is
-  // left out.
+  // left out. For a Priest's faith (on is the Priest themself, card their 8),
+  // who paid them, the same way; points is the faith in all.
   trades?: { player: string; points: number }[];
 }

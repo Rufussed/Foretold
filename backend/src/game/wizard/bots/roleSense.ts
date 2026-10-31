@@ -25,10 +25,11 @@ export interface Play {
 // Roughly the tricks a role's card brings in a bid. The Fisher picks the
 // winner when played early, the Thief often steals one, the Servant's luck
 // depends on the next player, the Farmer's 4 and the Shepherd's 5 bring
-// points, not tricks, the Smith's 6 forges armour, and the Merchant's 7
-// trades.
+// points, not tricks, the Smith's 6 forges armour, the Merchant's 7
+// trades, the Priest's 8 collects faith from royal cards, and the Warrior's 9
+// wins or loses a battle.
 const BID_VALUE: Record<RoleId, number> = {
-  thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0,
+  thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0, priest: 0, warrior: 0,
   // No card of its own; its sight is used in blueWizardSense.ts.
   blueWizard: 0,
   // No card either; its boost is in every trick it plays (master/greenWizard.ts).

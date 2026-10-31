@@ -253,12 +253,3 @@ export const SABOTAGE_THIEF = {
   // The camera's turn to the target and back, in seconds at the normal pace.
   cameraSeconds: 2,
 };
-
-// ══════════════════════════════════════════════════════════════════════════
-// SPARKS  (the torches' embers, born up the flame rather than below the light)
-// ══════════════════════════════════════════════════════════════════════════
-export const SPARKS = {
-  // Sparks are born anywhere up the top emitFlameFraction of the flame's
-  // height (1 is all of it, 0.5 the top half), measured from the flame mesh.
-  emitFlameFraction: 2 / 3,
-};

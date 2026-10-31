@@ -7,7 +7,7 @@ import { isSabotageGame } from "../modes/sabotage/sabotage-game";
 import { TRICK_SWAP, swapPlacement } from "../modes/roles/mechanics/trick-swap";
 import { CARD_HANDLING as SABOTAGE_CARD_HANDLING, PLAYED_CARDS } from "../modes/sabotage/sabotage-config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
-import { paced } from "./pace";
+import { paced, unhurried } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
 
@@ -527,7 +527,7 @@ export function createTableCards(
           });
         const lands = Math.max(clock, ...landing);
         // A repeat of the same state keeps the swap's start where it was.
-        const at = waiting?.places.join() === owned.join() ? waiting.at : lands + paced(TRICK_SWAP.pauseSeconds);
+        const at = waiting?.places.join() === owned.join() ? waiting.at : lands + unhurried(TRICK_SWAP.pauseSeconds);
         swapWaiting = { places: owned, at };
       }
     },

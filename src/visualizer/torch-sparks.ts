@@ -1,6 +1,4 @@
 import * as THREE from "three";
-import { isSabotageGame } from "../modes/sabotage/sabotage-game";
-import { SPARKS as SABOTAGE_SPARKS } from "../modes/sabotage/sabotage-config";
 import { SPARKS } from "./config";
 import { torchFlames } from "./environment-setup";
 
@@ -117,8 +115,7 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
   // Where up each flame sparks may be born, as heights above the flame's
   // light, from the flame's own mesh: its light sits at the flame's top, so
   // these are mostly below it. A torch with no flame mesh falls back to a
-  // small scatter at emitOffsetY, and so does every torch outside a Sabotage
-  // game: Rufus's flame-high sparks are that mode's look.
+  // small scatter at emitOffsetY.
   environment.updateMatrixWorld(true);
   const flameBox = new THREE.Box3();
   const corner = new THREE.Vector3();
@@ -126,7 +123,7 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
   const emitters = flames.map((flame) => {
     // The flame is three meshes, so it loads as a group named after the node.
     const mesh = flame.parent?.children.find((child) => child !== flame && /flame/i.test(child.name));
-    if (!mesh || !isSabotageGame()) {
+    if (!mesh) {
       const around = SPARKS.emitOffsetY;
       return { owed: Math.random(), low: around - SPARKS.emitRadius / 2, high: around + SPARKS.emitRadius / 2 };
     }
@@ -136,7 +133,7 @@ export function createTorchSparks(environment: THREE.Object3D): TorchSparks {
     const low = environment.worldToLocal(corner.set(0, flameBox.min.y, 0)).y - lightY;
     const high = environment.worldToLocal(corner.set(0, flameBox.max.y, 0)).y - lightY;
     // Only the top share of the flame's height, not its base.
-    return { owed: Math.random(), low: high - (high - low) * SABOTAGE_SPARKS.emitFlameFraction, high };
+    return { owed: Math.random(), low: high - (high - low) * SPARKS.emitFlameFraction, high };
   });
   const flamePosition = new THREE.Vector3();
   let next = 0;

@@ -2,7 +2,7 @@ import { WizardBotService } from "./wizardBotService.js";
 import { WizardGameService } from "./wizardGameService.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
 import { WIZARD_TIMING } from "../wizardTiming.js";
-import { clampPace, paced } from "../gameplayPace.js";
+import { clampPace, paced, unhurried } from "../gameplayPace.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
 import { isPlayedByServer, recordMissedTurn } from "./playerQuit.js";
 import { isBotName } from "../models/bot.js";
@@ -96,6 +96,12 @@ export class WizardGameRunner {
               : WIZARD_TIMING.trickHoldMs,
             pace,
           );
+          // Roles: each power at work in the trick gets its time on the
+          // table at any speed.
+          const roleActions = game.currentTrick.roleActions?.length ?? 0;
+          if (roleActions) {
+            await this.waitUnhurried(roleActions * WIZARD_TIMING.roleActionHoldMs, pace);
+          }
 
           const currentGame =
             wizardSessionManager.getGame(roomId);
@@ -493,6 +499,14 @@ export class WizardGameRunner {
   private wait(milliseconds: number, pace: number): Promise<void> {
     return new Promise((resolve) => {
       setTimeout(resolve, paced(milliseconds, pace));
+    });
+  }
+
+  // The same, but never shorter than at the default pace: for what players
+  // must be able to follow at any speed.
+  private waitUnhurried(milliseconds: number, pace: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, unhurried(milliseconds, pace));
     });
   }
 }

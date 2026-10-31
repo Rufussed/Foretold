@@ -5,6 +5,8 @@ import { WizardRules } from "../../services/wizardRules.js";
 import { harvest, plant, plantedBy } from "./farmer.js";
 import { MARKET_POINTS, marketsIn, trades } from "./merchant.js";
 import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
+import { ALMS_POINTS, FAITH_POINTS, poorFor, priestsIn, royalsFor } from "./priest.js";
+import { battlesIn, PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
 import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
 import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
@@ -230,6 +232,88 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
   return actions;
 }
 
+// The Priests' faith at the end of a trick, once every swap is done: every
+// royal card in it pays the Priest, never more than its player has. A Smith
+// in armour uses up a piece instead, and nothing moves, as at a market. A
+// Priest whose 8 won the trick then feeds the poor: every card under 8 is
+// paid in full, even if that takes the Priest below 0.
+function applyFaith(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+
+  for (const { priest, card } of priestsIn(trick.playedCards, game.trumpSuit, rolesOf(game))) {
+    const paid: { player: string; points: number }[] = [];
+    const blocks: RoleAction[] = [];
+
+    for (const royal of royalsFor(trick.playedCards, priest)) {
+      if (armorOf(game)(royal.player)) {
+        block(game.players.find((player) => player.username === royal.player));
+        blocks.push({ role: "smith", by: royal.player, on: priest, card: royal.card, points: 0 });
+      } else {
+        paid.push({ player: royal.player, points: movePoints(game, royal.player, priest, "priest", FAITH_POINTS) });
+      }
+    }
+
+    const giver = game.players.find((player) => player.username === priest);
+    for (const poor of poorFor(trick.playedCards, priest, winner.username)) {
+      const fed = game.players.find((player) => player.username === poor.player);
+      if (giver && fed) {
+        addBonus(fed, "priest", ALMS_POINTS);
+        addBonus(giver, "priest", -ALMS_POINTS);
+      }
+      paid.push({ player: poor.player, points: -ALMS_POINTS });
+    }
+
+    if (paid.length) {
+      const points = paid.reduce((sum, faith) => sum + faith.points, 0);
+      actions.push({ role: "priest", by: priest, on: priest, card, points, trades: paid });
+    }
+    actions.push(...blocks);
+  }
+
+  return actions;
+}
+
+// The Warriors' battles at the end of a trick, once every swap is done. A
+// Warrior whose 9 won is paid by every other player, never more than they
+// have; a Smith in armour uses up a piece instead, and nothing moves. A
+// Warrior whose trump 9 lost pays every other player in full, even if that
+// takes them below 0.
+function applyBattles(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+
+  for (const { warrior, card, won } of battlesIn(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username)) {
+    const paid: { player: string; points: number }[] = [];
+    const blocks: RoleAction[] = [];
+    const proud = game.players.find((player) => player.username === warrior);
+
+    for (const other of game.players) {
+      if (other.username === warrior) continue;
+      if (!won) {
+        if (proud) {
+          addBonus(other, "warrior", PRIDE_POINTS);
+          addBonus(proud, "warrior", -PRIDE_POINTS);
+        }
+        paid.push({ player: other.username, points: -PRIDE_POINTS });
+      } else if (armorOf(game)(other.username)) {
+        block(other);
+        blocks.push({ role: "smith", by: other.username, on: warrior, card, points: 0 });
+      } else {
+        paid.push({ player: other.username, points: movePoints(game, other.username, warrior, "warrior", VICTORY_POINTS) });
+      }
+    }
+
+    if (paid.length) {
+      const points = paid.reduce((sum, entry) => sum + entry.points, 0);
+      actions.push({ role: "warrior", by: warrior, on: warrior, card, points, trades: paid });
+    }
+    actions.push(...blocks);
+  }
+
+  return actions;
+}
+
 // When a trick is won in a Roles game: what the powers used in it bring, or
 // cost, straight onto the scores.
 export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
@@ -248,7 +332,7 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
   // A colour Wizard who won with the Wizard of their colour.
   if (isColourWizard(winner.role)) addBonus(winner, winner.role, colourWizardBonus(trick, winner));
 
-  const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game)];
+  const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game), ...applyFaith(game, winner), ...applyBattles(game, winner)];
 
   if (atTrickEnd.length) {
     trick.roleActions = [...(trick.roleActions ?? []), ...atTrickEnd];

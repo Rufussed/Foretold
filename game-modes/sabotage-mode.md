@@ -34,7 +34,7 @@ named apart: `sabotageThief.ts`, `sabotage_thief_*` messages,
 | Bots (Apprentice simple rules, Adept expected-score reasoning) | `modes/sabotage/bots/` |
 | Tests | `modes/sabotage/cardPowers.test.ts` |
 | Deck: art, numbers, titles, icons and symbols printed in code, wear, back | `src/modes/sabotage/deck/`, art in `src/assets/sabotage-cards/` |
-| Look settings (cards, raised and played card sizes, Thief motion, sparks) | `src/modes/sabotage/sabotage-config.ts` |
+| Look settings (cards, raised and played card sizes, Thief motion) | `src/modes/sabotage/sabotage-config.ts` |
 | Which game is on the table | `src/modes/sabotage/sabotage-game.ts` (`isSabotageGame()`) |
 | Prompts: Seer/Trickster, Thief | `src/modes/sabotage/prompts/` |
 | Thief heist in 3D, director checks | `src/modes/sabotage/heist/` |
@@ -47,13 +47,14 @@ Shared files only call into these, behind `mode === "sabotage"` or
 `isSabotageGame()`: `wizardGameService`, `wizardGameRunner`, `wizardSocket`,
 `bots/adept.ts`, `pages/Visualizer.ts`, `card-texture-loader`, `card-textures`,
 `card-table`, `table-cards`, `opponent-hands`, `table-director`, `table-layout`,
-`torch-sparks`, `portrait-camera`, `trump-prompt`, `hud/announcements`,
+`portrait-camera`, `trump-prompt`, `hud/announcements`,
 `hud/announcer`, `hud/game-hud`, `hud/player-list`, `hud/round-stats`.
 
 Rufus's table tweaks apply to Sabotage tables only: your hand 0.2 m closer,
 cards in play larger when few, a raised card 1.5 times bigger, the iPad blind
-tour in portrait only, sparks born up the flame. His forest horizon is not
-used. The text game page (`pages/WizardGame.ts`) passes on a power by itself.
+tour in portrait only. His flame-high torch sparks are now the look for every
+mode (`SPARKS.emitFlameFraction` in `src/visualizer/config.ts`). His forest
+horizon is not used. The text game page (`pages/WizardGame.ts`) passes on a power by itself.
 
 ## Open
 

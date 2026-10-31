@@ -1,14 +1,16 @@
 import * as THREE from "three";
 import type { Card } from "../../../../backend/src/game/wizard/models/card";
 import type { PlayedCard } from "../../../../backend/src/game/wizard/models/wizardGame";
-import { paced } from "../../../visualizer/pace";
+import { unhurried } from "../../../visualizer/pace";
 import type { Placement } from "../../../visualizer/placement";
 
 // A Roles game's swaps in the trick: a Thief's 1 taking a card, a Servant's 2
 // receiving the next one, a Fisher fishing. The server only swaps who owns the
 // two cards; on the table each card sits in the place of the player who now
 // owns it, so the two trade places, rising, crossing over each other and
-// dropping into their new places (visualizer/table-cards.ts runs it).
+// dropping into their new places (visualizer/table-cards.ts runs it). It
+// never runs faster than at the default pace, so it can be followed at any
+// game speed.
 
 export const TRICK_SWAP = {
   // The pause after the card just played has landed, before the swap starts.
@@ -33,9 +35,9 @@ export function cardsByOwner(playedCards: readonly PlayedCard[]): Card[] {
   });
 }
 
-// The whole move's length, at the game's pace.
+// The whole move's length, never faster than the default pace.
 export const swapSeconds = (): number =>
-  paced(TRICK_SWAP.riseSeconds) + paced(TRICK_SWAP.travelSeconds) + paced(TRICK_SWAP.dropSeconds);
+  unhurried(TRICK_SWAP.riseSeconds) + unhurried(TRICK_SWAP.travelSeconds) + unhurried(TRICK_SWAP.dropSeconds);
 
 const smooth = (t: number) => t * t * (3 - 2 * t);
 
@@ -50,9 +52,9 @@ export function swapPlacement(
   up: THREE.Vector3,
   length: number,
 ): Placement | null {
-  const rise = Math.max(paced(TRICK_SWAP.riseSeconds), 1e-6);
-  const travel = Math.max(paced(TRICK_SWAP.travelSeconds), 1e-6);
-  const drop = Math.max(paced(TRICK_SWAP.dropSeconds), 1e-6);
+  const rise = Math.max(unhurried(TRICK_SWAP.riseSeconds), 1e-6);
+  const travel = Math.max(unhurried(TRICK_SWAP.travelSeconds), 1e-6);
+  const drop = Math.max(unhurried(TRICK_SWAP.dropSeconds), 1e-6);
   const height = (high ? TRICK_SWAP.highLengths : TRICK_SWAP.lowLengths) * length * from.scale.z;
   const fromAbove = from.position.clone().addScaledVector(up, height);
   const toAbove = to.position.clone().addScaledVector(up, height);

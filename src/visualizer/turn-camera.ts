@@ -8,6 +8,9 @@ export interface TurnCamera {
   // Turns toward a player, or back to the normal view for null (also used for
   // you); done once the camera is there.
   lookAt(username: string | null, done: () => void, seconds?: number): void;
+  // The furthest the camera turns either way to face a player, in radians
+  // from the normal view: [right, left], each 0 if no one is that way.
+  range(): [number, number];
 }
 
 export interface TurnCameraOptions {
@@ -16,6 +19,9 @@ export interface TurnCameraOptions {
   layout: TableLayout;
   localUsername: string;
   seatOf(username: string): SeatId | null;
+  // Whether the camera turns toward players by itself (camera-settings.ts);
+  // when not, it stays at the normal view and every turn is done at once.
+  follows?(): boolean;
 }
 
 // Turns the camera toward a player at the table: whoever's move it is, or a
@@ -26,6 +32,7 @@ export function createTurnCamera({
   layout,
   localUsername,
   seatOf,
+  follows = () => true,
 }: TurnCameraOptions): TurnCamera {
   const aims = new Map<SeatId, THREE.Vector3>();
 
@@ -58,8 +65,22 @@ export function createTurnCamera({
   return {
     lookAt(username, done, seconds) {
       const seat =
-        CAMERA_FOLLOW.enabled && username !== null && username !== localUsername ? seatOf(username) : null;
+        CAMERA_FOLLOW.enabled && follows() && username !== null && username !== localUsername ? seatOf(username) : null;
       view.lookToward(seat === null ? null : aimAt(seat), done, seconds);
+    },
+
+    range() {
+      let low = 0;
+      let high = 0;
+      // Every seat but your own, which the camera never turns to.
+      const own = seatOf(localUsername);
+      for (const seat of layout.clockwiseSeats) {
+        if (seat === own) continue;
+        const yaw = view.yawToward(aimAt(seat));
+        low = Math.min(low, yaw);
+        high = Math.max(high, yaw);
+      }
+      return [low, high];
     },
   };
 }

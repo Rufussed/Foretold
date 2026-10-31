@@ -14,13 +14,14 @@ import {
 	handleSabotageMove,
 	type SabotageMessage,
 } from "../modes/sabotage/sabotageMessages.js";
+import { handleRolesDevCard, type RolesDevMessage } from "../modes/roles/devTools.js";
 
 interface SocketQuery {
 	token?: string;
 }
 
 // Sabotage's own fields are in modes/sabotage/sabotageMessages.ts.
-interface SocketMessage extends SabotageMessage {
+interface SocketMessage extends SabotageMessage, RolesDevMessage {
 	type?: string;
 	prediction?: number;
 	cardIndex?: number;
@@ -243,9 +244,9 @@ export function registerWizardSocket(
 					return;
 				}
 
-				// Test shortcut of a Sabotage game, outside the turn order.
+				// Test shortcuts of a Sabotage or Roles game, outside the turn order.
 				try {
-					if (handleSabotageDevCard(currentGame, username, message)) {
+					if (handleSabotageDevCard(currentGame, username, message) || handleRolesDevCard(currentGame, username, message)) {
 						wizardSessionManager.saveGame(currentGame);
 						broadcastGameState(roomId, gameService);
 						return;

@@ -34,6 +34,27 @@ export function powerOn(
   return played.card.suit === leadSuit || played.card.suit === trumpSuit;
 }
 
+// Whether the card at this place is a role's card played with its power on,
+// whatever comes of it: the Farmer's 4 and the Shepherd's 5 in any suit, the
+// other basic roles' cards in the lead suit or as a trump. The colour
+// Wizards have no card. For the table to show the power the moment it is
+// played.
+export function rolePowerOn(
+  playedCards: PlayedCard[],
+  index: number,
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): boolean {
+  const played = playedCards[index];
+  const role = played && roleOf(playerOf(played));
+
+  if (!played || !role || played.card.value !== roleCard(role)) {
+    return false;
+  }
+
+  return role === "farmer" || role === "shepherd" || powerOn(playedCards, index, role, trumpSuit, roleOf);
+}
+
 // No role's power ever touches a Wizard or a Jester.
 export const canBeTaken = (played: PlayedCard): boolean =>
   !isWizard(played.card) && !isJester(played.card);

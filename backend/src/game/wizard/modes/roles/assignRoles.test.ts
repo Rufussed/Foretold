@@ -29,6 +29,19 @@ describe("assignRoles", () => {
     }
   });
 
+  it("never draws a role a player chose", () => {
+    const names = ["alice", "bob", "a NPC", "b NPC", "c NPC", "d NPC"];
+    for (let run = 0; run < 50; run++) {
+      const game = new WizardGameService().createGame(1, names);
+      const chosen = new Map<string, (typeof ROLES)[number]["id"] | null>([["alice", "farmer"], ["bob", "smith"]]);
+      assignRoles(game.players, chosen);
+      const drawn = game.players.slice(2).map((player) => player.role);
+      expect(drawn).not.toContain("farmer");
+      expect(drawn).not.toContain("smith");
+      expect(new Set(drawn).size).toBe(drawn.length);
+    }
+  });
+
   it("draws every role, the last one included", () => {
     ROLES.forEach(({ id }, index) => {
       expect(randomRole(() => (index + 0.5) / ROLES.length)).toBe(id);

@@ -34,6 +34,9 @@ export interface GameHud extends HudPart {
   whenIdle(done: () => void): void;
   // Which suit is trumps, said once the round's cards are dealt.
   announceTrump(state: PublicWizardGameState): void;
+  // A Roles player's power just went off; see player-list.ts.
+  flashRole(username: string, hitYou: boolean): void;
+  clearRole(username: string): void;
 }
 
 // The in-game overlay: what's going on (top centre), the game status and
@@ -64,6 +67,8 @@ export function createGameHud(
     refreshPlayers: () => playerList.applyState(),
     whenIdle: (done) => announcer.whenIdle(done),
     notice: (text) => announcer.notice(text),
+    flashRole: (username, hitYou) => playerList.flashRole(username, hitYou),
+    clearRole: (username) => playerList.clearRole(username),
     announceTrump(state) {
       const text = trumpMessage(state);
       if (text) announcer.announce(text, TRUMP_EXTRA_SECONDS, state.trumpSuit ?? undefined);
