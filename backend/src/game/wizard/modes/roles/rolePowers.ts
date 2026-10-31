@@ -194,7 +194,8 @@ function applyShepherding(game: WizardGameState, winner: GamePlayer): RoleAction
 // The Merchants' markets at the end of a trick, once every swap is done.
 // Whoever sells pays the Merchant, never more than they have; the Merchant
 // pays whoever buys in full, even below 0. A Smith in armour who would pay
-// uses up a piece instead, and nothing moves.
+// uses up a piece instead: the trade does not happen, and the Merchant pays
+// the Smith BLOCK_POINTS for the block.
 function applyMarkets(game: WizardGameState): RoleAction[] {
   const actions: RoleAction[] = [];
   const trick = game.currentTrick;
@@ -215,8 +216,9 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
         done.push({ player: trade.player, points: -MARKET_POINTS });
       } else if (armorOf(game)(trade.player)) {
         block(playerNamed(trade.player));
-        // A block that bounces nothing back.
-        blocks.push({ role: "smith", by: trade.player, on: merchant, card: trade.card, points: 0 });
+        // The trade does not happen, and the Merchant pays for the block.
+        const bounced = movePoints(game, merchant, trade.player, "smith", BLOCK_POINTS);
+        blocks.push({ role: "smith", by: trade.player, on: merchant, card: trade.card, points: bounced });
       } else {
         done.push({ player: trade.player, points: movePoints(game, trade.player, merchant, "merchant", MARKET_POINTS) });
       }
@@ -234,9 +236,9 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
 
 // The Priests' faith at the end of a trick, once every swap is done: every
 // royal card in it pays the Priest, never more than its player has. A Smith
-// in armour uses up a piece instead, and nothing moves, as at a market. A
-// Priest whose 8 won the trick then feeds the poor: every card under 8 is
-// paid in full, even if that takes the Priest below 0.
+// in armour uses up a piece instead, and the Priest pays them for the block,
+// as at a market. A Priest whose 8 won the trick then feeds the poor: every
+// card under 8 is paid in full, even if that takes the Priest below 0.
 function applyFaith(game: WizardGameState, winner: GamePlayer): RoleAction[] {
   const actions: RoleAction[] = [];
   const trick = game.currentTrick;
@@ -248,7 +250,8 @@ function applyFaith(game: WizardGameState, winner: GamePlayer): RoleAction[] {
     for (const royal of royalsFor(trick.playedCards, priest)) {
       if (armorOf(game)(royal.player)) {
         block(game.players.find((player) => player.username === royal.player));
-        blocks.push({ role: "smith", by: royal.player, on: priest, card: royal.card, points: 0 });
+        const bounced = movePoints(game, priest, royal.player, "smith", BLOCK_POINTS);
+        blocks.push({ role: "smith", by: royal.player, on: priest, card: royal.card, points: bounced });
       } else {
         paid.push({ player: royal.player, points: movePoints(game, royal.player, priest, "priest", FAITH_POINTS) });
       }
@@ -276,7 +279,8 @@ function applyFaith(game: WizardGameState, winner: GamePlayer): RoleAction[] {
 
 // The Warriors' battles at the end of a trick, once every swap is done. A
 // Warrior whose 9 won is paid by every other player, never more than they
-// have; a Smith in armour uses up a piece instead, and nothing moves. A
+// have; a Smith in armour uses up a piece instead, and the Warrior pays them
+// for the block. A
 // Warrior whose trump 9 lost pays every other player in full, even if that
 // takes them below 0.
 function applyBattles(game: WizardGameState, winner: GamePlayer): RoleAction[] {
@@ -298,7 +302,8 @@ function applyBattles(game: WizardGameState, winner: GamePlayer): RoleAction[] {
         paid.push({ player: other.username, points: -PRIDE_POINTS });
       } else if (armorOf(game)(other.username)) {
         block(other);
-        blocks.push({ role: "smith", by: other.username, on: warrior, card, points: 0 });
+        const bounced = movePoints(game, warrior, other.username, "smith", BLOCK_POINTS);
+        blocks.push({ role: "smith", by: other.username, on: warrior, card, points: bounced });
       } else {
         paid.push({ player: other.username, points: movePoints(game, other.username, warrior, "warrior", VICTORY_POINTS) });
       }

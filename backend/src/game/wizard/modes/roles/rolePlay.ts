@@ -15,7 +15,8 @@ export const playerOf = (played: PlayedCard): string => played.playedBy ?? playe
 
 // Whether the card at this place in the trick has its role's power on: the
 // role's card, played by a player of that role, in the lead suit or as a
-// trump.
+// trump. A trick opened by a Wizard (after any Jesters) has no lead suit and
+// anyone may play anything, so there the card works in any suit.
 export function powerOn(
   playedCards: PlayedCard[],
   index: number,
@@ -31,7 +32,7 @@ export function powerOn(
 
   const leadSuit = rules.getLeadSuit(playedCards.slice(0, index + 1), trumpSuit, trickRolesOf(roleOf));
 
-  return played.card.suit === leadSuit || played.card.suit === trumpSuit;
+  return leadSuit === null || played.card.suit === leadSuit || played.card.suit === trumpSuit;
 }
 
 // Whether the card at this place is a role's card played with its power on,

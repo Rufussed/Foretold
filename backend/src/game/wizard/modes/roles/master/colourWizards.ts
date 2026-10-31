@@ -12,13 +12,14 @@ import type { RoleId } from "../roles.js";
 //   Red Wizard     a red card of theirs on a red lead means no trumps count
 //                  in that trick, for anyone, and no Yellow Wizard can turn
 //                  the lead after it (wizardRules.redShield)
-// Each also earns points for a trick won with the Wizard of their colour.
+// Each also earns points for a trick won with the Wizard of their colour: the
+// Blue and Red Wizards 10 more than the others.
 
 export const COLOUR_WIZARDS = {
-  blueWizard: { suit: "Blue", bonus: 10 },
+  blueWizard: { suit: "Blue", bonus: 20 },
   greenWizard: { suit: "Green", bonus: 10 },
   yellowWizard: { suit: "Yellow", bonus: 10 },
-  redWizard: { suit: "Red", bonus: 10 },
+  redWizard: { suit: "Red", bonus: 20 },
 } as const satisfies Partial<Record<RoleId, { suit: Suit; bonus: number }>>;
 
 export type ColourWizardId = keyof typeof COLOUR_WIZARDS;

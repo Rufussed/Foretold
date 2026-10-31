@@ -11,6 +11,13 @@ describe("priestsIn", () => {
     expect(priestsIn([play("ana", 12), play("priest", 8, "Blue")], "Blue", roleOf)).toHaveLength(1);
   });
 
+  it("finds an 8 in any suit when a Wizard opened the trick, after Jesters too", () => {
+    expect(priestsIn([play("ana", 14, "Red"), play("priest", 8, "Green")], "Blue", roleOf)).toHaveLength(1);
+    expect(priestsIn([play("ana", 0), play("ben", 0), play("cid", 14), play("priest", 8, "Green")], "Blue", roleOf)).toHaveLength(1);
+    // A Jester then a number card: that card's suit leads as usual.
+    expect(priestsIn([play("ana", 0), play("ben", 3, "Red"), play("priest", 8, "Green")], "Blue", roleOf)).toEqual([]);
+  });
+
   it("finds none off the lead suit, or for anyone else", () => {
     expect(priestsIn([play("ana", 12), play("priest", 8, "Green")], "Blue", roleOf)).toEqual([]);
     expect(priestsIn([play("ana", 12), play("ben", 8)], null, roleOf)).toEqual([]);

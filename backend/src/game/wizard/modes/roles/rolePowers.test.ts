@@ -683,7 +683,7 @@ describe("the Merchant in a game", () => {
     expect(score("ben")).toBe(50 + MARKET_POINTS);
   });
 
-  it("a Smith in armour who would pay uses up a piece, and nothing moves", () => {
+  it("a Smith in armour who would pay uses up a piece, and the Merchant pays for the block", () => {
     const { game, trick, score } = playTrick(
       "roles",
       [
@@ -698,9 +698,9 @@ describe("the Merchant in a game", () => {
     );
 
     expect(find(game, "smith").armor).toBe(0);
-    expect(score("smith")).toBe(50);
-    expect(score("merchant")).toBe(50 + MARKET_POINTS);
-    expect(trick.roleActions?.at(-1)).toMatchObject({ role: "smith", by: "smith", on: "merchant", points: 0 });
+    expect(score("smith")).toBe(50 + BLOCK_POINTS);
+    expect(score("merchant")).toBe(50 + MARKET_POINTS - BLOCK_POINTS);
+    expect(trick.roleActions?.at(-1)).toMatchObject({ role: "smith", by: "smith", on: "merchant", points: BLOCK_POINTS });
   });
 
   it("a Smith who beats the 7 is paid and keeps his armour", () => {
@@ -810,7 +810,7 @@ describe("the Priest in a game", () => {
     expect(score("priest")).toBe(3);
   });
 
-  it("a Smith in armour pays nothing and uses up a piece", () => {
+  it("a Smith in armour pays nothing, uses up a piece, and the Priest pays for the block", () => {
     const { score, game } = playTrick(
       "roles",
       [
@@ -824,8 +824,8 @@ describe("the Priest in a game", () => {
       },
     );
 
-    expect(score("smith")).toBe(50);
-    expect(score("priest")).toBe(50);
+    expect(score("smith")).toBe(50 + BLOCK_POINTS);
+    expect(score("priest")).toBe(50 - BLOCK_POINTS);
     expect(game.players.find((p) => p.username === "smith")!.armor).toBe(0);
   });
 
@@ -925,5 +925,25 @@ describe("the Warrior in a game", () => {
     );
     expect(offSuit.score("warrior")).toBe(50);
     expect(offSuit.trick.roleActions ?? []).toEqual([]);
+  });
+
+  it("a Smith in armour pays nothing when the 9 wins, and the Warrior pays for the block", () => {
+    const { score, game } = playTrick(
+      "roles",
+      [
+        { name: "smith", card: card(3), role: "smith" },
+        { name: "warrior", card: card(9), role: "warrior" },
+        { name: "ben", card: card(2) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        players.find((p) => p.username === "smith")!.armor = 1;
+      },
+    );
+
+    expect(score("smith")).toBe(50 + BLOCK_POINTS);
+    expect(score("warrior")).toBe(50 + VICTORY_POINTS - BLOCK_POINTS);
+    expect(score("ben")).toBe(50 - VICTORY_POINTS);
+    expect(game.players.find((p) => p.username === "smith")!.armor).toBe(0);
   });
 });
