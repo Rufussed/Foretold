@@ -597,6 +597,15 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
+      The role seals in Roles games are made from icons by Lorc and
+      Delapouite, available on
+      <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
+      under the
+      <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>
+      licence, turned into wax seals for this game.
+    </p>
+
+    <p class="home-modal-copy">
       Your data: when you sign up we store your username, your email
       address and a hashed form of your password that nobody, including
       us, can turn back into the password. Other players only ever see your
@@ -631,6 +640,15 @@ const legal = {
       Verlagsrechte liegen bei den jeweiligen Entwicklern und Verlagen,
       darunter Mindscape und Starsphere Interactive. Wir beanspruchen
       keine Rechte an dieser Musik oder ihren Aufnahmen.
+    </p>
+
+    <p class="home-modal-copy">
+      Die Rollensiegel im Rollen-Modus beruhen auf Icons von Lorc und
+      Delapouite, erhältlich auf
+      <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
+      unter der Lizenz
+      <a href="https://creativecommons.org/licenses/by/3.0/deed.de" target="_blank" rel="noopener">CC BY 3.0</a>,
+      für dieses Spiel zu Wachssiegeln verarbeitet.
     </p>
 
     <p class="home-modal-copy">

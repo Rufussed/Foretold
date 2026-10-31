@@ -81,6 +81,13 @@ export interface TableCards {
 
   // The hand card under a ray, if any.
   cardAt(raycaster: THREE.Raycaster): string | null;
+  // Roles mode only (modes/roles/mechanics/trick-pick.ts), for a Fisher's
+  // catch or a Thief's trump 1: the trick card under the pointer, among
+  // these keys only...
+  trickCardAt(raycaster: THREE.Raycaster, keys: ReadonlySet<string>): string | null;
+  // ...and these trick cards lifted off the table, as a raised hand card is,
+  // for the player to pick one; an empty list sets them all down.
+  setTrickRaised(keys: readonly string[]): void;
   setHovered(key: string | null): void;
   // The hand card the pointer is on, else the one raised to be read.
   selectedKey(): string | null;
@@ -215,6 +222,7 @@ export function createTableCards(
   // The trick's cards by the place each is shown in: the order played, until a
   // Roles power swaps two (see setTrick's byOwner).
   let trickPlaces: string[] = [];
+  let trickRaised = new Set<string>();
   // A swap waiting for the card just played to land: the places after it, and
   // when it starts.
   let swapWaiting: { places: string[]; at: number } | null = null;
@@ -364,7 +372,7 @@ export function createTableCards(
       return slot ? { slot, lift: 0 } : null;
     }
     const slot = inPlay[trickPlaces.indexOf(entry.key)];
-    return slot ? { slot, lift: 0 } : null;
+    return slot ? { slot, lift: trickRaised.has(entry.key) ? liftFor(slot) : 0 } : null;
   };
 
   // A swapped card's move into its new place; false once it has arrived.
@@ -723,6 +731,22 @@ export function createTableCards(
 
     setHovered(key) {
       hovered = key;
+    },
+
+    trickCardAt(raycaster, keys) {
+      const candidates = trickOrder
+        .filter((key) => keys.has(key))
+        .map((key) => cards.get(key)?.object)
+        .filter((object): object is THREE.Object3D => !!object?.visible);
+      const hit = raycaster.intersectObjects(candidates, true)[0];
+      for (let object: THREE.Object3D | null = hit?.object ?? null; object; object = object.parent) {
+        if (typeof object.userData.cardKey === "string") return object.userData.cardKey;
+      }
+      return null;
+    },
+
+    setTrickRaised(keys) {
+      trickRaised = new Set(keys);
     },
 
     toggleRaised(key) {

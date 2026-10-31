@@ -1036,3 +1036,42 @@
 .hud-opponent.has-quit .hud-opponent-face {
   opacity: 0.45;
 }
+
+/* Roles mode only: under the trick's raised cards while a Fisher or a Thief
+   picks one, what to do (modes/roles/mechanics/trick-pick.ts, which places
+   it). Gold on the HUD's dark box, gently pulsing so it catches the eye. */
+.visualizer-page .trick-pick-label {
+  position: absolute;
+  z-index: 4;
+  margin: 0;
+  padding: 6px 16px;
+  color: #ffd54f;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--ui-bg);
+  border: 1px solid rgba(255, 213, 79, 0.6);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgb(255 196 64 / 35%);
+  backdrop-filter: var(--ui-blur);
+  transform: translateX(-50%);
+  animation: trick-pick-pulse 1.6s ease-in-out infinite;
+}
+
+.visualizer-page .trick-pick-label[hidden] {
+  display: none;
+}
+
+@keyframes trick-pick-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgb(255 196 64 / 25%); }
+  50% { box-shadow: 0 0 18px rgb(255 196 64 / 60%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .trick-pick-label {
+    animation: none;
+  }
+}

@@ -56,10 +56,16 @@ export interface CardTableOptions {
   // Before a card is sent: the card a Thief's trump 1 takes, if there is a
   // choice (steal-prompt.ts); null when the turn passed before a choice.
   chooseSteal?(cardIndex: number): Promise<number | null | undefined>;
+  // True while a Roles game asks for a pick on the table (a Fisher's catch,
+  // a Thief's trump 1; modes/roles/mechanics/trick-pick.ts): the hand's
+  // controls stand aside.
+  picking?(): boolean;
 }
 
 export interface CardTable {
   readonly cards: TableCards;
+  // A card face's size, in card-mesh units (card-objects.ts).
+  readonly cardSize: { width: number; length: number };
   readonly deal: CardDeal;
   readonly opponents: OpponentHands;
   // A blind round's cards, held facing away from their holders.
@@ -120,6 +126,7 @@ export function createCardTable({
   onDealDone,
   onOvertaken,
   chooseSteal,
+  picking: otherPicking = () => false,
 }: CardTableOptions): CardTable {
   const cameraPosition = new THREE.Vector3();
   const factory = createCardFactory(environment);
@@ -180,7 +187,7 @@ export function createCardTable({
 
   const controls = createCardControls({
     canvas: view.canvas,
-    picking: () => heist.step() === "own" || heist.step() === "theirs",
+    picking: () => heist.step() === "own" || heist.step() === "theirs" || otherPicking(),
     camera: view.camera,
     cards,
     holdOrbit: view.holdOrbit,
@@ -531,6 +538,7 @@ export function createCardTable({
 
   return {
     cards,
+    cardSize: { width: factory.width, length: factory.length },
     deal,
     opponents,
     blind,

@@ -25,6 +25,7 @@ import { createSuitViewer, type SuitViewer } from "../modes/sabotage/dev/suit-vi
 import { isSabotageGame, setSabotageGame } from "../modes/sabotage/sabotage-game";
 import { createRoleLabels, type RoleLabels } from "../modes/roles/role-labels";
 import { createRolesDevKeys, type RolesDevKeys } from "../modes/roles/dev/roles-dev-keys";
+import { createRoleSeals, type RoleSeals } from "../modes/roles/role-seals";
 import { createEventLog, type EventLog } from "../visualizer/hud/event-log";
 import { createLookAround, type LookAround } from "../visualizer/look-around";
 import { isAutoFollowOn, isLookAroundOn } from "../visualizer/camera-settings";
@@ -52,8 +53,9 @@ import { createTableDirector, type TableDirector } from "../visualizer/table-dir
 import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
-import { createFishPrompt, type FishPrompt } from "../visualizer/fish-prompt";
-import { createStealPrompt, type StealPrompt } from "../visualizer/steal-prompt";
+import { createFishPick, type FishPick } from "../modes/roles/mechanics/fish-pick";
+import { createStealPick, type StealPick } from "../modes/roles/mechanics/steal-pick";
+import { createTrickPick, type TrickPick } from "../modes/roles/mechanics/trick-pick";
 import { createPowerPrompt, type PowerPrompt } from "../modes/sabotage/prompts/power-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
@@ -104,10 +106,12 @@ export async function renderVisualizerPage(
   let cardTable: CardTable | null = null;
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
-  let fishPrompt: FishPrompt | null = null;
-  let stealPrompt: StealPrompt | null = null;
+  let fishPick: FishPick | null = null;
+  let stealPick: StealPick | null = null;
+  let trickPick: TrickPick | null = null;
   let powerPrompt: PowerPrompt | null = null;
   let roleLabels: RoleLabels | null = null;
+  let roleSeals: RoleSeals | null = null;
   let gameHud: GameHud | null = null;
   let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
@@ -156,10 +160,12 @@ export async function renderVisualizerPage(
     tableDirector?.dispose();
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
-    fishPrompt?.dispose();
-    stealPrompt?.dispose();
+    fishPick?.dispose();
+    stealPick?.dispose();
+    trickPick?.dispose();
     powerPrompt?.dispose();
     roleLabels?.dispose();
+    roleSeals?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
     timeoutNotice?.dispose();
@@ -393,8 +399,8 @@ export async function renderVisualizerPage(
     applyHud: () => {
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
-      fishPrompt?.applyState();
-      stealPrompt?.applyState();
+      fishPick?.applyState();
+      stealPick?.applyState();
       powerPrompt?.applyState();
       thiefPrompt?.applyState();
       gameHud?.applyState();
@@ -458,12 +464,6 @@ export async function renderVisualizerPage(
     trumpPrompt = createTrumpPrompt(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
-    // A Roles game's Fisher picks a card from the complete trick.
-    fishPrompt = createFishPrompt(page, hudConnection!, {
-      blocked: () => !cardTable || !director.turnShown() || timedOut(),
-    });
-    // A Roles game's Thief picks the card their trump 1 takes.
-    stealPrompt = createStealPrompt(page, hudConnection!);
     // A Sabotage game: winning a trick with a Seer or Trickster, its winner
     // chooses how to use it.
     powerPrompt = createPowerPrompt(page, hudConnection!, {
@@ -517,7 +517,7 @@ export async function renderVisualizerPage(
       onTimedOut: () => {
         predictionPrompt?.applyState();
         trumpPrompt?.applyState();
-        fishPrompt?.applyState();
+        fishPick?.applyState();
         powerPrompt?.applyState();
         thiefPrompt?.applyState();
       },
@@ -623,12 +623,41 @@ export async function renderVisualizerPage(
         notice: (text) => gameHud?.notice(text),
         onDealDone: () => director.dealt(),
         // A Thief's trump 1 asks which card to take before it is sent.
-        chooseSteal: (cardIndex) => stealPrompt?.ask(cardIndex) ?? Promise.resolve(undefined),
+        chooseSteal: (cardIndex) => stealPick?.ask(cardIndex) ?? Promise.resolve(undefined),
+        picking: () => trickPick?.picking() ?? false,
         // An NPC whose card was leading shows it did not like being beaten.
         onOvertaken: (previousLeader) => {
           if (trigger) reactToOvertake(previousLeader, trigger, (username) => sync?.seatOf(username) ?? null);
         },
       });
+      // Roles games only: the Fisher's catch and the Thief's trump 1 are
+      // picked on the table, the cards to choose from rising off it
+      // (modes/roles/mechanics/trick-pick.ts). No other mode has these.
+      if (latestState?.options?.mode === "roles" && gameConnection && hudConnection) {
+        const pick = createTrickPick({ canvas, camera: view.camera, cards: cardTable.cards, page: pageEl ?? container });
+        trickPick = pick;
+        fishPick = createFishPick({
+          pick,
+          game: hudConnection,
+          blocked: () => !director.turnShown() || (timeoutNotice?.timedOut() ?? false),
+        });
+        stealPick = createStealPick({
+          pick,
+          game: hudConnection,
+          onChange: () => {
+            if (stealPick?.asking()) gameHud?.notice(t("ann.youStealing"));
+          },
+        });
+      }
+      // A Roles game: a gold seal on each trick card played with its power on.
+      if (latestState?.options?.mode === "roles") {
+        roleSeals = createRoleSeals({
+          parent: environment,
+          camera: view.camera,
+          cardWidth: cardTable.cardSize.width,
+          cardLength: cardTable.cardSize.length,
+        });
+      }
       cardTable.heist.onChange(() => {
         thiefPrompt?.applyState();
         // The announcement box tells the winner what to do at each step.
@@ -692,6 +721,7 @@ export async function renderVisualizerPage(
       onUpdate: (deltaSeconds) => {
         cardTable?.update(deltaSeconds);
         roleLabels?.update(director.tableState());
+        if (cardTable) roleSeals?.update(director.tableState(), cardTable.cards.trickCardObjects());
         aiEmotes?.update(deltaSeconds);
         trigger?.update(deltaSeconds);
       },
@@ -751,7 +781,7 @@ export async function renderVisualizerPage(
         const refusal = serverError(message, "game.refused");
         predictionPrompt?.refused(refusal);
         trumpPrompt?.refused(refusal);
-        fishPrompt?.refused(refusal);
+        fishPick?.refused();
         powerPrompt?.refused(refusal);
         cardTable?.heist.refused();
         // The test shortcuts say why they could not do it.
