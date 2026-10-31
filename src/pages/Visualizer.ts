@@ -275,6 +275,12 @@ export async function renderVisualizerPage(
         latestState = (await response.json()) as PublicWizardGameState;
         // An all-NPC game: you watch from your own NPC's seat.
         localUsername = seatNameFor(localUsername, latestState.players) ?? localUsername;
+      } else if (response.status === 404) {
+        // The game is over and gone (the server removes a finished game), as
+        // when Back returns here from the lobby: go where Leave Table goes,
+        // in place of this page, so Back does not lead here again.
+        window.location.replace(isGuestGame ? "#/home" : "#/lobby");
+        return;
       }
     } catch (error) {
       console.warn("[visualizer] no live game, showing the demo table:", error);

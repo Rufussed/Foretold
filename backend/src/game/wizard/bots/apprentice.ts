@@ -74,8 +74,8 @@ export const apprentice: BotStrategy = {
   chooseCardIndex(game) {
     const player = currentPlayer(game);
     const leadSuit = rules.getLeadSuit(game.currentTrick.playedCards, game.trumpSuit, trickRolesIn(game));
-    // A Roles Joker may play any card (modes/roles/master/joker.ts).
-    const playable = (card: Card) => playsFree(roleOfBot(game)) || rules.isValidCardPlay(card, player.hand, leadSuit);
+    // A Roles Joker may play any card unless trump was led (modes/roles/master/joker.ts).
+    const playable = (card: Card) => playsFree(roleOfBot(game), leadSuit, game.trumpSuit) || rules.isValidCardPlay(card, player.hand, leadSuit);
     // In a Roles game it believes in its role's card, and plays it first.
     const roleIndex = player.hand.findIndex((card) => playable(card) && isRoleCard(game, card));
     const playableIndex = roleIndex !== -1 ? roleIndex : player.hand.findIndex(playable);

@@ -182,7 +182,7 @@ export const de: Record<MessageKey, string> = {
   "role.redWizard": "Roter Zauberer",
   "role.redWizard.power": "Keine eigene Karte. Ist Rot die angespielte Farbe, egal von wem, und du spielst eine rote Karte, zählen in diesem Stich keine Trümpfe, für niemanden: Deine rote Karte kann nicht übertrumpft werden, eine höhere rote Karte oder ein Zauberer schlägt sie aber weiterhin. Liegt deine rote Karte, kann ein Gelber Zauberer die Farbe nicht mehr drehen; hat einer sie gedreht, bevor du spielst, gibt es keinen Schutz. Gewinne einen Stich mit dem roten Zauberer für 20 Punkte mehr.",
   "role.joker": "Joker",
-  "role.joker.power": "Keine eigene Karte: Du musst nie Farbe bedienen. Auch wenn du die angespielte Farbe hast, darfst du jede Karte spielen: einstechen oder eine andere Farbe abwerfen. Wer gewinnt, entscheidet sich wie immer, also kann eine fremde Farbe, die kein Trumpf ist, nicht gewinnen.",
+  "role.joker.power": "Keine eigene Karte: Du musst nie Farbe bedienen. Auch wenn du die angespielte Farbe hast, darfst du jede Karte spielen: einstechen oder eine andere Farbe abwerfen. Wer gewinnt, entscheidet sich wie immer, also kann eine fremde Farbe, die kein Trumpf ist, nicht gewinnen. Aber wenn Trumpf angespielt wird, musst du ihn bedienen wie alle anderen (ein Zauberer oder ein Narr ist weiter erlaubt).",
   "role.shepherd": "Hirte",
   "role.shepherd.power": "Spiel deine 5, in jeder Farbe: Wer den Stich gewinnt, bekommt eines deiner 3 Schafe. Gewinnst du einen Stich mit deiner 5, zahlen dir alle mit deinen Schafen 20 Punkte pro Schaf, und deine Schafe kommen heim.",
   "room.bots": "NPCs",

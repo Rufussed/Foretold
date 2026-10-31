@@ -181,7 +181,7 @@ export const en = {
   "role.redWizard": "Red Wizard",
   "role.redWizard.power": "No card of your own. When red is the suit led, by anyone, and you play a red card, no trumps count in that trick, for anyone: your red card cannot be trumped, though a higher red card or a Wizard still beats it. Once your red card is down, a Yellow Wizard can no longer turn the lead; if one turned it before you played, there is no shield. Win a trick with the red Wizard for 20 points more.",
   "role.joker": "Joker",
-  "role.joker.power": "No card of your own: you never have to follow suit. Even holding the suit led, you may play any card: trump in, or throw away another suit. Who wins is decided as ever, so a card of another suit that is not a trump cannot win.",
+  "role.joker.power": "No card of your own: you never have to follow suit. Even holding the suit led, you may play any card: trump in, or throw away another suit. Who wins is decided as ever, so a card of another suit that is not a trump cannot win. But when trump is led, you must follow it like everyone else (a Wizard or a Jester is still allowed).",
   "role.shepherd": "Shepherd",
   "role.shepherd.power": "Play your 5, in any suit: whoever wins the trick takes one of your 3 sheep. When you win a trick with your 5, everyone holding your sheep pays you 20 points per sheep, and your sheep come home.",
   "room.bots": "NPCs",

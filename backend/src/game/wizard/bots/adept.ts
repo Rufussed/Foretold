@@ -49,8 +49,8 @@ export const adept: BotStrategy = {
 
     const legal: Play[] = player.hand
       .map((card, index) => ({ card, index }))
-      // A Roles Joker may play any card (modes/roles/master/joker.ts).
-      .filter(({ card }) => playsFree(roleOfBot(game)) || rules.isValidCardPlay(card, player.hand, leadSuit));
+      // A Roles Joker may play any card unless trump was led (modes/roles/master/joker.ts).
+      .filter(({ card }) => playsFree(roleOfBot(game), leadSuit, trumpSuit) || rules.isValidCardPlay(card, player.hand, leadSuit));
 
     if (legal.length === 0) {
       throw new Error("Bot has no legal card to play");

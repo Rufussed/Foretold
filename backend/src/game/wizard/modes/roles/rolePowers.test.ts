@@ -1264,6 +1264,29 @@ describe("the Joker in a game", () => {
     expect(trick.winnerUsername).toBe("joker");
   });
 
+  it("must follow trump when trump is led", () => {
+    expect(() => playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    }, "Red")).toThrow("Card cannot be played");
+  });
+
+  it("may still play a Wizard when trump is led", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(14, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    }, "Red");
+
+    expect(trick.playedCards[1]!.freePlay).toBeUndefined();
+    expect(trick.winnerUsername).toBe("joker");
+  });
+
   it("is held to the suit in a Classic game", () => {
     expect(() => playTrick("classic", [
       { name: "ana", card: card(5) },

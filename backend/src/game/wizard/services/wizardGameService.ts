@@ -290,10 +290,11 @@ export class WizardGameService {
       trickRolesIn(game),
     );
 
-    // A Roles Joker need not follow suit (modes/roles/master/joker.ts).
+    // A Roles Joker need not follow suit, unless trump was led
+    // (modes/roles/master/joker.ts).
     const freePlay =
       normalizeGameOptions(game.options).mode === "roles" &&
-      playsFree(currentPlayer.role) &&
+      playsFree(currentPlayer.role, leadSuit, game.trumpSuit) &&
       breaksSuit(card, currentPlayer.hand, leadSuit);
 
     if (
