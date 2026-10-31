@@ -89,6 +89,9 @@ export interface PlayedCard {
   // true when she lowered her prediction, false when she kept it. Missing
   // when she had no choice.
   lowered?: boolean;
+  // A Roles Joker played this though holding the suit led
+  // (modes/roles/master/joker.ts).
+  freePlay?: true;
 }
 
 export interface TrickState {

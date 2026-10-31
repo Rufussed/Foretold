@@ -78,9 +78,9 @@ function touches(action: RoleAction, local: string): "gain" | "loss" | undefined
   return undefined;
 }
 
-// The colour Wizards' moments, said as the card comes out: a Yellow Wizard
-// just made yellow the lead suit; a Red Wizard's red card on a red lead, so
-// no trumps in this trick.
+// The master roles' moments, said as the card comes out: a Yellow Wizard
+// just made yellow the lead suit; a Joker ignoring the suit led; a Red
+// Wizard's red card on a red lead, so no trumps in this trick.
 export function masterMessages(previous: PublicWizardGameState, next: PublicWizardGameState, local: string): EventMessage[] {
   const messages: EventMessage[] = [];
   const sameTrick =
@@ -93,6 +93,17 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
     const by = switcher.playedBy ?? switcher.username;
     messages.push({
       text: by === local ? t("ann.youTurnLead") : t("ann.turnsLead", { name: announcedName(by) }),
+      username: by,
+      role: true,
+    });
+  }
+
+  // A Roles Joker played off the suit led, though holding it.
+  const free = next.currentTrick.playedCards.at(-1);
+  if (sameTrick && free?.freePlay) {
+    const by = free.playedBy ?? free.username;
+    messages.push({
+      text: by === local ? t("ann.youPlayFree") : t("ann.playsFree", { name: announcedName(by) }),
       username: by,
       role: true,
     });
@@ -210,7 +221,7 @@ export function playLogLines(previous: PublicWizardGameState, next: PublicWizard
   playedCards.slice(from).forEach((played, offset) => {
     const by = played.playedBy ?? played.username;
     const power = rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf);
-    const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : "";
+    const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : played.freePlay ? ` ${t("log.playsFree")}` : "";
     lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) + bet });
   });
 
@@ -250,7 +261,7 @@ export function roleUses(
   const last = next.currentTrick.playedCards.at(-1);
   const switched = leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow";
   const shielded = !redShieldOf(previous) && redShieldOf(next);
-  if (sameTrick && last && (switched || shielded)) uses.push({ by: last.playedBy ?? last.username, hitYou: false });
+  if (sameTrick && last && (switched || shielded || last.freePlay)) uses.push({ by: last.playedBy ?? last.username, hitYou: false });
   return uses;
 }
 
@@ -290,6 +301,15 @@ export function roleMessages(
       const who = action.stopped.length ? ` ${t("ann.peaceStopped", { names: stopped })}` : "";
       const text = (action.by === local ? t("ann.yourPeace") : t("ann.peace", values)) + who + undone;
       return { text, username: action.by, atTrickEnd: false, ...about };
+    }
+    if (action.role === "king" && action.card.suit === next.trumpSuit) {
+      // The tribute for the King's peace, won with his trump 13, in a
+      // market's words; the Priest pays none.
+      const trades = marketTrades(action, local);
+      const priest = next.players.some((player) => player.role === "priest" && player.username !== action.by);
+      const text = (action.by === local ? t("ann.yourTribute", { trades }) : t("ann.tribute", { ...values, trades }))
+        + (priest ? ` ${t("ann.tributePriest")}` : "");
+      return { text, username: action.by, atTrickEnd: true, ...about };
     }
     if (action.role === "king") {
       // The King's tax, in a market's words, and the Priest let off.

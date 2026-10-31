@@ -25,6 +25,7 @@ import blue from "../../assets/role-seals/seal-colour-blue.png";
 import green from "../../assets/role-seals/seal-colour-green.png";
 import red from "../../assets/role-seals/seal-colour-red.png";
 import yellow from "../../assets/role-seals/seal-colour-yellow.png";
+import joker from "../../assets/role-seals/seal-master-joker.png";
 import coinPay from "../../assets/role-seals/coin-pay.png";
 import coinGet from "../../assets/role-seals/coin-get.png";
 
@@ -60,7 +61,7 @@ export const ROLE_SEALS = {
 
 const URLS: Partial<Record<RoleId, string>> = {
   thief, servant, fisher, farmer, shepherd, smith, merchant, priest, warrior, gambler, duke, prophet, king,
-  blueWizard: blue, greenWizard: green, yellowWizard: yellow, redWizard: red,
+  blueWizard: blue, greenWizard: green, yellowWizard: yellow, redWizard: red, joker,
 };
 
 const rules = new WizardRules();
@@ -73,6 +74,8 @@ function sealAt(state: PublicWizardGameState, index: number): RoleId | null {
     state.players.find((player) => player.username === username)?.role ?? undefined;
   const role = played && roleOf(played.playedBy ?? played.username);
   if (!played || !role) return null;
+  // A Joker's card played though holding the suit led.
+  if (role === "joker") return played.freePlay ? role : null;
 
   if (!isColourWizard(role)) {
     return rolePowerOn(playedCards, index, state.trumpSuit, roleOf) ? role : null;

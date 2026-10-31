@@ -13,7 +13,7 @@ import { PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
 import { BET_LOSS_POINTS, BET_WIN_POINTS } from "./gambler.js";
 import { GRANT_POINTS, KEEP_POINTS } from "./duke.js";
 import { FORESIGHT_POINTS } from "./prophet.js";
-import { TAX_POINTS } from "./king.js";
+import { PEACE_POINTS, TAX_POINTS } from "./king.js";
 import { botGrantTo } from "./rolePowers.js";
 import { SERVANT_BONUS, SERVICE_POINTS } from "./servant.js";
 import { SHEEP_POINTS } from "./shepherd.js";
@@ -1171,14 +1171,15 @@ describe("the King in a game", () => {
     );
 
     expect(trick.playedCards.map((played) => played.username)).toEqual(["ana", "thief", "king"]);
-    expect(score("thief")).toBe(50);
-    expect(score("ana")).toBe(50);
+    // The steal paid back, then the tribute for the peace.
+    expect(score("thief")).toBe(50 - PEACE_POINTS);
+    expect(score("ana")).toBe(50 - PEACE_POINTS);
     expect(trick.roleActions?.[0]?.undone).toBe(true);
-    expect(trick.roleActions?.at(-1)).toMatchObject({ role: "king", stopped: ["thief"] });
+    expect(trick.roleActions?.find((action) => action.stopped)).toMatchObject({ role: "king", stopped: ["thief"] });
     expect(trick.winnerUsername).toBe("king");
   });
 
-  it("stops powers played after his trump 13 and at the end of the trick", () => {
+  it("stops powers played after his trump 13, and wins tribute from all but the Priest", () => {
     const { trick, score, game } = playTrick(
       "roles",
       [
@@ -1191,7 +1192,10 @@ describe("the King in a game", () => {
     );
 
     expect(trick.playedCards[1]!.bet).toBeUndefined();
-    expect(score("king")).toBe(50);
+    expect(trick.winnerUsername).toBe("king");
+    // The Gambler pays tribute; the Priest pays none and collects no faith.
+    expect(score("king")).toBe(50 + PEACE_POINTS);
+    expect(score("gambler")).toBe(50 - PEACE_POINTS);
     expect(score("priest")).toBe(50);
     expect(game.phase).toBe("playing");
   });
@@ -1230,5 +1234,43 @@ describe("the King in a game", () => {
 
     expect(score("king")).toBe(50);
     expect(score("gambler")).toBe(50);
+  });
+});
+
+describe("the Joker in a game", () => {
+  it("need not follow suit, and a card off the lead suit still cannot win", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      // The Joker holds the suit led too.
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    });
+
+    expect(trick.playedCards[1]!.freePlay).toBe(true);
+    expect(trick.winnerUsername).toBe("ben");
+  });
+
+  it("may trump while holding the suit led", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(12) },
+      { name: "joker", card: card(1, "Blue"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    }, "Blue");
+
+    expect(trick.winnerUsername).toBe("joker");
+  });
+
+  it("is held to the suit in a Classic game", () => {
+    expect(() => playTrick("classic", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    })).toThrow("Card cannot be played");
   });
 });

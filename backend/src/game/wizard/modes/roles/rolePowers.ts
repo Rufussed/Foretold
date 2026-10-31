@@ -11,7 +11,7 @@ import { BET_LOSS_POINTS, BET_WIN_POINTS, betsIn } from "./gambler.js";
 import { FORESIGHT_POINTS, foresightsIn } from "./prophet.js";
 import { botGrant, dukeWinning, GRANT_POINTS, KEEP_POINTS } from "./duke.js";
 import { kingsPeace, playerOf, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
-import { bringsPeace, stoppedBy, TAX_POINTS, taxIn } from "./king.js";
+import { bringsPeace, PEACE_POINTS, peaceTribute, stoppedBy, TAX_POINTS, taxIn } from "./king.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
 import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
 import { trickRolesIn } from "./master/trickRoles.js";
@@ -408,6 +408,20 @@ function applyForesight(game: WizardGameState, winner: GamePlayer): RoleAction[]
   });
 }
 
+// The tribute for the King's peace: every other player but the Priest pays
+// the King whose trump 13 won, never more than they have. No armour blocks
+// it: the peace stops the Smith too.
+function applyTribute(game: WizardGameState, winner: GamePlayer): void {
+  const trick = game.currentTrick;
+  const players = game.players.map((player) => player.username);
+  const tribute = peaceTribute(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username, players);
+  if (!tribute?.payers.length) return;
+
+  const paid = tribute.payers.map((player) => ({ player, points: movePoints(game, player, tribute.king, "king", PEACE_POINTS) }));
+  const points = paid.reduce((sum, entry) => sum + entry.points, 0);
+  trick.roleActions = [...(trick.roleActions ?? []), { role: "king", by: tribute.king, on: tribute.king, card: tribute.card, points, trades: paid }];
+}
+
 // The King's tax at the end of a trick his own 13 won, not as a trump:
 // every other card showing its seal pays him, never more than its player
 // has; the Priest pays none. A Smith in armour uses up a piece instead, and
@@ -446,8 +460,10 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
   // peace does not stop it.
   if (isColourWizard(winner.role)) addBonus(winner, winner.role, colourWizardBonus(trick, winner));
 
-  // Under the King's peace no other power works at the end of the trick.
+  // Under the King's peace no other power works at the end of the trick;
+  // a King who won it with his trump 13 is paid his tribute.
   if (kingsPeace(trick.playedCards, game.trumpSuit, rolesOf(game))) {
+    applyTribute(game, winner);
     return;
   }
 

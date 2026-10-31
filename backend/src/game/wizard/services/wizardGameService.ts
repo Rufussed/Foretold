@@ -24,6 +24,7 @@ import {
 } from "../modes/roles/rolePowers.js";
 import { canBet } from "../modes/roles/gambler.js";
 import { canLower } from "../modes/roles/prophet.js";
+import { breaksSuit, playsFree } from "../modes/roles/master/joker.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { blueSight } from "../modes/roles/master/blueWizard.js";
 import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
@@ -289,7 +290,14 @@ export class WizardGameService {
       trickRolesIn(game),
     );
 
+    // A Roles Joker need not follow suit (modes/roles/master/joker.ts).
+    const freePlay =
+      normalizeGameOptions(game.options).mode === "roles" &&
+      playsFree(currentPlayer.role) &&
+      breaksSuit(card, currentPlayer.hand, leadSuit);
+
     if (
+      !freePlay &&
       !this.rules.isValidCardPlay(
         card,
         currentPlayer.hand,
@@ -306,6 +314,7 @@ export class WizardGameService {
       playedBy: currentPlayer.username,
       card,
       ...(byServer ? { byServer: true as const } : {}),
+      ...(freePlay ? { freePlay: true as const } : {}),
     };
 
     game.currentTrick.playedCards.push(playedCard);

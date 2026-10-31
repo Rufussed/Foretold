@@ -38,6 +38,8 @@ const BID_VALUE: Record<RoleId, number> = {
   greenWizard: 0,
   yellowWizard: 0,
   redWizard: 0,
+  // No card: the Joker plays any card it likes (master/joker.ts).
+  joker: 0,
 };
 
 const isRoles = (game: WizardGameState): boolean =>

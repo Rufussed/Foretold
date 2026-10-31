@@ -5,6 +5,9 @@ import { roleCard } from "./roles.js";
 
 // What every power used in a trick the King's 13 won pays him.
 export const TAX_POINTS = 10;
+// What every other player but the Priest pays a King whose trump 13 won the
+// trick it brought peace to.
+export const PEACE_POINTS = 5;
 
 // The King's power has two faces.
 // - The King's peace: the moment he plays his 13 as a trump, no other basic
@@ -12,7 +15,9 @@ export const TAX_POINTS = 10;
 //   already happened in it is undone: a Thief's steal and a Servant's
 //   service swap back and pay back, a Smith's armour comes back or goes
 //   again. Nothing happens at the end of the trick. The colour Wizards go on
-//   as ever.
+//   as ever. If his trump 13 then wins the trick, every other player pays
+//   him PEACE_POINTS, never more than they have - all but the Priest, who
+//   collects from the King. Under the peace no Smith's armour blocks it.
 // - The King's tax: when his own 13, played with its power on but not as a
 //   trump, wins the trick, every other card in it showing its role's seal
 //   pays him TAX_POINTS, never more than its player has. Nothing is undone.
@@ -34,6 +39,26 @@ export const bringsPeace = (playedCards: PlayedCard[], index: number, trumpSuit:
 export function stoppedBy(playedCards: PlayedCard[], index: number, trumpSuit: Suit | null, roleOf: RoleOf): string[] {
   const before = playedCards.slice(0, index);
   return before.flatMap((played, at) => (rolePowerOn(before, at, trumpSuit, roleOf) ? [playerOf(played)] : []));
+}
+
+// The tribute for the King's peace: the King whose own trump 13 won this
+// complete trick, his 13, and every player who pays him. Null when none won.
+export function peaceTribute(
+  playedCards: PlayedCard[],
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+  winner: string,
+  players: readonly string[],
+): { king: string; card: Card; payers: string[] } | null {
+  const index = playedCards.findIndex((played) => played.username === winner);
+  const thirteen = playedCards[index];
+
+  if (!thirteen || playerOf(thirteen) !== winner || !bringsPeace(playedCards, index, trumpSuit, roleOf)) {
+    return null;
+  }
+
+  const payers = players.filter((player) => player !== winner && roleOf(player) !== "priest");
+  return { king: winner, card: thirteen.card, payers };
 }
 
 // The tax on a complete trick won by a King with his own 13, not a trump:
