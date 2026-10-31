@@ -27,6 +27,7 @@ import { createRoleLabels, type RoleLabels } from "../modes/roles/role-labels";
 import { createRolesDevKeys, type RolesDevKeys } from "../modes/roles/dev/roles-dev-keys";
 import { createRoleSeals, type RoleSeals } from "../modes/roles/role-seals";
 import { createEventLog, type EventLog } from "../visualizer/hud/event-log";
+import { createTableRoles, type TableRoles } from "../modes/roles/hud/table-roles";
 import { createLookAround, type LookAround } from "../visualizer/look-around";
 import { isAutoFollowOn, isLookAroundOn } from "../visualizer/camera-settings";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
@@ -133,6 +134,8 @@ export async function renderVisualizerPage(
   let devThiefKey: SabotageDevKeys | null = null;
   let rolesDevKeys: RolesDevKeys | null = null;
   let eventLog: EventLog | null = null;
+  // Roles mode only: the roles at the table (modes/roles/hud/table-roles.ts).
+  let tableRoles: TableRoles | null = null;
   let lookAround: LookAround | null = null;
   let guestPrompt: GuestSignupPrompt | null = null;
   let hourglass: TurnHourglass | null = null;
@@ -156,6 +159,7 @@ export async function renderVisualizerPage(
     devThiefKey?.dispose();
     rolesDevKeys?.dispose();
     eventLog?.dispose();
+    tableRoles?.dispose();
     lookAround?.dispose();
     victoryTimers.forEach((timer) => window.clearTimeout(timer));
     guestPrompt?.dispose();
@@ -488,6 +492,8 @@ export async function renderVisualizerPage(
     // The banner's gameplay lines wait until every card, trump included, has landed.
     // A Roles game keeps a log of what happened (hud/event-log.ts).
     if (latestState?.options?.mode === "roles") eventLog = createEventLog(page);
+    // Roles mode only: a Roles button beside the Log (modes/roles/hud/table-roles.ts).
+    if (latestState?.options?.mode === "roles") tableRoles = createTableRoles(page, latestState, localUsername ?? "");
     gameHud = createGameHud(page, hudConnection!, {
       onLog: (round, entries) => eventLog?.add(round, entries),
       blocked: () => !cardTable || cardTable.dealing,

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import { WizardGameService } from "../../services/wizardGameService.js";
 import { assignRoles, randomRole } from "./assignRoles.js";
-import { ROLES } from "./roles.js";
+import { ROLES, roleKind } from "./roles.js";
 
 describe("assignRoles", () => {
   it("keeps each chosen role and draws one for the rest", () => {
@@ -47,5 +47,16 @@ describe("assignRoles", () => {
       expect(randomRole(() => (index + 0.5) / ROLES.length)).toBe(id);
     });
     expect(randomRole(() => 0.999)).toBe(ROLES.at(-1)!.id);
+  });
+  it("gives NPCs only the kind the host chose, and players any role", () => {
+    const names = ["alice", "a NPC", "b NPC", "c NPC", "d NPC", "e NPC"];
+    for (const kind of ["basic", "master"] as const) {
+      for (let run = 0; run < 20; run++) {
+        const game = new WizardGameService().createGame(1, names);
+        assignRoles(game.players, new Map(), Math.random, kind);
+        const npcs = game.players.filter((player) => player.username.endsWith(" NPC"));
+        for (const npc of npcs) expect(roleKind(npc.role!)).toBe(kind);
+      }
+    }
   });
 });

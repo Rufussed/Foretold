@@ -64,6 +64,9 @@ const URLS: Partial<Record<RoleId, string>> = {
   blueWizard: blue, greenWizard: green, yellowWizard: yellow, redWizard: red, joker,
 };
 
+// A role's seal picture, for the HUD's lists (hud/table-roles.ts).
+export const roleSealUrl = (role: RoleId): string | undefined => URLS[role];
+
 const rules = new WizardRules();
 
 // The role whose seal goes on the card at this place in the trick, if any.

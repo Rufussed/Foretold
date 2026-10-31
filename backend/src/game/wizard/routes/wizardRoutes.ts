@@ -16,6 +16,7 @@ import { DEFAULT_GAME_OPTIONS, normalizeGameOptions, type WizardGameOptions } fr
 import { GAME_MODES, type GameMode } from "../modes/modes.js";
 import { ROLES, type RoleId } from "../modes/roles/roles.js";
 import { assignRoles } from "../modes/roles/assignRoles.js";
+import { DEFAULT_NPC_ROLES, NPC_ROLES, normalizeNpcRoles, type NpcRoles } from "../modes/roles/npcRoles.js";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, normalizeBotLevel, type BotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
@@ -47,6 +48,9 @@ interface CreateGameBody {
   lastPredictionLimited?: boolean;
   // How well the NPCs play (see botLevels.ts); left out, the Apprentice.
   botLevel?: string;
+  // Roles mode only: which roles the NPCs draw (modes/roles/npcRoles.ts);
+  // left out, any.
+  npcRoles?: string;
 }
 
 interface PredictionBody {
@@ -183,6 +187,8 @@ export default async function wizardRoutes(
       pace: number;
       options: WizardGameOptions;
       botLevel: BotLevel;
+      // Roles mode only: which roles the NPCs draw (modes/roles/npcRoles.ts).
+      npcRoles: NpcRoles;
       // Whether the room's creator is counted as having made a game.
       countCreated: boolean;
     },
@@ -226,6 +232,8 @@ export default async function wizardRoutes(
       assignRoles(
         game.players,
         new Map(room.players.map((player) => [player.username, player.role])),
+        Math.random,
+        setup.npcRoles,
       );
     }
 
@@ -295,6 +303,7 @@ export default async function wizardRoutes(
           pace: QUICK_PLAY_PACE,
           options: DEFAULT_GAME_OPTIONS,
           botLevel: DEFAULT_BOT_LEVEL,
+          npcRoles: DEFAULT_NPC_ROLES,
           countCreated: false,
         });
 
@@ -1437,6 +1446,11 @@ export default async function wizardRoutes(
             botLevel: {
               type: "string",
               enum: BOT_LEVELS.map(({ level }) => level)
+            },
+            // Roles mode only (modes/roles/npcRoles.ts).
+            npcRoles: {
+              type: "string",
+              enum: [...NPC_ROLES]
             }
           }
         }
@@ -1532,6 +1546,7 @@ export default async function wizardRoutes(
           lastPredictionLimited: body.lastPredictionLimited ?? room.options.lastPredictionLimited,
         }),
         botLevel: normalizeBotLevel(body.botLevel),
+        npcRoles: normalizeNpcRoles(body.npcRoles),
         countCreated: true,
       });
 

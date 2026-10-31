@@ -359,17 +359,28 @@
   grid-row: 2;
 }
 
-/* The basic and the master roles side by side, in the middle. */
+/* The basic and the master roles side by side, on the right. */
 .room-start-controls .room-role-basic {
-  grid-column: 2 / span 2;
+  grid-column: 3 / span 2;
 }
 
 .room-start-controls .room-role-master {
-  grid-column: 4 / span 2;
+  grid-column: 5 / span 2;
 }
 
 .room-start-controls .room-role-field[hidden],
 .room-role-own[hidden] {
+  display: none;
+}
+
+/* Roles mode only: the NPCs' roles (modes/roles/npc-roles-choice.ts), on
+   the host's role's row, on the left. */
+.room-start-controls .room-npc-roles {
+  grid-row: 2;
+  grid-column: 1 / span 2;
+}
+
+.room-start-controls .room-npc-roles[hidden] {
   display: none;
 }
 
@@ -649,6 +660,11 @@
 
   /* Two across: the role takes a row of its own, at the top. */
   .room-start-controls .room-role-field {
+    grid-row: auto;
+    grid-column: 1 / -1;
+  }
+
+  .room-start-controls .room-npc-roles {
     grid-row: auto;
     grid-column: 1 / -1;
   }

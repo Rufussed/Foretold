@@ -29,6 +29,7 @@ import { serverError, type ServerError } from "../i18n/server-error";
 import { gameModeBadge, gameModeName } from "../utils/game-mode";
 import { isRoleId, roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
+import { npcRolesChoice } from "../modes/roles/npc-roles-choice";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -173,17 +174,10 @@ export async function renderRoomPage(
               ${roleChoice("master", "room-role-field", true)}
 
               <div class="room-start-column">
-                <div class="room-start-pair">
-                  <label>
-                    <span>${t("room.bots")}</span>
-                    <select id="room-bots"></select>
-                  </label>
-
-                  <label>
-                    <span>${t("room.rounds")}</span>
-                    <select id="room-rounds"></select>
-                  </label>
-                </div>
+                <label>
+                  <span>${t("room.bots")}</span>
+                  <select id="room-bots"></select>
+                </label>
 
                 <label>
                   <span>${t("room.botLevel")}</span>
@@ -193,6 +187,13 @@ export async function renderRoomPage(
                         `<option value="${level}"${level === DEFAULT_BOT_LEVEL ? " selected" : ""}>${t(`room.botLevel.${level}`)}</option>`,
                     ).join("")}
                   </select>
+                </label>
+
+                ${/* Roles mode only: modes/roles/npc-roles-choice.ts */ npcRolesChoice()}
+
+                <label>
+                  <span>${t("room.rounds")}</span>
+                  <select id="room-rounds"></select>
                 </label>
               </div>
 
@@ -386,6 +387,8 @@ export async function renderRoomPage(
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
   // How well the NPCs play. See botLevels.ts.
   const botLevelEl = element<HTMLSelectElement>("#room-bot-level");
+  // Roles mode only: which roles the NPCs draw. See modes/roles/npc-roles-choice.ts.
+  const npcRolesEl = element<HTMLSelectElement>("#room-npc-roles");
   // How fast the game plays out, for everyone in it: the server's pauses and
   // the table's animations both scale by it. See gameplayPace.ts.
   const paceEl = element<HTMLSelectElement>("#room-pace");
@@ -561,6 +564,7 @@ export async function renderRoomPage(
     const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
     const isRoles = options.mode === "roles";
     for (const roleEl of hostRoleEls) roleEl.hidden = !isRoles;
+    npcRolesEl.closest("label")!.hidden = !isRoles;
     // The role the room has for this player, unless a change is on its way.
     const savedRole = room.players.find((player) => player.username === user.username)?.role ?? null;
     if (savedRole !== chosenRole && Date.now() > roleSyncAfter) {
@@ -789,6 +793,7 @@ export async function renderRoomPage(
     ];
     if (Number(botsEl.value) > 0) {
       rows.push({ label: t("room.botLevel"), ...chosen(botLevelEl) });
+      if (isRoles) rows.push({ label: t("room.npcRoles"), ...chosen(npcRolesEl) });
     }
     rows.push(
       // A full game is the first choice; fewer rounds is the host's own.
@@ -824,6 +829,8 @@ export async function renderRoomPage(
           maxRounds: Number(roundsEl.value),
           pace: Number(paceEl.value),
           botLevel: botLevelEl.value,
+          // Roles mode only: the server ignores it in other modes.
+          ...(roomMode() === "roles" ? { npcRoles: npcRolesEl.value } : {}),
           ...rules,
         }),
       });
