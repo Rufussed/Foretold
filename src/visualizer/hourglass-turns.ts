@@ -1,5 +1,6 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
+import { roleChoiceLimitMs } from "../modes/roles/choice-timer";
 import { TURN_HOURGLASS } from "./config";
 import { deadlineOf, moveKey } from "./move-deadline";
 import type { TurnHourglass } from "./turn-hourglass";
@@ -8,6 +9,12 @@ export interface HourglassTurns {
   // Call whenever the HUD's state, whether its turn is shown, or the latest
   // snapshot from the server changes.
   applyState(): void;
+  // Roles mode only (modes/roles/choice-timer.ts): a choice made as a card is
+  // played - a Thief's trump 1, a Gambler's bet, a Prophet's prediction -
+  // is timed on the hourglass for these seconds, in place of the turn, until
+  // it ends.
+  startChoice(seconds: number): void;
+  endChoice(): void;
 }
 
 export interface HourglassTurnsOptions {
@@ -26,27 +33,35 @@ export interface HourglassTurnsOptions {
 // (turnDeadlineAt), when the game makes the move for them. The server sets
 // that deadline a moment after the move begins, so until it arrives the
 // hourglass runs on the room's time limit and is re-timed once it does. NPCs
-// move at once, so their turns leave it run out.
+// move at once, so their turns leave it run out. Roles mode: a Fisher's
+// catch and a Duke's grant have a time limit of their own, in any room, and
+// are timed too even where turns are not; a choice made with a card is timed
+// through startChoice (modes/roles/choice-timer.ts).
+
 export function createHourglassTurns(
   hourglass: TurnHourglass,
   options: HourglassTurnsOptions,
 ): HourglassTurns {
   let timing: string | null = null;
   let timedTo: number | null = null; // the deadline the hourglass runs to
+  // Roles mode: a choice being timed instead of the turn.
+  let choosing = false;
 
   const deadline = (key: string) => deadlineOf(key, [options.latest(), options.state()]);
 
   return {
     applyState() {
+      if (choosing) return;
       const state = options.state();
-      options.setShown(!!state && state.turnTimeoutMs !== null);
+      const limitMs = state ? (roleChoiceLimitMs(state) ?? state.turnTimeoutMs) : null;
+      options.setShown(limitMs !== null);
       const player = state?.players[state.currentPlayerIndex];
       const key =
         state &&
         player &&
         options.turnShown() &&
         state.phase !== "finished" &&
-        state.turnTimeoutMs !== null &&
+        limitMs !== null &&
         !isBotName(player.username)
           ? moveKey(state)
           : null;
@@ -62,7 +77,7 @@ export function createHourglassTurns(
         const seconds =
           due !== null
             ? (due - Date.now()) / 1000
-            : (state.turnTimeoutMs ?? TURN_HOURGLASS.turnSeconds * 1000) / 1000;
+            : (limitMs ?? TURN_HOURGLASS.turnSeconds * 1000) / 1000;
         hourglass.startTurn(Math.max(seconds, 0));
         return;
       }
@@ -75,6 +90,21 @@ export function createHourglassTurns(
           hourglass.retime(Math.max((due - Date.now()) / 1000, 0));
         }
       }
+    },
+
+    startChoice(seconds) {
+      choosing = true;
+      timing = null;
+      timedTo = null;
+      options.setShown(true);
+      hourglass.startTurn(seconds);
+    },
+
+    endChoice() {
+      if (!choosing) return;
+      choosing = false;
+      hourglass.finishTurn();
+      this.applyState();
     },
   };
 }

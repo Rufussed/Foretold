@@ -55,6 +55,7 @@ import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/pre
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { createFishPick, type FishPick } from "../modes/roles/mechanics/fish-pick";
 import { createGrantPick, type GrantPick } from "../modes/roles/mechanics/grant-pick";
+import { createChoiceTimer, type ChoiceTimer } from "../modes/roles/choice-timer";
 import { createStealPick, type StealPick } from "../modes/roles/mechanics/steal-pick";
 import { createBetPick, type BetPick } from "../modes/roles/mechanics/bet-pick";
 import { createTrickPick, type TrickPick } from "../modes/roles/mechanics/trick-pick";
@@ -110,6 +111,7 @@ export async function renderVisualizerPage(
   let trumpPrompt: TrumpPrompt | null = null;
   let fishPick: FishPick | null = null;
   let grantPick: GrantPick | null = null;
+  let choiceTimer: ChoiceTimer | null = null;
   let stealPick: StealPick | null = null;
   let betPick: BetPick | null = null;
   let trickPick: TrickPick | null = null;
@@ -166,6 +168,7 @@ export async function renderVisualizerPage(
     trumpPrompt?.dispose();
     fishPick?.dispose();
     grantPick?.dispose();
+    choiceTimer?.dispose();
     stealPick?.dispose();
     betPick?.dispose();
     trickPick?.dispose();
@@ -502,6 +505,9 @@ export async function renderVisualizerPage(
         if (!byOther) cardTable?.playChime("win");
       },
       onPredictionEffect: (username, byOther, source) => {
+        // Sabotage's effects only: a Roles Prophet's lowered prediction just
+        // flashes in the player list.
+        if (latestState?.options?.mode === "roles") return;
         if (byOther && source) cardTable?.sendTesseract(source, username);
         else cardTable?.burstOnPlayer(username, byOther);
       },
@@ -646,6 +652,14 @@ export async function renderVisualizerPage(
       // grants a trick to (grant-pick.ts); a Gambler's 10 asks whether to bet
       // (bet-pick.ts). No other mode has these.
       if (latestState?.options?.mode === "roles" && gameConnection && hudConnection) {
+        // Every choice made with a card is timed on the hourglass
+        // (modes/roles/choice-timer.ts).
+        const timer = createChoiceTimer({
+          turnDeadline: () => latestState?.turnDeadlineAt ?? null,
+          onStart: (seconds) => hourglassTurns?.startChoice(seconds),
+          onEnd: () => hourglassTurns?.endChoice(),
+        });
+        choiceTimer = timer;
         const pick = createTrickPick({ canvas, camera: view.camera, cards: cardTable.cards, page: pageEl ?? container });
         trickPick = pick;
         fishPick = createFishPick({
@@ -664,10 +678,12 @@ export async function renderVisualizerPage(
           cards: cardTable.cards,
           game: hudConnection,
           page: pageEl ?? container,
+          timer,
         });
         stealPick = createStealPick({
           pick,
           game: hudConnection,
+          timer,
           onChange: () => {
             if (stealPick?.asking()) gameHud?.notice(t("ann.youStealing"));
           },

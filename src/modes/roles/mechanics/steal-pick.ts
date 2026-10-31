@@ -3,6 +3,7 @@ import { stealSpots } from "../../../../backend/src/game/wizard/modes/roles/thie
 import { cardKey } from "../../../visualizer/card-textures";
 import { isLocalTurn, localPlayer, type GameConnection } from "../../../visualizer/game-connection";
 import type { TrickPick } from "./trick-pick";
+import type { ChoiceTimer } from "../choice-timer";
 import { t } from "../../../i18n";
 
 // Roles mode only. A Thief's trump 1, choosing on the table (trick-pick.ts):
@@ -28,6 +29,9 @@ export interface StealPickOptions {
   game: GameConnection;
   // The choice has started or ended, for the banner to say so.
   onChange?(): void;
+  // Times the choice on the hourglass; when time runs out, the card nearest
+  // the 1 is taken, as the server would (../choice-timer.ts).
+  timer?: ChoiceTimer;
 }
 
 // The places a trump 1 just played by the local player could take from.
@@ -43,10 +47,11 @@ function spotsFor(game: GameConnection, card: Card): number[] {
   );
 }
 
-export function createStealPick({ pick, game, onChange }: StealPickOptions): StealPick {
+export function createStealPick({ pick, game, onChange, timer }: StealPickOptions): StealPick {
   let answer: ((spot: number | null) => void) | null = null;
 
   const finish = (spot: number | null) => {
+    timer?.stop();
     const resolve = answer;
     answer = null;
     resolve?.(spot);
@@ -67,6 +72,10 @@ export function createStealPick({ pick, game, onChange }: StealPickOptions): Ste
       });
       pick.raise([...byKey.keys()], t("pick.steal"), (key) => finish(byKey.get(key) ?? null));
       onChange?.();
+      timer?.start(() => {
+        pick.clear();
+        finish(spots.at(-1) ?? null);
+      });
       return promise;
     },
 

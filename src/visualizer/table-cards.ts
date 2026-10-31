@@ -113,6 +113,10 @@ export interface TableCards {
   play(key: string): boolean;
   // The pending play was refused: the card returns to the hand.
   cancelPlay(): void;
+  // While a choice about the pending card is open (a Roles Thief's steal, a
+  // Gambler's bet, a Prophet's prediction), it waits there without a limit;
+  // released, it waits for the server's answer as usual, from then on.
+  holdPlay(held: boolean): void;
   // Accepts the pending play locally, for the demo table with no server.
   confirmPlay(): void;
   // Development aid: what the trump target shows.
@@ -232,7 +236,9 @@ export function createTableCards(
   let swapWaiters: (() => void)[] = [];
   const swapping = () =>
     !!swapWaiting || [...cards.values()].some((entry) => entry.swap && !suppressed.has(entry.key));
-  let pending: { key: string; since: number } | null = null;
+  // The card played and waiting for the server; while held (a Roles choice
+  // still open, e.g. a Gambler's bet) it waits without a limit.
+  let pending: { key: string; since: number; held?: boolean } | null = null;
   let hovered: string | null = null;
   let leading: string | null = null;
   let held = new Set<string>();
@@ -564,7 +570,7 @@ export function createTableCards(
 
     update(deltaSeconds) {
       clock += deltaSeconds;
-      if (pending && clock - pending.since > CARD_HANDLING.pendingPlaySeconds) {
+      if (pending && !pending.held && clock - pending.since > CARD_HANDLING.pendingPlaySeconds) {
         console.warn(`[cards] no answer to playing ${pending.key}; back to the hand`);
         pending = null;
       }
@@ -848,6 +854,10 @@ export function createTableCards(
 
     cancelPlay() {
       pending = null;
+    },
+
+    holdPlay(held) {
+      if (pending) pending = { ...pending, held, since: clock };
     },
 
     confirmPlay() {

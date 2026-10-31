@@ -2,7 +2,7 @@ import * as THREE from "three";
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { SeatId } from "../../visualizer/player-characters";
 import { t } from "../../i18n";
-import { roleUses } from "../../visualizer/hud/announcements";
+import { roleUses } from "./hud/role-announcements";
 
 // In a Roles game, each other player's role floats above their head as a word
 // in the Roles colour, so everyone sees who is what. A sprite always faces the

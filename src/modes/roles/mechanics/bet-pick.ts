@@ -5,6 +5,7 @@ import { canLower } from "../../../../backend/src/game/wizard/modes/roles/prophe
 import { isLocalTurn, localPlayer, type GameConnection } from "../../../visualizer/game-connection";
 import type { TableCards } from "../../../visualizer/table-cards";
 import { t } from "../../../i18n";
+import type { ChoiceTimer } from "../choice-timer";
 
 // Roles mode only. A Gambler's bet: when you play your 10 with its power on,
 // it waits where it was played while two buttons under it ask "Bet" or
@@ -29,6 +30,9 @@ export interface BetPickOptions {
   game: GameConnection;
   // Where the buttons go: the game page, over the canvas.
   page: HTMLElement;
+  // Times the choice on the hourglass; when time runs out, no bet and the
+  // prediction kept (../choice-timer.ts).
+  timer?: ChoiceTimer;
 }
 
 // What the local player's card, played now, asks: a Gambler's bet, a
@@ -44,7 +48,7 @@ function choiceFor(game: GameConnection, card: Card): "bet" | "lower" | null {
   return canLower(trick, trick.length - 1, state.trumpSuit, roleOf, player) ? "lower" : null;
 }
 
-export function createBetPick({ canvas, camera, cards, game, page }: BetPickOptions): BetPick {
+export function createBetPick({ canvas, camera, cards, game, page, timer }: BetPickOptions): BetPick {
   const choice = document.createElement("div");
   choice.className = "bet-pick";
   choice.hidden = true;
@@ -58,6 +62,7 @@ export function createBetPick({ canvas, camera, cards, game, page }: BetPickOpti
 
   let answer: ((bet: boolean | null) => void) | null = null;
   const finish = (bet: boolean | null) => {
+    timer?.stop();
     choice.hidden = true;
     const resolve = answer;
     answer = null;
@@ -102,9 +107,11 @@ export function createBetPick({ canvas, camera, cards, game, page }: BetPickOpti
       yes.textContent = t(kind === "bet" ? "pick.bet" : "pick.lower");
       no.textContent = t(kind === "bet" ? "pick.noBet" : "pick.keepBid");
       choice.hidden = false;
-      return new Promise((resolve) => {
+      const promise = new Promise<boolean | null>((resolve) => {
         answer = resolve;
       });
+      timer?.start(() => finish(false));
+      return promise;
     },
 
     applyState() {

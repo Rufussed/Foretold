@@ -2,11 +2,16 @@ import { displayName } from "../../utils/display-name";
 import { gameWinners } from "./game-winner";
 import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
-import { t, type MessageKey } from "../../i18n";
-import type { RoleAction } from "../../../backend/src/game/wizard/modes/roles/roles";
-import { rolePowerOn } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
-import { playerOf, powerOn, type RoleOf } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { t } from "../../i18n";
 import { isSabotageGame } from "../../modes/sabotage/sabotage-game";
+import { choiceMessages } from "../../modes/roles/hud/choice-announcements";
+import {
+  masterMessages,
+  roleBonusLabel,
+  roleMessages,
+  roleStatus,
+  servantWaiting,
+} from "../../modes/roles/hud/role-announcements";
 import { WizardRules } from "../../../backend/src/game/wizard/services/wizardRules";
 import { trickRolesIn } from "../../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import {
@@ -17,7 +22,10 @@ import {
 } from "../../modes/sabotage/hud/sabotage-announcements";
 
 // What the top-centre banner says, worked out from game state alone. No DOM
-// and no timing: announcer.ts decides when each line shows.
+// and no timing: announcer.ts decides when each line shows. What it says
+// about a Roles game's roles is in modes/roles/hud/ (role-announcements.ts,
+// choice-announcements.ts), and a Sabotage game's own lines in
+// modes/sabotage/hud/.
 
 export interface RoundResultLine {
   label: string;
@@ -68,8 +76,6 @@ export function followSuitMessage(state: PublicWizardGameState): string {
 const rules = new WizardRules();
 const leadSuitOf = (state: PublicWizardGameState) =>
   rules.getLeadSuit(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
-const redShieldOf = (state: PublicWizardGameState) =>
-  rules.redShield(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
 
 // The player the standing line is about, whose colour its border takes: whoever's
 // move it is. Null when it isn't about one player.
@@ -106,16 +112,15 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
       if (state.currentTrick.playedCards.length === 0) {
         return current === local ? t("ann.youLead") : t("ann.leads", { name: announcedName(current) });
       }
+      // A Roles Servant's 2 waiting for the next card says who gives it.
       return servantWaiting(state, local) ?? (current === local ? t("ann.yourTurn") : t("ann.turn", { name: announcedName(current) }));
     case "power":
       // A Sabotage trick won with a Seer, Trickster or Thief.
       return powerStatus(state, local);
     case "fishing":
-      if (!current) return null;
-      return current === local ? t("ann.youFishing") : t("ann.fishing", { name: announcedName(current) });
     case "granting":
-      if (!current) return null;
-      return current === local ? t("ann.youGranting") : t("ann.granting", { name: announcedName(current) });
+      // A Roles Fisher fishing, or a Duke keeping or granting the trick.
+      return roleStatus(state, local);
     case "finished": {
       const winners = gameWinners(state);
       const winner = winners[0];
@@ -130,23 +135,6 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
         : t("ann.wins", { name: announcedName(winner.username) });
     }
   }
-}
-
-const rolesIn = (state: PublicWizardGameState): RoleOf => (username) =>
-  state.players.find((player) => player.username === username)?.role ?? undefined;
-
-// While a Servant's 2 waits for the next card (modes/roles/servant.ts): who
-// will give theirs. Null when no Servant is waiting.
-function servantWaiting(state: PublicWizardGameState, local: string): string | null {
-  const playedCards = state.currentTrick.playedCards;
-  const last = playedCards.length - 1;
-  const next = state.players[state.currentPlayerIndex]?.username;
-  const two = playedCards[last];
-  if (!two || !next || !powerOn(playedCards, last, "servant", state.trumpSuit, rolesIn(state))) return null;
-  const servant = playerOf(two);
-  const values = { name: announcedName(servant), next: announcedName(next) };
-  if (servant === local) return t("ann.youWaitServant", values);
-  return next === local ? t("ann.waitsForYou", values) : t("ann.waitsServant", values);
 }
 
 // Said once a round's cards are dealt and the trump card is showing: which suit
@@ -183,28 +171,6 @@ export interface EventMessage {
   aboutYou?: "gain" | "loss";
   // A trick won, which closes the trick in the log.
   trick?: boolean;
-}
-
-// Whether a role's action brought you points or cost you. Your own power:
-// by the points it moved, a gain for a steal, a catch or a block that
-// bounced, either way for a market or a Priest's faith; nothing for a seed
-// or a sheep given or armour forged. Someone else's: a card or points taken,
-// a seed or a sheep handed you, a trade or faith with you. For a Smith's
-// block, you are the attacker it stopped.
-function touches(action: RoleAction, local: string): "gain" | "loss" | undefined {
-  // The King's peace stopped your power.
-  if (action.stopped) return action.stopped.includes(local) ? "loss" : undefined;
-  if (action.by === local) {
-    const points = action.points ?? 0;
-    return points > 0 ? "gain" : points < 0 ? "loss" : undefined;
-  }
-  const trade = action.trades?.find((entry) => entry.player === local);
-  // Points above 0 were paid to the Merchant or Priest.
-  if (trade) return trade.points > 0 ? "loss" : trade.points < 0 ? "gain" : undefined;
-  // Points below 0 went the other way: from the one who used the power to
-  // the one it was on (a Gambler's lost bet).
-  if (action.on === local) return (action.points ?? 0) < 0 ? "gain" : "loss";
-  return undefined;
 }
 
 // One-off events between two snapshots, in the order they happened: new
@@ -259,51 +225,20 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
 
   // A Farmer's seeds and harvests, and a Shepherd's sheep, come once the
   // trick is won, so they are
-  // said after who won it.
+  // said after who won it. (Roles mode: modes/roles/hud/role-announcements.ts.)
   const roleEvents = roleMessages(previous, next, local);
   messages.push(...roleEvents.filter((message) => !message.atTrickEnd));
 
-  // A Roles Yellow Wizard just made yellow the lead suit.
-  const sameTrick =
-    next.currentTrick.playedCards.length > previous.currentTrick.playedCards.length &&
-    previous.currentTrick.playedCards.length > 0;
-  const switcher = next.currentTrick.playedCards.at(-1);
-  if (sameTrick && switcher && leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow") {
-    const by = switcher.playedBy ?? switcher.username;
-    messages.push({
-      text: by === local ? t("ann.youTurnLead") : t("ann.turnsLead", { name: announcedName(by) }),
-      username: by,
-      role: true,
-    });
-  }
+  // A Roles Yellow Wizard turning the lead suit, a Red Wizard's shield
+  // (modes/roles/hud/role-announcements.ts).
+  messages.push(...masterMessages(previous, next, local));
 
-  // A Roles Red Wizard's red card on a red lead: no trumps in this trick.
-  const shieldedBy = next.currentTrick.playedCards.at(-1);
-  if (sameTrick && shieldedBy && !redShieldOf(previous) && redShieldOf(next)) {
-    const by = shieldedBy.playedBy ?? shieldedBy.username;
-    messages.push({
-      text: by === local ? t("ann.youRedShield") : t("ann.redShield", { name: announcedName(by) }),
-      username: by,
-      role: true,
-    });
-  }
-
-  // A Roles Gambler just bet on their 10, or a Prophet lowered her
-  // prediction with her 12, so everyone knows before the trick is out.
+  // Roles mode: a Gambler's bet or a Prophet's prediction, chosen with the
+  // card just played (modes/roles/hud/choice-announcements.ts).
   const newPlays = isSameTrick(previous, next)
     ? next.currentTrick.playedCards.slice(previous.currentTrick.playedCards.length)
     : next.currentTrick.playedCards;
-  for (const played of newPlays) {
-    if (!played.bet && played.lowered === undefined) continue;
-    const by = played.playedBy ?? played.username;
-    const prediction = String(next.players.find((player) => player.username === by)?.prediction ?? 0);
-    const text = played.bet
-      ? by === local ? t("ann.youBet") : t("ann.bets", { name: announcedName(by) })
-      : played.lowered
-        ? by === local ? t("ann.youLower", { prediction }) : t("ann.lowers", { name: announcedName(by), prediction })
-        : by === local ? t("ann.youKeepBid", { prediction }) : t("ann.keepsBid", { name: announcedName(by), prediction });
-    messages.push({ text, username: by, role: true });
-  }
+  messages.push(...choiceMessages(newPlays, next, local, announcedName));
 
   // A Sabotage power just used, or passed on.
   const power = powerEvent(previous, next, local);
@@ -333,77 +268,9 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
   return messages;
 }
 
-// What the banner says when a role's power is used: by you, on you, by and on
-// others.
-// A Farmer's action is a seed planted, or a harvest when it has points (a
-// harvest of nothing when those are 0); a Shepherd's, a sheep given or a
-// payment the same way.
-type PaidText = "harvest" | "barren" | "collect" | "unpaid" | "block" | "blockFree";
-const ROLE_TEXTS: Record<RoleAction["role"] | PaidText, [MessageKey, MessageKey, MessageKey]> = {
-  thief: ["ann.youSteal", "ann.stealsYours", "ann.steals"],
-  servant: ["ann.youServe", "ann.servesYours", "ann.serves"],
-  fisher: ["ann.youFish", "ann.fishesYours", "ann.fishes"],
-  farmer: ["ann.youPlant", "ann.plantsYours", "ann.plants"],
-  harvest: ["ann.youHarvest", "ann.harvestsYours", "ann.harvests"],
-  barren: ["ann.youHarvestNothing", "ann.harvestsNothingYours", "ann.harvestsNothing"],
-  shepherd: ["ann.youGiveSheep", "ann.givesSheepYours", "ann.givesSheep"],
-  collect: ["ann.youCollect", "ann.collectsYours", "ann.collects"],
-  unpaid: ["ann.youCollectNothing", "ann.collectsNothingYours", "ann.collectsNothing"],
-  smith: ["ann.youForge", "ann.youForge", "ann.forges"],
-  merchant: ["ann.yourMarket", "ann.market", "ann.market"],
-  priest: ["ann.yourFaith", "ann.faith", "ann.faith"],
-  warrior: ["ann.yourBattle", "ann.battle", "ann.battle"],
-  gambler: ["ann.youBetWon", "ann.betWon", "ann.betWon"],
-  duke: ["ann.youKeep", "ann.keeps", "ann.keeps"],
-  prophet: ["ann.youForesee", "ann.foresees", "ann.foresees"],
-  king: ["ann.yourTax", "ann.tax", "ann.tax"],
-  block: ["ann.youBlock", "ann.blocksYours", "ann.blocks"],
-  blockFree: ["ann.youBlockFree", "ann.blocksFreeYours", "ann.blocksFree"],
-};
-
-const PAID_TEXTS: Partial<Record<RoleAction["role"], [PaidText, PaidText]>> = {
-  farmer: ["harvest", "barren"],
-  shepherd: ["collect", "unpaid"],
-  smith: ["block", "blockFree"],
-};
-
-const textsFor = (action: RoleAction) => {
-  const paid = PAID_TEXTS[action.role];
-  return ROLE_TEXTS[action.points === undefined || !paid ? action.role : action.points ? paid[0] : paid[1]];
-};
-
-// Seeds and sheep change hands, markets open and Priests are paid, once the
-// trick is won.
-const AT_TRICK_END: RoleAction["role"][] = ["farmer", "shepherd", "merchant", "priest", "warrior", "gambler", "duke", "prophet", "king"];
-
-// A Merchant's market in one line: who paid them and whom they paid, e.g.
-// "+10 from Rufus, Anna · −5 to Carl".
-function marketTrades(action: RoleAction, local: string): string {
-  const trades = action.trades ?? [];
-  const side = (paid: boolean, key: MessageKey, you: MessageKey): string => {
-    const these = trades.filter((trade) => (trade.points < 0) !== paid);
-    if (!these.length) return "";
-    const points = Math.abs(these.reduce((sum, trade) => sum + trade.points, 0));
-    // When not everyone paid the same - someone had less than the full
-    // amount, and nobody pays below 0 - each name gets its own amount:
-    // "+20 from Lyra 10, Lúthien 10, Oberon 0".
-    const even = these.every((trade) => trade.points === these[0]!.points);
-    const names = these
-      .map((trade) => {
-        const name = trade.player === local ? t(you) : announcedName(trade.player);
-        return even ? name : `${name} ${Math.abs(trade.points)}`;
-      })
-      .join(", ");
-    return t(key, { points: String(points), names });
-  };
-  return [side(true, "ann.marketFrom", "ann.marketFromYou"), side(false, "ann.marketTo", "ann.marketToYou")]
-    .filter(Boolean)
-    .join(" \u00b7 ");
-}
-
 // Whether the two snapshots show the same trick: the same while its first
 // card is.
-function isSameTrick(previous: PublicWizardGameState, next: PublicWizardGameState): boolean {
+export function isSameTrick(previous: PublicWizardGameState, next: PublicWizardGameState): boolean {
   const before = previous.currentTrick;
   const now = next.currentTrick;
   const first = (trick: typeof now) => trick.playedCards[0]?.card;
@@ -414,170 +281,6 @@ function isSameTrick(previous: PublicWizardGameState, next: PublicWizardGameStat
     first(before)?.suit === first(now)?.suit
   );
 }
-
-// The powers of a Roles game used since the last snapshot (modes/roles/).
-// Those already there in the same trick are left out.
-function newRoleActions(previous: PublicWizardGameState, next: PublicWizardGameState): RoleAction[] {
-  const said = isSameTrick(previous, next) ? (previous.currentTrick.roleActions?.length ?? 0) : 0;
-
-  return (next.currentTrick.roleActions ?? []).slice(said);
-}
-
-// A player's role in this state, if any.
-const roleOfIn = (state: PublicWizardGameState, username: string) =>
-  state.players.find((player) => player.username === username)?.role ?? undefined;
-
-// A player as the log names them in a Roles game: "Lúthien (Farmer)".
-function withRole(state: PublicWizardGameState, username: string): string {
-  const role = state.players.find((player) => player.username === username)?.role;
-  return role ? `${announcedName(username)} (${t(`role.${role}`)})` : announcedName(username);
-}
-
-// The log's lines for the cards played since the last snapshot, who played
-// each and whether its role's power is on, and for a trick won, with the
-// winner's role: "Lúthien (Farmer) wins the trick with Green 6".
-export function playLogLines(previous: PublicWizardGameState, next: PublicWizardGameState): { text: string; trick?: boolean }[] {
-  const lines: { text: string; trick?: boolean }[] = [];
-  const playedCards = next.currentTrick.playedCards;
-  const roleOf = (username: string) => next.players.find((player) => player.username === username)?.role ?? undefined;
-  const from = isSameTrick(previous, next) ? previous.currentTrick.playedCards.length : 0;
-
-  playedCards.slice(from).forEach((played, offset) => {
-    const by = played.playedBy ?? played.username;
-    const power = rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf);
-    const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : "";
-    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) + bet });
-  });
-
-  const winner = next.currentTrick.winnerUsername;
-  if (winner && previous.currentTrick.winnerUsername !== winner) {
-    const won = playedCards.find((entry) => entry.username === winner);
-    lines.push({
-      text: t("log.winsTrick", { name: withRole(next, winner), card: won ? cardName(won.card) : "" }),
-      trick: true,
-    });
-  }
-
-  return lines;
-}
-
-// Who used a role's power since the last snapshot, for their role label to
-// light up: a role card just played with its power on, even one that only
-// acts once the trick is complete (a Merchant's 7, a Priest's 8); every new
-// action; a Yellow Wizard turning the lead and a Red Wizard's shield.
-// hitYou: it took from you, though someone else used it.
-export function roleUses(
-  previous: PublicWizardGameState,
-  next: PublicWizardGameState,
-  local: string,
-): { by: string; hitYou: boolean }[] {
-  const playedCards = next.currentTrick.playedCards;
-  const roleOf = (username: string) => next.players.find((player) => player.username === username)?.role ?? undefined;
-  const from = isSameTrick(previous, next) ? previous.currentTrick.playedCards.length : 0;
-  const uses = playedCards
-    .slice(from)
-    .flatMap((played, offset) =>
-      rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf) ? [{ by: played.playedBy ?? played.username, hitYou: false }] : []);
-  uses.push(...newRoleActions(previous, next).map((action) => ({ by: action.by, hitYou: action.by !== local && touches(action, local) === "loss" })));
-  const sameTrick =
-    next.currentTrick.playedCards.length > previous.currentTrick.playedCards.length &&
-    previous.currentTrick.playedCards.length > 0;
-  const last = next.currentTrick.playedCards.at(-1);
-  const switched = leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow";
-  const shielded = !redShieldOf(previous) && redShieldOf(next);
-  if (sameTrick && last && (switched || shielded)) uses.push({ by: last.playedBy ?? last.username, hitYou: false });
-  return uses;
-}
-
-// What to say about each of them: the Thief's steal, the Servant's service,
-// the Fisher's catch, a Farmer's seeds and harvests, a Shepherd's sheep and
-// payments, a Smith's armour, a Merchant's market and a Priest's faith.
-function roleMessages(
-  previous: PublicWizardGameState,
-  next: PublicWizardGameState,
-  local: string,
-): (EventMessage & { atTrickEnd: boolean })[] {
-  return newRoleActions(previous, next).map((action) => {
-    const card = cardName(action.card);
-    const values = { name: announcedName(action.by), victim: announcedName(action.on), card, points: String(action.points ?? 0) };
-    const about = { role: true, aboutYou: touches(action, local) };
-    if (action.role === "merchant") {
-      const trades = marketTrades(action, local);
-      const text = action.by === local ? t("ann.yourMarket", { trades }) : t("ann.market", { ...values, trades });
-      return { text, username: action.by, atTrickEnd: true, ...about };
-    }
-    if (action.role === "gambler") {
-      const points = String(Math.abs(action.points ?? 0));
-      const won = (action.points ?? 0) > 0;
-      const text = won
-        ? action.by === local ? t("ann.youBetWon", { points }) : t("ann.betWon", { ...values, points })
-        : action.by === local
-          ? t("ann.youBetLost", { ...values, points })
-          : t("ann.betLost", { ...values, points });
-      return { text, username: action.by, atTrickEnd: true, ...about };
-    }
-    if (action.role === "king" && action.stopped) {
-      // The King's peace, told to everyone: whom it stopped, and that what
-      // was done is undone.
-      const stopped = action.stopped.map((username) => nameOf(username, local)).join(", ");
-      const undone = next.currentTrick.roleActions?.some((entry) => entry.undone) ? ` ${t("ann.peaceUndone")}` : "";
-      const who = action.stopped.length ? ` ${t("ann.peaceStopped", { names: stopped })}` : "";
-      const text = (action.by === local ? t("ann.yourPeace") : t("ann.peace", values)) + who + undone;
-      return { text, username: action.by, atTrickEnd: false, ...about };
-    }
-    if (action.role === "king") {
-      // The King's tax, in a market's words, and the Priest let off.
-      const trades = marketTrades(action, local);
-      const priest = next.currentTrick.playedCards.some((played, index) =>
-        roleOfIn(next, played.playedBy ?? played.username) === "priest" && rolePowerOn(next.currentTrick.playedCards, index, next.trumpSuit, (name) => roleOfIn(next, name)));
-      const text = (action.by === local ? t("ann.yourTax", { trades }) : t("ann.tax", { ...values, trades }))
-        + (priest ? ` ${t("ann.taxPriest")}` : "");
-      return { text, username: action.by, atTrickEnd: true, ...about };
-    }
-    if (action.role === "duke") {
-      const points = String(Math.abs(action.points ?? 0));
-      const text = action.by === action.on
-        ? action.by === local ? t("ann.youKeep", { points }) : t("ann.keeps", { ...values, points })
-        : action.by === local
-          ? t("ann.youGrant", { ...values, points })
-          : action.on === local
-            ? t("ann.grantsYours", { ...values, points })
-            : t("ann.grants", { ...values, points });
-      return { text, username: action.by, atTrickEnd: true, ...about };
-    }
-    if (action.role === "warrior") {
-      const trades = marketTrades(action, local);
-      const text = action.by === local ? t("ann.yourBattle", { trades }) : t("ann.battle", { ...values, trades });
-      return { text, username: action.by, atTrickEnd: true, ...about };
-    }
-    if (action.role === "priest") {
-      // The faith paid and the alms given, in a market's words:
-      // "+10 from Rufus, Anna · −5 to Carl".
-      const trades = marketTrades(action, local);
-      const text = action.by === local ? t("ann.yourFaith", { trades }) : t("ann.faith", { ...values, trades });
-      return { text, username: action.by, atTrickEnd: true, ...about };
-    }
-    const [youUse, usedOnYou, used] = textsFor(action);
-    const text = action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values);
-    return { text, username: action.by, atTrickEnd: AT_TRICK_END.includes(action.role), ...about };
-  });
-}
-
-const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
-  thief: "ann.stolen",
-  servant: "ann.tipped",
-  fisher: "ann.fished",
-  farmer: "ann.harvested",
-  shepherd: "ann.sheepPaid",
-  smith: "ann.blocked",
-  merchant: "ann.marketLabel",
-  priest: "ann.faithLabel",
-  warrior: "ann.battleLabel",
-  gambler: "ann.betLabel",
-  duke: "ann.grantLabel",
-  prophet: "role.prophet",
-  king: "ann.taxLabel",
-};
 
 // When a round has just been scored: a result per player, the round's best
 // first and the rest in descending order. Empty otherwise.
@@ -606,18 +309,12 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
           ]
         : [{ label: t("ann.offBy", { off: String(off) }), value: "" }];
     // A Roles game: what each role's power brought this round, e.g. the
-    // Servant's bonus, on its own line and in the round's points.
+    // Servant's bonus, on its own line and in the round's points
+    // (modes/roles/hud/role-announcements.ts names it).
     let score = predictionScore;
     for (const [role, points] of Object.entries(roleBonuses ?? {})) {
       if (!points) continue;
-      // Points another player's power took are a loss of their own: robbed by
-      // a Thief, a Servant's tip, a Fisher's catch, a Farmer's harvest, a
-      // Shepherd's sheep.
-      // A market is a market whoever gains: the Merchant, those paying him
-      // and those he pays. The same for a Priest's faith and alms.
-      const label = points < 0 || role === "merchant" || role === "priest" || role === "warrior" || role === "gambler"
-        ? t(LOSS_LABELS[role as RoleAction["role"]])
-        : t(`role.${role as RoleAction["role"]}`);
+      const label = roleBonusLabel(role, points);
       lines.push({ label, value: signed(points) });
       score += points;
     }

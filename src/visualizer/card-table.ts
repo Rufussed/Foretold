@@ -170,9 +170,12 @@ export function createCardTable({
     }
     // A Thief's trump 1 asks which card to take first, a Gambler's 10
     // whether to bet (Roles mode only).
+    // The card waits where it was played while they choose.
     void (async () => {
+      cards.holdPlay(true);
       const stealSpot = await (chooseSteal?.(cardIndex) ?? Promise.resolve(undefined));
       const bet = stealSpot === null ? null : await (chooseBet?.(cardIndex) ?? Promise.resolve(undefined));
+      cards.holdPlay(false);
       const sent =
         stealSpot !== null &&
         bet !== null &&
