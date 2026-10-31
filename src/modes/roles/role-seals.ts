@@ -17,6 +17,10 @@ import shepherd from "../../assets/role-seals/seal-power-shepherd.png";
 import smith from "../../assets/role-seals/seal-power-smith.png";
 import thief from "../../assets/role-seals/seal-power-thief.png";
 import warrior from "../../assets/role-seals/seal-power-warrior.png";
+import gambler from "../../assets/role-seals/seal-power-gambler.png";
+import duke from "../../assets/role-seals/seal-power-duke.png";
+import prophet from "../../assets/role-seals/seal-power-prophet.png";
+import king from "../../assets/role-seals/seal-power-king.png";
 import blue from "../../assets/role-seals/seal-colour-blue.png";
 import green from "../../assets/role-seals/seal-colour-green.png";
 import red from "../../assets/role-seals/seal-colour-red.png";
@@ -29,7 +33,7 @@ import coinGet from "../../assets/role-seals/coin-get.png";
 // every card in the trick played with its power on (the Thief's dagger, the
 // Smith's anvil…), from the moment it lands until the trick is gathered. The
 // seal always faces you and sits at the middle of whichever edge of the card
-// is lowest on screen. Icons: game-icons.net (CC BY 3.0), by Lorc and Delapouite.
+// is lowest on screen. Icons: game-icons.net (CC BY 3.0), by Lorc, Delapouite and Skoll.
 //
 // The colour Wizards have no card, so their plain seal in their colour goes
 // where their power shows: the Yellow Wizard's card that turned the lead to
@@ -55,7 +59,7 @@ export const ROLE_SEALS = {
 };
 
 const URLS: Partial<Record<RoleId, string>> = {
-  thief, servant, fisher, farmer, shepherd, smith, merchant, priest, warrior,
+  thief, servant, fisher, farmer, shepherd, smith, merchant, priest, warrior, gambler, duke, prophet, king,
   blueWizard: blue, greenWizard: green, yellowWizard: yellow, redWizard: red,
 };
 
@@ -101,6 +105,8 @@ function pointsMoved(state: PublicWizardGameState): Map<string, number> {
   const net = new Map<string, number>();
   const add = (username: string, points: number) => net.set(username, (net.get(username) ?? 0) + points);
   for (const action of state.currentTrick.roleActions ?? []) {
+    // Undone by the King's peace: paid back already.
+    if (action.undone) continue;
     if (action.trades) {
       for (const trade of action.trades) {
         add(action.by, trade.points);
@@ -109,6 +115,9 @@ function pointsMoved(state: PublicWizardGameState): Map<string, number> {
     } else if (action.points && action.by !== action.on) {
       add(action.by, action.points);
       add(action.on, -action.points);
+    } else if (action.points) {
+      // Points from no one: a Gambler's won bet.
+      add(action.by, action.points);
     }
   }
   return net;

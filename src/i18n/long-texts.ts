@@ -597,8 +597,8 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
-      The role seals in Roles games are made from icons by Lorc and
-      Delapouite, available on
+      The role seals in Roles games are made from icons by Lorc,
+      Delapouite and Skoll, available on
       <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
       under the
       <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>
@@ -643,8 +643,8 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
-      Die Rollensiegel im Rollen-Modus beruhen auf Icons von Lorc und
-      Delapouite, erhältlich auf
+      Die Rollensiegel im Rollen-Modus beruhen auf Icons von Lorc,
+      Delapouite und Skoll, erhältlich auf
       <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
       unter der Lizenz
       <a href="https://creativecommons.org/licenses/by/3.0/deed.de" target="_blank" rel="noopener">CC BY 3.0</a>,

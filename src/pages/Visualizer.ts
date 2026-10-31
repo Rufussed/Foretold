@@ -54,7 +54,9 @@ import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
 import { createFishPick, type FishPick } from "../modes/roles/mechanics/fish-pick";
+import { createGrantPick, type GrantPick } from "../modes/roles/mechanics/grant-pick";
 import { createStealPick, type StealPick } from "../modes/roles/mechanics/steal-pick";
+import { createBetPick, type BetPick } from "../modes/roles/mechanics/bet-pick";
 import { createTrickPick, type TrickPick } from "../modes/roles/mechanics/trick-pick";
 import { createPowerPrompt, type PowerPrompt } from "../modes/sabotage/prompts/power-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
@@ -107,7 +109,9 @@ export async function renderVisualizerPage(
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
   let fishPick: FishPick | null = null;
+  let grantPick: GrantPick | null = null;
   let stealPick: StealPick | null = null;
+  let betPick: BetPick | null = null;
   let trickPick: TrickPick | null = null;
   let powerPrompt: PowerPrompt | null = null;
   let roleLabels: RoleLabels | null = null;
@@ -161,7 +165,9 @@ export async function renderVisualizerPage(
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
     fishPick?.dispose();
+    grantPick?.dispose();
     stealPick?.dispose();
+    betPick?.dispose();
     trickPick?.dispose();
     powerPrompt?.dispose();
     roleLabels?.dispose();
@@ -400,7 +406,9 @@ export async function renderVisualizerPage(
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
       fishPick?.applyState();
+      grantPick?.applyState();
       stealPick?.applyState();
+      betPick?.applyState();
       powerPrompt?.applyState();
       thiefPrompt?.applyState();
       gameHud?.applyState();
@@ -518,6 +526,7 @@ export async function renderVisualizerPage(
         predictionPrompt?.applyState();
         trumpPrompt?.applyState();
         fishPick?.applyState();
+        grantPick?.applyState();
         powerPrompt?.applyState();
         thiefPrompt?.applyState();
       },
@@ -624,6 +633,7 @@ export async function renderVisualizerPage(
         onDealDone: () => director.dealt(),
         // A Thief's trump 1 asks which card to take before it is sent.
         chooseSteal: (cardIndex) => stealPick?.ask(cardIndex) ?? Promise.resolve(undefined),
+        chooseBet: (cardIndex) => betPick?.ask(cardIndex) ?? Promise.resolve(undefined),
         picking: () => trickPick?.picking() ?? false,
         // An NPC whose card was leading shows it did not like being beaten.
         onOvertaken: (previousLeader) => {
@@ -632,7 +642,9 @@ export async function renderVisualizerPage(
       });
       // Roles games only: the Fisher's catch and the Thief's trump 1 are
       // picked on the table, the cards to choose from rising off it
-      // (modes/roles/mechanics/trick-pick.ts). No other mode has these.
+      // (modes/roles/mechanics/trick-pick.ts), and so is the player a Duke
+      // grants a trick to (grant-pick.ts); a Gambler's 10 asks whether to bet
+      // (bet-pick.ts). No other mode has these.
       if (latestState?.options?.mode === "roles" && gameConnection && hudConnection) {
         const pick = createTrickPick({ canvas, camera: view.camera, cards: cardTable.cards, page: pageEl ?? container });
         trickPick = pick;
@@ -640,6 +652,18 @@ export async function renderVisualizerPage(
           pick,
           game: hudConnection,
           blocked: () => !director.turnShown() || (timeoutNotice?.timedOut() ?? false),
+        });
+        grantPick = createGrantPick({
+          pick,
+          game: hudConnection,
+          blocked: () => !director.turnShown() || (timeoutNotice?.timedOut() ?? false),
+        });
+        betPick = createBetPick({
+          canvas,
+          camera: view.camera,
+          cards: cardTable.cards,
+          game: hudConnection,
+          page: pageEl ?? container,
         });
         stealPick = createStealPick({
           pick,
@@ -782,6 +806,7 @@ export async function renderVisualizerPage(
         predictionPrompt?.refused(refusal);
         trumpPrompt?.refused(refusal);
         fishPick?.refused();
+        grantPick?.refused();
         powerPrompt?.refused(refusal);
         cardTable?.heist.refused();
         // The test shortcuts say why they could not do it.

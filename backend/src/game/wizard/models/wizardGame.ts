@@ -83,6 +83,12 @@ export interface PlayedCard {
   // Who played it, kept when a role's power swaps its owner (modes/roles/).
   // Missing in games saved before roles existed.
   playedBy?: string;
+  // A Roles Gambler bet that this 10 wins the trick (modes/roles/gambler.ts).
+  bet?: true;
+  // A Roles Prophet's choice as she played this 12 (modes/roles/prophet.ts):
+  // true when she lowered her prediction, false when she kept it. Missing
+  // when she had no choice.
+  lowered?: boolean;
 }
 
 export interface TrickState {
@@ -90,6 +96,10 @@ export interface TrickState {
   winnerUsername: string | null;
   // In a Roles game, the powers used in this trick, in order (modes/roles/).
   roleActions?: RoleAction[];
+  // In a Roles game, a Duke's choice for a trick their 11 won
+  // (modes/roles/duke.ts): the player granted it, or null when kept. Missing
+  // until they choose. The trick's winner stays the Duke.
+  grantedTo?: string | null;
   // In a Sabotage game, set when the winning card was a Seer, a Trickster or
   // a Thief (modes/sabotage/cardPowers.ts).
   sabotagePower?: SabotagePower;
@@ -97,9 +107,11 @@ export interface TrickState {
 
 // "fishing": a Roles game's trick is complete and a Fisher picks a card from
 // it before it is won (modes/roles/fisher.ts).
+// "granting": a Roles game's trick is won with a Duke's 11 and the Duke keeps
+// it or grants it to another player (modes/roles/duke.ts).
 // "power": a Sabotage game's trick is won with a Seer, Trickster or Thief and
 // its winner decides how to use it (modes/sabotage/cardPowers.ts).
-export type GamePhase = "trump-selection" | "predictions" | "playing" | "fishing" | "power" | "finished";
+export type GamePhase = "trump-selection" | "predictions" | "playing" | "fishing" | "granting" | "power" | "finished";
 
 export interface WizardGameState {
   roomId: number;

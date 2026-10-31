@@ -20,6 +20,18 @@ export const ROLES = [
   // The Warrior's 9: everyone pays when it wins; as a trump that loses, the
   // Warrior pays everyone.
   { id: "warrior", kind: "basic", card: 9 },
+  // The Gambler's 10: they may bet it wins the trick, +20 if it does, -10
+  // to the house if not.
+  { id: "gambler", kind: "basic", card: 10 },
+  // The Duke's 11: when it wins, they keep the trick for +10 or grant it to
+  // any other player, paying them 5.
+  { id: "duke", kind: "basic", card: 11 },
+  // The Prophet's 12: as it is played she may lower her prediction by 1;
+  // kept, a 12 that wins brings her +5.
+  { id: "prophet", kind: "basic", card: 12 },
+  // The King's 13: as a trump, no other role's power works in the trick;
+  // otherwise, winning, every power used in it pays him a tax.
+  { id: "king", kind: "basic", card: 13 },
   // No card of its own: the Blue Wizard sees how many blue cards each
   // opponent holds (master/blueWizard.ts). Open to everyone for now; to be unlocked
   // with Blue colour points later.
@@ -78,4 +90,10 @@ export interface RoleAction {
   // left out. For a Priest's faith (on is the Priest themself, card their 8),
   // who paid them, the same way; points is the faith in all.
   trades?: { player: string; points: number }[];
+  // Undone by the King's peace: a steal, a service or a Smith's armour,
+  // swapped and paid back (modes/roles/king.ts). Kept so it was told once.
+  undone?: true;
+  // The King's peace (on is the King, card his trump 13): the players whose
+  // powers it stopped, in the trick's order.
+  stopped?: string[];
 }

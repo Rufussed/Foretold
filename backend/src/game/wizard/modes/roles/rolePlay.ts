@@ -13,6 +13,14 @@ export type RoleOf = (username: string) => RoleId | undefined;
 // this was kept read the owner.
 export const playerOf = (played: PlayedCard): string => played.playedBy ?? played.username;
 
+// Whether a King's trump 13 is in the trick: the King's peace, which stops
+// every other basic role's power in it, before and after the 13
+// (modes/roles/king.ts). The colour Wizards' powers are not roles' cards and
+// go on.
+export const kingsPeace = (playedCards: PlayedCard[], trumpSuit: Suit | null, roleOf: RoleOf): boolean =>
+  trumpSuit !== null && playedCards.some((played) =>
+    played.card.suit === trumpSuit && played.card.value === roleCard("king") && roleOf(playerOf(played)) === "king");
+
 // Whether the card at this place in the trick has its role's power on: the
 // role's card, played by a player of that role, in the lead suit or as a
 // trump. A trick opened by a Wizard (after any Jesters) has no lead suit and
@@ -27,6 +35,10 @@ export function powerOn(
   const played = playedCards[index];
 
   if (!played || played.card.value !== roleCard(role) || roleOf(playerOf(played)) !== role) {
+    return false;
+  }
+  // The King's peace stops every other basic role's power in the trick.
+  if (role !== "king" && kingsPeace(playedCards, trumpSuit, roleOf)) {
     return false;
   }
 
@@ -53,7 +65,8 @@ export function rolePowerOn(
     return false;
   }
 
-  return role === "farmer" || role === "shepherd" || powerOn(playedCards, index, role, trumpSuit, roleOf);
+  return (role === "farmer" || role === "shepherd") && !kingsPeace(playedCards, trumpSuit, roleOf)
+    || powerOn(playedCards, index, role, trumpSuit, roleOf);
 }
 
 // No role's power ever touches a Wizard or a Jester.

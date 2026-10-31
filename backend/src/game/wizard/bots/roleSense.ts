@@ -6,6 +6,8 @@ import { armorOf, playPower, rolesOf } from "../modes/roles/rolePowers.js";
 import { roleCard, type RoleId } from "../modes/roles/roles.js";
 import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 import { trades } from "../modes/roles/merchant.js";
+import { canBet } from "../modes/roles/gambler.js";
+import { canLower } from "../modes/roles/prophet.js";
 import { sheepOut } from "../modes/roles/shepherd.js";
 import { stealSpots } from "../modes/roles/thief.js";
 import { WizardRules } from "../services/wizardRules.js";
@@ -29,7 +31,7 @@ export interface Play {
 // trades, the Priest's 8 collects faith from royal cards, and the Warrior's 9
 // wins or loses a battle.
 const BID_VALUE: Record<RoleId, number> = {
-  thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0, priest: 0, warrior: 0,
+  thief: 0.5, servant: 0.3, fisher: 0.6, farmer: 0, shepherd: 0, smith: 0, merchant: 0, priest: 0, warrior: 0, gambler: 0, duke: 0, prophet: 0, king: 0,
   // No card of its own; its sight is used in blueWizardSense.ts.
   blueWizard: 0,
   // No card either; its boost is in every trick it plays (master/greenWizard.ts).
@@ -89,6 +91,44 @@ export function stealChoice(game: WizardGameState, card: Card): number | undefin
     player.username;
 
   return [...spots].reverse().find((spot) => wins(spot) === wantsTricks);
+}
+
+// Whether a Gambler bot bets on its 10: only when the 10 can carry a bet and
+// would be winning the trick once played, and then only with no one left to
+// play, or as a trump with one player left. A careful player, not a reckless
+// one.
+export function betChoice(game: WizardGameState, card: Card): boolean {
+  const player = currentPlayer(game);
+  if (roleOfBot(game) !== "gambler" || card.value !== roleCard("gambler")) return false;
+
+  const trick = trickAfter(game, card);
+  if (!canBet(trick, game.currentTrick.playedCards.length, game.trumpSuit, rolesOf(game))) return false;
+
+  const wizardWins = normalizeGameOptions(game.options).wizardWins;
+  const winning = rules.determineTrickWinner(trick, game.trumpSuit, wizardWins, trickRolesIn(game)) === player.username;
+  const left = game.players.length - trick.length;
+  return winning && (left === 0 || (card.suit === game.trumpSuit && left <= 1));
+}
+
+// Whether a Prophet bot lowers its prediction with its 12: when the tricks
+// it still needs are more than it can see itself winning - this 12 if it
+// is winning the trick so far, and every Wizard, trump 11 or higher and other
+// 13 left in its hand. A 12 is strong, so it keeps the prediction otherwise
+// and plays for the bonus.
+export function lowerChoice(game: WizardGameState, card: Card): boolean {
+  const player = currentPlayer(game);
+  if (roleOfBot(game) !== "prophet" || card.value !== roleCard("prophet")) return false;
+
+  const trick = trickAfter(game, card);
+  if (!canLower(trick, game.currentTrick.playedCards.length, game.trumpSuit, rolesOf(game), player)) return false;
+
+  const wizardWins = normalizeGameOptions(game.options).wizardWins;
+  const winning = rules.determineTrickWinner(trick, game.trumpSuit, wizardWins, trickRolesIn(game)) === player.username;
+  const strong = player.hand.filter((held) =>
+    held !== card && (held.value === 14 || held.value === 13 || (held.suit === game.trumpSuit && held.value >= 11))).length;
+  const needs = (player.prediction ?? 0) - player.tricksWon;
+
+  return (winning ? 1 : 0) + strong < needs;
 }
 
 export const trickAfter = (game: WizardGameState, card: Card): PlayedCard[] =>

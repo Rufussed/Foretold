@@ -29,6 +29,11 @@ interface SocketMessage extends SabotageMessage, RolesDevMessage {
 	spot?: number;
 	// play_card: the place in the trick of the card a Thief's trump 1 takes.
 	stealSpot?: number;
+	// grant_trick: the player a Duke grants the trick to; missing or null to
+	// keep it (modes/roles/duke.ts).
+	to?: string | null;
+	// play_card: a Gambler's 10 bets it wins the trick (modes/roles/gambler.ts).
+	bet?: boolean;
 	suit?: string;
 	emote?: string;
 }
@@ -232,6 +237,7 @@ export function registerWizardSocket(
 					if (
 						currentGame.phase !== "finished" &&
 						currentGame.phase !== "fishing" &&
+						currentGame.phase !== "granting" &&
 						currentGame.turnTimeoutMs !== null &&
 						currentGame.turnDeadlineAt === null &&
 						current?.username === username
@@ -308,7 +314,7 @@ export function registerWizardSocket(
 							throw new Error("Invalid card");
 						}
 
-						gameService.playCard(currentGame, message.cardIndex, false, message.stealSpot);
+						gameService.playCard(currentGame, message.cardIndex, false, message.stealSpot, message.bet === true);
 					} else if (message.type === "fish_card") {
 						if (
 							typeof message.spot !== "number" ||
@@ -318,6 +324,12 @@ export function registerWizardSocket(
 						}
 
 						gameService.fishCard(currentGame, username, message.spot);
+					} else if (message.type === "grant_trick") {
+						if (message.to !== undefined && message.to !== null && typeof message.to !== "string") {
+							throw new Error("Invalid player");
+						}
+
+						gameService.grantTrick(currentGame, username, message.to ?? null);
 					} else if (
 						handleSabotageMove(currentGame, username, message, (game, cardIndex) =>
 							gameService.playCard(game, cardIndex),

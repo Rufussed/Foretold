@@ -5,7 +5,7 @@ import { avoidForbiddenPrediction, forbiddenPrediction } from "../gameplayRules.
 import { normalizeGameOptions } from "../gameOptions.js";
 import { strategyFor } from "../bots/index.js";
 import { currentPlayer } from "../bots/personality.js";
-import { stealChoice } from "../bots/roleSense.js";
+import { betChoice, lowerChoice, stealChoice } from "../bots/roleSense.js";
 import { WizardGameService } from "./wizardGameService.js";
 
 // Makes the moves of whoever's turn it is, as their bot personality would
@@ -52,5 +52,13 @@ export class WizardBotService {
     const card = player.hand[cardIndex];
 
     return player.botPersonality === "adept" && card ? stealChoice(game, card) : undefined;
+  }
+
+  // Whether a Gambler bot bets on its 10 at this index, or a Prophet bot
+  // lowers its prediction with its 12 (roleSense.ts).
+  chooseBet(game: WizardGameState, cardIndex: number): boolean {
+    const card = currentPlayer(game).hand[cardIndex];
+
+    return !!card && (betChoice(game, card) || lowerChoice(game, card));
   }
 }

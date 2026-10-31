@@ -56,6 +56,9 @@ export interface CardTableOptions {
   // Before a card is sent: the card a Thief's trump 1 takes, if there is a
   // choice (steal-prompt.ts); null when the turn passed before a choice.
   chooseSteal?(cardIndex: number): Promise<number | null | undefined>;
+  // Then, for a Roles Gambler's 10: whether they bet on it (bet-pick.ts);
+  // null when the turn passed before a choice.
+  chooseBet?(cardIndex: number): Promise<boolean | null | undefined>;
   // True while a Roles game asks for a pick on the table (a Fisher's catch,
   // a Thief's trump 1; modes/roles/mechanics/trick-pick.ts): the hand's
   // controls stand aside.
@@ -126,6 +129,7 @@ export function createCardTable({
   onDealDone,
   onOvertaken,
   chooseSteal,
+  chooseBet,
   picking: otherPicking = () => false,
 }: CardTableOptions): CardTable {
   const cameraPosition = new THREE.Vector3();
@@ -164,13 +168,22 @@ export function createCardTable({
       cards.cancelPlay();
       return;
     }
-    // A Thief's trump 1 asks which card to take first.
-    void (chooseSteal?.(cardIndex) ?? Promise.resolve(undefined)).then((stealSpot) => {
+    // A Thief's trump 1 asks which card to take first, a Gambler's 10
+    // whether to bet (Roles mode only).
+    void (async () => {
+      const stealSpot = await (chooseSteal?.(cardIndex) ?? Promise.resolve(undefined));
+      const bet = stealSpot === null ? null : await (chooseBet?.(cardIndex) ?? Promise.resolve(undefined));
       const sent =
         stealSpot !== null &&
-        game.send({ type: "play_card", cardIndex, ...(stealSpot === undefined ? {} : { stealSpot }) });
+        bet !== null &&
+        game.send({
+          type: "play_card",
+          cardIndex,
+          ...(stealSpot === undefined ? {} : { stealSpot }),
+          ...(bet ? { bet: true } : {}),
+        });
       if (!sent) cards.cancelPlay();
-    });
+    })();
   };
 
   const heist = createSabotageThiefHeist({
@@ -549,8 +562,9 @@ export function createCardTable({
     },
     applyState,
     playTrickReward(done) {
-      const winner = game?.state()?.currentTrick.winnerUsername;
       const state = game?.state();
+      // A Roles Duke may have granted the trick away: the cards go to them.
+      const winner = state?.currentTrick.grantedTo ?? state?.currentTrick.winnerUsername;
       if (!winner || !state) {
         done();
         return;

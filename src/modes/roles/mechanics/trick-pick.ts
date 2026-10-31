@@ -7,8 +7,9 @@ import type { TableCards } from "../../../visualizer/table-cards";
 // pressed; pointing at one outlines it; clicking one sets them all down again,
 // and once they have settled the pick is handed on, so the swap that follows
 // starts from the table (trick-swap.ts). While the cards are up, a label just
-// below them says what to do ("Hook a card", "Steal a card"). No other mode
-// uses this.
+// below them says what to do ("Hook a card", "Steal a card"), with a button
+// beside it when there is another way out (the Duke's "Keep it"). No other
+// mode uses this.
 
 export const TRICK_PICK = {
   // How long the cards take to settle back before the pick is handed on, in
@@ -19,8 +20,14 @@ export const TRICK_PICK = {
 export interface TrickPick {
   // Raises these trick cards to be picked, with this label under them;
   // onPick gets the key clicked once they have settled back. Raising again
-  // replaces any pick still open.
-  raise(keys: readonly string[], label: string, onPick: (key: string) => void): void;
+  // replaces any pick still open. With an action, a button beside the label
+  // sets the cards down and calls it instead.
+  raise(
+    keys: readonly string[],
+    label: string,
+    onPick: (key: string) => void,
+    action?: { text: string; onClick: () => void },
+  ): void;
   // Sets the cards down with no pick made.
   clear(): void;
   // True while cards are up: the hand's controls stand aside.
@@ -43,10 +50,21 @@ export function createTrickPick({ canvas, camera, cards, page }: TrickPickOption
   let onPicked: ((key: string) => void) | null = null;
   let timer = 0;
 
-  const label = document.createElement("p");
+  const label = document.createElement("div");
   label.className = "trick-pick-label";
   label.hidden = true;
+  const text = document.createElement("span");
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "trick-pick-action";
+  label.append(text, button);
   page.append(label);
+  let onAction: (() => void) | null = null;
+  button.addEventListener("click", () => {
+    const act = onAction;
+    setDown();
+    act?.();
+  });
 
   // The label follows the raised cards: centred under them, just below the
   // lowest edge any of them shows on screen.
@@ -83,6 +101,7 @@ export function createTrickPick({ canvas, camera, cards, page }: TrickPickOption
   const setDown = () => {
     raised = new Set();
     onPicked = null;
+    onAction = null;
     cards.setTrickRaised([]);
     cards.setHovered(null);
     canvas.style.cursor = "";
@@ -121,12 +140,15 @@ export function createTrickPick({ canvas, camera, cards, page }: TrickPickOption
   canvas.addEventListener("pointerdown", onPointerDown, { capture: true });
 
   return {
-    raise(keys, text, onPick) {
+    raise(keys, says, onPick, action) {
       window.clearTimeout(timer);
       raised = new Set(keys);
       onPicked = onPick;
+      onAction = action?.onClick ?? null;
       cards.setTrickRaised(keys);
-      label.textContent = text;
+      text.textContent = says;
+      button.textContent = action?.text ?? "";
+      button.hidden = !action;
       label.hidden = false;
     },
 

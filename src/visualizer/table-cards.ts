@@ -88,6 +88,9 @@ export interface TableCards {
   // ...and these trick cards lifted off the table, as a raised hand card is,
   // for the player to pick one; an empty list sets them all down.
   setTrickRaised(keys: readonly string[]): void;
+  // Roles mode only: the card you are playing while it waits to be sent (a
+  // Gambler's 10 waiting on the bet), for the choice to sit under it.
+  pendingCardObject(): THREE.Object3D | null;
   setHovered(key: string | null): void;
   // The hand card the pointer is on, else the one raised to be read.
   selectedKey(): string | null;
@@ -747,6 +750,10 @@ export function createTableCards(
 
     setTrickRaised(keys) {
       trickRaised = new Set(keys);
+    },
+
+    pendingCardObject() {
+      return pending ? (cards.get(pending.key)?.object ?? null) : null;
     },
 
     toggleRaised(key) {

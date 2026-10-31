@@ -113,6 +113,9 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
     case "fishing":
       if (!current) return null;
       return current === local ? t("ann.youFishing") : t("ann.fishing", { name: announcedName(current) });
+    case "granting":
+      if (!current) return null;
+      return current === local ? t("ann.youGranting") : t("ann.granting", { name: announcedName(current) });
     case "finished": {
       const winners = gameWinners(state);
       const winner = winners[0];
@@ -189,6 +192,8 @@ export interface EventMessage {
 // a seed or a sheep handed you, a trade or faith with you. For a Smith's
 // block, you are the attacker it stopped.
 function touches(action: RoleAction, local: string): "gain" | "loss" | undefined {
+  // The King's peace stopped your power.
+  if (action.stopped) return action.stopped.includes(local) ? "loss" : undefined;
   if (action.by === local) {
     const points = action.points ?? 0;
     return points > 0 ? "gain" : points < 0 ? "loss" : undefined;
@@ -196,7 +201,10 @@ function touches(action: RoleAction, local: string): "gain" | "loss" | undefined
   const trade = action.trades?.find((entry) => entry.player === local);
   // Points above 0 were paid to the Merchant or Priest.
   if (trade) return trade.points > 0 ? "loss" : trade.points < 0 ? "gain" : undefined;
-  return action.on === local ? "loss" : undefined;
+  // Points below 0 went the other way: from the one who used the power to
+  // the one it was on (a Gambler's lost bet).
+  if (action.on === local) return (action.points ?? 0) < 0 ? "gain" : "loss";
+  return undefined;
 }
 
 // One-off events between two snapshots, in the order they happened: new
@@ -280,6 +288,23 @@ export function eventMessages(previous: PublicWizardGameState, next: PublicWizar
     });
   }
 
+  // A Roles Gambler just bet on their 10, or a Prophet lowered her
+  // prediction with her 12, so everyone knows before the trick is out.
+  const newPlays = isSameTrick(previous, next)
+    ? next.currentTrick.playedCards.slice(previous.currentTrick.playedCards.length)
+    : next.currentTrick.playedCards;
+  for (const played of newPlays) {
+    if (!played.bet && played.lowered === undefined) continue;
+    const by = played.playedBy ?? played.username;
+    const prediction = String(next.players.find((player) => player.username === by)?.prediction ?? 0);
+    const text = played.bet
+      ? by === local ? t("ann.youBet") : t("ann.bets", { name: announcedName(by) })
+      : played.lowered
+        ? by === local ? t("ann.youLower", { prediction }) : t("ann.lowers", { name: announcedName(by), prediction })
+        : by === local ? t("ann.youKeepBid", { prediction }) : t("ann.keepsBid", { name: announcedName(by), prediction });
+    messages.push({ text, username: by, role: true });
+  }
+
   // A Sabotage power just used, or passed on.
   const power = powerEvent(previous, next, local);
   if (power) messages.push(power);
@@ -328,6 +353,10 @@ const ROLE_TEXTS: Record<RoleAction["role"] | PaidText, [MessageKey, MessageKey,
   merchant: ["ann.yourMarket", "ann.market", "ann.market"],
   priest: ["ann.yourFaith", "ann.faith", "ann.faith"],
   warrior: ["ann.yourBattle", "ann.battle", "ann.battle"],
+  gambler: ["ann.youBetWon", "ann.betWon", "ann.betWon"],
+  duke: ["ann.youKeep", "ann.keeps", "ann.keeps"],
+  prophet: ["ann.youForesee", "ann.foresees", "ann.foresees"],
+  king: ["ann.yourTax", "ann.tax", "ann.tax"],
   block: ["ann.youBlock", "ann.blocksYours", "ann.blocks"],
   blockFree: ["ann.youBlockFree", "ann.blocksFreeYours", "ann.blocksFree"],
 };
@@ -345,7 +374,7 @@ const textsFor = (action: RoleAction) => {
 
 // Seeds and sheep change hands, markets open and Priests are paid, once the
 // trick is won.
-const AT_TRICK_END: RoleAction["role"][] = ["farmer", "shepherd", "merchant", "priest", "warrior"];
+const AT_TRICK_END: RoleAction["role"][] = ["farmer", "shepherd", "merchant", "priest", "warrior", "gambler", "duke", "prophet", "king"];
 
 // A Merchant's market in one line: who paid them and whom they paid, e.g.
 // "+10 from Rufus, Anna · −5 to Carl".
@@ -394,6 +423,10 @@ function newRoleActions(previous: PublicWizardGameState, next: PublicWizardGameS
   return (next.currentTrick.roleActions ?? []).slice(said);
 }
 
+// A player's role in this state, if any.
+const roleOfIn = (state: PublicWizardGameState, username: string) =>
+  state.players.find((player) => player.username === username)?.role ?? undefined;
+
 // A player as the log names them in a Roles game: "Lúthien (Farmer)".
 function withRole(state: PublicWizardGameState, username: string): string {
   const role = state.players.find((player) => player.username === username)?.role;
@@ -412,7 +445,8 @@ export function playLogLines(previous: PublicWizardGameState, next: PublicWizard
   playedCards.slice(from).forEach((played, offset) => {
     const by = played.playedBy ?? played.username;
     const power = rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf);
-    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) });
+    const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : "";
+    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) + bet });
   });
 
   const winner = next.currentTrick.winnerUsername;
@@ -472,6 +506,45 @@ function roleMessages(
       const text = action.by === local ? t("ann.yourMarket", { trades }) : t("ann.market", { ...values, trades });
       return { text, username: action.by, atTrickEnd: true, ...about };
     }
+    if (action.role === "gambler") {
+      const points = String(Math.abs(action.points ?? 0));
+      const won = (action.points ?? 0) > 0;
+      const text = won
+        ? action.by === local ? t("ann.youBetWon", { points }) : t("ann.betWon", { ...values, points })
+        : action.by === local
+          ? t("ann.youBetLost", { ...values, points })
+          : t("ann.betLost", { ...values, points });
+      return { text, username: action.by, atTrickEnd: true, ...about };
+    }
+    if (action.role === "king" && action.stopped) {
+      // The King's peace, told to everyone: whom it stopped, and that what
+      // was done is undone.
+      const stopped = action.stopped.map((username) => nameOf(username, local)).join(", ");
+      const undone = next.currentTrick.roleActions?.some((entry) => entry.undone) ? ` ${t("ann.peaceUndone")}` : "";
+      const who = action.stopped.length ? ` ${t("ann.peaceStopped", { names: stopped })}` : "";
+      const text = (action.by === local ? t("ann.yourPeace") : t("ann.peace", values)) + who + undone;
+      return { text, username: action.by, atTrickEnd: false, ...about };
+    }
+    if (action.role === "king") {
+      // The King's tax, in a market's words, and the Priest let off.
+      const trades = marketTrades(action, local);
+      const priest = next.currentTrick.playedCards.some((played, index) =>
+        roleOfIn(next, played.playedBy ?? played.username) === "priest" && rolePowerOn(next.currentTrick.playedCards, index, next.trumpSuit, (name) => roleOfIn(next, name)));
+      const text = (action.by === local ? t("ann.yourTax", { trades }) : t("ann.tax", { ...values, trades }))
+        + (priest ? ` ${t("ann.taxPriest")}` : "");
+      return { text, username: action.by, atTrickEnd: true, ...about };
+    }
+    if (action.role === "duke") {
+      const points = String(Math.abs(action.points ?? 0));
+      const text = action.by === action.on
+        ? action.by === local ? t("ann.youKeep", { points }) : t("ann.keeps", { ...values, points })
+        : action.by === local
+          ? t("ann.youGrant", { ...values, points })
+          : action.on === local
+            ? t("ann.grantsYours", { ...values, points })
+            : t("ann.grants", { ...values, points });
+      return { text, username: action.by, atTrickEnd: true, ...about };
+    }
     if (action.role === "warrior") {
       const trades = marketTrades(action, local);
       const text = action.by === local ? t("ann.yourBattle", { trades }) : t("ann.battle", { ...values, trades });
@@ -500,6 +573,10 @@ const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
   merchant: "ann.marketLabel",
   priest: "ann.faithLabel",
   warrior: "ann.battleLabel",
+  gambler: "ann.betLabel",
+  duke: "ann.grantLabel",
+  prophet: "role.prophet",
+  king: "ann.taxLabel",
 };
 
 // When a round has just been scored: a result per player, the round's best
@@ -538,7 +615,7 @@ export function roundResults(previous: PublicWizardGameState, next: PublicWizard
       // Shepherd's sheep.
       // A market is a market whoever gains: the Merchant, those paying him
       // and those he pays. The same for a Priest's faith and alms.
-      const label = points < 0 || role === "merchant" || role === "priest" || role === "warrior"
+      const label = points < 0 || role === "merchant" || role === "priest" || role === "warrior" || role === "gambler"
         ? t(LOSS_LABELS[role as RoleAction["role"]])
         : t(`role.${role as RoleAction["role"]}`);
       lines.push({ label, value: signed(points) });

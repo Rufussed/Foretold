@@ -8,11 +8,12 @@ import { isPlayedByServer, recordMissedTurn } from "./playerQuit.js";
 import { isBotName } from "../models/bot.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { FISHING_TIMEOUT_MS } from "../modes/roles/fisher.js";
-import { botFishingSpot, randomFishingSpot } from "../modes/roles/rolePowers.js";
+import { GRANT_TIMEOUT_MS } from "../modes/roles/duke.js";
+import { botFishingSpot, botGrantTo, randomFishingSpot } from "../modes/roles/rolePowers.js";
 import { beginPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { runSabotagePowerDecision } from "../modes/sabotage/powerDecision.js";
 
-// One Fisher's choice in one trick: changes once they have fished.
+// One Fisher's or Duke's choice in one trick: changes once they have chosen.
 const fishingKey = (game: WizardGameState): string =>
   [
     game.phase,
@@ -131,7 +132,7 @@ export class WizardGameRunner {
           continue;
         }
 
-        if (game.phase === "fishing") {
+        if (game.phase === "fishing" || game.phase === "granting") {
           await this.runFishing(roomId, game, pace);
           continue;
         }
@@ -387,6 +388,7 @@ export class WizardGameRunner {
             cardIndex,
             !isBotName(decisionPlayer.username),
             this.botService.chooseStealSpot(currentGame, cardIndex),
+            this.botService.chooseBet(currentGame, cardIndex),
           );
 
           currentGame.turnDeadlineAt = null;
@@ -404,10 +406,12 @@ export class WizardGameRunner {
     }
 }
 
-  // A Fisher choosing a card from a complete trick (modes/roles/fisher.ts).
+  // A Fisher choosing a card from a complete trick (modes/roles/fisher.ts),
+  // or a Duke keeping or granting the trick their 11 won (modes/roles/duke.ts).
   // A bot, or a seat the server plays, chooses after a moment. A human has
-  // FISHING_TIMEOUT_MS, whatever the room's turn timer, and then a card is
-  // picked for them at random; that is no missed turn.
+  // FISHING_TIMEOUT_MS or GRANT_TIMEOUT_MS, whatever the room's turn timer,
+  // and then a card is picked for them at random, or the trick is kept; that
+  // is no missed turn.
   private async runFishing(
     roomId: number,
     game: WizardGameState,
@@ -426,7 +430,7 @@ export class WizardGameRunner {
       await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
     } else {
       if (game.turnDeadlineAt === null) {
-        game.turnDeadlineAt = Date.now() + FISHING_TIMEOUT_MS;
+        game.turnDeadlineAt = Date.now() + (game.phase === "granting" ? GRANT_TIMEOUT_MS : FISHING_TIMEOUT_MS);
         wizardSessionManager.saveGame(game);
         this.broadcast(roomId);
       }
@@ -447,11 +451,15 @@ export class WizardGameRunner {
       return;
     }
 
-    const spot = byServer
-      ? botFishingSpot(current)
-      : randomFishingSpot(current);
+    if (current.phase === "granting") {
+      this.gameService.grantTrick(current, fisher.username, byServer ? botGrantTo(current) : null);
+    } else {
+      const spot = byServer
+        ? botFishingSpot(current)
+        : randomFishingSpot(current);
 
-    this.gameService.fishCard(current, fisher.username, spot);
+      this.gameService.fishCard(current, fisher.username, spot);
+    }
 
     current.turnDeadlineAt = null;
     wizardSessionManager.saveGame(current);
