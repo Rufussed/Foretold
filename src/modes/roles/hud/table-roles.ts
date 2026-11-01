@@ -3,7 +3,7 @@ import { roleCard } from "../../../../backend/src/game/wizard/modes/roles/roles"
 import { t } from "../../../i18n";
 import { displayName } from "../../../utils/display-name";
 import { escapeHtml } from "../../../utils/escape-html";
-import { roleSealUrl } from "../role-seals";
+import { roleSealUrl } from "../seal-urls";
 
 // Roles mode only. A Roles button beside the Log button (visualizer/hud/
 // event-log.ts) opens a see-through panel over the player list with the

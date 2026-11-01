@@ -1,0 +1,62 @@
+import db from "../../../../db/database.js";
+import { normalizeGameOptions } from "../../gameOptions.js";
+import { isBotName } from "../../models/bot.js";
+import { fullRoundCount } from "../../models/rounds.js";
+import type { GamePlayer, WizardGameState } from "../../models/wizardGame.js";
+
+// Roles mode only. Each player's record with each role, kept in role_progress
+// (db/migrations.ts) for the Profile's seals. The game completion service
+// calls it for every human who finished the game.
+//
+// A game counts for a role when it was finished, ran at least half its full
+// length (3 players: 10 rounds of 20), and was not played against Apprentice
+// NPCs alone, who do not know the roles.
+
+export function countsForRoleProgress(game: WizardGameState): boolean {
+  if (normalizeGameOptions(game.options).mode !== "roles") return false;
+
+  const fullRounds = fullRoundCount(game.players.length);
+  if (fullRounds === undefined || game.totalRounds < Math.ceil(fullRounds / 2)) return false;
+
+  // Bots from before personalities existed play as Apprentices.
+  const bots = game.players.filter((player) => isBotName(player.username));
+  return bots.length === 0 || bots.some((bot) => bot.botPersonality === "adept");
+}
+
+export interface RoleGameRecord {
+  role: string;
+  won: boolean;
+  powerUses: number;
+  rolePoints: number;
+}
+
+// What one finished game adds to a player's record with their role; null
+// for a player without one.
+export function roleGameRecord(player: GamePlayer, won: boolean): RoleGameRecord | null {
+  const role = player.role;
+  if (!role) return null;
+
+  // Each round's points by role, their own role's only: what other players'
+  // powers took from or gave them is not their role's doing.
+  const rolePoints = player.roundScores.reduce((sum, round) => sum + (round.roleBonuses?.[role] ?? 0), 0);
+  return { role, won, powerUses: player.powerUses ?? 0, rolePoints };
+}
+
+export function recordRoleGame(userId: number, record: RoleGameRecord): void {
+  db.prepare(`
+    INSERT INTO role_progress (user_id, role, games, wins, power_uses, role_points)
+    VALUES (?, ?, 1, ?, ?, ?)
+    ON CONFLICT (user_id, role) DO UPDATE SET
+      games = games + 1,
+      wins = wins + excluded.wins,
+      power_uses = power_uses + excluded.power_uses,
+      role_points = role_points + excluded.role_points
+  `).run(userId, record.role, record.won ? 1 : 0, record.powerUses, record.rolePoints);
+}
+
+// The hook for the completion service: records the game if it counts.
+export function recordRoleProgress(game: WizardGameState, player: GamePlayer, userId: number, won: boolean): void {
+  if (!countsForRoleProgress(game)) return;
+  const record = roleGameRecord(player, won);
+  if (record) recordRoleGame(userId, record);
+}

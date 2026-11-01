@@ -17,6 +17,25 @@
 
 import { RANDOM_COLOR_SQL } from "../game/wizard/strongColor.js";
 
+// Roles mode: one row per player and role, made the first time a game with
+// that role counts. Only counts are kept; the seal levels are worked out from
+// them in code, so they can change without touching the data. Deleting a
+// player deletes their rows.
+const ROLE_PROGRESS_TABLE = `
+  CREATE TABLE IF NOT EXISTS role_progress (
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    role TEXT NOT NULL,
+    -- Finished games that counted, played with this role, and those won.
+    games INTEGER NOT NULL DEFAULT 0,
+    wins INTEGER NOT NULL DEFAULT 0,
+    -- How often the role's power was used in them.
+    power_uses INTEGER NOT NULL DEFAULT 0,
+    -- The points the role's own power brought them, less what it cost them.
+    role_points INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (user_id, role)
+  )
+`;
+
 interface Statement {
   run(...params: unknown[]): { changes: number | bigint; lastInsertRowid: number | bigint };
   get(...params: unknown[]): unknown;
@@ -328,6 +347,14 @@ const MIGRATIONS: Migration[] = [
           ADD COLUMN role TEXT
         `);
       }
+    },
+  },
+  {
+    version: 17,
+    description: "role_progress: each player's record with each Roles role",
+    up(db) {
+      // What fills the Profile's role seals (modes/roles/roleProgress.ts).
+      db.exec(ROLE_PROGRESS_TABLE);
     },
   },
 ];

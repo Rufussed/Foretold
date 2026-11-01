@@ -1,6 +1,7 @@
 import db, { transaction } from "../../../db/database.js";
 import { isBotName } from "../models/bot.js";
 import { fullRoundCount } from "../models/rounds.js";
+import { recordRoleProgress } from "../modes/roles/roleProgress.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { playerOpponentRepository } from "./playerOpponentRepository.js";
 import { playerStatsRepository } from "./playerStatsRepository.js";
@@ -120,6 +121,8 @@ class WizardGameCompletionService {
             roomPlayer.userId,
             player.colorTricks ?? {},
           );
+          // Roles mode: the Profile's seals (modes/roles/roleProgress.ts).
+          recordRoleProgress(game, player, roomPlayer.userId, winner?.username === player.username);
         }
 
         for (const opponent of game.players) {

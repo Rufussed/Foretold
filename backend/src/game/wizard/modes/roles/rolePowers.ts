@@ -15,6 +15,7 @@ import { bringsPeace, PEACE_POINTS, peaceTribute, stoppedBy, TAX_POINTS, taxIn }
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
 import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
 import { trickRolesIn } from "./master/trickRoles.js";
+import { countPowerUses } from "./powerSeal.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
 import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
@@ -462,6 +463,7 @@ function applyTax(game: WizardGameState, winner: GamePlayer): RoleAction[] {
 // cost, straight onto the scores.
 export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
   const trick = game.currentTrick;
+  countPowerUses(game, winner.username, rolesOf(game));
 
   // A colour Wizard who won with the Wizard of their colour: the King's
   // peace does not stop it.

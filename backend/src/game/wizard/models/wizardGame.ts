@@ -53,6 +53,10 @@ export interface GamePlayer {
   // This round's points from roles' powers so far, by role; already added to
   // score, and moved into the round's RoundScore when it ends.
   roleBonuses?: Partial<Record<RoleId, number>>;
+  // In a Roles game, how often their own role's power was used this game,
+  // for the Profile's seals (modes/roles/powerSeal.ts). Missing until the
+  // first use.
+  powerUses?: number;
   // Set when the player left for good, by choice or after missing three turns
   // in a row: the server plays their seat from then on (playerQuit.ts).
   quit?: boolean;

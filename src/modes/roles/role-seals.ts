@@ -1,31 +1,9 @@
 import * as THREE from "three";
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
-import { isWizard, type Suit } from "../../../backend/src/game/wizard/models/card";
-import { rolePowerOn } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { powerSealAt } from "../../../backend/src/game/wizard/modes/roles/powerSeal";
 import type { RoleId } from "../../../backend/src/game/wizard/modes/roles/roles";
-import { isGreenCard } from "../../../backend/src/game/wizard/modes/roles/master/greenWizard";
-import { isOwnWizardCard, isColourWizard } from "../../../backend/src/game/wizard/modes/roles/master/colourWizards";
-import { trickRolesOf } from "../../../backend/src/game/wizard/modes/roles/master/trickRoles";
-import { WizardRules } from "../../../backend/src/game/wizard/services/wizardRules";
 import { cardKey } from "../../visualizer/card-textures";
-import farmer from "../../assets/role-seals/seal-power-farmer.png";
-import fisher from "../../assets/role-seals/seal-power-fisher.png";
-import merchant from "../../assets/role-seals/seal-power-merchant.png";
-import priest from "../../assets/role-seals/seal-power-priest.png";
-import servant from "../../assets/role-seals/seal-power-servant.png";
-import shepherd from "../../assets/role-seals/seal-power-shepherd.png";
-import smith from "../../assets/role-seals/seal-power-smith.png";
-import thief from "../../assets/role-seals/seal-power-thief.png";
-import warrior from "../../assets/role-seals/seal-power-warrior.png";
-import gambler from "../../assets/role-seals/seal-power-gambler.png";
-import duke from "../../assets/role-seals/seal-power-duke.png";
-import prophet from "../../assets/role-seals/seal-power-prophet.png";
-import king from "../../assets/role-seals/seal-power-king.png";
-import blue from "../../assets/role-seals/seal-colour-blue.png";
-import green from "../../assets/role-seals/seal-colour-green.png";
-import red from "../../assets/role-seals/seal-colour-red.png";
-import yellow from "../../assets/role-seals/seal-colour-yellow.png";
-import joker from "../../assets/role-seals/seal-master-joker.png";
+import { roleSealUrl } from "./seal-urls";
 import coinPay from "../../assets/role-seals/coin-pay.png";
 import coinGet from "../../assets/role-seals/coin-get.png";
 
@@ -59,46 +37,12 @@ export const ROLE_SEALS = {
   popSeconds: 0.35,
 };
 
-const URLS: Partial<Record<RoleId, string>> = {
-  thief, servant, fisher, farmer, shepherd, smith, merchant, priest, warrior, gambler, duke, prophet, king,
-  blueWizard: blue, greenWizard: green, yellowWizard: yellow, redWizard: red, joker,
-};
-
-// A role's seal picture, for the HUD's lists (hud/table-roles.ts).
-export const roleSealUrl = (role: RoleId): string | undefined => URLS[role];
-
-const rules = new WizardRules();
-
-// The role whose seal goes on the card at this place in the trick, if any.
+// The role whose seal goes on the card at this place in the trick, if any
+// (the backend's powerSeal.ts, which also counts it for the Profile).
 function sealAt(state: PublicWizardGameState, index: number): RoleId | null {
-  const playedCards = state.currentTrick.playedCards;
-  const played = playedCards[index];
   const roleOf = (username: string) =>
     state.players.find((player) => player.username === username)?.role ?? undefined;
-  const role = played && roleOf(played.playedBy ?? played.username);
-  if (!played || !role) return null;
-  // A Joker's card played though holding the suit led.
-  if (role === "joker") return played.freePlay ? role : null;
-
-  if (!isColourWizard(role)) {
-    return rolePowerOn(playedCards, index, state.trumpSuit, roleOf) ? role : null;
-  }
-
-  const roles = trickRolesOf(roleOf);
-  const before = playedCards.slice(0, index);
-  const upTo = playedCards.slice(0, index + 1);
-  const trump: Suit | null = state.trumpSuit;
-  const won = state.currentTrick.winnerUsername === played.username && isWizard(played.card);
-  if (won && isOwnWizardCard(role, played.card)) return role;
-  if (role === "greenWizard") return isGreenCard(played.card) ? role : null;
-  if (role === "yellowWizard") {
-    const turned = rules.getLeadSuit(before, trump, roles) !== "Yellow" && rules.getLeadSuit(upTo, trump, roles) === "Yellow";
-    return before.length > 0 && turned ? role : null;
-  }
-  if (role === "redWizard") {
-    return !rules.redShield(before, trump, roles) && rules.redShield(upTo, trump, roles) ? role : null;
-  }
-  return null;
+  return powerSealAt(state.currentTrick.playedCards, index, state.trumpSuit, roleOf, state.currentTrick.winnerUsername);
 }
 
 // A card's badge: one at a time, the most telling one.
@@ -231,7 +175,7 @@ export function createRoleSeals(options: RoleSealOptions): RoleSeals {
 
   const build = (badge: Badge): { layers: THREE.Sprite[]; share: number } | null => {
     if (badge.kind === "seal") {
-      const url = URLS[badge.role];
+      const url = roleSealUrl(badge.role);
       return url ? { layers: [layer(textureFor(url), 12)], share: ROLE_SEALS.widthShare } : null;
     }
     const text = badge.points > 0 ? `+${badge.points}` : `\u2212${-badge.points}`;
