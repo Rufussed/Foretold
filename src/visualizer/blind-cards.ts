@@ -28,6 +28,8 @@ export interface BlindCards {
   setLocalHovered(hovered: boolean): void;
   // Your card's world position, while it's showing.
   localPosition(): THREE.Vector3 | null;
+  // Your own card, while you hold it (a Roles Blue Wizard tints it).
+  localCard(): CardObject | null;
   // Dragging your card: it follows the pointer until it is dropped, then
   // either goes back (endDrag) or stays put while the play is sent (play).
   startDrag(): void;
@@ -146,6 +148,11 @@ export function createBlindCards(factory: CardFactory, placements: BlindPlacemen
     setLocalHovered(hovered) {
       const entry = held.get("local");
       if (entry) entry.object.outline.visible = hovered && entry.object.object.visible;
+    },
+
+    localCard() {
+      const entry = held.get("local");
+      return entry?.holding ? entry.object : null;
     },
 
     localPosition() {

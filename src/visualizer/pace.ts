@@ -1,4 +1,4 @@
-import { GAMEPLAY_PACE, clampPace } from "../../backend/src/game/wizard/gameplayPace";
+import { GAMEPLAY_PACE, clampPace, unhurried as unhurriedAt } from "../../backend/src/game/wizard/gameplayPace";
 
 // The pace of the game being watched. The server chooses it in room setup and
 // sends it with every snapshot, so both sides scale the same beats by the same
@@ -30,3 +30,7 @@ export const pace = (): number => overridden() ?? current;
 // A duration written at the default pace, in seconds, at the current pace.
 // Every gameplay beat in the visualiser goes through this.
 export const paced = (seconds: number): number => seconds / pace();
+
+// The same, but never faster than the default pace, for what players must be
+// able to follow however fast the game runs: a role's power at work.
+export const unhurried = (seconds: number): number => unhurriedAt(seconds, pace());

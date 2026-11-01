@@ -1,0 +1,140 @@
+/* A Sabotage game (modes/sabotage/): pages/Visualizer.ts puts .is-sabotage on
+   the game page, so none of this reaches a Classic or Roles table. Rufus's
+   styles from the foretold branch. */
+
+/* Seer / Trickster prompt: the same buttons as the prediction prompt, for the
+   numbers on offer and for the players the Trickster can change. */
+.is-sabotage .power-targets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.is-sabotage .power-targets:empty,
+.is-sabotage .power-actions:empty,
+.is-sabotage .prediction-options:empty {
+  display: none;
+}
+
+.is-sabotage .power-targets button,
+.is-sabotage .power-actions button {
+  padding: 10px 14px;
+  color: rgba(244, 235, 217, 0.9);
+  background: rgba(10, 10, 8, 0.45);
+  border: 1px solid rgba(191, 125, 47, 0.32);
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.is-sabotage .power-targets button:hover:not(:disabled),
+.is-sabotage .power-actions button:hover:not(:disabled) {
+  color: #fff;
+  background: rgba(191, 125, 47, 0.12);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+.is-sabotage .power-actions {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.is-sabotage .power-actions button {
+  padding: 6px 12px;
+  font-size: 13px;
+  color: rgba(244, 235, 217, 0.62);
+}
+
+/* The number already held: choosing it changes nothing. */
+.is-sabotage .prediction-options button.is-current {
+  border-style: dashed;
+}
+
+/* The trump chooser: the element's icon on a dark card, ringed in the
+   element's colour (set in modes/sabotage/sabotage-trump.ts). */
+.is-sabotage .trump-swatch {
+  display: grid;
+  place-items: center;
+  background: #0e0d0a;
+}
+
+.is-sabotage .trump-swatch img {
+  width: 70%;
+  height: auto;
+}
+
+/* A prediction changed by a Seer or Trickster: the number swells by 60% and
+   flashes for a second, then settles back. */
+.is-sabotage .hud-stat-value {
+  /* So it can be scaled: a transform has no effect on an inline box. */
+  display: inline-block;
+}
+
+.is-sabotage .hud-stat-value.is-flashing {
+  animation:
+    stat-swell 1s ease-out,
+    stat-flash 1s linear;
+}
+
+@keyframes stat-swell {
+  0% {
+    transform: scale(1);
+  }
+  12% {
+    transform: scale(1.6);
+  }
+  85% {
+    transform: scale(1.6);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes stat-flash {
+  0%,
+  40%,
+  80%,
+  100% {
+    filter: none;
+  }
+  20%,
+  60% {
+    filter: brightness(2.4) drop-shadow(0 0 6px #fff);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .is-sabotage .hud-stat-value.is-flashing {
+    animation: stat-flash 1s linear;
+  }
+}
+
+/* The trump announcement: the border in the suit's element colour (red is
+   fire, green earth, blue water, yellow air). */
+.is-sabotage .hud-announcer[data-suit="red"] {
+  --border-mid: #e92223;
+  --border-glow: rgb(233 34 35 / 35%);
+}
+
+.is-sabotage .hud-announcer[data-suit="green"] {
+  --border-dark: #1c4a20;
+  --border-mid: #4ca450;
+  --border-glow: rgb(76 164 80 / 35%);
+}
+
+.is-sabotage .hud-announcer[data-suit="blue"] {
+  --border-dark: #0a3f73;
+  --border-mid: #018bf6;
+  --border-glow: rgb(1 139 246 / 35%);
+}
+
+.is-sabotage .hud-announcer[data-suit="yellow"] {
+  --border-dark: #6e6448;
+  --border-mid: #e2c98a;
+  --border-glint: #fffaf0;
+  --border-glow: rgb(243 230 196 / 35%);
+}

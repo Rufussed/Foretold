@@ -223,6 +223,24 @@
   text-overflow: ellipsis;
 }
 
+/* A power used in this trick (see player-list.ts flashRole): the role line
+   lit gold, red when it hit you, until the trick is cleared, like the label
+   above a head. */
+.hud-opponent .hud-opponent-face figcaption.has-role span:first-child {
+  transition: color 0.6s ease-out, text-shadow 0.6s ease-out;
+}
+
+.hud-opponent .hud-opponent-face figcaption.is-role-flash span:first-child {
+  color: rgb(255 214 90);
+  text-shadow: 0 0 6px rgb(255 196 64 / 90%);
+  transition: none;
+}
+
+.hud-opponent .hud-opponent-face figcaption.is-role-flash.is-role-hit span:first-child {
+  color: rgb(255 80 70);
+  text-shadow: 0 0 6px rgb(255 60 50 / 90%);
+}
+
 .hud-opponent .hud-stat-label {
   font-size: 10px;
 }
@@ -579,6 +597,66 @@
   --border-mid: #ffd54f;
   --border-glint: #fff3b0;
   --border-glow: rgb(255 196 64 / 35%);
+}
+
+/* A role's power that hit you (is-loss) or paid you, used by someone else
+   (see hud/announcer.ts): a red or green box with a border and glow of its
+   own colour, a little larger, "Against you" or "For you" over the text, and
+   for a loss a short shake once it has sprung in. */
+.visualizer-page .hud-announcer.is-about-you {
+  --border-dark: #14501f;
+  --border-mid: #43d05a;
+  --border-glint: #d6ffd0;
+  --border-glow: rgb(67 208 90 / 70%);
+  font-size: 19px;
+  background: linear-gradient(rgb(30 130 55 / 75%), rgb(20 90 40 / 85%));
+}
+
+.visualizer-page .hud-announcer.is-about-you.is-loss {
+  --border-dark: #6b1414;
+  --border-mid: #ff4a3d;
+  --border-glint: #ffc9c4;
+  --border-glow: rgb(255 60 50 / 75%);
+  background: linear-gradient(rgb(170 30 30 / 80%), rgb(110 15 15 / 88%));
+}
+
+.visualizer-page .hud-announcer.is-about-you.is-ingame {
+  box-shadow:
+    0 0 22px 4px var(--border-glow),
+    var(--announcer-shadow);
+}
+
+.hud-announcer-tag {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #fff;
+  opacity: 0.85;
+}
+
+.hud-announcer-tag[hidden] {
+  display: none;
+}
+
+.visualizer-page .hud-announcer.is-about-you.is-loss.is-popping {
+  animation:
+    hud-announcer-pop 0.45s cubic-bezier(0.34, 1.2, 0.5, 1) both,
+    hud-announcer-shake 0.4s ease-in-out 0.45s;
+}
+
+@keyframes hud-announcer-shake {
+  0%, 100% { translate: 0; }
+  20% { translate: -6px; }
+  40% { translate: 6px; }
+  60% { translate: -4px; }
+  80% { translate: 3px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .hud-announcer.is-about-you.is-loss.is-popping {
+    animation: none;
+  }
 }
 
 .visualizer-page .hud-announcer.is-ingame {
@@ -957,4 +1035,106 @@
    in the table's player list dims (visualizer/hud/player-list.ts). */
 .hud-opponent.has-quit .hud-opponent-face {
   opacity: 0.45;
+}
+
+/* Roles mode only: under the trick's raised cards while a Fisher or a Thief
+   picks one, what to do (modes/roles/mechanics/trick-pick.ts, which places
+   it). Gold on the HUD's dark box, gently pulsing so it catches the eye. */
+.visualizer-page .trick-pick-label {
+  position: absolute;
+  z-index: 4;
+  margin: 0;
+  padding: 6px 16px;
+  color: #ffd54f;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  pointer-events: none;
+  background: var(--ui-bg);
+  border: 1px solid rgba(255, 213, 79, 0.6);
+  border-radius: 4px;
+  box-shadow: 0 0 12px rgb(255 196 64 / 35%);
+  backdrop-filter: var(--ui-blur);
+  transform: translateX(-50%);
+  animation: trick-pick-pulse 1.6s ease-in-out infinite;
+}
+
+.visualizer-page .trick-pick-label[hidden] {
+  display: none;
+}
+
+/* The Duke's "Keep it", beside the label: the one part of it to click. */
+.visualizer-page .trick-pick-action {
+  margin-left: 14px;
+  padding: 4px 12px;
+  color: rgba(244, 235, 217, 0.95);
+  font: inherit;
+  font-size: 15px;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  cursor: pointer;
+  pointer-events: auto;
+  background: rgba(191, 125, 47, 0.25);
+  border: 1px solid rgba(244, 235, 217, 0.5);
+  border-radius: 4px;
+}
+
+.visualizer-page .trick-pick-action:hover {
+  background: rgba(191, 125, 47, 0.5);
+}
+
+.visualizer-page .trick-pick-action[hidden] {
+  display: none;
+}
+
+@keyframes trick-pick-pulse {
+  0%, 100% { box-shadow: 0 0 8px rgb(255 196 64 / 25%); }
+  50% { box-shadow: 0 0 18px rgb(255 196 64 / 60%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visualizer-page .trick-pick-label {
+    animation: none;
+  }
+}
+
+/* Roles mode only: a Gambler's choice under the 10 being played, "Bet" or
+   "Don't bet" (modes/roles/mechanics/bet-pick.ts, which places it). */
+.visualizer-page .bet-pick {
+  position: absolute;
+  z-index: 6;
+  display: flex;
+  gap: 10px;
+  transform: translateX(-50%);
+}
+
+.visualizer-page .bet-pick[hidden] {
+  display: none;
+}
+
+.visualizer-page .bet-pick button {
+  padding: 8px 18px;
+  color: rgba(244, 235, 217, 0.95);
+  font: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  background: var(--ui-bg);
+  border: 1px solid rgba(244, 235, 217, 0.4);
+  border-radius: 4px;
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .bet-pick .bet-pick-yes {
+  color: #ffd54f;
+  border-color: rgba(255, 213, 79, 0.7);
+  box-shadow: 0 0 12px rgb(255 196 64 / 40%);
+}
+
+.visualizer-page .bet-pick button:hover {
+  background: rgba(191, 125, 47, 0.25);
 }

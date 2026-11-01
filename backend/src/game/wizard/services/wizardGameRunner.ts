@@ -2,15 +2,18 @@ import { WizardBotService } from "./wizardBotService.js";
 import { WizardGameService } from "./wizardGameService.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
 import { WIZARD_TIMING } from "../wizardTiming.js";
-import { clampPace, paced } from "../gameplayPace.js";
+import { clampPace, paced, unhurried } from "../gameplayPace.js";
 import { wizardGameCompletionService } from "./wizardGameCompletionService.js";
 import { isPlayedByServer, recordMissedTurn } from "./playerQuit.js";
 import { isBotName } from "../models/bot.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { FISHING_TIMEOUT_MS } from "../modes/roles/fisher.js";
-import { botFishingSpot, randomFishingSpot } from "../modes/roles/rolePowers.js";
+import { GRANT_TIMEOUT_MS } from "../modes/roles/duke.js";
+import { botFishingSpot, botGrantTo, randomFishingSpot } from "../modes/roles/rolePowers.js";
+import { beginPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
+import { runSabotagePowerDecision } from "../modes/sabotage/powerDecision.js";
 
-// One Fisher's choice in one trick: changes once they have fished.
+// One Fisher's or Duke's choice in one trick: changes once they have chosen.
 const fishingKey = (game: WizardGameState): string =>
   [
     game.phase,
@@ -82,14 +85,42 @@ export class WizardGameRunner {
             game.players.length
         ) {
           // Keep the completed trick visible briefly before clearing it and
-          // moving the winner into the lead position.
-          await this.wait(WIZARD_TIMING.trickHoldMs, pace);
+          // moving the winner into the lead position. In Sabotage a trick won
+          // with a Seer, Trickster or Thief is held for its winner's power
+          // first; once that has been used, only a short hold is left.
+          const power = game.currentTrick.sabotagePower;
+          await this.wait(
+            power?.resolved
+              ? power.kind === "thief" && power.target
+                ? WIZARD_TIMING.afterThiefHoldMs
+                : WIZARD_TIMING.afterPowerHoldMs
+              : WIZARD_TIMING.trickHoldMs,
+            pace,
+          );
+          // Roles: each power at work in the trick gets its time on the
+          // table at any speed.
+          const roleActions = game.currentTrick.roleActions?.length ?? 0;
+          if (roleActions) {
+            await this.waitUnhurried(roleActions * WIZARD_TIMING.roleActionHoldMs, pace);
+          }
 
           const currentGame =
             wizardSessionManager.getGame(roomId);
 
           if (!currentGame) {
             return;
+          }
+
+          if (hasPendingPower(currentGame)) {
+            // The winner chooses next: the same turn machinery as any move,
+            // with the winner already the current player.
+            beginPower(currentGame);
+            currentGame.turnDeadlineAt = null;
+            wizardSessionManager.saveGame(currentGame);
+            this.broadcast(roomId);
+
+            await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+            continue;
           }
 
           this.gameService.advanceAfterTrick(currentGame);
@@ -101,7 +132,7 @@ export class WizardGameRunner {
           continue;
         }
 
-        if (game.phase === "fishing") {
+        if (game.phase === "fishing" || game.phase === "granting") {
           await this.runFishing(roomId, game, pace);
           continue;
         }
@@ -229,6 +260,30 @@ export class WizardGameRunner {
         // decision so the next turn can receive its own deadline.
         
         // --------------------------------------------------
+        // SABOTAGE POWER (modes/sabotage/powerDecision.ts)
+        // --------------------------------------------------
+
+        if (decisionGame.phase === "power") {
+          // A bot is seen to think about it; a human whose time ran out
+          // leaves it alone.
+          if (!timedOutHuman) {
+            await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
+          }
+
+          await runSabotagePowerDecision({
+            roomId,
+            decisionPlayer: decisionPlayer.username,
+            deadline: decisionGame.turnDeadlineAt,
+            timedOutHuman,
+            broadcast: () => this.broadcast(roomId),
+            wait: (milliseconds) => this.wait(milliseconds, pace),
+          });
+
+          await this.wait(WIZARD_TIMING.afterMoveMs, pace);
+          continue;
+        }
+
+        // --------------------------------------------------
         // BOT TRUMP SELECTION
         if (decisionGame.phase === "trump-selection") {
           // Pause first, so every player sees who is choosing, then make sure
@@ -333,6 +388,7 @@ export class WizardGameRunner {
             cardIndex,
             !isBotName(decisionPlayer.username),
             this.botService.chooseStealSpot(currentGame, cardIndex),
+            this.botService.chooseBet(currentGame, cardIndex),
           );
 
           currentGame.turnDeadlineAt = null;
@@ -350,10 +406,12 @@ export class WizardGameRunner {
     }
 }
 
-  // A Fisher choosing a card from a complete trick (modes/roles/fisher.ts).
+  // A Fisher choosing a card from a complete trick (modes/roles/fisher.ts),
+  // or a Duke keeping or granting the trick their 11 won (modes/roles/duke.ts).
   // A bot, or a seat the server plays, chooses after a moment. A human has
-  // FISHING_TIMEOUT_MS, whatever the room's turn timer, and then a card is
-  // picked for them at random; that is no missed turn.
+  // FISHING_TIMEOUT_MS or GRANT_TIMEOUT_MS, whatever the room's turn timer,
+  // and then a card is picked for them at random, or the trick is kept; that
+  // is no missed turn.
   private async runFishing(
     roomId: number,
     game: WizardGameState,
@@ -372,7 +430,7 @@ export class WizardGameRunner {
       await this.wait(WIZARD_TIMING.botTrumpDelayMs, pace);
     } else {
       if (game.turnDeadlineAt === null) {
-        game.turnDeadlineAt = Date.now() + FISHING_TIMEOUT_MS;
+        game.turnDeadlineAt = Date.now() + (game.phase === "granting" ? GRANT_TIMEOUT_MS : FISHING_TIMEOUT_MS);
         wizardSessionManager.saveGame(game);
         this.broadcast(roomId);
       }
@@ -393,11 +451,15 @@ export class WizardGameRunner {
       return;
     }
 
-    const spot = byServer
-      ? botFishingSpot(current)
-      : randomFishingSpot(current);
+    if (current.phase === "granting") {
+      this.gameService.grantTrick(current, fisher.username, byServer ? botGrantTo(current) : null);
+    } else {
+      const spot = byServer
+        ? botFishingSpot(current)
+        : randomFishingSpot(current);
 
-    this.gameService.fishCard(current, fisher.username, spot);
+      this.gameService.fishCard(current, fisher.username, spot);
+    }
 
     current.turnDeadlineAt = null;
     wizardSessionManager.saveGame(current);
@@ -445,6 +507,14 @@ export class WizardGameRunner {
   private wait(milliseconds: number, pace: number): Promise<void> {
     return new Promise((resolve) => {
       setTimeout(resolve, paced(milliseconds, pace));
+    });
+  }
+
+  // The same, but never shorter than at the default pace: for what players
+  // must be able to follow at any speed.
+  private waitUnhurried(milliseconds: number, pace: number): Promise<void> {
+    return new Promise((resolve) => {
+      setTimeout(resolve, unhurried(milliseconds, pace));
     });
   }
 }

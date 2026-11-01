@@ -4,13 +4,21 @@ import type { GamePlayer, PlayedCard, WizardGameState } from "../../models/wizar
 import { WizardRules } from "../../services/wizardRules.js";
 import { harvest, plant, plantedBy } from "./farmer.js";
 import { MARKET_POINTS, marketsIn, trades } from "./merchant.js";
-import { botCatch, CATCH_POINTS, fish, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
-import { playerOf, swapLastTwo, type RoleOf } from "./rolePlay.js";
+import { botCatch, CATCH_POINTS, fish, MISS_POINTS, fishingSpots, nextFisher, randomCatch } from "./fisher.js";
+import { ALMS_POINTS, FAITH_POINTS, poorFor, priestsIn, royalsFor } from "./priest.js";
+import { battlesIn, PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
+import { BET_LOSS_POINTS, BET_WIN_POINTS, betsIn, LUCKY_POINTS, luckIn } from "./gambler.js";
+import { FORESIGHT_POINTS, foresightsIn } from "./prophet.js";
+import { botGrant, dukeWinning, GRANT_POINTS, KEEP_POINTS } from "./duke.js";
+import { kingsPeace, playerOf, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
+import { bringsPeace, PEACE_POINTS, peaceTribute, stoppedBy, TAX_POINTS, taxIn } from "./king.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
+import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
+import { trickRolesIn } from "./master/trickRoles.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
 import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
-import type { RoleAction, RoleId } from "./roles.js";
+import { roleCard, type RoleAction, type RoleId } from "./roles.js";
 
 const rules = new WizardRules();
 
@@ -75,6 +83,11 @@ function bounce(game: WizardGameState, action: RoleAction): void {
 export function applyRolePowers(game: WizardGameState, stealSpot?: number): void {
   const trick = game.currentTrick;
   const roleOf = rolesOf(game);
+
+  if (bringsPeace(trick.playedCards, trick.playedCards.length - 1, game.trumpSuit, roleOf)) {
+    applyPeace(game);
+    return;
+  }
   const action = playPower(trick.playedCards, game.trumpSuit, roleOf, stealSpot, armorOf(game));
 
   if (action) {
@@ -93,6 +106,54 @@ export function applyRolePowers(game: WizardGameState, stealSpot?: number): void
   }
 
   applyForging(game);
+}
+
+// A King's trump 13 just played: every power already used in the trick is
+// undone, latest first, and the peace is told, with whom it stopped.
+function applyPeace(game: WizardGameState): void {
+  const trick = game.currentTrick;
+  const playedCards = trick.playedCards;
+  const thirteen = playedCards.at(-1)!;
+  const king = playerOf(thirteen);
+  const named = (username: string) => game.players.find((player) => player.username === username);
+  const sameCard = (played: PlayedCard, action: RoleAction) =>
+    played.card.suit === action.card.suit && played.card.value === action.card.value;
+
+  for (const action of [...(trick.roleActions ?? [])].reverse()) {
+    if (action.undone) continue;
+    action.undone = true;
+
+    if (action.role === "thief" || action.role === "servant") {
+      // The card taken or received goes back for the role's own card.
+      const taken = playedCards.find((played) => sameCard(played, action));
+      const own = playedCards.find((played) =>
+        playerOf(played) === action.by && played.card.value === roleCard(action.role));
+      if (taken && own) swapOwners(taken, own);
+      const by = named(action.by);
+      const on = named(action.on);
+      if (by && on && action.points) {
+        addBonus(by, action.role, -action.points);
+        addBonus(on, action.role, action.points);
+      }
+    } else if (action.role === "smith") {
+      const smith = named(action.by);
+      if (smith && action.points === undefined) {
+        // Armour forged with a 6 goes again.
+        smith.armor = Math.max(0, (smith.armor ?? 0) - 1);
+      } else if (smith) {
+        // A block: the piece comes back, and the points go back.
+        smith.armor = (smith.armor ?? 0) + 1;
+        const attacker = named(action.on);
+        if (attacker && action.points) {
+          addBonus(smith, "smith", -action.points);
+          addBonus(attacker, "smith", action.points);
+        }
+      }
+    }
+  }
+
+  const stopped = stoppedBy(playedCards, playedCards.length - 1, game.trumpSuit, rolesOf(game));
+  trick.roleActions = [...(trick.roleActions ?? []), { role: "king", by: king, on: king, card: thirteen.card, stopped }];
 }
 
 // A Smith's 6 just played, with its power on: a piece of armour, if they
@@ -190,7 +251,8 @@ function applyShepherding(game: WizardGameState, winner: GamePlayer): RoleAction
 // The Merchants' markets at the end of a trick, once every swap is done.
 // Whoever sells pays the Merchant, never more than they have; the Merchant
 // pays whoever buys in full, even below 0. A Smith in armour who would pay
-// uses up a piece instead, and nothing moves.
+// uses up a piece instead: the trade does not happen, and the Merchant pays
+// the Smith BLOCK_POINTS for the block.
 function applyMarkets(game: WizardGameState): RoleAction[] {
   const actions: RoleAction[] = [];
   const trick = game.currentTrick;
@@ -200,7 +262,7 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
     const done: { player: string; points: number }[] = [];
     const blocks: RoleAction[] = [];
 
-    for (const trade of trades(trick.playedCards, merchant, game.trumpSuit)) {
+    for (const trade of trades(trick.playedCards, merchant, game.trumpSuit, trickRolesIn(game))) {
       if (!trade.sells) {
         const buyer = playerNamed(merchant);
         const seller = playerNamed(trade.player);
@@ -211,8 +273,9 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
         done.push({ player: trade.player, points: -MARKET_POINTS });
       } else if (armorOf(game)(trade.player)) {
         block(playerNamed(trade.player));
-        // A block that bounces nothing back.
-        blocks.push({ role: "smith", by: trade.player, on: merchant, card: trade.card, points: 0 });
+        // The trade does not happen, and the Merchant pays for the block.
+        const bounced = movePoints(game, merchant, trade.player, "smith", BLOCK_POINTS);
+        blocks.push({ role: "smith", by: trade.player, on: merchant, card: trade.card, points: bounced });
       } else {
         done.push({ player: trade.player, points: movePoints(game, trade.player, merchant, "merchant", MARKET_POINTS) });
       }
@@ -228,26 +291,290 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
   return actions;
 }
 
+// The Priests' faith at the end of a trick, once every swap is done: every
+// royal card in it pays the Priest, never more than its player has. A Smith
+// in armour uses up a piece instead, and the Priest pays them for the block,
+// as at a market. A Priest whose 8 won the trick then feeds the poor: every
+// card under 8 is paid in full, even if that takes the Priest below 0.
+function applyFaith(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+
+  for (const { priest, card } of priestsIn(trick.playedCards, game.trumpSuit, rolesOf(game))) {
+    const paid: { player: string; points: number }[] = [];
+    const blocks: RoleAction[] = [];
+
+    for (const royal of royalsFor(trick.playedCards, priest)) {
+      if (armorOf(game)(royal.player)) {
+        block(game.players.find((player) => player.username === royal.player));
+        const bounced = movePoints(game, priest, royal.player, "smith", BLOCK_POINTS);
+        blocks.push({ role: "smith", by: royal.player, on: priest, card: royal.card, points: bounced });
+      } else {
+        paid.push({ player: royal.player, points: movePoints(game, royal.player, priest, "priest", FAITH_POINTS) });
+      }
+    }
+
+    const giver = game.players.find((player) => player.username === priest);
+    for (const poor of poorFor(trick.playedCards, priest, winner.username)) {
+      const fed = game.players.find((player) => player.username === poor.player);
+      if (giver && fed) {
+        addBonus(fed, "priest", ALMS_POINTS);
+        addBonus(giver, "priest", -ALMS_POINTS);
+      }
+      paid.push({ player: poor.player, points: -ALMS_POINTS });
+    }
+
+    if (paid.length) {
+      const points = paid.reduce((sum, faith) => sum + faith.points, 0);
+      actions.push({ role: "priest", by: priest, on: priest, card, points, trades: paid });
+    }
+    actions.push(...blocks);
+  }
+
+  return actions;
+}
+
+// The Warriors' battles at the end of a trick, once every swap is done. A
+// Warrior whose 9 won is paid by every other player, never more than they
+// have; a Smith in armour uses up a piece instead, and the Warrior pays them
+// for the block. A
+// Warrior whose trump 9 lost pays every other player in full, even if that
+// takes them below 0.
+function applyBattles(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+
+  for (const { warrior, card, won } of battlesIn(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username)) {
+    const paid: { player: string; points: number }[] = [];
+    const blocks: RoleAction[] = [];
+    const proud = game.players.find((player) => player.username === warrior);
+
+    for (const other of game.players) {
+      if (other.username === warrior) continue;
+      if (!won) {
+        if (proud) {
+          addBonus(other, "warrior", PRIDE_POINTS);
+          addBonus(proud, "warrior", -PRIDE_POINTS);
+        }
+        paid.push({ player: other.username, points: -PRIDE_POINTS });
+      } else if (armorOf(game)(other.username)) {
+        block(other);
+        const bounced = movePoints(game, warrior, other.username, "smith", BLOCK_POINTS);
+        blocks.push({ role: "smith", by: other.username, on: warrior, card, points: bounced });
+      } else {
+        paid.push({ player: other.username, points: movePoints(game, other.username, warrior, "warrior", VICTORY_POINTS) });
+      }
+    }
+
+    if (paid.length) {
+      const points = paid.reduce((sum, entry) => sum + entry.points, 0);
+      actions.push({ role: "warrior", by: warrior, on: warrior, card, points, trades: paid });
+    }
+    actions.push(...blocks);
+  }
+
+  return actions;
+}
+
+// The Gamblers' bets at the end of a trick. A 10 that won brings its Gambler
+// BET_WIN_POINTS; one that lost costs them BET_LOSS_POINTS, lost to the house
+// in full, even below 0. A 10 that won with no bet brings LUCKY_POINTS (an
+// action marked lucky). Either way the action is on the Gambler.
+function applyBets(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const actions: RoleAction[] = [];
+  const trick = game.currentTrick;
+
+  for (const { gambler, card, won } of betsIn(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username)) {
+    const player = game.players.find((candidate) => candidate.username === gambler);
+    if (!player) continue;
+    if (won) {
+      addBonus(player, "gambler", BET_WIN_POINTS);
+      actions.push({ role: "gambler", by: gambler, on: gambler, card, points: BET_WIN_POINTS });
+    } else {
+      addBonus(player, "gambler", -BET_LOSS_POINTS);
+      actions.push({ role: "gambler", by: gambler, on: gambler, card, points: -BET_LOSS_POINTS });
+    }
+  }
+  for (const { gambler, card } of luckIn(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username)) {
+    const player = game.players.find((candidate) => candidate.username === gambler);
+    if (!player) continue;
+    addBonus(player, "gambler", LUCKY_POINTS);
+    actions.push({ role: "gambler", by: gambler, on: gambler, card, points: LUCKY_POINTS, lucky: true });
+  }
+
+  return actions;
+}
+
+// The Prophets who kept their prediction and won the trick with their 12.
+function applyForesight(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const trick = game.currentTrick;
+
+  return foresightsIn(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username).map(({ prophet, card }) => {
+    addBonus(winner, "prophet", FORESIGHT_POINTS);
+    return { role: "prophet", by: prophet, on: prophet, card, points: FORESIGHT_POINTS };
+  });
+}
+
+// The tribute for the King's peace: every other player but the Priest pays
+// the King whose trump 13 won, never more than they have. No armour blocks
+// it: the peace stops the Smith too.
+function applyTribute(game: WizardGameState, winner: GamePlayer): void {
+  const trick = game.currentTrick;
+  const players = game.players.map((player) => player.username);
+  const tribute = peaceTribute(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username, players);
+  if (!tribute?.payers.length) return;
+
+  const paid = tribute.payers.map((player) => ({ player, points: movePoints(game, player, tribute.king, "king", PEACE_POINTS) }));
+  const points = paid.reduce((sum, entry) => sum + entry.points, 0);
+  trick.roleActions = [...(trick.roleActions ?? []), { role: "king", by: tribute.king, on: tribute.king, card: tribute.card, points, trades: paid }];
+}
+
+// The King's tax at the end of a trick his own 13 won, not as a trump:
+// every other card showing its seal pays him, never more than its player
+// has; the Priest pays none. A Smith in armour uses up a piece instead, and
+// the King pays them for the block.
+function applyTax(game: WizardGameState, winner: GamePlayer): RoleAction[] {
+  const tax = taxIn(game.currentTrick.playedCards, game.trumpSuit, rolesOf(game), winner.username);
+  if (!tax?.payers.length) return [];
+
+  const paid: { player: string; points: number }[] = [];
+  const blocks: RoleAction[] = [];
+
+  for (const { player, card } of tax.payers) {
+    if (armorOf(game)(player)) {
+      block(game.players.find((candidate) => candidate.username === player));
+      const bounced = movePoints(game, tax.king, player, "smith", BLOCK_POINTS);
+      blocks.push({ role: "smith", by: player, on: tax.king, card, points: bounced });
+    } else {
+      paid.push({ player, points: movePoints(game, player, tax.king, "king", TAX_POINTS) });
+    }
+  }
+
+  const actions: RoleAction[] = [];
+  if (paid.length) {
+    const points = paid.reduce((sum, entry) => sum + entry.points, 0);
+    actions.push({ role: "king", by: tax.king, on: tax.king, card: tax.card, points, trades: paid });
+  }
+  return [...actions, ...blocks];
+}
+
 // When a trick is won in a Roles game: what the powers used in it bring, or
 // cost, straight onto the scores.
 export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
   const trick = game.currentTrick;
 
+  // A colour Wizard who won with the Wizard of their colour: the King's
+  // peace does not stop it.
+  if (isColourWizard(winner.role)) addBonus(winner, winner.role, colourWizardBonus(trick, winner));
+
+  // Under the King's peace no other power works at the end of the trick;
+  // a King who won it with his trump 13 is paid his tribute.
+  if (kingsPeace(trick.playedCards, game.trumpSuit, rolesOf(game))) {
+    applyTribute(game, winner);
+    return;
+  }
+
   for (const served of tippers(trick.roleActions, winner.username)) {
     movePoints(game, served, winner.username, "servant", SERVANT_BONUS);
   }
-  // A Fisher's catch that won them the trick is paid for by the player fished.
+  // Every Fisher's catch is paid for by the player fished: in full when it
+  // won the Fisher the trick, less when it did not.
   for (const action of trick.roleActions ?? []) {
-    if (action.role === "fisher" && action.by === winner.username) {
-      action.points = movePoints(game, action.on, winner.username, "fisher", CATCH_POINTS);
+    if (action.role === "fisher") {
+      const points = action.by === winner.username ? CATCH_POINTS : MISS_POINTS;
+      action.points = movePoints(game, action.on, action.by, "fisher", points);
     }
   }
 
-  const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game)];
+  const atTrickEnd = [...applyFarming(game, winner), ...applyShepherding(game, winner), ...applyMarkets(game), ...applyFaith(game, winner), ...applyBattles(game, winner), ...applyBets(game, winner), ...applyForesight(game, winner), ...applyTax(game, winner)];
 
   if (atTrickEnd.length) {
     trick.roleActions = [...(trick.roleActions ?? []), ...atTrickEnd];
   }
+
+  applyGrant(game, winner);
+}
+
+// The Duke who won the complete trick with their own 11, if one did, before
+// it is resolved.
+function dukeOf(game: WizardGameState): PlayedCard | undefined {
+  const trick = game.currentTrick;
+  const winner = rules.determineTrickWinner(
+    trick.playedCards,
+    game.trumpSuit,
+    normalizeGameOptions(game.options).wizardWins,
+    trickRolesIn(game),
+  );
+
+  return winner ? dukeWinning(trick.playedCards, game.trumpSuit, rolesOf(game), winner) : undefined;
+}
+
+// When a Roles game's trick is complete and every Fisher has fished: if a
+// Duke's 11 wins it, the game waits for them to keep or grant it in the
+// granting phase, their move. False when there is nothing to choose.
+export function startGranting(game: WizardGameState): boolean {
+  const eleven = dukeOf(game);
+
+  if (!eleven || game.currentTrick.grantedTo !== undefined) {
+    return false;
+  }
+
+  game.phase = "granting";
+  game.currentPlayerIndex = game.players.findIndex((player) => player.username === eleven.username);
+
+  return true;
+}
+
+// The Duke whose move it is keeps the trick (to null) or grants it to this
+// player.
+export function applyGranting(game: WizardGameState, username: string, to: string | null): void {
+  if (game.phase !== "granting") {
+    throw new Error("Nothing to grant right now");
+  }
+  if (game.players[game.currentPlayerIndex]?.username !== username) {
+    throw new Error("It is not your turn to grant");
+  }
+  if (to !== null && (to === username || !game.players.some((player) => player.username === to))) {
+    throw new Error("That player cannot be granted the trick");
+  }
+
+  game.currentTrick.grantedTo = to;
+}
+
+// A bot's or a quit player's choice, as the bots see it.
+export function botGrantTo(game: WizardGameState): string | null {
+  const duke = game.players[game.currentPlayerIndex];
+
+  return duke ? botGrant(duke, game.players) : null;
+}
+
+// The Duke's choice settled, once the trick's powers are: kept, they earn
+// KEEP_POINTS; granted, the trick moves to the player chosen, whom the Duke
+// pays GRANT_POINTS in full.
+function applyGrant(game: WizardGameState, winner: GamePlayer): void {
+  const trick = game.currentTrick;
+  const to = trick.grantedTo;
+  const eleven = trick.playedCards.find((played) => played.username === winner.username);
+
+  if (to === undefined || !eleven) {
+    return;
+  }
+
+  const granted = to === null ? undefined : game.players.find((player) => player.username === to);
+  let action: RoleAction;
+
+  if (granted) {
+    winner.tricksWon -= 1;
+    granted.tricksWon += 1;
+    addBonus(winner, "duke", -GRANT_POINTS);
+    addBonus(granted, "duke", GRANT_POINTS);
+    action = { role: "duke", by: winner.username, on: granted.username, card: eleven.card, points: -GRANT_POINTS };
+  } else {
+    addBonus(winner, "duke", KEEP_POINTS);
+    action = { role: "duke", by: winner.username, on: winner.username, card: eleven.card, points: KEEP_POINTS };
+  }
+
+  trick.roleActions = [...(trick.roleActions ?? []), action];
 }
 
 // Once a Roles game's round is scored: each Farmer who made their prediction
@@ -346,7 +673,7 @@ export function botFishingSpot(game: WizardGameState): number {
 
     fish(copy, fisher?.username ?? "", spot);
 
-    return rules.determineTrickWinner(copy, game.trumpSuit, wizardWins) === fisher?.username;
+    return rules.determineTrickWinner(copy, game.trumpSuit, wizardWins, trickRolesIn(game)) === fisher?.username;
   };
   const wantsTricks = (fisher?.prediction ?? 0) > (fisher?.tricksWon ?? 0);
   // A Smith in armour would only block the catch.

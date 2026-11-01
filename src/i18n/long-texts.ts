@@ -597,6 +597,15 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
+      The role seals in Roles games are made from icons by Lorc,
+      Delapouite and Skoll, available on
+      <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
+      under the
+      <a href="https://creativecommons.org/licenses/by/3.0/" target="_blank" rel="noopener">CC BY 3.0</a>
+      licence, turned into wax seals for this game.
+    </p>
+
+    <p class="home-modal-copy">
       Your data: when you sign up we store your username, your email
       address and a hashed form of your password that nobody, including
       us, can turn back into the password. Other players only ever see your
@@ -631,6 +640,15 @@ const legal = {
       Verlagsrechte liegen bei den jeweiligen Entwicklern und Verlagen,
       darunter Mindscape und Starsphere Interactive. Wir beanspruchen
       keine Rechte an dieser Musik oder ihren Aufnahmen.
+    </p>
+
+    <p class="home-modal-copy">
+      Die Rollensiegel im Rollen-Modus beruhen auf Icons von Lorc,
+      Delapouite und Skoll, erhältlich auf
+      <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
+      unter der Lizenz
+      <a href="https://creativecommons.org/licenses/by/3.0/deed.de" target="_blank" rel="noopener">CC BY 3.0</a>,
+      für dieses Spiel zu Wachssiegeln verarbeitet.
     </p>
 
     <p class="home-modal-copy">
@@ -1073,7 +1091,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>For the host</h3>
         <p>
           The wizard who created the room sets up the game, starting
-          with which one: Classic or Roles. NPCs fill the
+          with which one: Classic, Roles or Sabotage. NPCs fill the
           empty seats, as a game needs 3 to 6 players; alone, you can give
           every seat to an NPC and watch. Choose how well they play, the
           rounds (a full game, or fewer for a short one), the game speed
@@ -1124,7 +1142,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>Für den Gastgeber</h3>
         <p>
           Wer den Raum erstellt hat, richtet die Partie ein, zuerst das
-          Spiel: Klassisch oder Rollen. NPCs füllen
+          Spiel: Klassisch, Rollen oder Sabotage. NPCs füllen
           die freien Plätze, denn eine Partie braucht 3 bis 6 Spieler;
           allein kannst du jeden Platz einem NPC geben und zuschauen.
           Wähle, wie gut sie spielen, die Runden (eine ganze Partie oder

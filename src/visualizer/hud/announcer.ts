@@ -1,12 +1,16 @@
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import { ANNOUNCER } from "../config";
-import { paced } from "../pace";
+import { paced, unhurried } from "../pace";
+import { t } from "../../i18n";
+import { createChimeSound } from "../chime-sound";
 import type { GameConnection } from "../game-connection";
 import { characterForPlayer, characterForUsername } from "../seat-mapping";
 import { announcedName, eventMessages, roundResults, statusMessage, statusSubject } from "./announcements";
+import { playLogLines } from "../../modes/roles/hud/role-announcements";
 import { createGameWinner } from "./game-winner";
 import { createResultsBoard, type ResultCard, type ResultsBoard } from "./round-results-board";
 import type { HudPart } from "./hud-part";
+import type { LogEntry } from "./event-log";
 
 export interface Announcer extends HudPart {
   // Shows this straight away, ahead of anything queued, for
@@ -44,6 +48,11 @@ interface Announcement {
   duringDeal?: boolean;
   // Also ends early as soon as the next card is played.
   untilNextPlay?: boolean;
+  // A Roles power at work: never shorter than at the default pace.
+  role?: boolean;
+  // A power that hit you (loss) or paid you (gain): its own look, a chime
+  // and ANNOUNCER.aboutYouExtraSeconds more.
+  aboutYou?: "gain" | "loss";
   onShow?: () => void;
 }
 
@@ -65,6 +74,14 @@ export interface AnnouncerOptions {
   seatOf?(username: string): number | null;
   // The table's width on screen, in pixels, which the seat offsets are a share of.
   tableWidthPx?(): number;
+  // An announcement that a player's prediction was changed (a Sabotage Seer
+  // or Trickster) has just come up: the list swaps in the new number now (see
+  // player-list.ts). byOther: another player's power changed it (a
+  // Trickster); source: whose power it was.
+  onPredictionChange?(username: string, byOther: boolean, source?: string): void;
+  // What just happened, for the log (event-log.ts), as each snapshot comes
+  // in: the cards played, then what the banners will say, in order.
+  onLog?(round: number, entries: LogEntry[]): void;
 }
 
 export function createAnnouncer(
@@ -77,9 +94,11 @@ export function createAnnouncer(
   banner.className = "hud-announcer";
   banner.setAttribute("role", "status");
   banner.hidden = true;
-  banner.innerHTML = `<p class="hud-announcer-text"></p>`;
+  banner.innerHTML = `<p class="hud-announcer-tag" hidden></p><p class="hud-announcer-text"></p>`;
   root.append(banner);
   const textEl = banner.querySelector<HTMLElement>(".hud-announcer-text")!;
+  // Over a power that hit or paid you: "Against you" or "For you".
+  const tagEl = banner.querySelector<HTMLElement>(".hud-announcer-tag")!;
   let board: ResultsBoard | null = null;
   // Game over: the winner's portrait under the announcement.
   let winner: { dispose(): void } | null = null;
@@ -92,6 +111,7 @@ export function createAnnouncer(
   // While a notice waits for the next play: the play it was shown at.
   let shownAtPlay: string | null = null;
   let idleWaiters: Array<() => void> = [];
+  const chime = createChimeSound();
 
   const flushIdleWaiters = () => {
     if (showing || queue.length) return;
@@ -150,6 +170,11 @@ export function createAnnouncer(
     winner?.dispose();
     winner = null;
     banner.classList.toggle("has-results", !!next.results);
+    banner.classList.toggle("is-about-you", !!next.aboutYou);
+    banner.classList.toggle("is-loss", next.aboutYou === "loss");
+    tagEl.hidden = !next.aboutYou;
+    tagEl.textContent = next.aboutYou ? t(next.aboutYou === "loss" ? "ann.againstYou" : "ann.forYou") : "";
+    if (next.aboutYou) chime.play(next.aboutYou === "gain" ? "win" : "lose");
     // On phones the score panel shares the top of the screen, so the results
     // board goes just below it; elsewhere CSS keeps it at the top, beside it.
     const narrow = window.matchMedia("(max-width: 640px)").matches;
@@ -211,11 +236,11 @@ export function createAnnouncer(
     const state = game.state();
     shownAtPlay = next.untilNextPlay && state ? playKey(state) : null;
     // Every queued duration is written at the default pace, so scaling here
-    // covers messages, notices and the round's results board together.
-    timer = window.setTimeout(
-      showNext,
-      (paced(next.seconds ?? ANNOUNCER.messageSeconds) + (next.extraSeconds ?? 0)) * 1000,
-    );
+    // covers messages, notices and the round's results board together. A
+    // role's power is never hurried, and one about you holds longer.
+    const seconds = next.seconds ?? ANNOUNCER.messageSeconds;
+    const extra = (next.extraSeconds ?? 0) + (next.aboutYou ? ANNOUNCER.aboutYouExtraSeconds : 0);
+    timer = window.setTimeout(showNext, ((next.role ? unhurried(seconds) : paced(seconds)) + extra) * 1000);
   };
 
   return {
@@ -224,7 +249,20 @@ export function createAnnouncer(
       if (!state) return;
 
       if (previous) {
-        for (const message of eventMessages(previous, state, game.localUsername)) queue.push(message);
+        // The log: the cards played first, then each banner's words, the
+        // trick won told with the winner's role and card.
+        const plays = options.onLog ? playLogLines(previous, state) : [];
+        const log: LogEntry[] = plays.filter((line) => !line.trick).map((line) => ({ text: line.text }));
+        for (const { changes, byOther, source, trick, ...message } of eventMessages(previous, state, game.localUsername)) {
+          const won = trick ? plays.find((line) => line.trick) : undefined;
+          log.push(won ? { text: won.text, kind: "trick" } : { text: message.text, tone: message.aboutYou });
+          queue.push(
+            changes
+              ? { ...message, onShow: () => options.onPredictionChange?.(changes, !!byOther, source) }
+              : message,
+          );
+        }
+        options.onLog?.(state.currentRound, log);
 
         const results = roundResults(previous, state);
         if (results.length) {
@@ -242,6 +280,17 @@ export function createAnnouncer(
               points: result.points,
             };
           });
+          // In the log, one line per player: how the points came about.
+          const signed = (points: number) => (points >= 0 ? `+${points}` : String(points));
+          const entries: LogEntry[] = results.map((result) => ({
+            kind: "result",
+            text: [
+              `${announcedName(result.username)}: ${result.summary}`,
+              ...result.lines.map((line) => `${line.label} ${line.value}`.trim()),
+              `= ${signed(result.points)} (${result.total})`,
+            ].join(" \u00b7 "),
+          }));
+          options.onLog?.(state.players[0]?.roundScores.length ?? state.currentRound, entries);
           queue.push({
             text: "",
             results: cards,
@@ -268,6 +317,8 @@ export function createAnnouncer(
     },
 
     announce(text, extraSeconds, suit) {
+      const round = game.state()?.currentRound;
+      if (round) options.onLog?.(round, [{ text }]);
       queue.push({ text, extraSeconds, suit });
       if (!showing) showNext();
     },
@@ -286,6 +337,7 @@ export function createAnnouncer(
     dispose() {
       window.clearTimeout(timer);
       window.removeEventListener("resize", onResize);
+      chime.dispose();
       idleWaiters = [];
       banner.remove();
     },

@@ -5,47 +5,24 @@ import { normalizeGameOptions } from "../gameOptions.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
-import { type Play, roleBidValue, rolePick, servesNext, trickAfter } from "./roleSense.js";
+import { type Play, roleBidValue, roleOfBot, rolePick, servesNext, trickAfter } from "./roleSense.js";
+import { playsFree } from "../modes/roles/master/joker.js";
+import { crowdFactor, trickChance } from "./handStrength.js";
+import { sabotagePick } from "../modes/sabotage/bots/index.js";
+import { blueLead, blueTrickChance } from "./master/blueWizardSense.js";
+import { colourWizardWin } from "./master/colourWizardSense.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
+import { greenStrength } from "./master/greenWizardSense.js";
+import { redLead } from "./master/redWizardSense.js";
 
 const rules = new WizardRules();
-
-// The chance a card takes a trick, against two opponents. Trumps beat every
-// other suit, so even a middling one often wins; outside trumps only the top
-// cards do.
-function trickChance(card: Card, trumpSuit: Suit | null): number {
-  if (isWizard(card)) return 1;
-  if (isJester(card)) return 0;
-
-  if (card.suit === trumpSuit) {
-    if (card.value >= 12) return 0.9;
-    if (card.value >= 9) return 0.65;
-    if (card.value >= 5) return 0.4;
-    return 0.2;
-  }
-
-  if (card.value === 13) return 0.7;
-  if (card.value === 12) return 0.5;
-  if (card.value === 11) return 0.3;
-  return 0;
-}
-
-// Every extra opponent is another chance of a higher card, so a card that is
-// not a Wizard is worth less the more players there are.
-const crowdFactor = (playerCount: number): number => 1 - 0.12 * (playerCount - 3);
-
-// How good a card is to hold: Wizards above trumps above other suits, Jesters
-// below everything.
-function strength(card: Card, trumpSuit: Suit | null): number {
-  if (isWizard(card)) return 100;
-  if (isJester(card)) return -1;
-  return (card.suit === trumpSuit ? 20 : 0) + card.value;
-}
 
 // The second bot: it bids on the chance each card has of winning, counting
 // trumps and the number of opponents, then plays to make that bid exactly.
 // While it still needs tricks it plays to win them, and once it has them it
 // plays to lose, getting rid of its dangerous cards when it safely can. In a
-// Roles game it knows its role and what its card does (roleSense.ts).
+// Roles game it knows its role and what its card does (roleSense.ts); in a
+// Sabotage game, what a Seer or Trickster brings (modes/sabotage/bots/).
 export const adept: BotStrategy = {
   chooseTrumpSuit: chooseLongestSuit,
 
@@ -56,7 +33,7 @@ export const adept: BotStrategy = {
 
     const crowd = crowdFactor(game.players.length);
     const expected = currentPlayer(game).hand.reduce((total, card) => {
-      const chance = trickChance(card, game.trumpSuit) + roleBidValue(game, card);
+      const chance = blueTrickChance(game, card, trickChance(card, game.trumpSuit) + roleBidValue(game, card));
       return total + (isWizard(card) ? chance : chance * crowd);
     }, 0);
 
@@ -68,18 +45,19 @@ export const adept: BotStrategy = {
     const played = game.currentTrick.playedCards;
     const trumpSuit = game.trumpSuit;
     const { wizardWins } = normalizeGameOptions(game.options);
-    const leadSuit = rules.getLeadSuit(played);
+    const leadSuit = rules.getLeadSuit(played, trumpSuit, trickRolesIn(game));
 
     const legal: Play[] = player.hand
       .map((card, index) => ({ card, index }))
-      .filter(({ card }) => rules.isValidCardPlay(card, player.hand, leadSuit));
+      // A Roles Joker may play any card unless trump was led (modes/roles/master/joker.ts).
+      .filter(({ card }) => playsFree(roleOfBot(game), leadSuit, trumpSuit) || rules.isValidCardPlay(card, player.hand, leadSuit));
 
     if (legal.length === 0) {
       throw new Error("Bot has no legal card to play");
     }
 
     const byStrength = (a: { card: Card }, b: { card: Card }) =>
-      strength(a.card, trumpSuit) - strength(b.card, trumpSuit);
+      greenStrength(game, a.card) - greenStrength(game, b.card);
     const weakest = (plays: typeof legal) => [...plays].sort(byStrength)[0]!;
     const strongest = (plays: typeof legal) => [...plays].sort(byStrength).at(-1)!;
 
@@ -88,12 +66,24 @@ export const adept: BotStrategy = {
     // Which cards would take the trick as it stands, powers included. Only
     // for the last player is that final; anyone after may still beat it.
     const winsNow = ({ card }: { card: Card }) =>
-      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins) === player.username;
+      rules.determineTrickWinner(trickAfter(game, card), trumpSuit, wizardWins, trickRolesIn(game)) === player.username;
     const winners = legal.filter(winsNow);
     const losers = legal.filter((play) => !winsNow(play));
     const rolePlay = rolePick(game, legal, winners, losers, wantsTricks);
 
     if (rolePlay) return rolePlay.index;
+
+    const sabotagePlay = sabotagePick(game, winners, losers, wantsTricks, weakest);
+
+    if (sabotagePlay) return sabotagePlay.index;
+
+    // A colour Wizard takes a trick with their colour's Wizard for its bonus,
+    // and a Blue Wizard leads by what it knows of the blue cards.
+    const colourPlay =
+      colourWizardWin(game, winners, wantsTricks) ??
+      blueLead(game, legal, wantsTricks) ??
+      redLead(game, legal, wantsTricks);
+    if (colourPlay) return colourPlay.index;
 
     // Leading: its best card to take the trick, or its lowest to give it
     // away, keeping a Jester back for a trick it can't otherwise lose.

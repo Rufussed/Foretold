@@ -1,13 +1,20 @@
 import { describe, it, expect } from "vitest";
 
 import type { Card, Suit } from "../../models/card.js";
-import type { GamePlayer } from "../../models/wizardGame.js";
+import type { GamePlayer, WizardGameState } from "../../models/wizardGame.js";
 import { DEFAULT_GAME_OPTIONS } from "../../gameOptions.js";
 import { WizardGameService } from "../../services/wizardGameService.js";
 import type { RoleId } from "./roles.js";
 import { SEED_POINTS } from "./farmer.js";
-import { CATCH_POINTS } from "./fisher.js";
+import { CATCH_POINTS, MISS_POINTS } from "./fisher.js";
 import { MARKET_POINTS } from "./merchant.js";
+import { ALMS_POINTS, FAITH_POINTS } from "./priest.js";
+import { PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
+import { BET_LOSS_POINTS, BET_WIN_POINTS, LUCKY_POINTS } from "./gambler.js";
+import { GRANT_POINTS, KEEP_POINTS } from "./duke.js";
+import { FORESIGHT_POINTS } from "./prophet.js";
+import { PEACE_POINTS, TAX_POINTS } from "./king.js";
+import { botGrantTo } from "./rolePowers.js";
 import { SERVANT_BONUS, SERVICE_POINTS } from "./servant.js";
 import { SHEEP_POINTS } from "./shepherd.js";
 import { BLOCK_POINTS } from "./smith.js";
@@ -17,7 +24,7 @@ import { STEAL_POINTS } from "./thief.js";
 // One trick at a table of three, played in seat order with one card each.
 function playTrick(
   mode: "classic" | "roles",
-  seats: { name: string; card: Card; role?: RoleId; stealSpot?: number }[],
+  seats: { name: string; card: Card; role?: RoleId; stealSpot?: number; bet?: boolean }[],
   setUp?: (players: GamePlayer[]) => void,
   trumpSuit: Suit | null = null,
 ) {
@@ -41,7 +48,7 @@ function playTrick(
   game.currentTrick = { playedCards: [], winnerUsername: null };
 
   for (const seat of seats) {
-    service.playCard(game, 0, false, seat.stealSpot);
+    service.playCard(game, 0, false, seat.stealSpot, seat.bet);
   }
 
   const score = (name: string) => game.players.find((p) => p.username === name)?.score;
@@ -240,7 +247,7 @@ describe("the Fisher in a game", () => {
     expect(score("ben")).toBe(50 - CATCH_POINTS);
   });
 
-  it("takes nothing for a catch that does not win the trick", () => {
+  it("is paid for a catch even when it does not win the trick", () => {
     const { game, service, score } = playTrick(
       "roles",
       [
@@ -257,8 +264,8 @@ describe("the Fisher in a game", () => {
     service.fishCard(game, "fisher", 2);
 
     expect(game.currentTrick.winnerUsername).toBe("cara");
-    expect(score("fisher")).toBe(0);
-    expect(score("ben")).toBe(50);
+    expect(score("fisher")).toBe(MISS_POINTS);
+    expect(score("ben")).toBe(50 - MISS_POINTS);
   });
 
   it("refuses a card that cannot be fished, and anyone else's choice", () => {
@@ -681,7 +688,7 @@ describe("the Merchant in a game", () => {
     expect(score("ben")).toBe(50 + MARKET_POINTS);
   });
 
-  it("a Smith in armour who would pay uses up a piece, and nothing moves", () => {
+  it("a Smith in armour who would pay uses up a piece, and the Merchant pays for the block", () => {
     const { game, trick, score } = playTrick(
       "roles",
       [
@@ -696,9 +703,9 @@ describe("the Merchant in a game", () => {
     );
 
     expect(find(game, "smith").armor).toBe(0);
-    expect(score("smith")).toBe(50);
-    expect(score("merchant")).toBe(50 + MARKET_POINTS);
-    expect(trick.roleActions?.at(-1)).toMatchObject({ role: "smith", by: "smith", on: "merchant", points: 0 });
+    expect(score("smith")).toBe(50 + BLOCK_POINTS);
+    expect(score("merchant")).toBe(50 + MARKET_POINTS - BLOCK_POINTS);
+    expect(trick.roleActions?.at(-1)).toMatchObject({ role: "smith", by: "smith", on: "merchant", points: BLOCK_POINTS });
   });
 
   it("a Smith who beats the 7 is paid and keeps his armour", () => {
@@ -735,5 +742,573 @@ describe("the Merchant in a game", () => {
     expect(score("first")).toBe(50 - 2 * MARKET_POINTS + MARKET_POINTS);
     expect(score("second")).toBe(50 + 2 * MARKET_POINTS + MARKET_POINTS);
     expect(score("ben")).toBe(50 - 2 * MARKET_POINTS);
+  });
+});
+
+describe("the Priest in a game", () => {
+  const startAt = (points: number) => (players: GamePlayer[]) => {
+    for (const player of players) player.score = points;
+  };
+
+  it("is paid faith by every royal card in the trick, trumps and other suits too", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(12) },
+        { name: "priest", card: card(8), role: "priest" },
+        { name: "ben", card: card(11, "Blue") },
+        { name: "cid", card: card(13, "Green") },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("ben");
+    expect(score("priest")).toBe(50 + 3 * FAITH_POINTS);
+    expect(score("ana")).toBe(50 - FAITH_POINTS);
+    expect(score("ben")).toBe(50 - FAITH_POINTS);
+    expect(score("cid")).toBe(50 - FAITH_POINTS);
+    expect(trick.roleActions?.[0]).toMatchObject({
+      role: "priest",
+      by: "priest",
+      points: 3 * FAITH_POINTS,
+      trades: [
+        { player: "ana", points: FAITH_POINTS },
+        { player: "ben", points: FAITH_POINTS },
+        { player: "cid", points: FAITH_POINTS },
+      ],
+    });
+  });
+
+  it("collects nothing with an 8 off the lead suit and trumps", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(12) },
+        { name: "priest", card: card(8, "Green"), role: "priest" },
+        { name: "ben", card: card(13) },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    expect(score("priest")).toBe(50);
+    expect(trick.roleActions ?? []).toEqual([]);
+  });
+
+  it("never takes a player below 0", () => {
+    const { score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(12) },
+        { name: "priest", card: card(8), role: "priest" },
+        { name: "ben", card: card(13) },
+      ],
+      (players) => {
+        startAt(0)(players);
+        players.find((p) => p.username === "ben")!.score = 3;
+      },
+    );
+
+    expect(score("ana")).toBe(0);
+    expect(score("ben")).toBe(0);
+    expect(score("priest")).toBe(3);
+  });
+
+  it("a Smith in armour pays nothing, uses up a piece, and the Priest pays for the block", () => {
+    const { score, game } = playTrick(
+      "roles",
+      [
+        { name: "smith", card: card(12), role: "smith" },
+        { name: "priest", card: card(8), role: "priest" },
+        { name: "ben", card: card(2) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        players.find((p) => p.username === "smith")!.armor = 1;
+      },
+    );
+
+    expect(score("smith")).toBe(50 + BLOCK_POINTS);
+    expect(score("priest")).toBe(50 - BLOCK_POINTS);
+    expect(game.players.find((p) => p.username === "smith")!.armor).toBe(0);
+  });
+
+  it("feeds the poor when the 8 wins, even below 0, and still collects faith", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "priest", card: card(8), role: "priest" },
+        { name: "ben", card: card(5) },
+        { name: "cid", card: card(12, "Green") },
+      ],
+      startAt(0),
+    );
+
+    expect(trick.winnerUsername).toBe("priest");
+    expect(score("priest")).toBe(-2 * ALMS_POINTS);
+    expect(score("ana")).toBe(ALMS_POINTS);
+    expect(score("ben")).toBe(ALMS_POINTS);
+    expect(score("cid")).toBe(0);
+    expect(trick.roleActions?.[0]).toMatchObject({
+      role: "priest",
+      points: -2 * ALMS_POINTS,
+      trades: [
+        { player: "cid", points: 0 },
+        { player: "ana", points: -ALMS_POINTS },
+        { player: "ben", points: -ALMS_POINTS },
+      ],
+    });
+  });
+});
+
+describe("the Warrior in a game", () => {
+  const startAt = (points: number) => (players: GamePlayer[]) => {
+    for (const player of players) player.score = points;
+  };
+
+  it("is paid by everyone when the 9 wins, never below 0", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "warrior", card: card(9), role: "warrior" },
+        { name: "ben", card: card(7) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        players.find((p) => p.username === "ben")!.score = 4;
+      },
+    );
+
+    expect(trick.winnerUsername).toBe("warrior");
+    expect(score("warrior")).toBe(50 + VICTORY_POINTS + 4);
+    expect(score("ana")).toBe(50 - VICTORY_POINTS);
+    expect(score("ben")).toBe(0);
+  });
+
+  it("pays everyone out of pride when the trump 9 loses, even below 0", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "warrior", card: card(9, "Blue"), role: "warrior" },
+        { name: "ben", card: card(11, "Blue") },
+      ],
+      startAt(0),
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("ben");
+    expect(score("warrior")).toBe(-2 * PRIDE_POINTS);
+    expect(score("ana")).toBe(PRIDE_POINTS);
+    expect(score("ben")).toBe(PRIDE_POINTS);
+  });
+
+  it("costs nothing when a 9 in the lead suit loses, or off the lead suit", () => {
+    const lost = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "warrior", card: card(9), role: "warrior" },
+        { name: "ben", card: card(12) },
+      ],
+      startAt(50),
+    );
+    expect(lost.score("warrior")).toBe(50);
+
+    const offSuit = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "warrior", card: card(9, "Green"), role: "warrior" },
+        { name: "ben", card: card(2) },
+      ],
+      startAt(50),
+      "Blue",
+    );
+    expect(offSuit.score("warrior")).toBe(50);
+    expect(offSuit.trick.roleActions ?? []).toEqual([]);
+  });
+
+  it("a Smith in armour pays nothing when the 9 wins, and the Warrior pays for the block", () => {
+    const { score, game } = playTrick(
+      "roles",
+      [
+        { name: "smith", card: card(3), role: "smith" },
+        { name: "warrior", card: card(9), role: "warrior" },
+        { name: "ben", card: card(2) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        players.find((p) => p.username === "smith")!.armor = 1;
+      },
+    );
+
+    expect(score("smith")).toBe(50 + BLOCK_POINTS);
+    expect(score("warrior")).toBe(50 + VICTORY_POINTS - BLOCK_POINTS);
+    expect(score("ben")).toBe(50 - VICTORY_POINTS);
+    expect(game.players.find((p) => p.username === "smith")!.armor).toBe(0);
+  });
+});
+
+describe("the Gambler in a game", () => {
+  const startAt = (points: number) => (players: GamePlayer[]) => {
+    for (const player of players) player.score = points;
+  };
+
+  it("wins the bet when the 10 takes the trick", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "gambler", card: card(10), role: "gambler", bet: true },
+        { name: "ben", card: card(7) },
+      ],
+      startAt(50),
+    );
+
+    expect(trick.winnerUsername).toBe("gambler");
+    expect(score("gambler")).toBe(50 + BET_WIN_POINTS);
+    expect(score("ana")).toBe(50);
+  });
+
+  it("loses the bet to the house, not to the trick's winner, even below 0", () => {
+    const { score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "gambler", card: card(10), role: "gambler", bet: true },
+        { name: "ben", card: card(12) },
+      ],
+      startAt(0),
+    );
+
+    expect(score("gambler")).toBe(-BET_LOSS_POINTS);
+    expect(score("ben")).toBe(0);
+  });
+
+  it("changes nothing without a bet, or with the 10 off the lead suit", () => {
+    const noBet = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "gambler", card: card(10), role: "gambler" },
+        { name: "ben", card: card(12) },
+      ],
+      startAt(50),
+    );
+    expect(noBet.score("gambler")).toBe(50);
+
+    const offSuit = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "gambler", card: card(10, "Green"), role: "gambler", bet: true },
+        { name: "ben", card: card(2) },
+      ],
+      startAt(50),
+      "Blue",
+    );
+    expect(offSuit.score("gambler")).toBe(50);
+    expect(offSuit.trick.playedCards[1]!.bet).toBeUndefined();
+  });
+
+  it("gets lucky points when the 10 wins with no bet", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "gambler", card: card(10), role: "gambler" },
+        { name: "ben", card: card(7) },
+      ],
+      startAt(50),
+    );
+
+    expect(score("gambler")).toBe(50 + LUCKY_POINTS);
+    expect(trick.roleActions?.find((action) => action.role === "gambler")?.lucky).toBe(true);
+  });
+});
+
+describe("the Duke in a game", () => {
+  const seats = [
+    { name: "ana", card: card(3) },
+    { name: "duke", card: card(11), role: "duke" as const },
+    { name: "ben", card: card(7) },
+  ];
+  const startAt = (points: number) => (players: GamePlayer[]) => {
+    for (const player of players) player.score = points;
+  };
+  const tricks = (game: WizardGameState, name: string) => game.players.find((p) => p.username === name)?.tricksWon;
+
+  it("waits for the Duke once their 11 wins, then keeps the trick for KEEP_POINTS", () => {
+    const { trick, score, game, service } = playTrick("roles", seats, startAt(50));
+
+    expect(game.phase).toBe("granting");
+    expect(game.players[game.currentPlayerIndex]!.username).toBe("duke");
+    expect(trick.winnerUsername).toBeNull();
+
+    service.grantTrick(game, "duke", null);
+
+    expect(game.currentTrick.winnerUsername).toBe("duke");
+    expect(tricks(game, "duke")).toBe(1);
+    expect(score("duke")).toBe(50 + KEEP_POINTS);
+  });
+
+  it("grants the trick to any other player, paying them in full, and still leads", () => {
+    const { score, game, service } = playTrick("roles", seats, startAt(0));
+
+    expect(() => service.grantTrick(game, "ana", "ben")).toThrow();
+    expect(() => service.grantTrick(game, "duke", "duke")).toThrow();
+    service.grantTrick(game, "duke", "ana");
+
+    expect(game.currentTrick.winnerUsername).toBe("duke");
+    expect(game.currentTrick.grantedTo).toBe("ana");
+    expect(tricks(game, "duke")).toBe(0);
+    expect(tricks(game, "ana")).toBe(1);
+    expect(score("duke")).toBe(-GRANT_POINTS);
+    expect(score("ana")).toBe(GRANT_POINTS);
+    expect(game.players[game.currentPlayerIndex]!.username).toBe("duke");
+  });
+
+  it("has nothing to choose when the 11 loses or is off the lead suit", () => {
+    const loses = playTrick("roles", [seats[0]!, seats[1]!, { name: "ben", card: card(13) }]);
+    expect(loses.game.currentTrick.winnerUsername).toBe("ben");
+
+    const offSuit = playTrick(
+      "roles",
+      [seats[0]!, { name: "duke", card: card(11, "Green"), role: "duke" }, { name: "ben", card: card(2) }],
+      undefined,
+      "Red",
+    );
+    expect(offSuit.game.phase).toBe("playing");
+    expect(offSuit.game.currentTrick.winnerUsername).toBe("ana");
+  });
+
+  it("lets a bot keep a trick it needs and grant one it does not", () => {
+    const needs = playTrick("roles", seats, (players) => {
+      for (const player of players) player.prediction = player.username === "duke" ? 1 : 0;
+    });
+    expect(botGrantTo(needs.game)).toBeNull();
+
+    const full = playTrick("roles", seats, (players) => {
+      for (const player of players) player.prediction = 0;
+      players.find((p) => p.username === "ben")!.score = 80;
+    });
+    expect(botGrantTo(full.game)).toBe("ben");
+  });
+});
+
+describe("the Prophet in a game", () => {
+  const withPredictions = (prophet: number) => (players: GamePlayer[]) => {
+    for (const player of players) {
+      player.score = 50;
+      player.prediction = player.username === "prophet" ? prophet : 0;
+    }
+  };
+
+  it("lowers her prediction as the 12 is played, with no bonus if it wins", () => {
+    const { score, game } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "prophet", card: card(12), role: "prophet", bet: true },
+        { name: "ben", card: card(7) },
+      ],
+      withPredictions(2),
+    );
+
+    const prophet = game.players.find((p) => p.username === "prophet")!;
+    expect(prophet.prediction).toBe(1);
+    expect(game.currentTrick.playedCards[1]!.lowered).toBe(true);
+    expect(score("prophet")).toBe(50);
+  });
+
+  it("gets FORESIGHT_POINTS when she keeps her prediction and the 12 wins", () => {
+    const { score, game } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "prophet", card: card(12), role: "prophet" },
+        { name: "ben", card: card(7) },
+      ],
+      withPredictions(2),
+    );
+
+    expect(game.players.find((p) => p.username === "prophet")!.prediction).toBe(2);
+    expect(game.currentTrick.playedCards[1]!.lowered).toBe(false);
+    expect(score("prophet")).toBe(50 + FORESIGHT_POINTS);
+  });
+
+  it("cannot lower below the tricks won, nor off the lead suit", () => {
+    const zero = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "prophet", card: card(12), role: "prophet", bet: true },
+        { name: "ben", card: card(7) },
+      ],
+      withPredictions(0),
+    );
+    expect(zero.game.players.find((p) => p.username === "prophet")!.prediction).toBe(0);
+    expect(zero.game.currentTrick.playedCards[1]!.lowered).toBeUndefined();
+
+    const offSuit = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(3) },
+        { name: "prophet", card: card(12, "Green"), role: "prophet", bet: true },
+        { name: "ben", card: card(7) },
+      ],
+      withPredictions(2),
+      "Red",
+    );
+    expect(offSuit.game.players.find((p) => p.username === "prophet")!.prediction).toBe(2);
+  });
+});
+
+describe("the King in a game", () => {
+  const startAt = (points: number) => (players: GamePlayer[]) => {
+    for (const player of players) player.score = points;
+  };
+
+  it("undoes a Thief's steal before his trump 13, points and all", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(9) },
+        { name: "thief", card: card(1), role: "thief" },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    expect(trick.playedCards.map((played) => played.username)).toEqual(["ana", "thief", "king"]);
+    // The steal paid back, then the tribute for the peace.
+    expect(score("thief")).toBe(50 - PEACE_POINTS);
+    expect(score("ana")).toBe(50 - PEACE_POINTS);
+    expect(trick.roleActions?.[0]?.undone).toBe(true);
+    expect(trick.roleActions?.find((action) => action.stopped)).toMatchObject({ role: "king", stopped: ["thief"] });
+    expect(trick.winnerUsername).toBe("king");
+  });
+
+  it("stops powers played after his trump 13, and wins tribute from all but the Priest", () => {
+    const { trick, score, game } = playTrick(
+      "roles",
+      [
+        { name: "king", card: card(13, "Blue"), role: "king" },
+        { name: "gambler", card: card(10, "Blue"), role: "gambler", bet: true },
+        { name: "priest", card: card(8, "Blue"), role: "priest" },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    expect(trick.playedCards[1]!.bet).toBeUndefined();
+    expect(trick.winnerUsername).toBe("king");
+    // The Gambler pays tribute; the Priest pays none and collects no faith.
+    expect(score("king")).toBe(50 + PEACE_POINTS);
+    expect(score("gambler")).toBe(50 - PEACE_POINTS);
+    expect(score("priest")).toBe(50);
+    expect(game.phase).toBe("playing");
+  });
+
+  it("taxes every sealed card but the Priest's when his 13 wins, not as a trump", () => {
+    const { score } = playTrick(
+      "roles",
+      [
+        { name: "warrior", card: card(9), role: "warrior" },
+        { name: "king", card: card(13), role: "king" },
+        { name: "priest", card: card(8), role: "priest" },
+        { name: "gambler", card: card(10), role: "gambler" },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    // Two taxes in; the Priest's faith from the 13 out.
+    expect(score("king")).toBe(50 + 2 * TAX_POINTS - FAITH_POINTS);
+    expect(score("gambler")).toBe(50 - TAX_POINTS);
+    // The Warrior's 9 lost, but not as a trump: no pride to pay.
+    expect(score("warrior")).toBe(50 - TAX_POINTS);
+  });
+
+  it("is paid for nothing when his 13 does not win", () => {
+    const { score } = playTrick(
+      "roles",
+      [
+        { name: "gambler", card: card(10), role: "gambler" },
+        { name: "king", card: card(13), role: "king" },
+        { name: "ana", card: card(2, "Blue") },
+      ],
+      startAt(50),
+      "Blue",
+    );
+
+    expect(score("king")).toBe(50);
+    expect(score("gambler")).toBe(50);
+  });
+});
+
+describe("the Joker in a game", () => {
+  it("need not follow suit, and a card off the lead suit still cannot win", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      // The Joker holds the suit led too.
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    });
+
+    expect(trick.playedCards[1]!.freePlay).toBe(true);
+    expect(trick.winnerUsername).toBe("ben");
+  });
+
+  it("may trump while holding the suit led", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(12) },
+      { name: "joker", card: card(1, "Blue"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    }, "Blue");
+
+    expect(trick.winnerUsername).toBe("joker");
+  });
+
+  it("must follow trump when trump is led", () => {
+    expect(() => playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    }, "Red")).toThrow("Card cannot be played");
+  });
+
+  it("may still play a Wizard when trump is led", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(14, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    }, "Red");
+
+    expect(trick.playedCards[1]!.freePlay).toBeUndefined();
+    expect(trick.winnerUsername).toBe("joker");
+  });
+
+  it("is held to the suit in a Classic game", () => {
+    expect(() => playTrick("classic", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      players.find((p) => p.username === "joker")!.hand.push(card(2));
+    })).toThrow("Card cannot be played");
   });
 });

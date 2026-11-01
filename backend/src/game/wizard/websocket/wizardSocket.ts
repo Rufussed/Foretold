@@ -9,12 +9,19 @@ import { isEmote } from "../models/emote.js";
 import { guestTableEmptied, guestTableJoined } from "../services/guestCleanup.js";
 import { withErrorCode } from "../../../errorCodes.js";
 import { hasQuit, recordOwnMove } from "../services/playerQuit.js";
+import {
+	handleSabotageDevCard,
+	handleSabotageMove,
+	type SabotageMessage,
+} from "../modes/sabotage/sabotageMessages.js";
+import { handleRolesDevCard, type RolesDevMessage } from "../modes/roles/devTools.js";
 
 interface SocketQuery {
 	token?: string;
 }
 
-interface SocketMessage {
+// Sabotage's own fields are in modes/sabotage/sabotageMessages.ts.
+interface SocketMessage extends SabotageMessage, RolesDevMessage {
 	type?: string;
 	prediction?: number;
 	cardIndex?: number;
@@ -22,6 +29,11 @@ interface SocketMessage {
 	spot?: number;
 	// play_card: the place in the trick of the card a Thief's trump 1 takes.
 	stealSpot?: number;
+	// grant_trick: the player a Duke grants the trick to; missing or null to
+	// keep it (modes/roles/duke.ts).
+	to?: string | null;
+	// play_card: a Gambler's 10 bets it wins the trick (modes/roles/gambler.ts).
+	bet?: boolean;
 	suit?: string;
 	emote?: string;
 }
@@ -225,6 +237,7 @@ export function registerWizardSocket(
 					if (
 						currentGame.phase !== "finished" &&
 						currentGame.phase !== "fishing" &&
+						currentGame.phase !== "granting" &&
 						currentGame.turnTimeoutMs !== null &&
 						currentGame.turnDeadlineAt === null &&
 						current?.username === username
@@ -234,6 +247,21 @@ export function registerWizardSocket(
 						broadcastGameState(roomId, gameService);
 						runner.notifyAction(roomId);
 					}
+					return;
+				}
+
+				// Test shortcuts of a Sabotage or Roles game, outside the turn order.
+				try {
+					if (handleSabotageDevCard(currentGame, username, message) || handleRolesDevCard(currentGame, username, message)) {
+						wizardSessionManager.saveGame(currentGame);
+						broadcastGameState(roomId, gameService);
+						return;
+					}
+				} catch (error) {
+					sendJson(socket, {
+						type: "error",
+						error: error instanceof Error ? error.message : "Could not change the card",
+					});
 					return;
 				}
 
@@ -286,7 +314,7 @@ export function registerWizardSocket(
 							throw new Error("Invalid card");
 						}
 
-						gameService.playCard(currentGame, message.cardIndex, false, message.stealSpot);
+						gameService.playCard(currentGame, message.cardIndex, false, message.stealSpot, message.bet === true);
 					} else if (message.type === "fish_card") {
 						if (
 							typeof message.spot !== "number" ||
@@ -296,6 +324,18 @@ export function registerWizardSocket(
 						}
 
 						gameService.fishCard(currentGame, username, message.spot);
+					} else if (message.type === "grant_trick") {
+						if (message.to !== undefined && message.to !== null && typeof message.to !== "string") {
+							throw new Error("Invalid player");
+						}
+
+						gameService.grantTrick(currentGame, username, message.to ?? null);
+					} else if (
+						handleSabotageMove(currentGame, username, message, (game, cardIndex) =>
+							gameService.playCard(game, cardIndex),
+						)
+					) {
+						// A Sabotage power (modes/sabotage/sabotageMessages.ts).
 					} else if (message.type === "choose_trump") {
 						if (!isSuit(message.suit)) {
 							throw new Error("Invalid suit");

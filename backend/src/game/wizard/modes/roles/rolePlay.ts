@@ -2,6 +2,7 @@ import { isJester, isWizard, type Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
 import { WizardRules } from "../../services/wizardRules.js";
 import { roleCard, type RoleId } from "./roles.js";
+import { trickRolesOf } from "./master/trickRoles.js";
 
 const rules = new WizardRules();
 
@@ -12,9 +13,18 @@ export type RoleOf = (username: string) => RoleId | undefined;
 // this was kept read the owner.
 export const playerOf = (played: PlayedCard): string => played.playedBy ?? played.username;
 
+// Whether a King's trump 13 is in the trick: the King's peace, which stops
+// every other basic role's power in it, before and after the 13
+// (modes/roles/king.ts). The colour Wizards' powers are not roles' cards and
+// go on.
+export const kingsPeace = (playedCards: PlayedCard[], trumpSuit: Suit | null, roleOf: RoleOf): boolean =>
+  trumpSuit !== null && playedCards.some((played) =>
+    played.card.suit === trumpSuit && played.card.value === roleCard("king") && roleOf(playerOf(played)) === "king");
+
 // Whether the card at this place in the trick has its role's power on: the
 // role's card, played by a player of that role, in the lead suit or as a
-// trump.
+// trump. A trick opened by a Wizard (after any Jesters) has no lead suit and
+// anyone may play anything, so there the card works in any suit.
 export function powerOn(
   playedCards: PlayedCard[],
   index: number,
@@ -27,10 +37,36 @@ export function powerOn(
   if (!played || played.card.value !== roleCard(role) || roleOf(playerOf(played)) !== role) {
     return false;
   }
+  // The King's peace stops every other basic role's power in the trick.
+  if (role !== "king" && kingsPeace(playedCards, trumpSuit, roleOf)) {
+    return false;
+  }
 
-  const leadSuit = rules.getLeadSuit(playedCards.slice(0, index + 1));
+  const leadSuit = rules.getLeadSuit(playedCards.slice(0, index + 1), trumpSuit, trickRolesOf(roleOf));
 
-  return played.card.suit === leadSuit || played.card.suit === trumpSuit;
+  return leadSuit === null || played.card.suit === leadSuit || played.card.suit === trumpSuit;
+}
+
+// Whether the card at this place is a role's card played with its power on,
+// whatever comes of it: the Farmer's 4 and the Shepherd's 5 in any suit, the
+// other basic roles' cards in the lead suit or as a trump. The colour
+// Wizards have no card. For the table to show the power the moment it is
+// played.
+export function rolePowerOn(
+  playedCards: PlayedCard[],
+  index: number,
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): boolean {
+  const played = playedCards[index];
+  const role = played && roleOf(playerOf(played));
+
+  if (!played || !role || played.card.value !== roleCard(role)) {
+    return false;
+  }
+
+  return (role === "farmer" || role === "shepherd") && !kingsPeace(playedCards, trumpSuit, roleOf)
+    || powerOn(playedCards, index, role, trumpSuit, roleOf);
 }
 
 // No role's power ever touches a Wizard or a Jester.

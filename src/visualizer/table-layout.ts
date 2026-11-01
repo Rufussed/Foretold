@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { SEAT_IDS, type SeatId } from "./player-characters";
 import { CARD_HANDLING, CARDS } from "./config";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { CARD_HANDLING as SABOTAGE_CARD_HANDLING } from "../modes/sabotage/sabotage-config";
 import { numberedNodes, placementOf, type Placement } from "./placement";
 
 export interface TableLayout {
@@ -77,12 +79,18 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
 
   // Your own hand, moved back towards you and up a little (see
   // CARD_HANDLING.handPushOut and handLift).
+  // A Sabotage table brings it closer still (handTowardCameraMetres, in
+  // metres, so in the environment's own units here).
   const outward = new THREE.Vector3(handCentre.x, 0, handCentre.z).normalize();
+  const environmentScale = environment.getWorldScale(new THREE.Vector3()).x || 1;
+  const pushOut =
+    CARD_HANDLING.handPushOut +
+    (isSabotageGame() ? SABOTAGE_CARD_HANDLING.handTowardCameraMetres / environmentScale : 0);
   const localHand = authoredHand.map((slot) => ({
     ...enlarged(slot),
     position: slot.position
       .clone()
-      .addScaledVector(outward, CARD_HANDLING.handPushOut)
+      .addScaledVector(outward, pushOut)
       .addScaledVector(UP, CARD_HANDLING.handLift),
   }));
 

@@ -324,6 +324,10 @@
   --mode-color: 184, 132, 224;
 }
 
+.mode-sabotage {
+  --mode-color: 214, 96, 72;
+}
+
 /* A game's name in a small frame, after or under a room's name. */
 .mode-badge {
   display: inline-block;

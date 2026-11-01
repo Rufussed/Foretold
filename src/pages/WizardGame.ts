@@ -55,6 +55,7 @@ interface GameState {
   | "trump-selection"
   | "predictions"
   | "playing"
+  | "power"
   | "finished";
   deckCount: number;
   turnDeadlineAt: number | null;
@@ -252,6 +253,9 @@ export async function renderWizardGamePage(
     const socket = createGameSocket(roomId, token);
     activeSocket = socket;
 
+    // The last Sabotage power passed on (see below).
+    let skippedPower = "";
+
     socket.addEventListener("message", (event) => {
       if (mount !== mountCount) {
         return;
@@ -272,6 +276,16 @@ export async function renderWizardGamePage(
         const gameState = message.state as GameState;
 
         recordGameState(gameState);
+
+        // A Sabotage power won here has no prompt on this page: it is passed
+        // on, so a game without a turn timer cannot wait on it for good.
+        // Sent once per trick: later states of the same one need nothing.
+        const current = gameState.players[gameState.currentPlayerIndex];
+        const powerKey = `${gameState.currentRound}:${gameState.players.reduce((sum, player) => sum + player.tricksWon, 0)}`;
+        if (gameState.phase === "power" && current?.username === user.username && powerKey !== skippedPower) {
+          skippedPower = powerKey;
+          socket.send(JSON.stringify({ type: "skip_power" }));
+        }
 
         renderGame(
           container,

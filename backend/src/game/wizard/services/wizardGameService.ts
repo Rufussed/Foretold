@@ -14,11 +14,20 @@ import { ScoreCalculator } from "./wizardScoreCalculator.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
 import {
   applyFishing,
+  applyGranting,
   applyRolePowers,
   applyRoundEndPowers,
   applyTrickEndPowers,
+  rolesOf,
   startFishing,
+  startGranting,
 } from "../modes/roles/rolePowers.js";
+import { canBet } from "../modes/roles/gambler.js";
+import { canLower } from "../modes/roles/prophet.js";
+import { breaksSuit, playsFree } from "../modes/roles/master/joker.js";
+import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
+import { blueSight } from "../modes/roles/master/blueWizard.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 
 import type {
   GamePlayer,
@@ -234,6 +243,10 @@ export class WizardGameService {
     // A Thief's trump 1: the place in the trick of the card to take
     // (modes/roles/thief.ts); the one just before when left out.
     stealSpot?: number,
+    // A Gambler's 10: whether they bet it wins (modes/roles/gambler.ts); a
+    // Prophet's 12: whether she lowers her prediction (modes/roles/prophet.ts).
+    // Ignored for any other card.
+    bet = false,
   ): void {
     // This method validates and records one play. A complete trick is resolved
     // immediately, while the caller advances to the next trick afterward.
@@ -273,9 +286,19 @@ export class WizardGameService {
     //Handles if Wizard is play first, there is no Suit
     const leadSuit = this.rules.getLeadSuit(
       game.currentTrick.playedCards,
+      game.trumpSuit,
+      trickRolesIn(game),
     );
 
+    // A Roles Joker need not follow suit, unless trump was led
+    // (modes/roles/master/joker.ts).
+    const freePlay =
+      normalizeGameOptions(game.options).mode === "roles" &&
+      playsFree(currentPlayer.role, leadSuit, game.trumpSuit) &&
+      breaksSuit(card, currentPlayer.hand, leadSuit);
+
     if (
+      !freePlay &&
       !this.rules.isValidCardPlay(
         card,
         currentPlayer.hand,
@@ -292,9 +315,20 @@ export class WizardGameService {
       playedBy: currentPlayer.username,
       card,
       ...(byServer ? { byServer: true as const } : {}),
+      ...(freePlay ? { freePlay: true as const } : {}),
     };
 
     game.currentTrick.playedCards.push(playedCard);
+
+    if (normalizeGameOptions(game.options).mode === "roles") {
+      const index = game.currentTrick.playedCards.length - 1;
+      if (bet && canBet(game.currentTrick.playedCards, index, game.trumpSuit, rolesOf(game))) {
+        playedCard.bet = true;
+      } else if (canLower(game.currentTrick.playedCards, index, game.trumpSuit, rolesOf(game), currentPlayer)) {
+        playedCard.lowered = bet;
+        if (bet) currentPlayer.prediction = (currentPlayer.prediction ?? 1) - 1;
+      }
+    }
 
     if (normalizeGameOptions(game.options).mode === "roles") {
       applyRolePowers(game, stealSpot);
@@ -310,11 +344,12 @@ export class WizardGameService {
   }
 
   // A complete trick is resolved, unless a Fisher of a Roles game still has
-  // a card to choose (modes/roles/fisher.ts): then that is the next move.
+  // a card to choose (modes/roles/fisher.ts), or a Duke has won it and keeps
+  // or grants it (modes/roles/duke.ts): then that is the next move.
   private completeTrick(game: WizardGameState): void {
     if (
       normalizeGameOptions(game.options).mode === "roles" &&
-      startFishing(game)
+      (startFishing(game) || startGranting(game))
     ) {
       return;
     }
@@ -330,6 +365,16 @@ export class WizardGameService {
     spot: number,
   ): void {
     applyFishing(game, username, spot);
+    this.completeTrick(game);
+  }
+
+  // The Duke whose move it is keeps the trick (to null) or grants it.
+  grantTrick(
+    game: WizardGameState,
+    username: string,
+    to: string | null,
+  ): void {
+    applyGranting(game, username, to);
     this.completeTrick(game);
   }
 
@@ -370,6 +415,8 @@ export class WizardGameService {
       game.currentTrick.playedCards,
       game.trumpSuit,
       normalizeGameOptions(game.options).wizardWins,
+      // A Roles game's colour Wizards change the rules (modes/roles/master/trickRoles.ts).
+      trickRolesIn(game),
     );
 
     if (!winnerUsername) {
@@ -398,6 +445,10 @@ export class WizardGameService {
     this.recordColorTrick(game, winner);
     game.currentTrick.winnerUsername = winnerUsername;
     game.currentPlayerIndex = winnerIndex;
+
+    if (normalizeGameOptions(game.options).mode === "sabotage") {
+      earnCardPower(game, winner);
+    }
 
     return winnerUsername;
   }
@@ -534,6 +585,11 @@ export class WizardGameService {
       players: game.players.map((player) => {
         const isRequester = player.username === username;
         const handVisible = blindRound ? !isRequester : isRequester;
+        // A Blue Wizard is told the blue cards of hands hidden from them.
+        const blueSightOf = (of: GamePlayer, visible: boolean) => {
+          const blueCards = blueSight(requestingPlayer, of, visible);
+          return blueCards === undefined ? {} : { blueCards };
+        };
 
         return {
           username: player.username,
@@ -549,6 +605,7 @@ export class WizardGameService {
           seeds: player.seeds ?? {},
           sheep: player.sheep ?? {},
           armor: player.armor ?? 0,
+          ...blueSightOf(player, handVisible),
         };
       }),
       currentRound: game.currentRound,
@@ -574,6 +631,10 @@ export class WizardGameService {
   }
 
   advanceAfterTrick(game: WizardGameState): void {
+    if (hasPendingPower(game)) {
+      throw new Error("The trick's power has not been used yet");
+    }
+
     const allHandsEmpty = game.players.every(
       (player) => player.hand.length === 0,
     );

@@ -465,6 +465,155 @@
   border-color: rgba(191, 125, 47, 0.65);
 }
 
+/* A Roles game's Log button just above the player list, and its panel above
+   the button (see visualizer/hud/event-log.ts, which sets their bottoms). */
+.visualizer-page .event-log-toggle {
+  position: absolute;
+  left: 16px;
+  z-index: 3;
+  padding: 8px 12px;
+  color: rgba(244, 235, 217, 0.88);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--ui-bg);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  backdrop-filter: var(--ui-blur);
+  cursor: pointer;
+}
+
+.visualizer-page .event-log-toggle:hover,
+.visualizer-page .event-log-toggle[aria-expanded="true"] {
+  color: #fff;
+  background: rgba(191, 125, 47, 0.12);
+  border-color: rgba(191, 125, 47, 0.65);
+}
+
+.visualizer-page .event-log {
+  position: absolute;
+  left: 16px;
+  z-index: 14;
+  box-sizing: border-box;
+  width: min(420px, calc(100% - 32px));
+  max-height: min(60vh, 520px);
+  overflow-y: auto;
+  padding: 10px 14px;
+  color: rgba(244, 235, 217, 0.9);
+  font-size: 13px;
+  line-height: 1.4;
+  background: rgba(8, 9, 8, 0.86);
+  border: var(--ui-edge);
+  border-radius: 4px;
+  backdrop-filter: var(--ui-blur);
+}
+
+.visualizer-page .event-log[hidden] {
+  display: none;
+}
+
+.event-log-empty {
+  margin: 0;
+  opacity: 0.7;
+}
+
+.event-log-empty[hidden] {
+  display: none;
+}
+
+.event-log-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.event-log-round {
+  margin: 10px 0 4px;
+  color: #ffd54f;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.event-log-round:first-child {
+  margin-top: 0;
+}
+
+.event-log-line {
+  padding: 2px 0 2px 8px;
+  border-left: 2px solid transparent;
+}
+
+.event-log-line.is-trick {
+  padding-bottom: 6px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid rgba(244, 235, 217, 0.12);
+  opacity: 0.8;
+}
+
+.event-log-line.is-gain {
+  color: #8ff0a0;
+  border-left-color: #43d05a;
+}
+
+.event-log-line.is-loss {
+  color: #ff9a92;
+  border-left-color: #ff4a3d;
+}
+
+.event-log-line.is-result {
+  font-size: 12px;
+}
+
+/* Roles mode only: the Roles button beside the Log and its panel of the
+   roles at the table (modes/roles/hud/table-roles.ts, which places them).
+   They take the Log's look. */
+.table-roles-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.table-roles-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.table-roles-seal {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.table-roles-item p {
+  margin: 0;
+}
+
+.table-roles-name {
+  font-weight: 600;
+}
+
+.table-roles-item.is-own .table-roles-name {
+  color: #ffd54f;
+}
+
+.table-roles-role {
+  margin-left: 6px;
+  color: rgb(184, 132, 224);
+  font-weight: 400;
+}
+
+.table-roles-power {
+  margin-top: 2px;
+  opacity: 0.85;
+}
+
 /* The turn hourglass, under Leave Table, centred and 90% as wide as it (see
    visualizer/turn-hourglass.ts). The box is the upright hourglass, 0.72 wide
    to 1 tall. Its canvas is square and larger, centred on it, so the glass has

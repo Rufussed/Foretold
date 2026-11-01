@@ -1,6 +1,6 @@
 import type { Card, Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
-import { WizardRules } from "../../services/wizardRules.js";
+import { WizardRules, type TrickRoles } from "../../services/wizardRules.js";
 import { canBeTaken, playerOf, powerOn, type RoleOf } from "./rolePlay.js";
 
 const rules = new WizardRules();
@@ -32,6 +32,7 @@ export function trades(
   playedCards: PlayedCard[],
   merchant: string,
   trumpSuit: Suit | null,
+  roles?: TrickRoles,
 ): { player: string; card: Card; sells: boolean }[] {
   const own = playedCards.find((played) => played.username === merchant);
 
@@ -39,14 +40,24 @@ export function trades(
     return [];
   }
 
-  const leadSuit = rules.getLeadSuit(playedCards);
+  const leadSuit = rules.getLeadSuit(playedCards, trumpSuit, roles);
+  // A Red Wizard's red card on a red lead: no trumps in this trick.
+  const trump = rules.redShield(playedCards, trumpSuit, roles) ? null : trumpSuit;
 
   return playedCards.flatMap((played) => {
     if (played === own || !canBeTaken(played)) {
       return [];
     }
 
-    const compared = rules.compareCards(own.card, played.card, trumpSuit, leadSuit);
+    // A Green Wizard's green cards count higher here too.
+    const compared = rules.compareCards(
+      own.card,
+      played.card,
+      trump,
+      leadSuit,
+      roles?.boostOf?.(own) ?? 0,
+      roles?.boostOf?.(played) ?? 0,
+    );
 
     return compared ? [{ player: played.username, card: played.card, sells: compared > 0 }] : [];
   });

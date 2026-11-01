@@ -3,7 +3,9 @@ import { SUITS } from "../models/card.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { WizardRules } from "../services/wizardRules.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
-import { isRoleCard } from "./roleSense.js";
+import { isRoleCard, roleOfBot } from "./roleSense.js";
+import { playsFree } from "../modes/roles/master/joker.js";
+import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 
 const rules = new WizardRules();
 
@@ -71,8 +73,9 @@ export const apprentice: BotStrategy = {
 
   chooseCardIndex(game) {
     const player = currentPlayer(game);
-    const leadSuit = rules.getLeadSuit(game.currentTrick.playedCards);
-    const playable = (card: Card) => rules.isValidCardPlay(card, player.hand, leadSuit);
+    const leadSuit = rules.getLeadSuit(game.currentTrick.playedCards, game.trumpSuit, trickRolesIn(game));
+    // A Roles Joker may play any card unless trump was led (modes/roles/master/joker.ts).
+    const playable = (card: Card) => playsFree(roleOfBot(game), leadSuit, game.trumpSuit) || rules.isValidCardPlay(card, player.hand, leadSuit);
     // In a Roles game it believes in its role's card, and plays it first.
     const roleIndex = player.hand.findIndex((card) => playable(card) && isRoleCard(game, card));
     const playableIndex = roleIndex !== -1 ? roleIndex : player.hand.findIndex(playable);

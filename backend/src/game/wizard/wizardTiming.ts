@@ -26,6 +26,21 @@ export const WIZARD_TIMING = {
   // tesseract through this, so the two are timed against each other.
   trickHoldMs: 2500,
 
+  // Sabotage (modes/sabotage/): after a Seer or Trickster power has been
+  // used, before the trick is cleared, so the table can show and announce
+  // what it did.
+  afterPowerHoldMs: 2000,
+
+  // The same after a Thief's swap, which the table plays out in full: the two
+  // cards crossing, then the target's fan settling back.
+  afterThiefHoldMs: 6500,
+
+  // Roles (modes/roles/): a completed trick is held this much longer for
+  // every role power at work in it, never shortened at a faster pace, so the
+  // table can play each out and announce it whatever the game's speed (see
+  // the table's ANNOUNCER.messageSeconds and TRICK_SWAP).
+  roleActionHoldMs: 2500,
+
   // After any move is broadcast, before the runner looks at the game again: a
   // beat for the table to show what just happened rather than the next move
   // landing on top of it.

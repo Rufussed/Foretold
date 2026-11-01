@@ -3,8 +3,11 @@ import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
 import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { TRICK_SWAP, swapPlacement } from "../modes/roles/mechanics/trick-swap";
+import { CARD_HANDLING as SABOTAGE_CARD_HANDLING, PLAYED_CARDS } from "../modes/sabotage/sabotage-config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
-import { paced } from "./pace";
+import { paced, unhurried } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
 import { centredSlots, type TableLayout } from "./table-layout";
 
@@ -25,10 +28,14 @@ export interface TableCards {
   // of it first, then turns into place on its played-card slot.
   // flyFromHand: cards played from your own hand by the server (your NPC, when
   // watching), which rise and fly from where they sit like other players' do.
+  // byOwner: the same cards in the places they are shown in, when a Roles
+  // power has swapped two of them (modes/roles/mechanics/trick-swap.ts); they trade
+  // places once the card just played has landed.
   setTrick(
     cards: readonly Card[],
     origins?: ReadonlyMap<string, Placement>,
     flyFromHand?: ReadonlySet<string>,
+    byOwner?: readonly Card[],
   ): void;
   // How many players are at the table, which decides how many of the six
   // played-card slots the trick uses: they are taken from the middle, so a
@@ -60,10 +67,38 @@ export interface TableCards {
   // Hides the trump card until a different trump is set or a deal begins.
   suppressTrump(): void;
 
+  // For a Sabotage Thief's swap (modes/sabotage/heist/). Hides these hand
+  // cards, while they stay counted in the fan, until each is released: a card
+  // taken by a Thief arrives by flight, not by appearing. Unlike a deal's
+  // hold, the hand keeps turning with the camera meanwhile.
+  holdForSwap(keys: readonly string[]): void;
+  releaseSwapped(key: string): void;
+  // Where a hand card is, in environment space; null if it isn't showing.
+  placementOf(key: string): Placement | null;
+  // The slots a hand of `count` cards would sit on, riding with the camera as
+  // your hand does.
+  frameSlots(count: number): Placement[];
+
   // The hand card under a ray, if any.
   cardAt(raycaster: THREE.Raycaster): string | null;
+  // Roles mode only (modes/roles/mechanics/trick-pick.ts), for a Fisher's
+  // catch or a Thief's trump 1: the trick card under the pointer, among
+  // these keys only...
+  trickCardAt(raycaster: THREE.Raycaster, keys: ReadonlySet<string>): string | null;
+  // ...and these trick cards lifted off the table, as a raised hand card is,
+  // for the player to pick one; an empty list sets them all down.
+  setTrickRaised(keys: readonly string[]): void;
+  // Roles mode only: the card you are playing while it waits to be sent (a
+  // Gambler's 10 waiting on the bet), for the choice to sit under it.
+  pendingCardObject(): THREE.Object3D | null;
   setHovered(key: string | null): void;
+  // The hand card the pointer is on, else the one raised to be read.
+  selectedKey(): string | null;
   toggleRaised(key: string): void;
+  setRaised(key: string, raised: boolean): void;
+  // Calls back once no Roles swap is waiting or moving in the trick: at once
+  // if none is.
+  whenSwapsDone(done: () => void): void;
   positionOf(key: string): THREE.Vector3 | null;
   startDrag(key: string): void;
   dragTo(key: string, world: THREE.Vector3): void;
@@ -78,6 +113,10 @@ export interface TableCards {
   play(key: string): boolean;
   // The pending play was refused: the card returns to the hand.
   cancelPlay(): void;
+  // While a choice about the pending card is open (a Roles Thief's steal, a
+  // Gambler's bet, a Prophet's prediction), it waits there without a limit;
+  // released, it waits for the server's answer as usual, from then on.
+  holdPlay(held: boolean): void;
   // Accepts the pending play locally, for the demo table with no server.
   confirmPlay(): void;
   // Development aid: what the trump target shows.
@@ -104,6 +143,8 @@ interface TableCard {
   drag: THREE.Vector3 | null; // environment-local position while dragged
   placed: boolean;
   flight: { from: Placement; startedAt: number } | null; // another player's play
+  // Trading places with another card in the trick (a Roles swap).
+  swap: { from: Placement; startedAt: number; high: boolean } | null;
 }
 
 const smooth = (x: number) => {
@@ -149,6 +190,35 @@ export function createTableCards(
   // per frame.
   let inUse = centredPlayedSlots(playerCount);
   const playedSlotsInUse = () => inUse;
+
+  // A Sabotage table: the played slots as they are drawn when `count` cards
+  // are in play. The first card goes to the middle and the rest spread out
+  // about it as they arrive: with `count` cards they take the middle `count`
+  // slots, so the group stays centred on the full set. The fewer cards, the
+  // bigger (see PLAYED_CARDS), with the spacing spread by the same amount to
+  // keep the gaps, and raised by half the extra height so a card grows upward
+  // from where its bottom edge was. Built once per count.
+  const scaledPlayed = new Map<number, readonly Placement[]>();
+  const playedSlotsFor = (count: number): readonly Placement[] => {
+    if (!isSabotageGame()) return playedSlotsInUse();
+    const shown = Math.max(1, Math.min(count, playerCount));
+    const cached = scaledPlayed.get(shown);
+    if (cached) return cached;
+
+    // The biggest with one card, smaller for each more, never below authored.
+    const factor = Math.max(1, PLAYED_CARDS.oneCard - PLAYED_CARDS.stepPerCard * (shown - 1));
+    const middle = centroid(playedSlots);
+    const slots = centredPlayedSlots(shown).map((slot) => ({
+      position: middle
+        .clone()
+        .add(slot.position.clone().sub(middle).multiplyScalar(factor))
+        .addScaledVector(up, ((factor - 1) / 2) * factory.length * slot.scale.z),
+      quaternion: slot.quaternion,
+      scale: slot.scale.clone().multiplyScalar(factor),
+    }));
+    scaledPlayed.set(shown, slots);
+    return slots;
+  };
   const trumpSlot = layout.trump;
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
   const liftFor = (slot: Placement) => CARD_HANDLING.raiseLengths * factory.length * slot.scale.z;
@@ -156,7 +226,19 @@ export function createTableCards(
   const cards = new Map<string, TableCard>();
   let handOrder: string[] = [];
   let trickOrder: string[] = [];
-  let pending: { key: string; since: number } | null = null;
+  // The trick's cards by the place each is shown in: the order played, until a
+  // Roles power swaps two (see setTrick's byOwner).
+  let trickPlaces: string[] = [];
+  let trickRaised = new Set<string>();
+  // A swap waiting for the card just played to land: the places after it, and
+  // when it starts.
+  let swapWaiting: { places: string[]; at: number } | null = null;
+  let swapWaiters: (() => void)[] = [];
+  const swapping = () =>
+    !!swapWaiting || [...cards.values()].some((entry) => entry.swap && !suppressed.has(entry.key));
+  // The card played and waiting for the server; while held (a Roles choice
+  // still open, e.g. a Gambler's bet) it waits without a limit.
+  let pending: { key: string; since: number; held?: boolean } | null = null;
   let hovered: string | null = null;
   let leading: string | null = null;
   let held = new Set<string>();
@@ -205,6 +287,7 @@ export function createTableCards(
       drag: null,
       placed: false,
       flight: null,
+      swap: null,
     };
     cards.set(key, entry);
     return entry;
@@ -252,7 +335,9 @@ export function createTableCards(
   // The trick as last set, so a card flies from the hand only once.
   let trickOrderShown = new Set<string>();
 
-  const visibleHand = () => handOrder.filter((key) => key !== pending?.key && !held.has(key));
+  let swapHeld = new Set<string>();
+  const visibleHand = () =>
+    handOrder.filter((key) => key !== pending?.key && !held.has(key) && !swapHeld.has(key));
 
   // A hand card's slot: centred for the whole hand, cards still being dealt
   // included, so each lands where it stays and nothing shifts mid-deal.
@@ -279,15 +364,59 @@ export function createTableCards(
   const targetOf = (entry: TableCard): { slot: Placement; lift: number } | null => {
     if (visibleHand().includes(entry.key)) {
       const slot = handSlotFor(entry.key);
-      return slot ? { slot, lift: entry.raised ? liftFor(slot) : 0 } : null;
+      if (!slot) return null;
+      if (!entry.raised) return { slot, lift: 0 };
+      if (!isSabotageGame()) return { slot, lift: liftFor(slot) };
+      // On a Sabotage table a raised card also grows to be read; the scale
+      // eases with the rest.
+      const raised = { ...slot, scale: slot.scale.clone().multiplyScalar(SABOTAGE_CARD_HANDLING.raisedScale) };
+      return { slot: raised, lift: liftFor(slot) };
     }
-    const inPlay = playedSlotsInUse();
+    // A card being played counts as in play already, so on a Sabotage table
+    // the others settle into their new size as it arrives.
+    const arriving = pending && !trickOrder.includes(pending.key) ? 1 : 0;
+    const inPlay = playedSlotsFor(trickOrder.length + arriving);
     if (pending?.key === entry.key) {
       const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
     }
-    const slot = inPlay[trickOrder.indexOf(entry.key)];
-    return slot ? { slot, lift: 0 } : null;
+    const slot = inPlay[trickPlaces.indexOf(entry.key)];
+    return slot ? { slot, lift: trickRaised.has(entry.key) ? liftFor(slot) : 0 } : null;
+  };
+
+  // A swapped card's move into its new place; false once it has arrived.
+  const swapInTrick = (entry: TableCard, slot: Placement): boolean => {
+    const swap = entry.swap;
+    if (!swap) return false;
+    const now = swapPlacement(swap.from, slot, clock - swap.startedAt, swap.high, up, factory.length);
+    if (now) {
+      applyPlacement(entry.object, now);
+      return true;
+    }
+    entry.swap = null;
+    applyPlacement(entry.object, slot);
+    return false;
+  };
+
+  // Starts the waiting swap: every card whose place changes moves, the first
+  // on the higher path.
+  const startSwap = () => {
+    if (!swapWaiting) return;
+    let high = true;
+    trickPlaces.forEach((key, index) => {
+      if (swapWaiting!.places[index] === key) return;
+      const entry = cards.get(key);
+      if (!entry) return;
+      entry.flight = null;
+      entry.swap = {
+        from: { position: entry.object.position.clone(), quaternion: entry.object.quaternion.clone(), scale: entry.object.scale.clone() },
+        startedAt: clock,
+        high,
+      };
+      high = !high;
+    });
+    trickPlaces = swapWaiting.places;
+    swapWaiting = null;
   };
 
   return {
@@ -318,6 +447,7 @@ export function createTableCards(
       if (wanted === playerCount) return;
       playerCount = wanted;
       inUse = centredPlayedSlots(playerCount);
+      scaledPlayed.clear();
     },
 
     setTrump(card, trumpSuit) {
@@ -366,7 +496,8 @@ export function createTableCards(
       }
     },
 
-    setTrick(cardsPlayed, origins, flyFromHand) {
+    setTrick(cardsPlayed, origins, flyFromHand, byOwner) {
+      const previousPlaces = trickPlaces;
       trickOrder = cardsPlayed.map(cardKey);
       for (const key of [...suppressed]) {
         if (!trickOrder.includes(key)) suppressed.delete(key);
@@ -389,6 +520,33 @@ export function createTableCards(
       }
       if (pending && trickOrder.includes(pending.key)) pending = null;
       trickOrderShown = new Set(trickOrder);
+
+      // Cards already on the table keep their places for now, and a new one
+      // lands in its own turn's place; if the owners say otherwise, the cards
+      // trade places once the newest has landed.
+      const owned = (byOwner ?? cardsPlayed).map(cardKey);
+      const shown = trickOrder.map((key, index) => previousPlaces[index] ?? key);
+      const sameCards = shown.length === new Set(shown).size && shown.every((key) => trickOrder.includes(key));
+      const settled = sameCards ? shown : trickOrder;
+      trickPlaces = settled;
+      const waiting = swapWaiting;
+      swapWaiting = null;
+      if (owned.join() !== settled.join()) {
+        // When the cards just played have landed: one from another hand at
+        // the end of its flight, your own once it has glided into place.
+        const landing = trickOrder
+          .filter((key) => !previousPlaces.includes(key))
+          .map((key) => {
+            const flight = cards.get(key)?.flight;
+            return flight
+              ? flight.startedAt + paced(OPPONENT_PLAYS.liftSeconds) + paced(OPPONENT_PLAYS.travelSeconds)
+              : clock + paced(OPPONENT_PLAYS.travelSeconds);
+          });
+        const lands = Math.max(clock, ...landing);
+        // A repeat of the same state keeps the swap's start where it was.
+        const at = waiting?.places.join() === owned.join() ? waiting.at : lands + unhurried(TRICK_SWAP.pauseSeconds);
+        swapWaiting = { places: owned, at };
+      }
     },
 
     setHandFrame(yaw, pivot) {
@@ -412,10 +570,12 @@ export function createTableCards(
 
     update(deltaSeconds) {
       clock += deltaSeconds;
-      if (pending && clock - pending.since > CARD_HANDLING.pendingPlaySeconds) {
+      if (pending && !pending.held && clock - pending.since > CARD_HANDLING.pendingPlaySeconds) {
         console.warn(`[cards] no answer to playing ${pending.key}; back to the hand`);
         pending = null;
       }
+
+      if (swapWaiting && clock >= swapWaiting.at) startSwap();
 
       const follow = 1 - Math.exp(-CARD_HANDLING.followSpeed * deltaSeconds);
       for (const entry of cards.values()) {
@@ -424,6 +584,7 @@ export function createTableCards(
           entry.object.visible = false;
           entry.placed = false;
           entry.flight = null;
+          entry.swap = null;
           continue;
         }
 
@@ -435,6 +596,11 @@ export function createTableCards(
         if (flyFromHand(entry, target.slot)) {
           entry.object.visible = true;
           entry.outline.visible = false;
+          continue;
+        }
+
+        if (swapInTrick(entry, target.slot)) {
+          entry.object.visible = true;
           continue;
         }
 
@@ -464,6 +630,13 @@ export function createTableCards(
         // keeps the plain hover outline.
         applyOutlineStyle(entry, isLeading && !pointed);
       }
+
+      // A finished swap lets whatever waits on it go on (the trick's gather).
+      if (swapWaiters.length > 0 && !swapping()) {
+        const waiters = swapWaiters;
+        swapWaiters = [];
+        waiters.forEach((done) => done());
+      }
     },
 
     handOrder: () => [...handOrder],
@@ -487,6 +660,37 @@ export function createTableCards(
       applyPlacement(entry.object, slot);
       entry.placed = true;
       entry.object.visible = true;
+    },
+
+    holdForSwap(keys) {
+      swapHeld = new Set(keys);
+    },
+
+    releaseSwapped(key) {
+      if (!swapHeld.delete(key)) return;
+      const entry = cards.get(key);
+      const slot = handSlotFor(key);
+      if (!entry || !slot) return;
+      applyPlacement(entry.object, slot);
+      entry.placed = true;
+      entry.object.visible = true;
+    },
+
+    placementOf(key) {
+      const object = cards.get(key)?.object;
+      if (!object?.visible) return null;
+      return { position: object.position.clone(), quaternion: object.quaternion.clone(), scale: object.scale.clone() };
+    },
+
+    frameSlots(count) {
+      return centredSlots(handSlots, count).map((slot) => {
+        if (handYaw === 0) return { position: slot.position.clone(), quaternion: slot.quaternion.clone(), scale: slot.scale.clone() };
+        return {
+          position: turnAbout(slot.position.clone(), handYaw),
+          quaternion: new THREE.Quaternion().setFromAxisAngle(up, handYaw).multiply(slot.quaternion),
+          scale: slot.scale.clone(),
+        };
+      });
     },
 
     holdTrump(isHeld) {
@@ -538,6 +742,26 @@ export function createTableCards(
       hovered = key;
     },
 
+    trickCardAt(raycaster, keys) {
+      const candidates = trickOrder
+        .filter((key) => keys.has(key))
+        .map((key) => cards.get(key)?.object)
+        .filter((object): object is THREE.Object3D => !!object?.visible);
+      const hit = raycaster.intersectObjects(candidates, true)[0];
+      for (let object: THREE.Object3D | null = hit?.object ?? null; object; object = object.parent) {
+        if (typeof object.userData.cardKey === "string") return object.userData.cardKey;
+      }
+      return null;
+    },
+
+    setTrickRaised(keys) {
+      trickRaised = new Set(keys);
+    },
+
+    pendingCardObject() {
+      return pending ? (cards.get(pending.key)?.object ?? null) : null;
+    },
+
     toggleRaised(key) {
       const entry = cards.get(key);
       if (!entry) return;
@@ -545,6 +769,24 @@ export function createTableCards(
       // One card is read at a time.
       for (const other of cards.values()) other.raised = false;
       entry.raised = raise;
+    },
+
+    whenSwapsDone(done) {
+      if (swapping()) swapWaiters.push(done);
+      else done();
+    },
+
+    selectedKey() {
+      const shown = visibleHand();
+      if (hovered && shown.includes(hovered)) return hovered;
+      return shown.find((key) => cards.get(key)?.raised) ?? null;
+    },
+
+    setRaised(key, raised) {
+      const entry = cards.get(key);
+      if (!entry) return;
+      for (const other of cards.values()) other.raised = false;
+      entry.raised = raised;
     },
 
     positionOf(key) {
@@ -612,6 +854,10 @@ export function createTableCards(
 
     cancelPlay() {
       pending = null;
+    },
+
+    holdPlay(held) {
+      if (pending) pending = { ...pending, held, since: clock };
     },
 
     confirmPlay() {

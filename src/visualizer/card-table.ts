@@ -10,10 +10,14 @@ import { createCardSound } from "./card-sound";
 import { createCardDeal, type CardDeal, type DealStep } from "./card-deal";
 import { createCardFactory } from "./card-objects";
 import { cardKey, cardTexture } from "./card-textures";
-import { CARD_HANDLING } from "./config";
+import { BURST, CARD_HANDLING, TRICK_REWARD } from "./config";
 import { planDeal, type PlannedCard, type Recipient } from "./deal-plan";
 import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-connection";
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
+import { cardsByOwner } from "../modes/roles/mechanics/trick-swap";
+import { applyBlueSight } from "../modes/roles/master/blue-sight";
+import { trickRolesIn } from "../../backend/src/game/wizard/modes/roles/master/trickRoles";
+import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
 import type { SeatId } from "./player-characters";
 import { createTableCards, type TableCards } from "./table-cards";
@@ -40,6 +44,10 @@ export interface CardTableOptions {
   // card held to it.
   headTurnOf(seat: SeatId): THREE.Quaternion | null;
   headRadiusOf(seat: SeatId): number | null;
+  // Turns the camera to a player, or back to the normal view with null.
+  lookAt(username: string | null, done: () => void, seconds?: number): void;
+  // A line for the announcement box.
+  notice(text: string): void;
   // Called when a deal has finished landing.
   onDealDone?(): void;
   // Called when another player's card takes the lead in the trick, with the
@@ -48,15 +56,26 @@ export interface CardTableOptions {
   // Before a card is sent: the card a Thief's trump 1 takes, if there is a
   // choice (steal-prompt.ts); null when the turn passed before a choice.
   chooseSteal?(cardIndex: number): Promise<number | null | undefined>;
+  // Then, for a Roles Gambler's 10: whether they bet on it (bet-pick.ts);
+  // null when the turn passed before a choice.
+  chooseBet?(cardIndex: number): Promise<boolean | null | undefined>;
+  // True while a Roles game asks for a pick on the table (a Fisher's catch,
+  // a Thief's trump 1; modes/roles/mechanics/trick-pick.ts): the hand's
+  // controls stand aside.
+  picking?(): boolean;
 }
 
 export interface CardTable {
   readonly cards: TableCards;
+  // A card face's size, in card-mesh units (card-objects.ts).
+  readonly cardSize: { width: number; length: number };
   readonly deal: CardDeal;
   readonly opponents: OpponentHands;
   // A blind round's cards, held facing away from their holders.
   readonly blind: BlindCards;
   readonly rewards: TrickRewards;
+  // A Sabotage Thief's swap: choosing, and the cards trading places.
+  readonly heist: SabotageThiefHeist;
   // True from the start of a deal (including waiting for the intro camera
   // move) until its last card has landed.
   readonly dealing: boolean;
@@ -65,6 +84,8 @@ export interface CardTable {
   // Live games: the finished trick's cards gather (with the trump, after a
   // round's last trick) and a tesseract goes to its winner; done once it has.
   playTrickReward(done: () => void): void;
+  // Live games: the cards a Thief swapped trade places; done once they have.
+  playThiefSwap(done: () => void): void;
   // The server refused an action; a card waiting to be played returns.
   refused(): void;
   // Demo table: gather the cards and deal a fresh random round.
@@ -72,6 +93,17 @@ export interface CardTable {
   // Demo table: play the trick reward to a random player (you included); the
   // round-end version also gathers the trump and takes its colour.
   playTestReward(roundOver: boolean): void;
+  // The chime that goes with a burst: bright for "win", the falling one for
+  // "lose" (the red tesseract's).
+  playChime(outcome: "win" | "lose"): void;
+  // A burst of rays on a player, as when a tesseract dives into them: on their
+  // head, or in front of the camera if it is you. Red when an opponent changed
+  // their prediction, green when they changed their own (a Seer).
+  burstOnPlayer(username: string, byOther: boolean): void;
+  // A Trickster's blow: a red tesseract flies from one player's head (the
+  // camera, if it is you) to another's, and on reaching them bursts red with
+  // the falling chime, as when a player goes over their prediction.
+  sendTesseract(from: string, to: string): void;
   update(deltaSeconds: number): void;
   dispose(): void;
 }
@@ -92,14 +124,22 @@ export function createCardTable({
   headOf,
   headTurnOf,
   headRadiusOf,
+  lookAt,
+  notice,
   onDealDone,
   onOvertaken,
   chooseSteal,
+  chooseBet,
+  picking: otherPicking = () => false,
 }: CardTableOptions): CardTable {
   const cameraPosition = new THREE.Vector3();
   const factory = createCardFactory(environment);
   const cards = createTableCards(environment, factory, layout);
-  const opponents = createOpponentHands(factory, layout);
+  const opponents = createOpponentHands(
+    factory,
+    layout,
+    new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert()),
+  );
   const blind = createBlindCards(
     factory,
     createBlindPlacements({ environment, layout, camera: () => view.camera, headOf, headTurnOf, headRadiusOf }),
@@ -128,17 +168,42 @@ export function createCardTable({
       cards.cancelPlay();
       return;
     }
-    // A Thief's trump 1 asks which card to take first.
-    void (chooseSteal?.(cardIndex) ?? Promise.resolve(undefined)).then((stealSpot) => {
+    // A Thief's trump 1 asks which card to take first, a Gambler's 10
+    // whether to bet (Roles mode only).
+    // The card waits where it was played while they choose.
+    void (async () => {
+      cards.holdPlay(true);
+      const stealSpot = await (chooseSteal?.(cardIndex) ?? Promise.resolve(undefined));
+      const bet = stealSpot === null ? null : await (chooseBet?.(cardIndex) ?? Promise.resolve(undefined));
+      cards.holdPlay(false);
       const sent =
         stealSpot !== null &&
-        game.send({ type: "play_card", cardIndex, ...(stealSpot === undefined ? {} : { stealSpot }) });
+        bet !== null &&
+        game.send({
+          type: "play_card",
+          cardIndex,
+          ...(stealSpot === undefined ? {} : { stealSpot }),
+          ...(bet ? { bet: true } : {}),
+        });
       if (!sent) cards.cancelPlay();
-    });
+    })();
   };
+
+  const heist = createSabotageThiefHeist({
+    game,
+    view,
+    environment,
+    factory,
+    cards,
+    opponents,
+    seatOf,
+    lookAt,
+    notice,
+  });
 
   const controls = createCardControls({
     canvas: view.canvas,
+    picking: () => heist.step() === "own" || heist.step() === "theirs" || otherPicking(),
     camera: view.camera,
     cards,
     holdOrbit: view.holdOrbit,
@@ -303,6 +368,8 @@ export function createCardTable({
     const state = game?.state();
     if (!game || !state) return;
 
+    // Before the hand changes, so a card swapped away can still be found.
+    heist.applyState();
     const hand = localPlayer(game)?.hand ?? [];
     cards.setHand(hand);
     // In a blind round every card is held up to its holder's forehead, and you
@@ -326,14 +393,16 @@ export function createCardTable({
     const origins = new Map<string, Placement>();
     for (const played of state.currentTrick.playedCards) {
       const key = cardKey(played.card);
+      // Who played it: after a Roles swap the owner is someone else.
+      const player = played.playedBy ?? played.username;
       if (!knownTrick || knownTrick.has(key) || deal.dealing) continue;
       if (blindRound) {
-        const holder = holderOf(played.username);
+        const holder = holderOf(player);
         if (holder !== null) origins.set(key, blind.heldAt(holder));
         continue;
       }
-      if (played.username === game.localUsername) continue;
-      const seat = seatOf(played.username);
+      if (player === game.localUsername) continue;
+      const seat = seatOf(player);
       if (seat === null) continue;
       const showing = opponents.visibleCount(seat);
       const from = centredSlots(layout.handFor(seat), showing)[showing - 1];
@@ -344,10 +413,16 @@ export function createCardTable({
       canAct(game)
         ? []
         : state.currentTrick.playedCards
-            .filter((played) => played.username === game.localUsername)
+            .filter((played) => (played.playedBy ?? played.username) === game.localUsername)
             .map((played) => cardKey(played.card)),
     );
-    cards.setTrick(state.currentTrick.playedCards.map((played) => played.card), origins, fromHand);
+    cards.setTrick(
+      state.currentTrick.playedCards.map((played) => played.card),
+      origins,
+      fromHand,
+      // A Roles swap: each card in the place of the player who now owns it.
+      cardsByOwner(state.currentTrick.playedCards),
+    );
     // Only now, so a card just played flies from where it was, dropped or held.
     blind.set(holdings);
     knownTrick = new Set(state.currentTrick.playedCards.map((played) => cardKey(played.card)));
@@ -356,6 +431,8 @@ export function createCardTable({
       state.currentTrick.playedCards,
       state.trumpSuit,
       normalizeGameOptions(state.options).wizardWins,
+      // A Roles game's colour Wizards change the rules (modes/roles/master/trickRoles.ts).
+      trickRolesIn(state),
     );
     const leadingPlay = state.currentTrick.playedCards.find((played) => played.username === leader);
     cards.setLeading(leadingPlay ? cardKey(leadingPlay.card) : null);
@@ -477,17 +554,20 @@ export function createCardTable({
 
   return {
     cards,
+    cardSize: { width: factory.width, length: factory.length },
     deal,
     opponents,
     blind,
     rewards,
+    heist,
     get dealing() {
       return dealPending;
     },
     applyState,
     playTrickReward(done) {
-      const winner = game?.state()?.currentTrick.winnerUsername;
       const state = game?.state();
+      // A Roles Duke may have granted the trick away: the cards go to them.
+      const winner = state?.currentTrick.grantedTo ?? state?.currentTrick.winnerUsername;
       if (!winner || !state) {
         done();
         return;
@@ -495,7 +575,8 @@ export function createCardTable({
       const roundOver = state.players.every((player) => player.handCount === 0);
       const won = state.players.find((player) => player.username === winner);
       const burstColor = won ? burstColorFor(won.tricksWon, won.prediction) : burstColorFor(0, null);
-      startReward(destinationFor(winner), roundOver, burstColor, done);
+      // A Roles swap still under way finishes before the cards are gathered.
+      cards.whenSwapsDone(() => startReward(destinationFor(winner), roundOver, burstColor, done));
     },
     refused: () => {
       cards.cancelPlay();
@@ -506,13 +587,68 @@ export function createCardTable({
     update(deltaSeconds) {
       deal.update(deltaSeconds);
       cards.setHandFrame(view.cameraYaw(), view.camera.getWorldPosition(cameraPosition));
+      // After the hand has turned with the camera: the fan shown to the winner rides with it.
+      opponents.update(deltaSeconds);
+      heist.update(deltaSeconds);
       cards.update(deltaSeconds);
       blind.update();
+      // A Roles Blue Wizard's sight: the blue cards of hidden hands.
+      if (game) {
+        applyBlueSight(game.state(), {
+          localUsername: game.localUsername,
+          seatOf,
+          visibleCount: (seat) => opponents.visibleCount(seat),
+          cardObject: (seat, index) => opponents.cardObject(seat, index),
+          localBlindCard: () => blind.localCard(),
+        });
+      }
       rewards.update(deltaSeconds);
       burst.update(deltaSeconds);
       // crown.update(deltaSeconds);
     },
+    playThiefSwap: (done) => heist.playSwap(done),
+
+    playChime(outcome) {
+      chime.play(outcome);
+    },
+
+    sendTesseract(from, to) {
+      const seat = seatOf(from);
+      const head = seat === null ? null : headOf(seat);
+      let origin: THREE.Vector3 | null = null;
+      if (game && from === game.localUsername) {
+        origin = view.camera
+          .getWorldPosition(new THREE.Vector3())
+          .addScaledVector(view.camera.getWorldDirection(new THREE.Vector3()), TRICK_REWARD.cameraDistance);
+      } else if (head) {
+        origin = head.clone();
+      }
+      const destination = destinationFor(to);
+      if (!origin || !destination) return;
+      rewards.play({
+        cards: [],
+        point: origin,
+        destination,
+        color: burstCss(BURST.overColor),
+        burstColor: BURST.overColor,
+      });
+    },
+
+    burstOnPlayer(username, byOther) {
+      const color = byOther ? BURST.overColor : BURST.underColor;
+      if (game && username === game.localUsername) {
+        const eye = view.camera.getWorldPosition(new THREE.Vector3());
+        const forward = view.camera.getWorldDirection(new THREE.Vector3());
+        burst.spawn(environment.worldToLocal(eye.addScaledVector(forward, BURST.cameraDistance)), color);
+        return;
+      }
+      const seat = seatOf(username);
+      const head = seat === null ? null : headOf(seat);
+      if (head) burst.spawn(environment.worldToLocal(head.clone()), color);
+    },
+
     dispose() {
+      heist.dispose();
       controls.dispose();
       blindControls.dispose();
       sound.dispose();

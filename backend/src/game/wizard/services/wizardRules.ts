@@ -6,6 +6,24 @@ import {
   type Suit,
 } from "../models/card.js";
 
+// A played card, with who played it when a role's power has since given it
+// to someone else.
+export type TrickPlay = { username: string; playedBy?: string; card: Card };
+
+// What roles change in a trick's rules (modes/roles/master/trickRoles.ts); nothing
+// when left out.
+export interface TrickRoles {
+  // How much a played card's rank is raised against cards of its own suit:
+  // a Green Wizard's green cards.
+  boostOf?(play: TrickPlay): number;
+  // Whether this card was played by a Yellow Wizard, whose yellow card above
+  // the lead card makes yellow the lead suit.
+  isYellowWizard?(play: TrickPlay): boolean;
+  // Whether this card was played by a Red Wizard, whose red card on a red
+  // lead means no trumps count in that trick.
+  isRedWizard?(play: TrickPlay): boolean;
+}
+
 export class WizardRules {
   // A Wizard or Jester turned as trump does not establish a trump suit.
   getTrumpSuit(trumpCard: Card | null): Suit | null {
@@ -55,12 +73,20 @@ export class WizardRules {
 
   // Return a positive value when the first card wins, a negative value when
   // the second wins, and zero when neither card outranks the other.
+  // firstBoost and secondBoost raise a card's rank against a card of its own
+  // suit: a Roles Green Wizard's green cards (modes/roles/master/greenWizard.ts). A
+  // boosted card that only draws level loses.
   compareCards(
     firstCard: Card,
     secondCard: Card,
     trumpSuit: Suit | null,
     leadSuit: Suit | null,
+    firstBoost = 0,
+    secondBoost = 0,
   ): number {
+    const byRank = () =>
+      firstCard.value + firstBoost - (secondCard.value + secondBoost) || secondBoost - firstBoost;
+
     if (isWizard(firstCard)) {
       return 1;
     }
@@ -90,7 +116,7 @@ export class WizardRules {
     }
 
     if (firstIsTrump && secondIsTrump) {
-      return firstCard.value - secondCard.value;
+      return byRank();
     }
 
     const firstFollowsLead =
@@ -107,7 +133,7 @@ export class WizardRules {
     }
 
     if (firstFollowsLead && secondFollowsLead) {
-      return firstCard.value - secondCard.value;
+      return byRank();
     }
 
     return 0;
@@ -117,16 +143,19 @@ export class WizardRules {
   // Wizards are played, the game's wizardWins option picks the first or the
   // last of them.
   determineTrickWinner(
-    playedCards: Array<{ username: string; card: Card }>,
+    playedCards: TrickPlay[],
     trumpSuit: Suit | null,
     wizardWins: WizardWins,
+    roles?: TrickRoles,
   ): string | null {
     if (playedCards.length === 0) {
       return null;
     }
 
     //Handles if Wizard is play first, there is no Suit
-    const leadSuit = this.getLeadSuit(playedCards);
+    const leadSuit = this.getLeadSuit(playedCards, trumpSuit, roles);
+    // A Red Wizard's red card on a red lead: the trick has no trumps.
+    const trump = this.redShield(playedCards, trumpSuit, roles) ? null : trumpSuit;
 
     // Handle Wizards before ordinary card comparison, since which of several
     // Wizards wins is a game option rather than a card comparison.
@@ -150,8 +179,10 @@ export class WizardRules {
         this.compareCards(
           currentPlay.card,
           winningPlay.card,
-          trumpSuit,
+          trump,
           leadSuit,
+          roles?.boostOf?.(currentPlay) ?? 0,
+          roles?.boostOf?.(winningPlay) ?? 0,
         ) > 0
       ) {
         winningPlay = currentPlay;
@@ -162,15 +193,60 @@ export class WizardRules {
   }
 
   //Added here to establish if First to Draw plays a Wizard, no LEad card, if plays Jester, it passes to the next player to lead.
+  // Whether a Red Wizard has played a red card on a red lead (after any
+  // Yellow Wizard's switch): then no trumps count in this trick, for anyone.
+  redShield(playedCards: TrickPlay[], trumpSuit: Suit | null, roles?: TrickRoles): boolean {
+    const isRedWizard = roles?.isRedWizard;
+    if (!isRedWizard || this.getLeadSuit(playedCards, trumpSuit, roles) !== "Red") {
+      return false;
+    }
+
+    return playedCards.some(
+      (play) => play.card.suit === "Red" && !isWizard(play.card) && !isJester(play.card) && isRedWizard(play),
+    );
+  }
+
+  // A Yellow Wizard with no card of the lead suit who plays a yellow card
+  // above the lead card makes yellow the lead suit for the rest of the trick,
+  // unless yellow is trumps or already led, or a Red Wizard's shield came
+  // first (see redShield).
   getLeadSuit(
-    playedCards: Array<{ card: Card }>,
+    playedCards: TrickPlay[],
+    trumpSuit: Suit | null = null,
+    roles?: TrickRoles,
   ): Suit | null {
-    const firstRelevantCard = playedCards.find(
+    const leadIndex = playedCards.findIndex(
       ({ card }) => !isJester(card),
-    )?.card;
+    );
+    const firstRelevantCard = playedCards[leadIndex]?.card;
 
     if (!firstRelevantCard || isWizard(firstRelevantCard)) {
       return null;
+    }
+
+    // Played in order: a Yellow Wizard's switch counts unless a Red Wizard's
+    // red card has already shielded a red lead, which holds to the trick's end.
+    const isYellowWizard = roles?.isYellowWizard;
+    if (isYellowWizard && firstRelevantCard.suit !== "Yellow" && trumpSuit !== "Yellow") {
+      let shielded = false;
+
+      for (const play of playedCards.slice(leadIndex + 1)) {
+        const numbered = !isWizard(play.card) && !isJester(play.card);
+
+        if (
+          !shielded &&
+          numbered &&
+          play.card.suit === "Yellow" &&
+          play.card.value > firstRelevantCard.value &&
+          isYellowWizard(play)
+        ) {
+          return "Yellow";
+        }
+
+        if (firstRelevantCard.suit === "Red" && numbered && play.card.suit === "Red" && roles?.isRedWizard?.(play)) {
+          shielded = true;
+        }
+      }
     }
 
     return firstRelevantCard.suit;

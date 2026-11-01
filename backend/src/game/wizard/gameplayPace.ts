@@ -40,3 +40,9 @@ export const clampPace = (value: unknown): number => {
 // A duration written at the default pace, in whatever unit, at the pace given.
 export const paced = (duration: number, pace: number): number =>
   duration / clampPace(pace);
+
+// The same, but never faster than the default pace: slower games still slow
+// it down. For what players must be able to follow at any speed, like a
+// role's power at work.
+export const unhurried = (duration: number, pace: number): number =>
+  duration / Math.min(clampPace(pace), GAMEPLAY_PACE.default);

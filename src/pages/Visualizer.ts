@@ -19,6 +19,17 @@ import { createBackgroundMusic, type BackgroundMusic } from "../visualizer/backg
 import { EMOTES } from "../visualizer/config";
 import { createGuestSignupPrompt, type GuestSignupPrompt } from "../visualizer/guest-signup-prompt";
 import { createHudScale } from "../visualizer/hud-scale";
+import { createSabotageThiefPrompt, type SabotageThiefPrompt } from "../modes/sabotage/prompts/sabotage-thief-prompt";
+import { createSabotageDevKeys, type SabotageDevKeys } from "../modes/sabotage/dev/sabotage-dev-keys";
+import { createSuitViewer, type SuitViewer } from "../modes/sabotage/dev/suit-viewer";
+import { isSabotageGame, setSabotageGame } from "../modes/sabotage/sabotage-game";
+import { createRoleLabels, type RoleLabels } from "../modes/roles/role-labels";
+import { createRolesDevKeys, type RolesDevKeys } from "../modes/roles/dev/roles-dev-keys";
+import { createRoleSeals, type RoleSeals } from "../modes/roles/role-seals";
+import { createEventLog, type EventLog } from "../visualizer/hud/event-log";
+import { createTableRoles, type TableRoles } from "../modes/roles/hud/table-roles";
+import { createLookAround, type LookAround } from "../visualizer/look-around";
+import { isAutoFollowOn, isLookAroundOn } from "../visualizer/camera-settings";
 import { createIPhoneAppPrompts } from "../visualizer/iphone-app-prompts";
 import { createFullscreenToggle, type FullscreenToggle } from "../visualizer/fullscreen-toggle";
 import { createMusicToggle, type MusicToggle } from "../visualizer/music-toggle";
@@ -43,8 +54,13 @@ import { createTableDirector, type TableDirector } from "../visualizer/table-dir
 import { setPace } from "../visualizer/pace";
 import { createPredictionPrompt, type PredictionPrompt } from "../visualizer/prediction-prompt";
 import { createTrumpPrompt, type TrumpPrompt } from "../visualizer/trump-prompt";
-import { createFishPrompt, type FishPrompt } from "../visualizer/fish-prompt";
-import { createStealPrompt, type StealPrompt } from "../visualizer/steal-prompt";
+import { createFishPick, type FishPick } from "../modes/roles/mechanics/fish-pick";
+import { createGrantPick, type GrantPick } from "../modes/roles/mechanics/grant-pick";
+import { createChoiceTimer, type ChoiceTimer } from "../modes/roles/choice-timer";
+import { createStealPick, type StealPick } from "../modes/roles/mechanics/steal-pick";
+import { createBetPick, type BetPick } from "../modes/roles/mechanics/bet-pick";
+import { createTrickPick, type TrickPick } from "../modes/roles/mechanics/trick-pick";
+import { createPowerPrompt, type PowerPrompt } from "../modes/sabotage/prompts/power-prompt";
 import { characterForUsername, isCharacterId } from "../visualizer/seat-mapping";
 import { createSeatSync, type SeatSync } from "../visualizer/seat-sync";
 import { createSelfPortrait, type SelfPortrait } from "../visualizer/self-portrait";
@@ -94,8 +110,15 @@ export async function renderVisualizerPage(
   let cardTable: CardTable | null = null;
   let predictionPrompt: PredictionPrompt | null = null;
   let trumpPrompt: TrumpPrompt | null = null;
-  let fishPrompt: FishPrompt | null = null;
-  let stealPrompt: StealPrompt | null = null;
+  let fishPick: FishPick | null = null;
+  let grantPick: GrantPick | null = null;
+  let choiceTimer: ChoiceTimer | null = null;
+  let stealPick: StealPick | null = null;
+  let betPick: BetPick | null = null;
+  let trickPick: TrickPick | null = null;
+  let powerPrompt: PowerPrompt | null = null;
+  let roleLabels: RoleLabels | null = null;
+  let roleSeals: RoleSeals | null = null;
   let gameHud: GameHud | null = null;
   let tableDirector: TableDirector | null = null;
   let diagnostics: Diagnostics | null = null;
@@ -106,6 +129,14 @@ export async function renderVisualizerPage(
   let fullscreenToggle: FullscreenToggle | null = null;
   let iphonePrompts: { dispose(): void } | null = null;
   let hudScale: { dispose(): void } | null = null;
+  let suitViewer: SuitViewer | null = null;
+  let thiefPrompt: SabotageThiefPrompt | null = null;
+  let devThiefKey: SabotageDevKeys | null = null;
+  let rolesDevKeys: RolesDevKeys | null = null;
+  let eventLog: EventLog | null = null;
+  // Roles mode only: the roles at the table (modes/roles/hud/table-roles.ts).
+  let tableRoles: TableRoles | null = null;
+  let lookAround: LookAround | null = null;
   let guestPrompt: GuestSignupPrompt | null = null;
   let hourglass: TurnHourglass | null = null;
   let hourglassTurns: HourglassTurns | null = null;
@@ -116,12 +147,20 @@ export async function renderVisualizerPage(
 
   teardown = () => {
     destroyed = true;
+    setSabotageGame(null);
     musicToggle?.dispose();
     effectsToggle?.dispose();
     installToggle?.dispose();
     fullscreenToggle?.dispose();
     iphonePrompts?.dispose();
     hudScale?.dispose();
+    suitViewer?.dispose();
+    thiefPrompt?.dispose();
+    devThiefKey?.dispose();
+    rolesDevKeys?.dispose();
+    eventLog?.dispose();
+    tableRoles?.dispose();
+    lookAround?.dispose();
     victoryTimers.forEach((timer) => window.clearTimeout(timer));
     guestPrompt?.dispose();
     music?.dispose();
@@ -131,8 +170,15 @@ export async function renderVisualizerPage(
     tableDirector?.dispose();
     predictionPrompt?.dispose();
     trumpPrompt?.dispose();
-    fishPrompt?.dispose();
-    stealPrompt?.dispose();
+    fishPick?.dispose();
+    grantPick?.dispose();
+    choiceTimer?.dispose();
+    stealPick?.dispose();
+    betPick?.dispose();
+    trickPick?.dispose();
+    powerPrompt?.dispose();
+    roleLabels?.dispose();
+    roleSeals?.dispose();
     gameHud?.dispose();
     hourglass?.destroy();
     timeoutNotice?.dispose();
@@ -229,6 +275,12 @@ export async function renderVisualizerPage(
         latestState = (await response.json()) as PublicWizardGameState;
         // An all-NPC game: you watch from your own NPC's seat.
         localUsername = seatNameFor(localUsername, latestState.players) ?? localUsername;
+      } else if (response.status === 404) {
+        // The game is over and gone (the server removes a finished game), as
+        // when Back returns here from the lobby: go where Leave Table goes,
+        // in place of this page, so Back does not lead here again.
+        window.location.replace(isGuestGame ? "#/home" : "#/lobby");
+        return;
       }
     } catch (error) {
       console.warn("[visualizer] no live game, showing the demo table:", error);
@@ -240,6 +292,15 @@ export async function renderVisualizerPage(
   }
 
   const live = latestState !== null && localUsername !== null;
+
+  // A Sabotage game has its own deck, prompts and look (modes/sabotage/); set
+  // before the scene is built so all of it knows.
+  setSabotageGame(latestState);
+  if (isSabotageGame()) {
+    pageEl?.classList.add("is-sabotage");
+    // Development aid: Shift+1..4 shows a whole suit of the deck.
+    if (import.meta.env.DEV && pageEl) suitViewer = createSuitViewer(pageEl);
+  }
 
   // Leave Table asks first while the player still plays their own seat:
   // leave for now, or quit and let the server play it (leave-dialog.ts).
@@ -357,8 +418,12 @@ export async function renderVisualizerPage(
     applyHud: () => {
       predictionPrompt?.applyState();
       trumpPrompt?.applyState();
-      fishPrompt?.applyState();
-      stealPrompt?.applyState();
+      fishPick?.applyState();
+      grantPick?.applyState();
+      stealPick?.applyState();
+      betPick?.applyState();
+      powerPrompt?.applyState();
+      thiefPrompt?.applyState();
       gameHud?.applyState();
       hourglassTurns?.applyState();
       timeoutNotice?.applyState();
@@ -381,6 +446,10 @@ export async function renderVisualizerPage(
     stopBlindTour: () => blindTour.stop(),
     whenAnnouncerIdle: (done) => (gameHud ? gameHud.whenIdle(done) : done()),
     announceTrump: (state) => gameHud?.announceTrump(state),
+    playThiefSwap: (done) => {
+      if (cardTable) cardTable.playThiefSwap(done);
+      else done();
+    },
     playTrickReward: (done) => {
       // The NPCs react as the trick is won.
       const state = director.tableState();
@@ -403,6 +472,8 @@ export async function renderVisualizerPage(
 
   const page = container.querySelector<HTMLElement>(".visualizer-page");
   if (gameConnection && page) {
+    if (import.meta.env.DEV && isSabotageGame()) devThiefKey = createSabotageDevKeys(gameConnection, () => cardTable?.cards.selectedKey() ?? null);
+    if (import.meta.env.DEV && latestState?.options?.mode === "roles") rolesDevKeys = createRolesDevKeys(gameConnection, () => cardTable?.cards.selectedKey() ?? null);
     // Bidding waits until every card has been dealt.
     // Prompts open once your turn has been announced.
     // Your move's time ran out: the game is making it, so the prompts close.
@@ -414,20 +485,44 @@ export async function renderVisualizerPage(
     trumpPrompt = createTrumpPrompt(page, hudConnection!, {
       blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
-    // A Roles game's Fisher picks a card from the complete trick.
-    fishPrompt = createFishPrompt(page, hudConnection!, {
-      blocked: () => !cardTable || !director.turnShown() || timedOut(),
+    // A Sabotage game: winning a trick with a Seer or Trickster, its winner
+    // chooses how to use it.
+    powerPrompt = createPowerPrompt(page, hudConnection!, {
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
     });
-    // A Roles game's Thief picks the card their trump 1 takes.
-    stealPrompt = createStealPrompt(page, hudConnection!);
+    // A Sabotage game's Thief: pick a player, then a card of yours and one of theirs.
+    thiefPrompt = createSabotageThiefPrompt(page, {
+      heist: () => cardTable?.heist ?? null,
+      blocked: () => !cardTable || cardTable.dealing || !director.turnShown() || timedOut(),
+    });
     // The banner's gameplay lines wait until every card, trump included, has landed.
+    // A Roles game keeps a log of what happened (hud/event-log.ts).
+    if (latestState?.options?.mode === "roles") eventLog = createEventLog(page);
+    // Roles mode only: a Roles button beside the Log (modes/roles/hud/table-roles.ts).
+    if (latestState?.options?.mode === "roles") tableRoles = createTableRoles(page, latestState, localUsername ?? "");
     gameHud = createGameHud(page, hudConnection!, {
+      onLog: (round, entries) => eventLog?.add(round, entries),
       blocked: () => !cardTable || cardTable.dealing,
       statusBlocked: () => !director.turnShown(),
       seatOf: (username) => seatSync?.seatOf(username) ?? null,
       tableWidthPx: () => canvas.clientWidth * (sceneView?.tableWidthFraction() ?? 1),
       tableRound: () => director.tableState()?.currentRound,
       turnShown: () => director.turnShown(),
+      // A Seer or Trickster changed a prediction. Your own Seer's change gets the
+      // bright chime and a green burst. A Trickster
+      // sends a red tesseract from its player's head to its target's, which bursts
+      // red with the falling chime when it arrives.
+      onPredictionChanged: (byOther) => {
+        // A Trickster's tesseract brings its own falling chime when it lands.
+        if (!byOther) cardTable?.playChime("win");
+      },
+      onPredictionEffect: (username, byOther, source) => {
+        // Sabotage's effects only: a Roles Prophet's lowered prediction just
+        // flashes in the player list.
+        if (latestState?.options?.mode === "roles") return;
+        if (byOther && source) cardTable?.sendTesseract(source, username);
+        else cardTable?.burstOnPlayer(username, byOther);
+      },
     });
 
     // Your move's countdown starts once your table has shown you your turn.
@@ -448,7 +543,10 @@ export async function renderVisualizerPage(
       onTimedOut: () => {
         predictionPrompt?.applyState();
         trumpPrompt?.applyState();
-        fishPrompt?.applyState();
+        fishPick?.applyState();
+        grantPick?.applyState();
+        powerPrompt?.applyState();
+        thiefPrompt?.applyState();
       },
     });
 
@@ -523,6 +621,19 @@ export async function renderVisualizerPage(
       const sync = live ? createSeatSync(players, layout.clockwiseSeats) : null;
       seatSync = sync;
 
+      // A Roles game: each other player's role above their head (modes/roles/).
+      if (sync && localUsername && latestState?.options?.mode === "roles") {
+        roleLabels = createRoleLabels({
+          parent: environment,
+          localUsername,
+          seatOf: (username) => sync.seatOf(username),
+          headOf: (seat) => players.headPosition(seat),
+          headRadiusOf: (seat) => players.headRadius(seat),
+          onUse: (username, hitYou) => gameHud?.flashRole(username, hitYou),
+          onClear: (username) => gameHud?.clearRole(username),
+        });
+      }
+
       // Cards: the stack and dealing, every player's hand, the trick and the
       // trump. Plays go to the game socket.
       cardTable = createCardTable({
@@ -534,13 +645,75 @@ export async function renderVisualizerPage(
         headOf: (seat) => players.headPosition(seat),
         headTurnOf: (seat) => players.headQuaternion(seat),
         headRadiusOf: (seat) => players.headRadius(seat),
+        lookAt: (username, done, seconds) =>
+          turnCamera ? turnCamera.lookAt(username, done, seconds) : done(),
+        notice: (text) => gameHud?.notice(text),
         onDealDone: () => director.dealt(),
         // A Thief's trump 1 asks which card to take before it is sent.
-        chooseSteal: (cardIndex) => stealPrompt?.ask(cardIndex) ?? Promise.resolve(undefined),
+        chooseSteal: (cardIndex) => stealPick?.ask(cardIndex) ?? Promise.resolve(undefined),
+        chooseBet: (cardIndex) => betPick?.ask(cardIndex) ?? Promise.resolve(undefined),
+        picking: () => trickPick?.picking() ?? false,
         // An NPC whose card was leading shows it did not like being beaten.
         onOvertaken: (previousLeader) => {
           if (trigger) reactToOvertake(previousLeader, trigger, (username) => sync?.seatOf(username) ?? null);
         },
+      });
+      // Roles games only: the Fisher's catch and the Thief's trump 1 are
+      // picked on the table, the cards to choose from rising off it
+      // (modes/roles/mechanics/trick-pick.ts), and so is the player a Duke
+      // grants a trick to (grant-pick.ts); a Gambler's 10 asks whether to bet
+      // (bet-pick.ts). No other mode has these.
+      if (latestState?.options?.mode === "roles" && gameConnection && hudConnection) {
+        // Every choice made with a card is timed on the hourglass
+        // (modes/roles/choice-timer.ts).
+        const timer = createChoiceTimer({
+          turnDeadline: () => latestState?.turnDeadlineAt ?? null,
+          onStart: (seconds) => hourglassTurns?.startChoice(seconds),
+          onEnd: () => hourglassTurns?.endChoice(),
+        });
+        choiceTimer = timer;
+        const pick = createTrickPick({ canvas, camera: view.camera, cards: cardTable.cards, page: pageEl ?? container });
+        trickPick = pick;
+        fishPick = createFishPick({
+          pick,
+          game: hudConnection,
+          blocked: () => !director.turnShown() || (timeoutNotice?.timedOut() ?? false),
+        });
+        grantPick = createGrantPick({
+          pick,
+          game: hudConnection,
+          blocked: () => !director.turnShown() || (timeoutNotice?.timedOut() ?? false),
+        });
+        betPick = createBetPick({
+          canvas,
+          camera: view.camera,
+          cards: cardTable.cards,
+          game: hudConnection,
+          page: pageEl ?? container,
+          timer,
+        });
+        stealPick = createStealPick({
+          pick,
+          game: hudConnection,
+          timer,
+          onChange: () => {
+            if (stealPick?.asking()) gameHud?.notice(t("ann.youStealing"));
+          },
+        });
+      }
+      // A Roles game: a gold seal on each trick card played with its power on.
+      if (latestState?.options?.mode === "roles") {
+        roleSeals = createRoleSeals({
+          parent: environment,
+          camera: view.camera,
+          cardWidth: cardTable.cardSize.width,
+          cardLength: cardTable.cardSize.length,
+        });
+      }
+      cardTable.heist.onChange(() => {
+        thiefPrompt?.applyState();
+        // The announcement box tells the winner what to do at each step.
+        gameHud?.applyState();
       });
       if (import.meta.env.DEV) {
         (window as unknown as Record<string, unknown>).__wizardCards = cardTable.cards;
@@ -548,6 +721,7 @@ export async function renderVisualizerPage(
       }
 
       // Live games: the camera turns toward players when the director says.
+      const roles = latestState?.options?.mode === "roles";
       if (sync && gameConnection) {
         turnCamera = createTurnCamera({
           view,
@@ -555,7 +729,20 @@ export async function renderVisualizerPage(
           layout,
           localUsername: gameConnection.localUsername,
           seatOf: (username) => sync.seatOf(username),
+          // A Roles game, for trying it out: the camera stays put unless you
+          // turn it yourself. Elsewhere, as switched (camera-settings.ts).
+          follows: () => !roles && isAutoFollowOn(),
         });
+        // A Roles game: you can look left and right yourself (look-around.ts).
+        const camera = turnCamera;
+        if (roles && isLookAroundOn()) {
+          lookAround = createLookAround({
+            canvas,
+            cameraYaw: () => view.cameraYaw(),
+            look: (yaw) => view.lookAround(yaw),
+            range: () => camera.range(),
+          });
+        }
       }
 
       const emoteTrigger = createEmoteTrigger(players, (emote) =>
@@ -585,6 +772,8 @@ export async function renderVisualizerPage(
     },
       onUpdate: (deltaSeconds) => {
         cardTable?.update(deltaSeconds);
+        roleLabels?.update(director.tableState());
+        if (cardTable) roleSeals?.update(director.tableState(), cardTable.cards.trickCardObjects());
         aiEmotes?.update(deltaSeconds);
         trigger?.update(deltaSeconds);
       },
@@ -644,7 +833,12 @@ export async function renderVisualizerPage(
         const refusal = serverError(message, "game.refused");
         predictionPrompt?.refused(refusal);
         trumpPrompt?.refused(refusal);
-        fishPrompt?.refused(refusal);
+        fishPick?.refused();
+        grantPick?.refused();
+        powerPrompt?.refused(refusal);
+        cardTable?.heist.refused();
+        // The test shortcuts say why they could not do it.
+        if (refusal.startsWith("[dev]")) gameHud?.notice(refusal);
         gameHud?.refused(message.error ?? "");
       }
       },

@@ -1,5 +1,5 @@
 import * as THREE from "three";
-import { CAMERA_FOLLOW } from "./config";
+import { CAMERA_FOLLOW, LOOK_AROUND } from "./config";
 import { paced } from "./pace";
 
 export interface CameraFollow {
@@ -16,6 +16,14 @@ export interface CameraFollow {
   // How far the camera has turned about the vertical axis from its normal
   // view, in radians, positive counter-clockwise seen from above.
   yaw(): number;
+  // The turn from the normal view that would face this point, the same way
+  // a turn toward a player is worked out.
+  yawToward(point: THREE.Vector3): number;
+  // You looking around (look-around.ts): the camera shows this turn from the
+  // normal view instead of the one it follows, easing over to it; null eases
+  // back. The follow carries on underneath, so whoever waits on it is not
+  // kept waiting.
+  look(yaw: number | null): void;
 }
 
 interface Turn {
@@ -33,6 +41,12 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 
 export function createCameraFollow(camera: THREE.Camera): CameraFollow {
   const restQuaternion = camera.quaternion.clone();
   const restPosition = camera.position.clone();
+  // The heading the follow has the camera at; what is shown is this, eased
+  // toward your look while you look around.
+  const pose = camera.quaternion.clone();
+  let lookYaw: number | null = null;
+  let shownLookYaw = 0;
+  let lookWeight = 0;
   let target: THREE.Vector3 | null = null;
   // A new target waiting out the delay before the camera moves.
   let upcoming: { point: THREE.Vector3 | null; wait: number; seconds: number | undefined } | null = null;
@@ -53,37 +67,57 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
 
   const WORLD_UP = new THREE.Vector3(0, 1, 0);
 
-  // The normal place, turned about the vertical axis alone by CAMERA_FOLLOW.amount
-  // of the way toward facing the target: the camera's pitch and roll stay as
-  // they are at rest, so only its heading changes.
-  const destination = () => {
-    const quaternion = restQuaternion.clone();
-    if (target) {
-      const parentQuaternion = camera.parent
-        ? camera.parent.getWorldQuaternion(new THREE.Quaternion())
-        : new THREE.Quaternion();
-      const eye = camera.parent ? camera.parent.localToWorld(restPosition.clone()) : restPosition.clone();
-      const restWorld = parentQuaternion.clone().multiply(restQuaternion);
-      // Flattened onto the ground, the way the camera faces at rest and the
-      // way the target lies from it.
-      const flat = (v: THREE.Vector3) => v.setY(0).normalize();
-      const facing = flat(new THREE.Vector3(0, 0, -1).applyQuaternion(restWorld));
-      const toTarget = flat(target.clone().sub(eye));
-      if (facing.lengthSq() > 0 && toTarget.lengthSq() > 0) {
-        const angle = Math.atan2(facing.clone().cross(toTarget).y, facing.dot(toTarget));
-        const yaw = new THREE.Quaternion().setFromAxisAngle(WORLD_UP, angle * CAMERA_FOLLOW.amount);
-        // Turn in the world, then express it relative to any parent.
-        quaternion.copy(parentQuaternion.clone().invert().multiply(yaw).multiply(restWorld));
-      }
-    }
-    return { quaternion, position: restPosition.clone() };
+  const parentQuaternion = () =>
+    camera.parent ? camera.parent.getWorldQuaternion(new THREE.Quaternion()) : new THREE.Quaternion();
+
+  // CAMERA_FOLLOW.amount of the turn from the normal view that faces this
+  // point, about the vertical axis alone.
+  const yawToward = (point: THREE.Vector3): number => {
+    const eye = camera.parent ? camera.parent.localToWorld(restPosition.clone()) : restPosition.clone();
+    const restWorld = parentQuaternion().multiply(restQuaternion);
+    // Flattened onto the ground, the way the camera faces at rest and the
+    // way the point lies from it.
+    const flat = (v: THREE.Vector3) => v.setY(0).normalize();
+    const facing = flat(new THREE.Vector3(0, 0, -1).applyQuaternion(restWorld));
+    const toPoint = flat(point.clone().sub(eye));
+    if (facing.lengthSq() === 0 || toPoint.lengthSq() === 0) return 0;
+    return Math.atan2(facing.clone().cross(toPoint).y, facing.dot(toPoint)) * CAMERA_FOLLOW.amount;
+  };
+
+  // The normal view turned this far about the vertical axis: the camera's
+  // pitch and roll stay as they are at rest, so only its heading changes.
+  const atYaw = (angle: number): THREE.Quaternion => {
+    if (angle === 0) return restQuaternion.clone();
+    const parent = parentQuaternion();
+    const turn = new THREE.Quaternion().setFromAxisAngle(WORLD_UP, angle);
+    // Turn in the world, then express it relative to any parent.
+    return parent.clone().invert().multiply(turn).multiply(parent.multiply(restQuaternion));
+  };
+
+  // The normal place, turned toward the target.
+  const destination = () => ({
+    quaternion: atYaw(target ? yawToward(target) : 0),
+    position: restPosition.clone(),
+  });
+
+  // What the camera shows: the follow's heading, eased toward your look.
+  const show = (deltaSeconds: number) => {
+    const want = lookYaw === null ? 0 : 1;
+    const rate = lookYaw === null ? LOOK_AROUND.easeBackPerSecond : LOOK_AROUND.easeInPerSecond;
+    const ease = 1 - Math.exp(-rate * deltaSeconds);
+    lookWeight += (want - lookWeight) * ease;
+    if (Math.abs(want - lookWeight) < 1e-3) lookWeight = want;
+    if (lookYaw !== null) shownLookYaw += (lookYaw - shownLookYaw) * ease;
+    camera.quaternion.copy(pose);
+    if (lookWeight > 0) camera.quaternion.slerp(atYaw(shownLookYaw), lookWeight);
+    lastQuaternion.copy(camera.quaternion);
   };
 
   let nextSeconds: number | undefined;
   const startTurn = (): Turn => {
     const to = destination();
     return {
-      fromQuaternion: camera.quaternion.clone(),
+      fromQuaternion: pose.clone(),
       fromPosition: camera.position.clone(),
       toQuaternion: to.quaternion,
       toPosition: to.position,
@@ -106,7 +140,16 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       return Math.atan2(from.clone().cross(to).y, from.dot(to));
     },
 
+    yawToward,
+
+    look(yaw) {
+      // Starting to look: from wherever the camera is facing now.
+      if (lookYaw === null && yaw !== null && lookWeight === 0) shownLookYaw = this.yaw();
+      lookYaw = yaw;
+    },
+
     captureRest() {
+      pose.copy(camera.quaternion);
       restQuaternion.copy(camera.quaternion);
       restPosition.copy(camera.position);
       lastQuaternion.copy(camera.quaternion);
@@ -130,7 +173,12 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
     update(deltaSeconds) {
       const movedElsewhere =
         camera.quaternion.angleTo(lastQuaternion) > 1e-5 || camera.position.distanceTo(lastPosition) > 1e-5;
-      if (turn && movedElsewhere) turn = startTurn();
+      // Something else moved the camera (orbiting): follow on from there.
+      if (movedElsewhere) {
+        pose.copy(camera.quaternion);
+        lookWeight = 0;
+        if (turn) turn = startTurn();
+      }
 
       if (upcoming) {
         upcoming.wait -= deltaSeconds;
@@ -145,9 +193,10 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       if (!turn) {
         const to = destination();
         const settled =
-          camera.quaternion.angleTo(to.quaternion) < 1e-4 && camera.position.distanceTo(to.position) < 1e-4;
+          pose.angleTo(to.quaternion) < 1e-4 && camera.position.distanceTo(to.position) < 1e-4;
         if (settled) {
           arrived();
+          show(deltaSeconds);
           return;
         }
         turn = startTurn();
@@ -159,9 +208,9 @@ export function createCameraFollow(camera: THREE.Camera): CameraFollow {
       const progress = Math.min(1, turn.elapsed / Math.max(paced(turn.seconds ?? CAMERA_FOLLOW.turnSeconds), 1e-6));
       const eased = easeInOut(progress);
       camera.position.lerpVectors(turn.fromPosition, turn.toPosition, eased);
-      camera.quaternion.slerpQuaternions(turn.fromQuaternion, turn.toQuaternion, eased);
-      lastQuaternion.copy(camera.quaternion);
+      pose.slerpQuaternions(turn.fromQuaternion, turn.toQuaternion, eased);
       lastPosition.copy(camera.position);
+      show(deltaSeconds);
       if (progress >= 1) {
         turn = null;
         if (!upcoming) arrived();

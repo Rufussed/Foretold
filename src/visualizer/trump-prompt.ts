@@ -4,6 +4,8 @@ import { CARDS } from "./config";
 import { canAct, isLocalTurn, type GameConnection } from "./game-connection";
 import { t } from "../i18n";
 import { suitName, turnedUpMessage } from "./hud/announcements";
+import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { sabotageTrumpSwatch } from "../modes/sabotage/sabotage-trump";
 
 export interface TrumpPrompt {
   // Call after every game-state update; opens or closes the prompt.
@@ -53,7 +55,9 @@ export function createTrumpPrompt(
       button.setAttribute("aria-label", suitName(suit as Suit));
       const swatch = document.createElement("span");
       swatch.className = "trump-swatch";
-      swatch.style.background = trumpColor(suit);
+      // A Sabotage table shows each element's icon instead.
+      if (isSabotageGame()) sabotageTrumpSwatch(swatch, suit as Suit);
+      else swatch.style.background = trumpColor(suit);
       const name = document.createElement("span");
       name.textContent = suitName(suit as Suit);
       button.append(swatch, name);

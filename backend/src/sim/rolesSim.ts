@@ -11,7 +11,7 @@ import { assignBotPersonalities } from "../game/wizard/bots/index.js";
 import { DEFAULT_GAME_OPTIONS } from "../game/wizard/gameOptions.js";
 import type { GamePlayer } from "../game/wizard/models/wizardGame.js";
 import type { GameMode } from "../game/wizard/modes/modes.js";
-import { botFishingSpot } from "../game/wizard/modes/roles/rolePowers.js";
+import { botFishingSpot, botGrantTo } from "../game/wizard/modes/roles/rolePowers.js";
 import { ROLES, type RoleId } from "../game/wizard/modes/roles/roles.js";
 import { WizardBotService } from "../game/wizard/services/wizardBotService.js";
 import { WizardGameService } from "../game/wizard/services/wizardGameService.js";
@@ -61,11 +61,13 @@ function playGame(mode: GameMode, seats: Seat[], level: BotLevel): GamePlayer[] 
       service.submitPrediction(game, player.username, bots.choosePrediction(game));
     } else if (game.phase === "fishing") {
       service.fishCard(game, player.username, botFishingSpot(game));
+    } else if (game.phase === "granting") {
+      service.grantTrick(game, player.username, botGrantTo(game));
     } else if (game.currentTrick.winnerUsername) {
       service.advanceAfterTrick(game);
     } else {
       const cardIndex = bots.chooseCardIndex(game);
-      service.playCard(game, cardIndex, false, bots.chooseStealSpot(game, cardIndex));
+      service.playCard(game, cardIndex, false, bots.chooseStealSpot(game, cardIndex), bots.chooseBet(game, cardIndex));
     }
   }
 

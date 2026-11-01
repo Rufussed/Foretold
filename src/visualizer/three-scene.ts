@@ -48,6 +48,12 @@ export interface SceneView {
   // How far the camera has turned about the vertical axis from its normal
   // view, in radians; 0 until the intro has finished.
   cameraYaw(): number;
+  // You looking around: the camera shows this turn from its normal view, in
+  // radians, until null hands it back to the turn it follows
+  // (camera-follow.ts, look-around.ts).
+  lookAround(yaw: number | null): void;
+  // The turn from the normal view that would face this point.
+  yawToward(point: THREE.Vector3): number;
   // How much of the canvas's width the table top takes up in the camera's
   // normal view, 0 to 1; 1 until the table has been measured.
   tableWidthFraction(): number;
@@ -450,6 +456,8 @@ export function createWizardScene(
                 tableRawHalfTan / (Math.tan(THREE.MathUtils.degToRad(camera.fov) / 2) * camera.aspect),
               ),
         cameraYaw: () => (introDone && !controls?.enabled ? (follow?.yaw() ?? 0) : 0),
+        lookAround: (yaw) => follow?.look(introDone ? yaw : null),
+        yawToward: (point) => follow?.yawToward(point) ?? 0,
         lookToward: (point, onArrive, seconds) => {
           const changed = point === null ? lookingAt !== null : !lookingAt?.equals(point);
           lookingAt = point ? point.clone() : null;
