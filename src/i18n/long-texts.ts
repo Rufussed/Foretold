@@ -597,7 +597,7 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
-      The role seals in Roles games are made from icons by Lorc,
+      The role seals in Roleplay games are made from icons by Lorc,
       Delapouite and Skoll, available on
       <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
       under the
@@ -643,7 +643,7 @@ const legal = {
     </p>
 
     <p class="home-modal-copy">
-      Die Rollensiegel im Rollen-Modus beruhen auf Icons von Lorc,
+      Die Rollensiegel im Rollenspiel-Modus beruhen auf Icons von Lorc,
       Delapouite und Skoll, erhältlich auf
       <a href="https://game-icons.net" target="_blank" rel="noopener">game-icons.net</a>
       unter der Lizenz
@@ -726,7 +726,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         </p>
         <p>
           You also choose the game. Classic is Wizard as printed. In
-          Roles, every wizard chooses a role before the game, like the
+          Roleplay, every wizard chooses a role before the game, like the
           Thief or the Fisher, and uses its power when they play its
           card. Each room shows its game in a small tag under its name.
         </p>
@@ -840,8 +840,8 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
           und nur sie können beitreten.
         </p>
         <p>
-          Du wählst auch das Spiel. Klassisch ist Wizard wie gedruckt. Bei
-          Rollen wählt jeder Zauberer vor der Partie eine Rolle, etwa den
+          Du wählst auch das Spiel. Klassisch ist Wizard wie gedruckt. Im
+          Rollenspiel wählt jeder Zauberer vor der Partie eine Rolle, etwa den
           Dieb oder den Fischer, und nutzt ihre Kraft, wenn er ihre Karte
           spielt. Jeder Raum zeigt sein Spiel in einem kleinen Schild
           unter seinem Namen.
@@ -1091,7 +1091,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>For the host</h3>
         <p>
           The wizard who created the room sets up the game, starting
-          with which one: Classic, Roles or Sabotage. NPCs fill the
+          with which one: Classic, Roleplay or Sabotage. NPCs fill the
           empty seats, as a game needs 3 to 6 players; alone, you can give
           every seat to an NPC and watch. Choose how well they play, the
           rounds (a full game, or fewer for a short one), the game speed
@@ -1142,7 +1142,7 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
         <h3>Für den Gastgeber</h3>
         <p>
           Wer den Raum erstellt hat, richtet die Partie ein, zuerst das
-          Spiel: Klassisch, Rollen oder Sabotage. NPCs füllen
+          Spiel: Klassisch, Rollenspiel oder Sabotage. NPCs füllen
           die freien Plätze, denn eine Partie braucht 3 bis 6 Spieler;
           allein kannst du jeden Platz einem NPC geben und zuschauen.
           Wähle, wie gut sie spielen, die Runden (eine ganze Partie oder
