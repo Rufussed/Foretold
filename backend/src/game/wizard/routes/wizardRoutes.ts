@@ -16,6 +16,7 @@ import { DEFAULT_GAME_OPTIONS, normalizeGameOptions, type WizardGameOptions } fr
 import { GAME_MODES, type GameMode } from "../modes/modes.js";
 import { ROLES, type RoleId } from "../modes/roles/roles.js";
 import { assignRoles } from "../modes/roles/assignRoles.js";
+import { assignSealLevels } from "../modes/roles/roleProgress.js";
 import { DEFAULT_NPC_ROLES, NPC_ROLES, normalizeNpcRoles, type NpcRoles } from "../modes/roles/npcRoles.js";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, normalizeBotLevel, type BotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
@@ -235,6 +236,8 @@ export default async function wizardRoutes(
         Math.random,
         setup.npcRoles,
       );
+      // Each player's seal level, for the table (modes/roles/roleProgress.ts).
+      assignSealLevels(game.players);
     }
 
     game.status = "playing";

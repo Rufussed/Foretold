@@ -16,6 +16,7 @@ import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.j
 import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
 import { trickRolesIn } from "./master/trickRoles.js";
 import { countPowerUses } from "./powerSeal.js";
+import { countJokerTrick } from "./master/joker.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
 import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
@@ -462,8 +463,17 @@ function applyTax(game: WizardGameState, winner: GamePlayer): RoleAction[] {
 // When a trick is won in a Roles game: what the powers used in it bring, or
 // cost, straight onto the scores.
 export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): void {
-  const trick = game.currentTrick;
   countPowerUses(game, winner.username, rolesOf(game));
+  settleTrickPowers(game, winner);
+  // A Joker's trick counts once settled, for whoever it went to: a Duke may
+  // have granted it.
+  const to = game.currentTrick.grantedTo;
+  const owner = (to && game.players.find((player) => player.username === to)) || winner;
+  countJokerTrick(game, owner);
+}
+
+function settleTrickPowers(game: WizardGameState, winner: GamePlayer): void {
+  const trick = game.currentTrick;
 
   // A colour Wizard who won with the Wizard of their colour: the King's
   // peace does not stop it.

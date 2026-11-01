@@ -3,12 +3,13 @@ import type { PublicWizardGameState } from "../../../backend/src/game/wizard/mod
 import { powerSealAt } from "../../../backend/src/game/wizard/modes/roles/powerSeal";
 import type { RoleId } from "../../../backend/src/game/wizard/modes/roles/roles";
 import { cardKey } from "../../visualizer/card-textures";
-import { roleSealUrl } from "./seal-urls";
+import { levelSealUrl } from "./seal-urls";
 import coinPay from "../../assets/role-seals/coin-pay.png";
 import coinGet from "../../assets/role-seals/coin-get.png";
 
 
-// In a Roles game, a gold wax seal with the role's sign sits on the corner of
+// In a Roles game, a wax seal with the role's sign, in its player's level
+// with the role (wax, wood … gold: sealLevels.ts), sits on the corner of
 // every card in the trick played with its power on (the Thief's dagger, the
 // Smith's anvil…), from the moment it lands until the trick is gathered. The
 // seal always faces you and sits at the middle of whichever edge of the card
@@ -46,7 +47,8 @@ function sealAt(state: PublicWizardGameState, index: number): RoleId | null {
 }
 
 // A card's badge: one at a time, the most telling one.
-type Badge = { kind: "coin"; points: number } | { kind: "seal"; role: RoleId };
+// A seal shows its player's level with the role (wax to gold).
+type Badge = { kind: "coin"; points: number } | { kind: "seal"; role: RoleId; url: string | undefined };
 
 // How each player's points moved in this trick, by role powers: what they got
 // less what they paid. Points a power moves from one player (on) to another
@@ -80,7 +82,8 @@ function badgesFor(state: PublicWizardGameState): Map<string, Badge> {
 
   playedCards.forEach((played, index) => {
     const role = sealAt(state, index);
-    if (role) badges.set(cardKey(played.card), { kind: "seal", role });
+    const player = state.players.find((entry) => entry.username === (played.playedBy ?? played.username));
+    if (role) badges.set(cardKey(played.card), { kind: "seal", role, url: levelSealUrl(role, player?.sealLevel) });
   });
 
   for (const [username, points] of pointsMoved(state)) {
@@ -92,7 +95,7 @@ function badgesFor(state: PublicWizardGameState): Map<string, Badge> {
 }
 
 const signatureOf = (badge: Badge): string =>
-  badge.kind === "coin" ? `coin:${badge.points}` : `seal:${badge.role}`;
+  badge.kind === "coin" ? `coin:${badge.points}` : `seal:${badge.role}:${badge.url}`;
 
 export interface RoleSeals {
   // Call every frame with the table's game state and the trick cards it shows.
@@ -175,7 +178,7 @@ export function createRoleSeals(options: RoleSealOptions): RoleSeals {
 
   const build = (badge: Badge): { layers: THREE.Sprite[]; share: number } | null => {
     if (badge.kind === "seal") {
-      const url = roleSealUrl(badge.role);
+      const url = badge.url;
       return url ? { layers: [layer(textureFor(url), 12)], share: ROLE_SEALS.widthShare } : null;
     }
     const text = badge.points > 0 ? `+${badge.points}` : `\u2212${-badge.points}`;

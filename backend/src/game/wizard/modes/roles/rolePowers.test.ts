@@ -1253,53 +1253,80 @@ describe("the King in a game", () => {
 });
 
 describe("the Joker in a game", () => {
-  it("need not follow suit, and a card off the lead suit still cannot win", () => {
+  const jokerOf = (players: GamePlayer[]) => players.find((p) => p.username === "joker")!;
+
+  it("with a point need not follow suit, and a card off the lead suit still cannot win", () => {
+    let joker: GamePlayer | undefined;
     const { trick } = playTrick("roles", [
       { name: "ana", card: card(5) },
       { name: "joker", card: card(13, "Green"), role: "joker" },
       { name: "ben", card: card(7) },
     ], (players) => {
-      // The Joker holds the suit led too.
-      players.find((p) => p.username === "joker")!.hand.push(card(2));
+      joker = jokerOf(players);
+      // The Joker holds the suit led too, and a point to spend.
+      joker.hand.push(card(2));
+      joker.jokerPoints = 1;
     });
 
     expect(trick.playedCards[1]!.freePlay).toBe(true);
     expect(trick.winnerUsername).toBe("ben");
+    expect(joker!.jokerPoints).toBe(0);
   });
 
-  it("may trump while holding the suit led", () => {
+  it("may trump with a point while holding the suit led, and that trick does not count towards the next point", () => {
+    let joker: GamePlayer | undefined;
     const { trick } = playTrick("roles", [
       { name: "ana", card: card(12) },
       { name: "joker", card: card(1, "Blue"), role: "joker" },
       { name: "ben", card: card(7) },
     ], (players) => {
-      players.find((p) => p.username === "joker")!.hand.push(card(2));
+      joker = jokerOf(players);
+      joker.hand.push(card(2));
+      joker.jokerPoints = 1;
     }, "Blue");
 
     expect(trick.winnerUsername).toBe("joker");
+    expect(joker!.jokerTricks ?? 0).toBe(0);
   });
 
-  it("must follow trump when trump is led", () => {
+  it("with a point may break a trump lead too", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(5) },
+      { name: "joker", card: card(13, "Green"), role: "joker" },
+      { name: "ben", card: card(7) },
+    ], (players) => {
+      const joker = jokerOf(players);
+      joker.hand.push(card(2));
+      joker.jokerPoints = 1;
+    }, "Red");
+
+    expect(trick.playedCards[1]!.freePlay).toBe(true);
+  });
+
+  it("without a point must follow suit", () => {
     expect(() => playTrick("roles", [
       { name: "ana", card: card(5) },
       { name: "joker", card: card(13, "Green"), role: "joker" },
       { name: "ben", card: card(7) },
     ], (players) => {
-      players.find((p) => p.username === "joker")!.hand.push(card(2));
-    }, "Red")).toThrow("Card cannot be played");
+      jokerOf(players).hand.push(card(2));
+    })).toThrow("Card cannot be played");
   });
 
-  it("may still play a Wizard when trump is led", () => {
+  it("may play a Wizard without a point, and a trick won counts towards the next", () => {
+    let joker: GamePlayer | undefined;
     const { trick } = playTrick("roles", [
       { name: "ana", card: card(5) },
       { name: "joker", card: card(14, "Green"), role: "joker" },
       { name: "ben", card: card(7) },
     ], (players) => {
-      players.find((p) => p.username === "joker")!.hand.push(card(2));
+      joker = jokerOf(players);
+      joker.hand.push(card(2));
     }, "Red");
 
     expect(trick.playedCards[1]!.freePlay).toBeUndefined();
     expect(trick.winnerUsername).toBe("joker");
+    expect(joker!.jokerTricks).toBe(1);
   });
 
   it("is held to the suit in a Classic game", () => {

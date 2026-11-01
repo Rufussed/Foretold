@@ -3,6 +3,7 @@ import type { Card, Suit } from "./card.js";
 import type { BotPersonality } from "../botLevels.js";
 import type { WizardGameOptions } from "../gameOptions.js";
 import type { RoleAction, RoleId } from "../modes/roles/roles.js";
+import type { SealLevelId } from "../modes/roles/sealLevels.js";
 import type { SabotagePower } from "../modes/sabotage/cardPowers.js";
 import type { TurnTimeoutMs } from "../turnTimeout.js";
 
@@ -68,6 +69,14 @@ export interface GamePlayer {
   // A Smith's pieces of armour (modes/roles/smith.ts); they stay from round
   // to round until used.
   armor?: number;
+  // A Joker's points to break suit with, and their tricks won towards the
+  // next (modes/roles/master/joker.ts); both stay from round to round.
+  jokerPoints?: number;
+  jokerTricks?: number;
+  // In a Roles game, the level of their seal with their role as the game
+  // began, shown on the table (modes/roles/roleProgress.ts). Missing for
+  // bots, guests and older games, who show wax.
+  sealLevel?: SealLevelId;
   // Turns in a row the timer ran out on; a move of their own resets it.
   missedTurns?: number;
   // Tricks won this game with a card of each colour: no Wizard or Jester, and
@@ -170,6 +179,12 @@ export interface PublicGamePlayer {
   seeds: Record<string, number>;
   // The Shepherds' sheep they hold, by Shepherd; empty in Classic.
   sheep: Record<string, number>;
+  // A Joker's points and tricks towards the next (modes/roles/master/joker.ts);
+  // 0 for everyone else.
+  jokerPoints: number;
+  jokerTricks: number;
+  // Their role seal's level (modes/roles/sealLevels.ts); null in Classic.
+  sealLevel: SealLevelId | null;
   // A Smith's pieces of armour; 0 for everyone else.
   armor: number;
 }

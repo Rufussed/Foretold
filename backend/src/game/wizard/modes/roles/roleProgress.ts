@@ -3,6 +3,8 @@ import { normalizeGameOptions } from "../../gameOptions.js";
 import { isBotName } from "../../models/bot.js";
 import { fullRoundCount } from "../../models/rounds.js";
 import type { GamePlayer, WizardGameState } from "../../models/wizardGame.js";
+import { isRoleId, type RoleId } from "./roles.js";
+import { sealPoints, sealState, type RoleRecord } from "./sealLevels.js";
 
 // Roles mode only. Each player's record with each role, kept in role_progress
 // (db/migrations.ts) for the Profile's seals. The game completion service
@@ -59,4 +61,41 @@ export function recordRoleProgress(game: WizardGameState, player: GamePlayer, us
   if (!countsForRoleProgress(game)) return;
   const record = roleGameRecord(player, won);
   if (record) recordRoleGame(userId, record);
+}
+
+// A player's record with every role they have a row for, for the Profile.
+export function getRoleProgress(userId: number): RoleRecord[] {
+  const rows = db
+    .prepare("SELECT role, games, wins FROM role_progress WHERE user_id = ?")
+    .all(userId) as { role: string; games: number; wins: number }[];
+  return rows.filter((row): row is RoleRecord => isRoleId(row.role));
+}
+
+// Dev only (roleProgressRoutes.ts): one more game with a role, won or not,
+// as if it had been played; or the role's record wiped.
+export function devAddRoleGame(userId: number, role: RoleId, won: boolean): void {
+  recordRoleGame(userId, { role, won, powerUses: 0, rolePoints: 0 });
+}
+
+export function devResetRole(userId: number, role: RoleId): void {
+  db.prepare("DELETE FROM role_progress WHERE user_id = ? AND role = ?").run(userId, role);
+}
+
+// At the start of a Roles game, once roles are assigned: each player's seal
+// level with their role, to show on the table. Bots and players with no
+// record keep none, which shows as wax.
+export function assignSealLevels(players: GamePlayer[]): void {
+  for (const player of players) {
+    if (!player.role || isBotName(player.username)) continue;
+    const row = db
+      .prepare(`
+        SELECT games, wins
+        FROM role_progress
+          JOIN users ON users.id = role_progress.user_id
+        WHERE users.username = ? AND role_progress.role = ?
+      `)
+      .get(player.username, player.role) as { games: number; wins: number } | undefined;
+    const level = row ? sealState(sealPoints(row)).done : null;
+    if (level) player.sealLevel = level;
+  }
 }

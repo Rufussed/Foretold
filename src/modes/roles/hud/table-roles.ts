@@ -3,14 +3,14 @@ import { roleCard } from "../../../../backend/src/game/wizard/modes/roles/roles"
 import { t } from "../../../i18n";
 import { displayName } from "../../../utils/display-name";
 import { escapeHtml } from "../../../utils/escape-html";
-import { roleSealUrl } from "../seal-urls";
+import { levelSealUrl } from "../seal-urls";
 
 // Roles mode only. A Roles button beside the Log button (visualizer/hud/
 // event-log.ts) opens a see-through panel over the player list with the
 // roles at this table: each player, in seating order, with their role's
-// seal, card number and power. Roles are kept all game, so the list is the
-// same from start to end. The panel and the Log share their place: opening
-// one closes the other.
+// seal in their level with it, card number and power. Roles are kept all
+// game, so the list is the same from start to end. The panel and the Log
+// share their place: opening one closes the other.
 
 export interface TableRoles {
   dispose(): void;
@@ -40,7 +40,7 @@ export function createTableRoles(
     .map((player) => {
       const role = player.role!;
       const card = roleCard(role);
-      const seal = roleSealUrl(role);
+      const seal = levelSealUrl(role, player.sealLevel);
       const own = player.username === localUsername;
       return `
         <li class="table-roles-item${own ? " is-own" : ""}">

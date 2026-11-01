@@ -1,4 +1,5 @@
 import type { RoleId } from "../../../backend/src/game/wizard/modes/roles/roles";
+import type { SealLevelId } from "../../../backend/src/game/wizard/modes/roles/sealLevels";
 import farmer from "../../assets/role-seals/seal-power-farmer.png";
 import fisher from "../../assets/role-seals/seal-power-fisher.png";
 import merchant from "../../assets/role-seals/seal-power-merchant.png";
@@ -28,3 +29,17 @@ const URLS: Partial<Record<RoleId, string>> = {
 
 // A role's seal picture, for the HUD's lists and the Profile's seals.
 export const roleSealUrl = (role: RoleId): string | undefined => URLS[role];
+
+// Carlos's drawn seals for each level, one file per role:
+// src/assets/role-seals/<level>/<role>.png. Vite hashes the file names, so
+// the URLs come from here.
+const DRAWN = import.meta.glob("../../assets/role-seals/*/*.png", {
+  query: "?url",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+// A role's seal at a level: the drawn one, or, for a level with none (gold for
+// most roles), the role's own seal.
+export const levelSealUrl = (role: RoleId, level: SealLevelId | null | undefined): string | undefined =>
+  (level ? DRAWN[`../../assets/role-seals/${level}/${role}.png`] : undefined) ?? URLS[role];

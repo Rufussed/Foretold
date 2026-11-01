@@ -117,13 +117,6 @@
   }
 }
 
-/* A seal not yet printed at the level under way: dark and see-through, its
-   figure still showing. */
-.seal-blank {
-  filter: grayscale(1) brightness(0.45) contrast(1.15);
-  opacity: 0.5;
-}
-
 .seal-name {
   max-width: 100%;
   overflow: hidden;

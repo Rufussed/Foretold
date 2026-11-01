@@ -26,7 +26,7 @@ import { renderNavbar } from "../components/Navbar";
 import { escapeHtml } from "../utils/escape-html";
 import { t, type MessageKey } from "../i18n";
 import { COLOR_MASTERY_POINTS } from "../../backend/src/game/wizard/strongColor";
-import { loadSealsOpen, renderSealsCard, saveSealsOpen, setupSeals } from "../modes/roles/profile-seals";
+import { loadRoleRecords, loadSealsOpen, renderSealsCard, saveSealsOpen, setupSeals } from "../modes/roles/profile-seals";
 
 // About half the 400 points of a perfect three-player game, so short games
 // can earn a level too: 200 points stand in for one full game.
@@ -267,6 +267,8 @@ export async function renderProfilePage(
       };
 
   const user = profile;
+  // Roles mode: the role seals (modes/roles/profile-seals.ts).
+  const roleRecords = await loadRoleRecords(playerId);
 
   // Friends and requests on one's own profile, the friendship on another's.
   // Also asked again in the background (see the end of this function).
@@ -385,6 +387,7 @@ export async function renderProfilePage(
   const historyPrefs = loadHistoryPrefs();
   const socialPanels = loadSocialPanels();
   const sealsOpen = loadSealsOpen();
+  const sealsCard = renderSealsCard(roleRecords, collapseToggle("seals", sealsOpen), collapseBody("seals", sealsOpen));
   const visibleOpponents = (): PlayerOpponent[] =>
     sortOpponents(opponents, historyPrefs.sort).slice(0, historyPrefs.limit);
 
@@ -646,6 +649,10 @@ export async function renderProfilePage(
               }
             </div>
           </section>
+
+          <!-- Roles mode: on another player's profile, their role seals under
+               the history (modes/roles/profile-seals.ts). -->
+          ${ownProfile ? "" : sealsCard}
           </div>
 
           ${
@@ -842,7 +849,7 @@ export async function renderProfilePage(
                   </article>
 
                   <!-- Roles mode: the role seals (modes/roles/profile-seals.ts). -->
-                  ${renderSealsCard(collapseToggle("seals", sealsOpen), collapseBody("seals", sealsOpen))}
+                  ${sealsCard}
                 </div>
               `
               : ""
@@ -949,7 +956,7 @@ export async function renderProfilePage(
 
   // Roles mode: the role seals (modes/roles/profile-seals.ts).
   setupCollapsible(container, "seals", saveSealsOpen);
-  setupSeals(container);
+  setupSeals(container, ownProfile);
 
   const scrollFriendRequests = container.querySelector<HTMLButtonElement>(
     "[data-scroll-friend-requests]",

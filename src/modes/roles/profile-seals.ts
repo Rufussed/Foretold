@@ -1,81 +1,42 @@
 import { rolesOfKind, type RoleId, type RoleKind } from "../../../backend/src/game/wizard/modes/roles/roles";
+import {
+  SEAL_LEVELS,
+  sealPoints,
+  sealState,
+  type RoleRecord,
+  type SealLevelId,
+} from "../../../backend/src/game/wizard/modes/roles/sealLevels";
 import { t } from "../../i18n";
-import { roleSealUrl } from "./seal-urls";
+import { API_BASE } from "../../services/api";
+import { levelSealUrl, roleSealUrl } from "./seal-urls";
 
 // Roles mode only. The Profile's Seals box (pages/Profile.ts calls it): every
-// role's seal, dark until played. Each game that counts with a role prints
-// its first seal, wood, a little more from the bottom up, a fine shining line
-// at its edge. After that the seal earned stays whole until the next level
-// is reached, and then becomes that level's (hovering a seal names the level
-// under way and how far it is).
+// role's seal, in wax to start with. Each game that counts with a role prints
+// its wood seal a little more over the wax, from the bottom up, a fine
+// shining line at its edge. After that the seal earned stays whole until the
+// next level is reached, and then becomes that level's (hovering a seal names
+// the level under way and how far it is). The records come from the server
+// (backend modes/roles/roleProgressRoutes.ts), the levels from sealLevels.ts.
 //
-// Front end only for now: the progress below is made up, to see the look.
-// The server will send each role's real games and wins.
+// Dev only, on your own Profile, with the backend run with WIZARD_DEV_TOOLS
+// (npm run play, or npm run dev:tools in backend/): Shift+click a seal for
+// one more game with that role, Ctrl+click for one more won game,
+// Ctrl+Shift+click to wipe its record.
 
-// The levels, in order, and the progress points that complete each one.
-const LEVELS = [
-  { id: "wood", at: 8 },
-  { id: "copper", at: 30 },
-  { id: "silver", at: 70 },
-  { id: "gold", at: 130 },
-] as const;
+type Records = Map<RoleId, RoleRecord>;
 
-type LevelId = (typeof LEVELS)[number]["id"];
+const progressUrl = (path: string) => `${API_BASE}/roles/progress/${path}`;
+const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("wizardToken") ?? ""}` });
 
-interface RoleRecord {
-  games: number;
-  wins: number;
-}
-
-// PREVIEW: made-up records, until the server keeps the real ones.
-const PREVIEW: Partial<Record<RoleId, RoleRecord>> = {
-  thief: { games: 3, wins: 1 },
-  servant: { games: 12, wins: 4 },
-  fisher: { games: 14, wins: 4 },
-  farmer: { games: 30, wins: 10 },
-  merchant: { games: 50, wins: 20 },
-  priest: { games: 100, wins: 40 },
-  duke: { games: 90, wins: 45 },
-  warrior: { games: 95, wins: 40 },
-  smith: { games: 4, wins: 1 },
-  king: { games: 25, wins: 8 },
-  joker: { games: 5, wins: 1 },
-  blueWizard: { games: 5, wins: 1 },
-  redWizard: { games: 15, wins: 5 },
-  greenWizard: { games: 40, wins: 15 },
-  yellowWizard: { games: 90, wins: 45 },
-};
-
-// Carlos's drawn seals for each level, one file per role:
-// src/assets/role-seals/<level>/<role>.png. A level with none, gold for most
-// roles, shows the role's own seal (seal-urls.ts). Vite hashes the file names, so the URLs come from here.
-const DRAWN = import.meta.glob("../../assets/role-seals/*/*.png", {
-  query: "?url",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
-
-const drawnSeal = (level: LevelId, role: RoleId): string | undefined =>
-  DRAWN[`../../assets/role-seals/${level}/${role}.png`];
-
-// A game that counts is one point, a win one more.
-const progressPoints = (record: RoleRecord): number => record.games + record.wins;
-
-interface SealState {
-  // The last level completed, or null for none yet.
-  done: LevelId | null;
-  // The level printing now, and how far, 0 to 1; null once gold is full.
-  next: LevelId | null;
-  fill: number;
-}
-
-function sealState(points: number): SealState {
-  const reached = LEVELS.filter((level) => points >= level.at).length;
-  const done = reached > 0 ? LEVELS[reached - 1].id : null;
-  if (reached === LEVELS.length) return { done, next: null, fill: 1 };
-  const from = reached > 0 ? LEVELS[reached - 1].at : 0;
-  const to = LEVELS[reached].at;
-  return { done, next: LEVELS[reached].id, fill: (points - from) / (to - from) };
+// A player's records with each role: yours, or another player's by id. None
+// when they cannot be had, so the Profile still shows, its seals empty.
+export async function loadRoleRecords(playerId?: number): Promise<RoleRecord[]> {
+  try {
+    const response = await fetch(progressUrl(playerId === undefined ? "me" : String(playerId)), { headers: authHeaders() });
+    return response.ok ? ((await response.json()) as RoleRecord[]) : [];
+  } catch {
+    return [];
+  }
 }
 
 const OPEN_KEY = "wizardProfileSeals";
@@ -97,16 +58,19 @@ export function saveSealsOpen(open: boolean): void {
   }
 }
 
-function renderSeal(role: RoleId): string {
+function renderSeal(role: RoleId, records: Records): string {
   const url = roleSealUrl(role);
   if (!url) return "";
-  const record = PREVIEW[role] ?? { games: 0, wins: 0 };
-  const points = progressPoints(record);
+  const record = records.get(role) ?? { role, games: 0, wins: 0 };
+  const points = sealPoints(record);
   const { done, next, fill } = sealState(points);
-  // A level without a drawn seal shows the role's own.
-  const art = (level: LevelId) => drawnSeal(level, role) ?? url;
+  const art = (level: SealLevelId) => levelSealUrl(role, level) ?? url;
+  // Wood, the first level earned, prints from the bottom up over the wax
+  // seal every player starts with, a fine shining line at its edge; later
+  // levels replace the seal once reached.
+  const printing = done === SEAL_LEVELS[0].id && next !== null;
   const percent = `${(fill * 100).toFixed(1)}%`;
-  const target = next ? LEVELS.find((entry) => entry.id === next)!.at : points;
+  const target = SEAL_LEVELS.find((entry) => entry.id === next)?.at ?? points;
   // Shown on hover, to keep the box small: the level earned, the one under
   // way and how far, and the record. "Merchant: Copper · to Silver 70/90 · …"
   const name = done ? `${t(`role.${role}`)}: ${t(`seals.level.${done}`)}` : t(`role.${role}`);
@@ -116,15 +80,11 @@ function renderSeal(role: RoleId): string {
   const tip = `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
 
   return `
-    <div class="seal-tile seal-at-${done ?? "none"}" data-seal-tip="${tip}" tabindex="0">
+    <div class="seal-tile seal-at-${done ?? "none"}" data-seal-tip="${tip}" data-seal-role="${role}" tabindex="0">
       <div class="seal-art">
-        ${
-          done
-            ? `<img class="seal-base" src="${art(done)}" alt="" />`
-            : `<img class="seal-base seal-blank" src="${url}" alt="" />
-               <img class="seal-fill" src="${art(next!)}" alt="" style="--fill: ${percent}" />`
-        }
-        ${!done && fill > 0 ? `<span class="seal-edge" style="--fill: ${percent}; --seal: url(${art(next!)})"></span>` : ""}
+        <img class="seal-base" src="${done ? art(done) : url}" alt="" />
+        ${printing ? `<img class="seal-fill" src="${art(next)}" alt="" style="--fill: ${percent}" />` : ""}
+        ${printing && fill > 0 ? `<span class="seal-edge" style="--fill: ${percent}; --seal: url(${art(next)})"></span>` : ""}
       </div>
       <span class="seal-name">${t(`role.${role}`)}</span>
     </div>
@@ -157,19 +117,30 @@ function renderTabs(shown: RoleKind): string {
   return `<div class="seal-tabs" role="tablist">${KINDS.map(tab).join("")}</div>`;
 }
 
-function renderGroup(kind: RoleKind, shown: RoleKind): string {
+const renderSeals = (kind: RoleKind, records: Records): string =>
+  rolesOfKind(kind).map((role) => renderSeal(role.id, records)).join("");
+
+function renderGroup(kind: RoleKind, shown: RoleKind, records: Records): string {
   return `
     <div class="seal-grid" role="tabpanel" data-seal-group="${kind}" ${kind === shown ? "" : "hidden"}>
-      ${rolesOfKind(kind).map((role) => renderSeal(role.id)).join("")}
+      ${renderSeals(kind, records)}
     </div>
   `;
 }
 
+// Seals earned beyond the wax everyone starts with.
+const earnedCount = (records: Records): string =>
+  t("seals.earned", {
+    count: String([...records.values()].filter((record) => sealPoints(record) >= SEAL_LEVELS[1].at).length),
+  });
+
+const byRole = (records: RoleRecord[]): Records => new Map(records.map((record) => [record.role, record]));
+
 // The box. toggle and body are the Profile's open/close attributes for its
 // header and its body.
-export function renderSealsCard(toggle: string, body: string): string {
+export function renderSealsCard(records: RoleRecord[], toggle: string, body: string): string {
   const shown = loadTab();
-  const earned = Object.values(PREVIEW).filter((record) => progressPoints(record) >= LEVELS[0].at).length;
+  const known = byRole(records);
   return `
     <article class="profile-card profile-seals">
       <div class="profile-section-heading profile-collapse-toggle" ${toggle}>
@@ -178,13 +149,13 @@ export function renderSealsCard(toggle: string, body: string): string {
           <h2>${t("seals.title")}</h2>
         </div>
         <span class="profile-history-meta">
-          <span class="profile-opponent-count">${t("seals.earned", { count: String(earned) })}</span>
+          <span class="profile-opponent-count" data-seals-earned>${earnedCount(known)}</span>
           <span class="profile-chevron" aria-hidden="true"></span>
         </span>
       </div>
       <div class="profile-seals-body" ${body}>
         ${renderTabs(shown)}
-        ${KINDS.map((kind) => renderGroup(kind, shown)).join("")}
+        ${KINDS.map((kind) => renderGroup(kind, shown, known)).join("")}
       </div>
     </article>
   `;
@@ -192,11 +163,14 @@ export function renderSealsCard(toggle: string, body: string): string {
 
 // The tabs: one group of seals shown at a time. And each seal's level and
 // record in a tip over it while hovered, kept on the page itself so the
-// box's scrolling never cuts it off.
-export function setupSeals(container: HTMLElement): void {
-  setupTip(container);
-  const tabs = [...container.querySelectorAll<HTMLButtonElement>("[data-seal-tab]")];
-  const groups = [...container.querySelectorAll<HTMLElement>("[data-seal-group]")];
+// box's scrolling never cuts it off. own: the player's own Profile, where
+// the dev clicks work.
+export function setupSeals(container: HTMLElement, own: boolean): void {
+  const card = container.querySelector<HTMLElement>(".profile-seals");
+  if (!card) return;
+  setupTip(container, card);
+  const tabs = [...card.querySelectorAll<HTMLButtonElement>("[data-seal-tab]")];
+  const groups = [...card.querySelectorAll<HTMLElement>("[data-seal-group]")];
   for (const tab of tabs) {
     tab.addEventListener("click", () => {
       const kind = tab.dataset.sealTab as RoleKind;
@@ -205,14 +179,51 @@ export function setupSeals(container: HTMLElement): void {
       saveTab(kind);
     });
   }
+  if (import.meta.env.DEV && own) setupDevClicks(card, groups);
 }
 
-function setupTip(container: HTMLElement): void {
+// Shows records again, in place: the seals and the count.
+function showRecords(card: HTMLElement, groups: HTMLElement[], records: RoleRecord[]): void {
+  const known = byRole(records);
+  for (const group of groups) group.innerHTML = renderSeals(group.dataset.sealGroup as RoleKind, known);
+  const earned = card.querySelector<HTMLElement>("[data-seals-earned]");
+  if (earned) earned.textContent = earnedCount(known);
+}
+
+function setupDevClicks(card: HTMLElement, groups: HTMLElement[]): void {
+  card.addEventListener("click", async (event) => {
+    const tile = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-seal-role]") : null;
+    if (!tile || !(event.shiftKey || event.ctrlKey)) return;
+    event.preventDefault();
+    const body = { role: tile.dataset.sealRole, won: event.ctrlKey && !event.shiftKey, reset: event.ctrlKey && event.shiftKey };
+    try {
+      const response = await fetch(progressUrl("dev"), {
+        method: "POST",
+        headers: { ...authHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!response.ok) {
+        console.warn("[dev] Seals: the backend refused; run it with WIZARD_DEV_TOOLS (npm run dev:tools in backend/).");
+        return;
+      }
+      showRecords(card, groups, (await response.json()) as RoleRecord[]);
+      card.querySelector<HTMLElement>(`[data-seal-role="${body.role}"]`)?.focus();
+    } catch {
+      console.warn("[dev] Seals: the backend could not be reached.");
+    }
+  });
+}
+
+// The tip follows whichever seal is pointed at or focused, so it keeps
+// working after the dev clicks redraw the seals.
+function setupTip(container: HTMLElement, card: HTMLElement): void {
   const tip = document.createElement("div");
   tip.className = "seal-tip";
   tip.hidden = true;
   container.append(tip);
 
+  const tileOf = (target: EventTarget | null) =>
+    target instanceof Element ? target.closest<HTMLElement>("[data-seal-tip]") : null;
   const show = (tile: HTMLElement) => {
     tip.textContent = tile.dataset.sealTip ?? "";
     tip.hidden = false;
@@ -225,11 +236,17 @@ function setupTip(container: HTMLElement): void {
     tip.hidden = true;
   };
 
-  for (const tile of container.querySelectorAll<HTMLElement>("[data-seal-tip]")) {
-    tile.addEventListener("mouseenter", () => show(tile));
-    tile.addEventListener("focus", () => show(tile));
-    tile.addEventListener("mouseleave", hide);
-    tile.addEventListener("blur", hide);
-  }
-  container.querySelector(".profile-seals-body")?.addEventListener("scroll", hide);
+  card.addEventListener("mouseover", (event) => {
+    const tile = tileOf(event.target);
+    if (tile) show(tile);
+  });
+  card.addEventListener("mouseout", (event) => {
+    if (tileOf(event.target) !== tileOf(event.relatedTarget)) hide();
+  });
+  card.addEventListener("focusin", (event) => {
+    const tile = tileOf(event.target);
+    if (tile) show(tile);
+  });
+  card.addEventListener("focusout", hide);
+  card.querySelector(".profile-seals-body")?.addEventListener("scroll", hide);
 }

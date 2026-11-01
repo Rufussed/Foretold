@@ -5,6 +5,7 @@ import { seedUsers } from "./db/seedUsers.js";
 import authRoutes from "./routes/auth.js";
 import adminRoutes from "./routes/admin.js";
 import postRoutes from "./routes/posts.js";
+import roleProgressRoutes from "./game/wizard/modes/roles/roleProgressRoutes.js";
 import jwt from "@fastify/jwt";
 import wizardRoutes from "./game/wizard/routes/wizardRoutes.js";
 import websocket from "@fastify/websocket";
@@ -107,6 +108,11 @@ await server.register(adminRoutes, {
 
 await server.register(postRoutes, {
   prefix: "/posts",
+});
+
+// Roles mode: the Profile's seals (game/wizard/modes/roles/roleProgressRoutes.ts).
+await server.register(roleProgressRoutes, {
+  prefix: "/roles",
 });
 
 // In production the built frontend (npm run build -> dist/) is served from

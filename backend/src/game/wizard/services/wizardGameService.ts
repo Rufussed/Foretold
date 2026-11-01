@@ -24,7 +24,7 @@ import {
 } from "../modes/roles/rolePowers.js";
 import { canBet } from "../modes/roles/gambler.js";
 import { canLower } from "../modes/roles/prophet.js";
-import { breaksSuit, playsFree } from "../modes/roles/master/joker.js";
+import { breaksSuit, playsFree, spendJokerPoint } from "../modes/roles/master/joker.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { blueSight } from "../modes/roles/master/blueWizard.js";
 import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
@@ -290,11 +290,11 @@ export class WizardGameService {
       trickRolesIn(game),
     );
 
-    // A Roles Joker need not follow suit, unless trump was led
+    // A Roles Joker with a point to spend need not follow suit
     // (modes/roles/master/joker.ts).
     const freePlay =
       normalizeGameOptions(game.options).mode === "roles" &&
-      playsFree(currentPlayer.role, leadSuit, game.trumpSuit) &&
+      playsFree(currentPlayer) &&
       breaksSuit(card, currentPlayer.hand, leadSuit);
 
     if (
@@ -309,6 +309,7 @@ export class WizardGameService {
     }
 
     currentPlayer.hand.splice(cardIndex, 1);
+    if (freePlay) spendJokerPoint(currentPlayer);
 
     const playedCard: PlayedCard = {
       username: currentPlayer.username,
@@ -605,6 +606,9 @@ export class WizardGameService {
           seeds: player.seeds ?? {},
           sheep: player.sheep ?? {},
           armor: player.armor ?? 0,
+          jokerPoints: player.jokerPoints ?? 0,
+          jokerTricks: player.jokerTricks ?? 0,
+          sealLevel: player.role ? player.sealLevel ?? "wax" : null,
           ...blueSightOf(player, handVisible),
         };
       }),

@@ -1,5 +1,6 @@
 import { displayName } from "../../utils/display-name";
 import { seedCount } from "../../../backend/src/game/wizard/modes/roles/farmer";
+import { jokerCarried, jokerMarks } from "../../modes/roles/hud/joker-marks";
 import { sheepCount } from "../../../backend/src/game/wizard/modes/roles/shepherd";
 import type { CharacterId } from "../character-assets";
 import type { GameConnection } from "../game-connection";
@@ -204,15 +205,17 @@ export function createPlayerList(
           // In a Roles game the caption is two lines as tall as the picture:
           // the role, then the name. A Farmer's seeds and a Shepherd's sheep
           // they carry follow the role, and a Smith's armour, e.g.
-          // "Thief: 🌱2 🐑1" or "Smith: 🛡️2".
+          // "Thief: 🌱2 🐑1" or "Smith: 🛡️2", and a Joker's points and
+          // tricks towards the next (modes/roles/hud/joker-marks.ts).
           const seeds = seedCount(player.seeds);
           const sheep = sheepCount(player.sheep);
           const armor = player.armor ?? 0;
-          const marks = `${seeds ? ` \u{1F331}${seeds}` : ""}${sheep ? ` \u{1F411}${sheep}` : ""}${armor ? ` \u{1F6E1}\u{FE0F}${armor}` : ""}`;
+          const marks = `${seeds ? ` \u{1F331}${seeds}` : ""}${sheep ? ` \u{1F411}${sheep}` : ""}${armor ? ` \u{1F6E1}\u{FE0F}${armor}` : ""}${jokerMarks(player)}`;
           const carried = [
             seeds ? t("game.seeds", { count: String(seeds) }) : "",
             sheep ? t("game.sheep", { count: String(sheep) }) : "",
             armor ? t("game.armor", { count: String(armor) }) : "",
+            jokerCarried(player),
           ].filter(Boolean).join(", ");
           caption.classList.toggle("has-role", !!player.role);
           if (player.role) {
