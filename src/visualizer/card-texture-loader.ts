@@ -5,9 +5,9 @@ import { CARDS } from "./config";
 import { isSabotageGame } from "../modes/sabotage/sabotage-game";
 import * as sabotageDeck from "../modes/sabotage/deck/sabotage-card-loader";
 
-// Loads the card art from src/assets/foretold_cards: one gem set per suit, one
-// file per card (topaz01.webp … topaz13.webp, topazJester.webp,
-// topazWizard.webp), plus the back shown on every face-down card. A Sabotage
+// Loads the card art: a deck of one set per suit, one file per card
+// (topaz01.webp … topaz13.webp, topazJester.webp, topazWizard.webp), plus the
+// back shown on every face-down card (src/assets/tarot_cards/back). A Sabotage
 // game has its own deck, with its numbers and titles printed on in code
 // (modes/sabotage/deck/).
 
@@ -17,39 +17,49 @@ import * as sabotageDeck from "../modes/sabotage/deck/sabotage-card-loader";
 // longer be assembled from its suit and value: that naming still decides which
 // file is wanted, but the URL itself comes from this table. Keys are the glob
 // patterns exactly as written here.
-const CARD_FILES = import.meta.glob("../assets/foretold_cards/**/*.webp", {
-  query: "?url",
-  import: "default",
-  eager: true,
-}) as Record<string, string>;
+const CARD_FILES = {
+  ...import.meta.glob("../assets/tarot_cards/**/*.webp", { query: "?url", import: "default", eager: true }),
+  ...import.meta.glob("../assets/worn-facet-decks/**/*.webp", { query: "?url", import: "default", eager: true }),
+  ...import.meta.glob("../assets/poker-decks/**/*.webp", { query: "?url", import: "default", eager: true }),
+  ...import.meta.glob("../assets/white-poker-decks/**/*.webp", { query: "?url", import: "default", eager: true }),
+} as Record<string, string>;
 
-const GEMS: Record<Suit, string> = {
-  Blue: "topaz",
-  Green: "jade",
-  Yellow: "gold",
-  Red: "ruby",
-};
+// The decks, each in its folder with one folder per suit: the gems
+// (tarot_cards/topaz/topaz01.webp …) or the worn facets
+// (worn-facet-decks/blue/blue01.webp …) or the poker cards
+// (poker-decks/blue/blue01.webp …), plain or on white (white-poker-decks).
+// DECK picks the one the game shows.
+const DECKS = {
+  gems: { folder: "tarot_cards", suits: { Blue: "topaz", Green: "jade", Yellow: "gold", Red: "ruby" } },
+  wornFacets: { folder: "worn-facet-decks", suits: { Blue: "blue", Green: "green", Yellow: "yellow", Red: "red" } },
+  poker: { folder: "poker-decks", suits: { Blue: "blue", Green: "green", Yellow: "yellow", Red: "red" } },
+  whitePoker: { folder: "white-poker-decks", suits: { Blue: "blue", Green: "green", Yellow: "yellow", Red: "red" } },
+} satisfies Record<string, { folder: string; suits: Record<Suit, string> }>;
+
+const DECK: keyof typeof DECKS = "gems";
+
+const { folder: DECK_FOLDER, suits: GEMS } = DECKS[DECK];
 
 // Which back face-down cards show: back/backBronzeLogo.webp or
 // back/backOnyxLogo.webp.
 const BACK = "backOnyxLogo";
 
 function cardFile(path: string): string {
-  const url = CARD_FILES[`../assets/foretold_cards/${path}`];
+  const url = CARD_FILES[`../assets/${path}`];
   // A missing file is a mistake in the naming above or a card that was never
   // made; say so rather than handing three.js undefined and drawing a blank.
   if (!url) throw new Error(`No card art at ${path}`);
   return url;
 }
 
-const BACK_URL = cardFile(`back/${BACK}.webp`);
+const BACK_URL = cardFile(`tarot_cards/back/${BACK}.webp`);
 
 // Jesters are value 0 and Wizards 14, matching the game rules.
 export function cardArtUrl(card: Card): string {
   const name =
     card.value === 0 ? "Jester" : card.value === 14 ? "Wizard" : String(card.value).padStart(2, "0");
   const gem = GEMS[card.suit];
-  return cardFile(`${gem}/${gem}${name}.webp`);
+  return cardFile(`${DECK_FOLDER}/${gem}/${gem}${name}.webp`);
 }
 
 const loader = new THREE.TextureLoader();

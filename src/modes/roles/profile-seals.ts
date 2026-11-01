@@ -1,14 +1,13 @@
 import { rolesOfKind, type RoleId, type RoleKind } from "../../../backend/src/game/wizard/modes/roles/roles";
 import { t } from "../../i18n";
 import { roleSealUrl } from "./seal-urls";
-import smithWood from "../../assets/role-seals/wood/seal-power-smith.png";
 
 // Roles mode only. The Profile's Seals box (pages/Profile.ts calls it): every
 // role's seal, dark until played. Each game that counts with a role prints
-// its seal a little more, from the bottom up; once full, it is that level's
-// seal, and the next level's metal starts printing afresh over a blank seal
-// (hovering a seal names the level printing now). A shining line
-// marks where the printing has reached.
+// its first seal, wood, a little more from the bottom up, a fine shining line
+// at its edge. After that the seal earned stays whole until the next level
+// is reached, and then becomes that level's (hovering a seal names the level
+// under way and how far it is).
 //
 // Front end only for now: the progress below is made up, to see the look.
 // The server will send each role's real games and wins.
@@ -16,9 +15,9 @@ import smithWood from "../../assets/role-seals/wood/seal-power-smith.png";
 // The levels, in order, and the progress points that complete each one.
 const LEVELS = [
   { id: "wood", at: 8 },
-  { id: "bronze", at: 25 },
-  { id: "silver", at: 60 },
-  { id: "gold", at: 120 },
+  { id: "copper", at: 30 },
+  { id: "silver", at: 70 },
+  { id: "gold", at: 130 },
 ] as const;
 
 type LevelId = (typeof LEVELS)[number]["id"];
@@ -31,20 +30,33 @@ interface RoleRecord {
 // PREVIEW: made-up records, until the server keeps the real ones.
 const PREVIEW: Partial<Record<RoleId, RoleRecord>> = {
   thief: { games: 3, wins: 1 },
-  servant: { games: 6, wins: 2 },
+  servant: { games: 12, wins: 4 },
   fisher: { games: 14, wins: 4 },
-  farmer: { games: 40, wins: 12 },
-  merchant: { games: 70, wins: 25 },
-  priest: { games: 90, wins: 40 },
+  farmer: { games: 30, wins: 10 },
+  merchant: { games: 50, wins: 20 },
+  priest: { games: 100, wins: 40 },
+  duke: { games: 90, wins: 45 },
+  warrior: { games: 95, wins: 40 },
   smith: { games: 4, wins: 1 },
+  king: { games: 25, wins: 8 },
+  joker: { games: 5, wins: 1 },
   blueWizard: { games: 5, wins: 1 },
+  redWizard: { games: 15, wins: 5 },
+  greenWizard: { games: 40, wins: 15 },
+  yellowWizard: { games: 90, wins: 45 },
 };
 
-// Carlos's own drawn seals for a level (walnut for wood); the other roles
-// and levels are tinted from the gold seal until theirs are drawn.
-const DRAWN: Partial<Record<LevelId, Partial<Record<RoleId, string>>>> = {
-  wood: { smith: smithWood },
-};
+// Carlos's drawn seals for each level, one file per role:
+// src/assets/role-seals/<level>/<role>.png. A level with none, gold for most
+// roles, shows the role's own seal (seal-urls.ts). Vite hashes the file names, so the URLs come from here.
+const DRAWN = import.meta.glob("../../assets/role-seals/*/*.png", {
+  query: "?url",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+const drawnSeal = (level: LevelId, role: RoleId): string | undefined =>
+  DRAWN[`../../assets/role-seals/${level}/${role}.png`];
 
 // A game that counts is one point, a win one more.
 const progressPoints = (record: RoleRecord): number => record.games + record.wins;
@@ -85,30 +97,34 @@ export function saveSealsOpen(open: boolean): void {
   }
 }
 
-function renderSeal(role: RoleId, kind: RoleKind): string {
+function renderSeal(role: RoleId): string {
   const url = roleSealUrl(role);
   if (!url) return "";
   const record = PREVIEW[role] ?? { games: 0, wins: 0 };
   const points = progressPoints(record);
   const { done, next, fill } = sealState(points);
-  // Drawn seals show as drawn, and for now the master seals print in their
-  // own colours; the rest are tinted to the level's metal.
-  const metal = (level: LevelId) => (kind === "master" || DRAWN[level]?.[role] ? "own" : level);
-  const art = (level: LevelId) => DRAWN[level]?.[role] ?? url;
+  // A level without a drawn seal shows the role's own.
+  const art = (level: LevelId) => drawnSeal(level, role) ?? url;
   const percent = `${(fill * 100).toFixed(1)}%`;
   const target = next ? LEVELS.find((entry) => entry.id === next)!.at : points;
-  const caption = next
-    ? `${t(`seals.level.${next}`)} ${points}/${target}`
-    : t("seals.level.gold");
-  // Shown on hover, to keep the box small.
-  const tip = `${t(`role.${role}`)} · ${caption} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
+  // Shown on hover, to keep the box small: the level earned, the one under
+  // way and how far, and the record. "Merchant: Copper · to Silver 70/90 · …"
+  const name = done ? `${t(`role.${role}`)}: ${t(`seals.level.${done}`)}` : t(`role.${role}`);
+  const toward = next
+    ? ` · ${t("seals.toward", { level: t(`seals.level.${next}`), points: String(points), target: String(target) })}`
+    : "";
+  const tip = `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
 
   return `
     <div class="seal-tile seal-at-${done ?? "none"}" data-seal-tip="${tip}" tabindex="0">
       <div class="seal-art">
-        <img class="seal-base seal-metal-${next ? "none" : metal(done!)}" src="${next ? url : art(done!)}" alt="" />
-        ${next ? `<img class="seal-fill seal-metal-${metal(next)}" src="${art(next)}" alt="" style="--fill: ${percent}" />` : ""}
-        ${next && fill > 0 ? `<span class="seal-edge" style="--fill: ${percent}; --seal: url(${url})"></span>` : ""}
+        ${
+          done
+            ? `<img class="seal-base" src="${art(done)}" alt="" />`
+            : `<img class="seal-base seal-blank" src="${url}" alt="" />
+               <img class="seal-fill" src="${art(next!)}" alt="" style="--fill: ${percent}" />`
+        }
+        ${!done && fill > 0 ? `<span class="seal-edge" style="--fill: ${percent}; --seal: url(${art(next!)})"></span>` : ""}
       </div>
       <span class="seal-name">${t(`role.${role}`)}</span>
     </div>
@@ -144,7 +160,7 @@ function renderTabs(shown: RoleKind): string {
 function renderGroup(kind: RoleKind, shown: RoleKind): string {
   return `
     <div class="seal-grid" role="tabpanel" data-seal-group="${kind}" ${kind === shown ? "" : "hidden"}>
-      ${rolesOfKind(kind).map((role) => renderSeal(role.id, kind)).join("")}
+      ${rolesOfKind(kind).map((role) => renderSeal(role.id)).join("")}
     </div>
   `;
 }

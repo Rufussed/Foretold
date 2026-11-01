@@ -64,8 +64,8 @@
   text-align: center;
 }
 
-/* The seal: a blank one underneath, the level printing now over it, shown
-   from the bottom up to its fill. */
+/* The seal: the one earned; before the first, a blank one with the wood
+   printing over it from the bottom up to its fill. */
 .seal-art {
   position: relative;
   width: 50px;
@@ -84,18 +84,16 @@
   clip-path: inset(calc(100% - var(--fill)) 0 0 0);
 }
 
-/* The shining line where the printing has reached, only within the seal's
-   own shape. */
+/* A fine shining line where the first seal's printing has reached, only
+   within the seal's own shape. */
 .seal-edge {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to top,
-    transparent calc(var(--fill) - 3px),
-    rgba(255, 236, 170, 0.55) calc(var(--fill) - 1px),
+    transparent calc(var(--fill) - 1px),
     #fff8dc var(--fill),
-    rgba(255, 236, 170, 0.55) calc(var(--fill) + 1px),
-    transparent calc(var(--fill) + 3px)
+    transparent calc(var(--fill) + 1px)
   );
   -webkit-mask: var(--seal) center / contain no-repeat;
   mask: var(--seal) center / contain no-repeat;
@@ -119,28 +117,11 @@
   }
 }
 
-/* The metals, from the gold wax seal, until there are drawn ones. "none" is
-   a seal not yet printed: dark and see-through, its figure still showing. */
-.seal-metal-none {
+/* A seal not yet printed at the level under way: dark and see-through, its
+   figure still showing. */
+.seal-blank {
   filter: grayscale(1) brightness(0.45) contrast(1.15);
   opacity: 0.5;
-}
-
-.seal-metal-wood {
-  filter: sepia(1) saturate(0.7) hue-rotate(-12deg) brightness(0.62);
-}
-
-.seal-metal-bronze {
-  filter: sepia(0.8) saturate(1.5) hue-rotate(-18deg) brightness(0.85);
-}
-
-.seal-metal-silver {
-  filter: grayscale(1) brightness(1.2) contrast(1.05);
-}
-
-.seal-metal-gold,
-.seal-metal-own {
-  filter: none;
 }
 
 .seal-name {
