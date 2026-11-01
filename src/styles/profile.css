@@ -879,19 +879,23 @@
   margin: 0;
 }
 
-/* On a screen big enough the whole profile fits in it: the page does not
-   scroll, the long lists scroll inside their cards. */
+/* On a screen big enough the whole profile fits in it: the long lists
+   scroll inside their cards. When even so it does not fit (many boxes
+   open, a short window), the page scrolls rather than cut off its bottom. */
 @media (min-width: 851px) and (min-height: 700px) {
   .profile-page {
     display: flex;
     flex-direction: column;
     height: 100svh;
     min-height: 0;
+    overflow-y: auto;
   }
 
+  /* Shrinks with the window down to its heading, highlights and the boxes'
+     least height, then the page scrolls and the footer stays below. */
   .profile-content {
     flex: 1;
-    min-height: 0;
+    min-height: auto;
     padding: clamp(16px, 3vh, 32px) 0 12px;
   }
 
@@ -954,10 +958,11 @@
     padding-top: 10px;
   }
 
+  /* Never squeezed below a usable height: past that the page scrolls. */
   .profile-detail-grid {
     flex: 1;
     grid-template-rows: minmax(0, 1fr);
-    min-height: 0;
+    min-height: 26rem;
     margin-bottom: 0;
   }
 

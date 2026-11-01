@@ -8,6 +8,28 @@
   margin-bottom: 0;
 }
 
+/* The "?" in the heading: how seals grow. */
+.seals-help-button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(224, 161, 77, 0.5);
+  border-radius: 4px;
+  background: rgba(10, 10, 8, 0.45);
+  color: #e0a14d;
+  font-family: "Cinzel Variable", serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.seals-help-button:hover,
+.seals-help-button:focus-visible {
+  border-color: #e0a14d;
+  background: rgba(224, 161, 77, 0.16);
+}
+
 .profile-seals-body {
   display: flex;
   flex-direction: column;

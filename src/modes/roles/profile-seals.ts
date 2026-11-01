@@ -8,6 +8,7 @@ import {
 } from "../../../backend/src/game/wizard/modes/roles/sealLevels";
 import { t } from "../../i18n";
 import { API_BASE } from "../../services/api";
+import { openInfoWindow } from "../../components/info-window";
 import { levelSealUrl, roleSealUrl } from "./seal-urls";
 
 // Roles mode only. The Profile's Seals box (pages/Profile.ts calls it): every
@@ -149,6 +150,7 @@ export function renderSealsCard(records: RoleRecord[], toggle: string, body: str
           <h2>${t("seals.title")}</h2>
         </div>
         <span class="profile-history-meta">
+          <button type="button" class="seals-help-button" data-seals-help data-collapse-ignore aria-label="${t("seals.help.button")}" title="${t("seals.help.button")}">?</button>
           <span class="profile-opponent-count" data-seals-earned>${earnedCount(known)}</span>
           <span class="profile-chevron" aria-hidden="true"></span>
         </span>
@@ -169,6 +171,7 @@ export function setupSeals(container: HTMLElement, own: boolean): void {
   const card = container.querySelector<HTMLElement>(".profile-seals");
   if (!card) return;
   setupTip(container, card);
+  card.querySelector("[data-seals-help]")?.addEventListener("click", openSealsHelp);
   const tabs = [...card.querySelectorAll<HTMLButtonElement>("[data-seal-tab]")];
   const groups = [...card.querySelectorAll<HTMLElement>("[data-seal-group]")];
   for (const tab of tabs) {
@@ -180,6 +183,24 @@ export function setupSeals(container: HTMLElement, own: boolean): void {
     });
   }
   if (import.meta.env.DEV && own) setupDevClicks(card, groups);
+}
+
+// The window behind the "?": how a seal grows, its steps from sealLevels.ts.
+function openSealsHelp(): void {
+  const at = Object.fromEntries(SEAL_LEVELS.map((level) => [level.id, String(level.at)]));
+  openInfoWindow(
+    "roles-help",
+    t("seals.help.title"),
+    `
+      <div class="home-rules-content">
+        <section class="home-rules-section">
+          <p>${t("seals.help.points")}</p>
+          <p>${t("seals.help.levels", at)}</p>
+          <p>${t("seals.help.table")}</p>
+        </section>
+      </div>
+    `,
+  );
 }
 
 // Shows records again, in place: the seals and the count.
