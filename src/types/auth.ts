@@ -11,12 +11,10 @@ export interface LoginResponse {
   token: string;
 }
 
+// A new account has no session yet: it opens by the link mailed to this
+// address.
 export interface RegistrationResponse {
-  token: string;
-  user: {
-    id: number;
-    username: string;
-  };
+  email: string;
 }
 
 export interface PlayerStats {

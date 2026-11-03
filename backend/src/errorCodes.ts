@@ -15,6 +15,10 @@ const MESSAGES = {
   usernameNotAllowed: ["Please choose a different username"],
   passwordTooShort: ["Password must contain at least 8 characters"],
   createUserFailed: ["Could not create user"],
+  emailInvalid: ["Please enter a valid email"],
+  emailTaken: ["Email is already in use"],
+  emailNotVerified: ["Please confirm your email first"],
+  linkInvalid: ["This link is invalid or has expired"],
   unauthorized: ["Unauthorized", "Invalid or missing token"],
 
   // The board

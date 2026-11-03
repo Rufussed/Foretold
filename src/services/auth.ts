@@ -7,6 +7,7 @@ import type {
   User,
 } from "../types/auth";
 import { serverError } from "../i18n/server-error";
+import { getLanguage } from "../i18n";
 
 const TOKEN_KEY = "wizardToken";
 const GUEST_TOKEN_KEY = "wizardGuestToken";
@@ -69,6 +70,10 @@ export async function login(
   };
 
   if (!response.ok || !data.token) {
+    // The login form offers to send the confirmation mail again.
+    if (data.code === "emailNotVerified") {
+      throw new EmailNotVerifiedError(serverError(data, "login.failed"));
+    }
     throw new Error(serverError(data, "login.failed"));
   }
 
@@ -76,6 +81,8 @@ export async function login(
 
   return data;
 }
+
+export class EmailNotVerifiedError extends Error {}
 
 export async function register(
   username: string,
@@ -91,23 +98,60 @@ export async function register(
       username,
       email,
       password,
+      // The confirmation mail is written in the page's language.
+      language: getLanguage(),
     }),
   });
 
-  const data = (await response.json()) as RegistrationResponse & {
-    error?: string;
-    code?: string;
-    values?: Record<string, string>;
-  };
+  const data = (await response.json()) as RegistrationResponse & ServerErrorBody;
 
-  if (!response.ok || !data.token) {
+  // No session yet: the account opens by the mailed link (verifyEmail).
+  if (!response.ok || !data.email) {
     throw new Error(serverError(data, "signup.failed"));
   }
 
-  // A new account is signed straight in.
-  localStorage.setItem(TOKEN_KEY, data.token);
-
   return data;
+}
+
+// Asks for a mail: the confirmation link again, or a link to set a new
+// password. The server answers the same whether or not the account exists.
+export async function requestAccountMail(
+  kind: "resend-verification" | "forgot-password",
+  login: string,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/users/${kind}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ login, language: getLanguage() }),
+  });
+
+  if (!response.ok) {
+    throw new Error(serverError(await response.json().catch(() => null), "account.mailFailed"));
+  }
+}
+
+// Follows a mailed link: the confirmation one, or the new-password one with
+// the password chosen. Either signs the player in.
+export async function followAccountLink(
+  kind: "verify-email" | "reset-password",
+  token: string,
+  password?: string,
+): Promise<void> {
+  const response = await fetch(`${API_BASE}/users/${kind}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+
+  const data = (await response.json().catch(() => null)) as
+    | (LoginResponse & ServerErrorBody)
+    | null;
+
+  if (!response.ok || !data?.token) {
+    throw new Error(serverError(data, "account.linkFailed"));
+  }
+
+  localStorage.setItem(TOKEN_KEY, data.token);
 }
 
 export function getToken(): string | null {

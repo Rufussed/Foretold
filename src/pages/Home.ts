@@ -1,10 +1,12 @@
 import { watchStartedGame } from "../services/started-game";
 import {
+  EmailNotVerifiedError,
   createGuestGame,
   getCurrentUser,
   login,
   logout,
   register,
+  requestAccountMail,
 } from "../services/auth";
 import {
   POST_MAX_LENGTH,
@@ -20,6 +22,7 @@ import { escapeHtml } from "../utils/escape-html";
 type Panel =
   | "login"
   | "signup"
+  | "forgot"
   | "about"
   | "rules"
   | "news"
@@ -270,6 +273,13 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       return;
     }
 
+    if (activePanel === "forgot") {
+      panelContainer.innerHTML = renderForgotPanel();
+      attachForgotEvents();
+      focusFirstInput(panelContainer);
+      return;
+    }
+
     if (activePanel === "about") {
       panelContainer.innerHTML = renderInfoPanel(
         t("about.title"),
@@ -470,6 +480,23 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           <button
             type="button"
             class="home-switch-auth"
+            id="home-resend-verification"
+            hidden
+          >
+            ${t("login.resend")}
+          </button>
+
+          <button
+            type="button"
+            class="home-switch-auth"
+            id="home-switch-to-forgot"
+          >
+            ${t("login.forgot")}
+          </button>
+
+          <button
+            type="button"
+            class="home-switch-auth"
             id="home-switch-to-signup"
           >
             ${t("login.toSignup")}
@@ -566,6 +593,65 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             id="home-switch-to-login"
           >
             ${t("signup.toLogin")}
+          </button>
+        </section>
+      </div>
+    `;
+  }
+
+  function renderForgotPanel(): string {
+    return `
+      <div class="home-modal-backdrop">
+        <section
+          class="home-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="home-forgot-title"
+        >
+          <button
+            type="button"
+            class="home-close-button"
+            id="home-close-button"
+            aria-label="${t("common.close")}"
+          >
+            <span></span>
+            <span></span>
+          </button>
+
+          <h2 id="home-forgot-title">${t("forgot.title")}</h2>
+
+          <form id="home-forgot-form" class="home-auth-form">
+            <p class="home-auth-message">${t("forgot.intro")}</p>
+
+            <label>
+              ${t("login.username")}
+              <input
+                name="login"
+                type="text"
+                autocomplete="username"
+                required
+              />
+            </label>
+
+            <button
+              type="submit"
+              class="home-modal-primary"
+            >
+              ${t("forgot.submit")}
+            </button>
+          </form>
+
+          <p
+            id="home-forgot-message"
+            class="home-auth-message"
+          ></p>
+
+          <button
+            type="button"
+            class="home-switch-auth"
+            id="home-switch-to-login"
+          >
+            ${t("forgot.toLogin")}
           </button>
         </section>
       </div>
@@ -699,15 +785,6 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
   }
 
   // A short confirmation that outlives the panel it came from.
-  function showToast(text: string): void {
-    const toast = document.createElement("div");
-    toast.className = "home-toast";
-    toast.setAttribute("role", "status");
-    toast.textContent = text;
-    document.body.append(toast);
-    window.setTimeout(() => toast.remove(), 2800);
-  }
-
   function closePanel(): void {
     activePanel = null;
 
@@ -874,6 +951,43 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     });
   }
 
+  function attachForgotEvents(): void {
+    attachCloseEvent();
+
+    document
+      .querySelector<HTMLButtonElement>("#home-switch-to-login")
+      ?.addEventListener("click", () => {
+        activePanel = "login";
+        renderPanel();
+      });
+
+    const form =
+      document.querySelector<HTMLFormElement>("#home-forgot-form");
+    const message =
+      document.querySelector<HTMLParagraphElement>("#home-forgot-message");
+
+    form?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const submit = form.querySelector<HTMLButtonElement>("button[type=submit]");
+      const loginName = String(new FormData(form).get("login") ?? "");
+
+      if (submit) submit.disabled = true;
+      try {
+        await requestAccountMail("forgot-password", loginName);
+        form.hidden = true;
+        if (message) message.textContent = t("forgot.sent");
+      } catch (error) {
+        if (message) {
+          message.textContent =
+            error instanceof Error ? error.message : t("account.mailFailed");
+        }
+      } finally {
+        if (submit) submit.disabled = false;
+      }
+    });
+  }
+
   /** Puts the typing cursor in the panel's first field, so no click is needed. */
   function focusFirstInput(container: HTMLElement): void {
     container.querySelector<HTMLInputElement>("input")?.focus();
@@ -892,6 +1006,13 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       renderPanel();
     });
 
+    document
+      .querySelector<HTMLButtonElement>("#home-switch-to-forgot")
+      ?.addEventListener("click", () => {
+        activePanel = "forgot";
+        renderPanel();
+      });
+
     const form =
       document.querySelector<HTMLFormElement>(
         "#home-login-form",
@@ -901,6 +1022,32 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       document.querySelector<HTMLParagraphElement>(
         "#home-login-message",
       );
+
+    // Shown when the account's email is not confirmed yet.
+    const resendButton =
+      document.querySelector<HTMLButtonElement>(
+        "#home-resend-verification",
+      );
+
+    resendButton?.addEventListener("click", async () => {
+      const username = String(
+        new FormData(form ?? undefined).get("username") ?? "",
+      );
+
+      resendButton.disabled = true;
+      try {
+        await requestAccountMail("resend-verification", username);
+        if (message) message.textContent = t("login.resent");
+        resendButton.hidden = true;
+      } catch (error) {
+        if (message) {
+          message.textContent =
+            error instanceof Error ? error.message : t("account.mailFailed");
+        }
+      } finally {
+        resendButton.disabled = false;
+      }
+    });
 
     form?.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -925,6 +1072,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
           new HashChangeEvent("hashchange"),
         );
       } catch (error) {
+        if (resendButton) {
+          resendButton.hidden = !(error instanceof EmailNotVerifiedError);
+        }
         if (message) {
           message.textContent =
             error instanceof Error
@@ -975,7 +1125,7 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         formData.get("password") ?? "",
       );
 
-      // There is no password reset, so a typo here would lock the player out.
+      // A typo here would send the player to "Forgot password?" at once.
       if (password !== String(formData.get("confirmPassword") ?? "")) {
         if (message) {
           message.textContent = t("signup.passwordMismatch");
@@ -984,19 +1134,20 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       }
 
       try {
-        await register(
+        const result = await register(
           username,
           email,
           password,
         );
 
-        closePanel();
-        showToast(t("signup.done"));
-
-        window.location.hash = "#/home";
-        window.dispatchEvent(
-          new HashChangeEvent("hashchange"),
-        );
+        // Not signed in yet: the account opens by the mailed link
+        // (pages/AccountLink.ts). The form gives way to where to look.
+        form.hidden = true;
+        if (message) {
+          message.textContent = t("signup.checkMail", {
+            email: result.email,
+          });
+        }
       } catch (error) {
         if (message) {
           message.textContent =

@@ -116,7 +116,7 @@ export function renderLoginPage(container: HTMLElement): void {
 
       if (registrationMessage) {
         registrationMessage.textContent =
-          `Account created for ${result.user.username}`;
+          `Account created: confirm it by the link sent to ${result.email}`;
       }
 
       registrationForm.reset();

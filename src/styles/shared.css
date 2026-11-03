@@ -49,24 +49,6 @@
   }
 }
 
-/* A short confirmation after signing up (see pages/Home.ts). */
-.home-toast {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  z-index: 1000;
-  max-width: calc(100% - 32px);
-  padding: 22px 42px;
-  transform: translate(-50%, calc(-50% + 100px));
-  color: #eee2cc;
-  background: rgba(8, 9, 7, 0.94);
-  border: 1px solid rgba(191, 125, 47, 0.55);
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.5);
-  font-size: 1.2rem;
-  text-align: center;
-  animation: home-fade-in 180ms ease both;
-}
-
 /* Buttons that restyle themselves still take the gold hover, so every action
    button answers the pointer the same way. */
 .home-modal-primary:hover,

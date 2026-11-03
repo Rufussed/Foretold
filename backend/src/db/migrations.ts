@@ -36,6 +36,21 @@ const ROLE_PROGRESS_TABLE = `
   )
 `;
 
+// The links mailed to a player: confirming their address, or setting a new
+// password. Only a hash of each link's secret is kept, so a copy of the
+// database opens no accounts. A link is deleted once used.
+const EMAIL_TOKENS_TABLE = `
+  CREATE TABLE IF NOT EXISTS email_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    -- 'verify' or 'reset'.
+    purpose TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,
+    expires_at TEXT NOT NULL,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+  )
+`;
+
 interface Statement {
   run(...params: unknown[]): { changes: number | bigint; lastInsertRowid: number | bigint };
   get(...params: unknown[]): unknown;
@@ -355,6 +370,22 @@ const MIGRATIONS: Migration[] = [
     up(db) {
       // What fills the Profile's role seals (modes/roles/roleProgress.ts).
       db.exec(ROLE_PROGRESS_TABLE);
+    },
+  },
+  {
+    version: 18,
+    description: "email links: users.email_verified and email_tokens",
+    up(db) {
+      // Every account starts unconfirmed, the ones made before this too: an
+      // account with an address nobody reads is confirmed by hand
+      // (npm run verify-user).
+      if (!hasColumn(db, "users", "email_verified")) {
+        db.exec(`
+          ALTER TABLE users
+          ADD COLUMN email_verified INTEGER NOT NULL DEFAULT 0
+        `);
+      }
+      db.exec(EMAIL_TOKENS_TABLE);
     },
   },
 ];

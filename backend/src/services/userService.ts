@@ -6,6 +6,7 @@ export interface User {
   passwordHash: string;
   displayName: string;
   email: string;
+  emailVerified: boolean;
   createdAt: string;
 }
 
@@ -21,6 +22,7 @@ interface UserRow {
   password_hash: string;
   display_name: string;
   email: string;
+  email_verified: number;
   created_at: string;
 }
 
@@ -31,6 +33,7 @@ function mapUser(row: UserRow): User {
     passwordHash: row.password_hash,
     displayName: row.display_name,
     email: row.email,
+    emailVerified: row.email_verified === 1,
     createdAt: row.created_at,
   };
 }
@@ -79,6 +82,7 @@ export class UserService {
         password_hash,
         display_name,
         email,
+        email_verified,
         created_at
       FROM users
       WHERE LOWER(username) = LOWER(?)
@@ -116,6 +120,7 @@ export class UserService {
         password_hash,
         display_name,
         email,
+        email_verified,
         created_at
       FROM users
       WHERE LOWER(email) = LOWER(?)
@@ -128,6 +133,19 @@ export class UserService {
     return row ? mapUser(row) : null;
   }
 
+  // Whether an address already has an account, in any case.
+  static isEmailTaken(email: string): boolean {
+    return this.getUserByEmail(email) !== null;
+  }
+
+  static markEmailVerified(id: number): void {
+    db.prepare("UPDATE users SET email_verified = 1 WHERE id = ?").run(id);
+  }
+
+  static setPasswordHash(id: number, passwordHash: string): void {
+    db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(passwordHash, id);
+  }
+
   static getUserById(id: number): User | null {
     const statement = db.prepare(`
       SELECT
@@ -136,6 +154,7 @@ export class UserService {
         password_hash,
         display_name,
         email,
+        email_verified,
         created_at
       FROM users
       WHERE id = ?
