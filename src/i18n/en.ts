@@ -43,7 +43,11 @@ export const en = {
   "signup.submit": "Sign up",
   "signup.toLogin": "Already have an account? Log in",
   "signup.failed": "Registration failed",
-  "signup.checkMail": "Almost there: we sent a link to {email}. Open it to finish your account. Look in the spam folder too.",
+  "signup.checkSent": "A link has been sent to {email}.",
+  "signup.checkOpen": "Open it to confirm your account.",
+  "signup.checkSpam": "Look in the SPAM folder.",
+  "signup.checkTitle": "Check your email",
+  "signup.checkOk": "OK",
 
   "login.forgot": "Forgot password?",
   "login.resend": "Send the confirmation mail again",

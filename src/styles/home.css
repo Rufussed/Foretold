@@ -437,6 +437,12 @@
   line-height: 1.8;
 }
 
+/* The window after signing up (pages/Home.ts): the OK button sits apart
+   from the lines above it. */
+.home-check-mail-ok {
+  margin-top: 28px;
+}
+
 .home-modal-link {
   color: #e0a14d;
   text-decoration: underline;

@@ -44,7 +44,11 @@ export const de: Record<MessageKey, string> = {
   "signup.submit": "Registrieren",
   "signup.toLogin": "Schon ein Konto? Anmelden",
   "signup.failed": "Registrierung fehlgeschlagen",
-  "signup.checkMail": "Fast geschafft: Wir haben einen Link an {email} geschickt. Öffne ihn, um dein Konto fertig anzulegen. Schau auch im Spam-Ordner nach.",
+  "signup.checkSent": "Ein Link wurde an {email} geschickt.",
+  "signup.checkOpen": "Öffne ihn, um dein Konto zu bestätigen.",
+  "signup.checkSpam": "Schau auch im SPAM-Ordner nach.",
+  "signup.checkTitle": "Schau in dein Postfach",
+  "signup.checkOk": "OK",
 
   "login.forgot": "Passwort vergessen?",
   "login.resend": "Bestätigungsmail erneut senden",

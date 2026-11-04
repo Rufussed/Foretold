@@ -121,9 +121,11 @@ function showResetForm(card: HTMLElement, token: string): void {
 
 // Signed in now: on to the lobby. The link worked once and would fail if
 // opened again, so the address bar forgets it: a reload (or a language
-// switch, which redraws the page) lands in the lobby instead.
+// switch, which redraws the page) lands on the home page instead. Not on
+// #/lobby itself, or the button below would lead to the page the browser
+// thinks it is on already, and do nothing.
 function showDone(card: HTMLElement, message: string): void {
-  history.replaceState(null, "", "#/lobby");
+  history.replaceState(null, "", "#/home");
   card.innerHTML = `
     <p class="lobby-kicker">${t("account.kicker")}</p>
     <p class="join-message">${escapeHtml(message)}</p>

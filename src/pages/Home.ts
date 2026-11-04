@@ -23,6 +23,7 @@ type Panel =
   | "login"
   | "signup"
   | "forgot"
+  | "checkMail"
   | "about"
   | "rules"
   | "news"
@@ -50,6 +51,8 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
   // A guest finishing a game sends them here to sign up (see
   // visualizer/guest-signup-prompt.ts).
   let activePanel: Panel = null;
+  // The address the last sign-up's link went to (the "checkMail" window).
+  let signedUpEmail = "";
   try {
     if (sessionStorage.getItem("wizardOpenSignup") === "1") {
       sessionStorage.removeItem("wizardOpenSignup");
@@ -277,6 +280,16 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
       panelContainer.innerHTML = renderForgotPanel();
       attachForgotEvents();
       focusFirstInput(panelContainer);
+      return;
+    }
+
+    if (activePanel === "checkMail") {
+      panelContainer.innerHTML = renderCheckMailPanel();
+      attachCloseEvent();
+      panelContainer
+        .querySelector<HTMLButtonElement>("#home-check-mail-ok")
+        ?.addEventListener("click", closePanel);
+      panelContainer.querySelector<HTMLButtonElement>("#home-check-mail-ok")?.focus();
       return;
     }
 
@@ -652,6 +665,47 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             id="home-switch-to-login"
           >
             ${t("forgot.toLogin")}
+          </button>
+        </section>
+      </div>
+    `;
+  }
+
+  // After signing up: where the link went. Its own window, so it is not
+  // missed under the form.
+  function renderCheckMailPanel(): string {
+    return `
+      <div class="home-modal-backdrop">
+        <section
+          class="home-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="home-check-mail-title"
+        >
+          <button
+            type="button"
+            class="home-close-button"
+            id="home-close-button"
+            aria-label="${t("common.close")}"
+          >
+            <span></span>
+            <span></span>
+          </button>
+
+          <h2 id="home-check-mail-title">${t("signup.checkTitle")}</h2>
+
+          <p class="home-modal-copy">
+            ${t("signup.checkSent", { email: `<strong>${escapeHtml(signedUpEmail)}</strong>` })}
+          </p>
+          <p class="home-modal-copy">${t("signup.checkOpen")}</p>
+          <p class="home-modal-copy">${t("signup.checkSpam")}</p>
+
+          <button
+            type="button"
+            class="home-modal-primary home-check-mail-ok"
+            id="home-check-mail-ok"
+          >
+            ${t("signup.checkOk")}
           </button>
         </section>
       </div>
@@ -1141,13 +1195,10 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
         );
 
         // Not signed in yet: the account opens by the mailed link
-        // (pages/AccountLink.ts). The form gives way to where to look.
-        form.hidden = true;
-        if (message) {
-          message.textContent = t("signup.checkMail", {
-            email: result.email,
-          });
-        }
+        // (pages/AccountLink.ts). A window says where to look.
+        signedUpEmail = result.email;
+        activePanel = "checkMail";
+        renderPanel();
       } catch (error) {
         if (message) {
           message.textContent =
