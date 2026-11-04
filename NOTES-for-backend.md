@@ -5,6 +5,23 @@ Notes for whoever owns the backend. While building the three.js visualiser
 the working tree; nothing about the existing game rules changed except where
 marked **rule change**.
 
+## Repository and branches (updated 2026-11-04)
+
+We now work out of one repo, **github.com/Rufussed/Foretold**. Carlos has
+push access, so push there directly rather than to `cadenegr/wizard-game-platform`.
+
+| Branch | What it is |
+| --- | --- |
+| `Master` | Carlos's line, taken from `cadenegr/wizard-game-platform` `master` (`1f08e02`, "Accounts: email confirmation and password reset by mailed link"). The Hostinger deployment branch. |
+| `Rufus` | Rufus's earlier line (the repo's default branch). |
+| `foretold` | The Foretold mode: Seer and Trickster powers, elements, card art, the 3D table. Not merged into `Master` yet; the two histories have diverged. |
+
+The old `carlos` branch is now `Master`. Clone with:
+
+```bash
+git clone https://github.com/Rufussed/Foretold.git
+```
+
 ## Avatars and the waiting room
 
 Players pick one of six avatars before a game starts, first come first served.
@@ -149,7 +166,7 @@ existing file there once. The directory is created if it is missing.
 ## Seer and Trickster powers, scoring and elements (`foretold` branch, 2026-10)
 
 For Carlos: what changed on the backend, and why. Everything below is on the
-`foretold` branch; `master`, `Rufus` and `carlos` are untouched.
+`foretold` branch; `Master` and `Rufus` are untouched.
 
 **Rules**
 
