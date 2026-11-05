@@ -4,6 +4,8 @@
 //
 //   npm run play                     asks which setup you want
 //   npm run play -- --mode lan       local | lan | tailscale, without asking
+//   npm run play -- --dev-keys       turns the test keys on, without asking
+//   npm run play -- --no-dev-keys    leaves them off, without asking
 //   npm run play -- --dry-run        shows what it would do and starts nothing
 
 import { execFileSync, spawn } from "node:child_process";
@@ -128,7 +130,7 @@ function printConnectHelp(mode) {
       );
     }
   }
-  lines.push("", ` ${mode.note}`, rule, "");
+  lines.push("", ` ${mode.note}`, ` Dev keys: ${devKeys ? "on" : "off"}`, rule, "");
   console.log(lines.join("\n"));
 }
 if (lan) {
@@ -197,6 +199,35 @@ async function chooseMode() {
   }
 }
 
+// Whether the server honours the test keys: Shift+Q..U give you a power card in
+// an Expanded game, and your role's card in a Roleplay game. On by default on
+// this computer alone, off where others can reach the game.
+async function chooseDevKeys(mode) {
+  if (args.includes("--dev-keys")) return true;
+  if (args.includes("--no-dev-keys")) return false;
+  if (!process.stdin.isTTY) return true;
+
+  const fallback = mode.key === "local";
+  const prompt = readline.createInterface({ input: process.stdin, output: process.stdout });
+  try {
+    for (;;) {
+      const answer = (
+        await prompt.question(
+          `\nTurn on the dev keys (Shift+Q to U power cards, Shift+1 to 4 show a suit)? [${fallback ? "Y/n" : "y/N"}]: `,
+        )
+      )
+        .trim()
+        .toLowerCase();
+      if (answer === "") return fallback;
+      if (["y", "yes"].includes(answer)) return true;
+      if (["n", "no"].includes(answer)) return false;
+      console.log("  Please answer y or n.");
+    }
+  } finally {
+    prompt.close();
+  }
+}
+
 function accepting(port, host) {
   return new Promise((resolve) => {
     const socket = net.connect({ port, host });
@@ -242,10 +273,15 @@ function start(name, command, commandArgs, options, onLine = () => {}) {
 }
 
 const mode = await chooseMode();
+const devKeys = await chooseDevKeys(mode);
 const urls = mode.open.map(origin);
 // WIZARD_DEV_TOOLS: the test keys of a Sabotage or Roles game (a special
 // card or your role's card into your hand) are honoured; never set live.
-const backendEnv = { HOST: mode.listen, CORS_ORIGINS: mode.origins.join(","), WIZARD_DEV_TOOLS: "1" };
+const backendEnv = {
+  HOST: mode.listen,
+  CORS_ORIGINS: mode.origins.join(","),
+  ...(devKeys ? { WIZARD_DEV_TOOLS: "1" } : {}),
+};
 const viteArgs = ["vite", "--port", String(FRONTEND_PORT), "--strictPort", ...(mode.viteHost ? ["--host", mode.viteHost] : [])];
 
 printConnectHelp(mode);

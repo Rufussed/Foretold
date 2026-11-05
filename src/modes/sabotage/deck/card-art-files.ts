@@ -20,3 +20,17 @@ export function cardFile(path: string): string {
   if (!url) throw new Error(`No card art at ${path}`);
   return url;
 }
+
+// The art pool every deck draws on (see visualizer/card-decks.ts): one picture
+// per card per element, named <element>/<element>-<picture>.webp.
+const POOL_FILES = import.meta.glob("../../../assets/card-pool/**/*.webp", {
+  query: "?url",
+  import: "default",
+  eager: true,
+}) as Record<string, string>;
+
+export function poolFile(path: string): string {
+  const url = POOL_FILES[`../../../assets/card-pool/${path}`];
+  if (!url) throw new Error(`No card art at card-pool/${path}`);
+  return url;
+}

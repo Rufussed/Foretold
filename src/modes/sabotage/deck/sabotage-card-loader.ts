@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { Card } from "../../../../backend/src/game/wizard/models/card";
-import { cardFile } from "./card-art-files";
+import { cardFile, poolFile } from "./card-art-files";
+import { activeDeck, pictureOf } from "../../../visualizer/card-decks";
 import { elementIcon, powerSymbol, type PowerSymbol } from "./card-icons";
 import { sharpenImage } from "../../../visualizer/card-sharpen";
 import { embossPrint } from "./card-emboss";
@@ -20,14 +21,13 @@ import { CARDS } from "../sabotage-config";
 // it for every game, so a missing file must not stop a Classic table.
 const backUrl = (): string => cardFile("back/backCard.webp");
 
-// air-1.webp … air-13.webp, air-jester.webp, air-wizard.webp — named for the
-// suit's element. Jesters are value 0 and Wizards 14, matching the game rules.
-const cardArtName = (card: Card): string =>
-  card.value === 0 ? "jester" : card.value === 14 ? "wizard" : String(card.value);
+// The picture comes from the deck of the game on the table (see
+// visualizer/card-decks.ts): src/assets/card-pool/<element>/<element>-<picture>.webp.
+const cardArtName = (card: Card): string => pictureOf(activeDeck(), card);
 
 export function cardArtUrl(card: Card): string {
   const element = cardElement(card);
-  return cardFile(`${element}/${element}-${cardArtName(card)}.webp`);
+  return poolFile(`${element}/${element}-${cardArtName(card)}.webp`);
 }
 
 // What a card's face needs printed on it: its number in its element's colour,
@@ -61,6 +61,7 @@ async function cardPrint(card: Card): Promise<FacePrint> {
 // The symbol a card carries, if it is one of the four that have one: the Fool
 // and the Wizard, and the Seer, the Thief and the Trickster among the ranks.
 function cardSymbol(card: Card): PowerSymbol | undefined {
+  if (!activeDeck().symbols) return undefined;
   if (card.value === 0) return "fool";
   if (card.value === 14) return "wizard";
   return powerOf(card) ?? undefined;
@@ -74,7 +75,7 @@ const SORCERESSES = ["earth", "air"];
 function cardTitle(card: Card): string {
   if (card.value === 0) return t("sabotage.fool");
   if (card.value === 14) return t(SORCERESSES.includes(cardElement(card)) ? "sabotage.sorceress" : "sabotage.sorcerer");
-  return t(`sabotage.rank.${card.value}` as MessageKey);
+  return t(activeDeck().titleKey(card.value, cardElement(card)) as MessageKey);
 }
 
 // Washes the art with a colour, keeping its light and dark: the "color" blend

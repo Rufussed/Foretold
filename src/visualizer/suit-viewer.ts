@@ -1,9 +1,10 @@
-// Dev-only: Shift+1..4 lays one element's fifteen cards across the whole page,
-// to check the art at a size the table never shows it. The same key again, or
+// Dev-only, in every game mode: Shift+1..4 lays one element's fifteen cards
+// across the whole page, in the deck of the game on the table, to check the art
+// at a size the table never shows it. The same key again, or
 // Escape, puts the table back.
 
-import { SUITS, type Card, type Suit } from "../../../../backend/src/game/wizard/models/card";
-import { preloadCardArt } from "../../../visualizer/card-texture-loader";
+import { SUITS, type Card, type Suit } from "../../backend/src/game/wizard/models/card";
+import { preloadCardArt } from "./card-texture-loader";
 
 export interface SuitViewer {
   dispose(): void;

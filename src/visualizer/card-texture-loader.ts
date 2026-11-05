@@ -1,130 +1,20 @@
-import * as THREE from "three";
-import type { Card, Suit } from "../../backend/src/game/wizard/models/card";
-import { sharpenImage } from "./card-sharpen";
-import { CARDS } from "./config";
-import { isSabotageGame } from "../modes/sabotage/sabotage-game";
-import * as sabotageDeck from "../modes/sabotage/deck/sabotage-card-loader";
+import type * as THREE from "three";
+import type { Card } from "../../backend/src/game/wizard/models/card";
+import * as deck from "../modes/sabotage/deck/sabotage-card-loader";
 
-// Loads the card art: a deck of one set per suit, one file per card
-// (topaz01.webp … topaz13.webp, topazJester.webp, topazWizard.webp), plus the
-// back shown on every face-down card (src/assets/tarot_cards/back). A Sabotage
-// game has its own deck, with its numbers and titles printed on in code
-// (modes/sabotage/deck/).
+// The card art for every game mode. All the cards are drawn from one pool of
+// pictures (src/assets/card-pool/), and the deck of the game on the table
+// (card-decks.ts) says which picture each number uses; the numbers and titles
+// are printed on in code (modes/sabotage/deck/). This file is where the table
+// asks for them.
 
-// Vite copies each file into the build with a hash of its contents in its name,
-// so re-made art reaches players as a new URL their cache cannot mistake for
-// the old one. The hash is only known at build time, so a card's path can no
-// longer be assembled from its suit and value: that naming still decides which
-// file is wanted, but the URL itself comes from this table. Keys are the glob
-// patterns exactly as written here.
-const CARD_FILES = {
-  ...import.meta.glob("../assets/tarot_cards/**/*.webp", { query: "?url", import: "default", eager: true }),
-  ...import.meta.glob("../assets/worn-facet-decks/**/*.webp", { query: "?url", import: "default", eager: true }),
-  ...import.meta.glob("../assets/poker-decks/**/*.webp", { query: "?url", import: "default", eager: true }),
-  ...import.meta.glob("../assets/white-poker-decks/**/*.webp", { query: "?url", import: "default", eager: true }),
-} as Record<string, string>;
+export const cardArtUrl = (card: Card): string => deck.cardArtUrl(card);
 
-// The decks, each in its folder with one folder per suit: the gems
-// (tarot_cards/topaz/topaz01.webp …) or the worn facets
-// (worn-facet-decks/blue/blue01.webp …) or the poker cards
-// (poker-decks/blue/blue01.webp …), plain or on white (white-poker-decks).
-// DECK picks the one the game shows.
-const DECKS = {
-  gems: { folder: "tarot_cards", suits: { Blue: "topaz", Green: "jade", Yellow: "gold", Red: "ruby" } },
-  wornFacets: { folder: "worn-facet-decks", suits: { Blue: "blue", Green: "green", Yellow: "yellow", Red: "red" } },
-  poker: { folder: "poker-decks", suits: { Blue: "blue", Green: "green", Yellow: "yellow", Red: "red" } },
-  whitePoker: { folder: "white-poker-decks", suits: { Blue: "blue", Green: "green", Yellow: "yellow", Red: "red" } },
-} satisfies Record<string, { folder: string; suits: Record<Suit, string> }>;
+export const cardArtTexture = (card: Card): THREE.Texture => deck.cardArtTexture(card);
 
-const DECK: keyof typeof DECKS = "gems";
-
-const { folder: DECK_FOLDER, suits: GEMS } = DECKS[DECK];
-
-// Which back face-down cards show: back/backBronzeLogo.webp or
-// back/backOnyxLogo.webp.
-const BACK = "backOnyxLogo";
-
-function cardFile(path: string): string {
-  const url = CARD_FILES[`../assets/${path}`];
-  // A missing file is a mistake in the naming above or a card that was never
-  // made; say so rather than handing three.js undefined and drawing a blank.
-  if (!url) throw new Error(`No card art at ${path}`);
-  return url;
-}
-
-const BACK_URL = cardFile(`tarot_cards/back/${BACK}.webp`);
-
-// Jesters are value 0 and Wizards 14, matching the game rules.
-export function cardArtUrl(card: Card): string {
-  const name =
-    card.value === 0 ? "Jester" : card.value === 14 ? "Wizard" : String(card.value).padStart(2, "0");
-  const gem = GEMS[card.suit];
-  return cardFile(`${DECK_FOLDER}/${gem}/${gem}${name}.webp`);
-}
-
-const loader = new THREE.TextureLoader();
-const textures = new Map<string, THREE.Texture>();
-// The same entries, as promises, for callers that want to know when the image
-// has arrived rather than letting it appear a frame later.
-const arrivals = new Map<string, Promise<THREE.Texture>>();
-
-// three fills the texture in once the image arrives, so this can stay
-// synchronous: the card shows blank for a frame or two, then its face.
-function load(url: string): THREE.Texture {
-  const cached = textures.get(url);
-  if (cached) return cached;
-
-  let settle: (texture: THREE.Texture) => void = () => {};
-  let fail: (error: unknown) => void = () => {};
-  arrivals.set(
-    url,
-    new Promise<THREE.Texture>((resolve, reject) => {
-      settle = resolve;
-      fail = reject;
-    }),
-  );
-
-  const texture = loader.load(
-    url,
-    () => {
-      // Lift the art's edges before the GPU shrinks it (see card-sharpen.ts).
-      const image = texture.image as (CanvasImageSource & { width: number; height: number }) | undefined;
-      const sharpened = image && sharpenImage(image, CARDS.artSharpen);
-      if (sharpened) {
-        texture.image = sharpened as unknown as HTMLImageElement;
-        texture.needsUpdate = true;
-      }
-      settle(texture);
-    },
-    undefined,
-    (error) => fail(error),
-  );
-  texture.colorSpace = THREE.SRGBColorSpace;
-  // glTF UVs put v=0 at the top of the image; GLTFLoader's own textures are
-  // unflipped for the same reason, so this lands the way the mesh expects.
-  texture.flipY = false;
-  texture.anisotropy = 16; // three clamps this to what the GPU supports
-  textures.set(url, texture);
-  return texture;
-}
-
-export const cardArtTexture = (card: Card): THREE.Texture =>
-  isSabotageGame() ? sabotageDeck.cardArtTexture(card) : load(cardArtUrl(card));
-
-export const cardBackTexture = (): THREE.Texture =>
-  isSabotageGame() ? sabotageDeck.cardBackTexture() : load(BACK_URL);
+export const cardBackTexture = (): THREE.Texture => deck.cardBackTexture();
 
 // The same texture, but resolving once its image has actually arrived, so the
 // prefetch queue holds one card open at a time instead of starting the whole
 // deck at once. A failed download is forgotten, so a later card can retry it.
-export function preloadCardArt(card: Card): Promise<THREE.Texture> {
-  if (isSabotageGame()) return sabotageDeck.preloadCardArt(card);
-  const url = cardArtUrl(card);
-  load(url);
-  const arrival = arrivals.get(url) ?? Promise.resolve(textures.get(url)!);
-  return arrival.catch((error) => {
-    textures.delete(url);
-    arrivals.delete(url);
-    throw error;
-  });
-}
+export const preloadCardArt = (card: Card): Promise<THREE.Texture> => deck.preloadCardArt(card);

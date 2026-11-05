@@ -21,8 +21,9 @@ import { createGuestSignupPrompt, type GuestSignupPrompt } from "../visualizer/g
 import { createHudScale } from "../visualizer/hud-scale";
 import { createSabotageThiefPrompt, type SabotageThiefPrompt } from "../modes/sabotage/prompts/sabotage-thief-prompt";
 import { createSabotageDevKeys, type SabotageDevKeys } from "../modes/sabotage/dev/sabotage-dev-keys";
-import { createSuitViewer, type SuitViewer } from "../modes/sabotage/dev/suit-viewer";
+import { createSuitViewer, type SuitViewer } from "../visualizer/suit-viewer";
 import { isSabotageGame, setSabotageGame } from "../modes/sabotage/sabotage-game";
+import { setCardDeckMode } from "../visualizer/card-decks";
 import { createRoleLabels, type RoleLabels } from "../modes/roles/role-labels";
 import { createRolesDevKeys, type RolesDevKeys } from "../modes/roles/dev/roles-dev-keys";
 import { createRoleSeals, type RoleSeals } from "../modes/roles/role-seals";
@@ -148,6 +149,7 @@ export async function renderVisualizerPage(
   teardown = () => {
     destroyed = true;
     setSabotageGame(null);
+    setCardDeckMode(null);
     musicToggle?.dispose();
     effectsToggle?.dispose();
     installToggle?.dispose();
@@ -296,11 +298,12 @@ export async function renderVisualizerPage(
   // A Sabotage game has its own deck, prompts and look (modes/sabotage/); set
   // before the scene is built so all of it knows.
   setSabotageGame(latestState);
+  setCardDeckMode(latestState);
   if (isSabotageGame()) {
     pageEl?.classList.add("is-sabotage");
-    // Development aid: Shift+1..4 shows a whole suit of the deck.
-    if (import.meta.env.DEV && pageEl) suitViewer = createSuitViewer(pageEl);
   }
+  // Development aid, in every game mode: Shift+1..4 shows a whole suit of the deck.
+  if (import.meta.env.DEV && pageEl) suitViewer = createSuitViewer(pageEl);
 
   // Leave Table asks first while the player still plays their own seat:
   // leave for now, or quit and let the server play it (leave-dialog.ts).
