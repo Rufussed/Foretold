@@ -1,0 +1,17 @@
+{
+  "id": "fire-citizen",
+  "status": "complete",
+  "source": "fire-citizen.png",
+  "output": "fire-citizen.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "horned potter holding jug in doorway preserved",
+    "style": "broad simple folds, kiln and stone; minimal marks",
+    "sky": "ember red-orange and quiet upper-right",
+    "anatomy_props": "jug supported by two coherent hands with continuous handle"
+  },
+  "notes": [
+    "Original apron badge removed; small tonal sleeve motif."
+  ]
+}

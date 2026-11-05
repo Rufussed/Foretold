@@ -1,0 +1,17 @@
+{
+  "id": "water-general",
+  "status": "complete",
+  "source": "water-general.png",
+  "output": "water-general.png",
+  "method": "built-in style transfer by root plus local motif correction by Fire agent",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "bald dark-skinned grey-bearded naval general, trumpet/sword/ship pose retained",
+    "style": "broad ink/paint rendering preserved",
+    "sky": "azure blue, quiet upper-right",
+    "anatomy_props": "continuous sword, trumpet and natural grips retained"
+  },
+  "notes": [
+    "Three bold blue bracer waves replaced with four more muted blue-grey engraved waves."
+  ]
+}

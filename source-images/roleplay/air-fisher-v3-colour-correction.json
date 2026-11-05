@@ -1,0 +1,80 @@
+{
+  "source": "air-fisher-v2.png",
+  "output": "air-fisher-v3.png",
+  "tool": "photocraft-cli",
+  "target_rgb": [
+    226,
+    201,
+    138
+  ],
+  "steps": [
+    [
+      "select.magicWand",
+      {
+        "x": 1000,
+        "y": 50,
+        "tolerance": 65,
+        "antiAlias": true
+      }
+    ],
+    [
+      "select.magicWand",
+      {
+        "x": 65,
+        "y": 100,
+        "tolerance": 35,
+        "mode": "add",
+        "antiAlias": true
+      }
+    ],
+    [
+      "select.magicWand",
+      {
+        "x": 100,
+        "y": 150,
+        "tolerance": 35,
+        "mode": "add",
+        "antiAlias": true
+      }
+    ],
+    [
+      "select.magicWand",
+      {
+        "x": 120,
+        "y": 200,
+        "tolerance": 35,
+        "mode": "add",
+        "antiAlias": true
+      }
+    ],
+    [
+      "select.magicWand",
+      {
+        "x": 60,
+        "y": 60,
+        "tolerance": 35,
+        "mode": "add",
+        "antiAlias": true
+      }
+    ],
+    [
+      "image.adjustments.gradientMap",
+      {
+        "stops": [
+          [
+            0,
+            "#b9a16b"
+          ],
+          [
+            0.65,
+            "#E2C98A"
+          ],
+          [
+            1,
+            "#f2e1b5"
+          ]
+        ]
+      }
+    ]
+  ]
+}

@@ -1,0 +1,7 @@
+Water Shepherd blue Greek eye clasp — 3 November 2026
+Built-in imagegen edit. Inputs: water-shepherd.png edit target and user-supplied
+Greek eye reference, preserved as references/greek-blue-eye.png.
+
+Use case: precise-object-edit. Image1 is EDIT TARGET Water Shepherd card. Image2 is DESIGN REFERENCE for a blue Greek eye (nazar) charm only.
+Replace ONLY the small pale bone-shaped cloak clasp on her upper chest/shoulder with a small ROUND BLUE GREEK EYE clasp based on image2. Remove bone completely. New clasp physically pins the same navy cloak folds at the same location; modest scale similar to old clasp, circular disk about45-55pixels diameter in this1060pixel-wide portrait, not a huge pendant/badge. Concentric cobalt blue outer rim, dark navy/black ring, white/ivory ring, turquoise iris and black central pupil, recognisable as reference blue eye. Render it in same hand-painted/ink illustration style, subtle blue glass depth not pasted photographic product. No chain, no second eye. Preserve the existing four-wave sleeve motif.
+ALL other artwork must remain unchanged as closely as possible: exact woman identity/face/strong features/age/expression/hair/skin, robe/cloak colours and folds, hands and pose, long continuous crook, herbs/belt/boots, sheep/flock, salt meadow/tidalchannels/coastalcliffs, azure blue sky and existing composition. Do not beautify or add scars. No new objects or restyling. Full portrait no text/border.

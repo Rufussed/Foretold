@@ -1,0 +1,27 @@
+Built-in imagegen
+FINAL SELECTED built-in composite edit (earlier attempts below retained as provenance).
+Final references:
+/home/rlane/.codex/generated_images/01a1a0e1-4afc-72f0-b8f2-56951c91a912/exec-fd531669-5c38-4f86-bac3-e9b69d2adb4b.png
+/home/rlane/.codex/generated_images/01a1a0e1-4afc-72f0-b8f2-56951c91a912/exec-a38bb5ec-4f19-4e10-ae81-6082167e034a.png
+
+Exact final composite prompt:
+Use case: compositing. Image1 is the full portrait EDIT TARGET. Image2 is a corrected close-up of its map-hand wrist armour, showing FOUR bars. Integrate the corrected four-bar detail from image2 precisely at its original location in image1, keeping the same small natural footprint and perspective. Replace only the three-line motif with the FOUR-line motif shown in image2. Keep FOUR visible separate grey lines, not three. Rest of the full portrait unchanged: face/expression/pose/anatomy/clothes/props/landscape/cream sky/ink-paint style. Return the entire original FULL portrait, not a zoomed crop. No text/frame.
+
+Exact corrected close-up prompt:
+Edit this magnified small clothing/armour detail. Replace motif with EXACTLY FOUR grey parallel horizontal bars (FOUR lines). There are only THREE now. Add one new fourth line in blank space below the last. Keep the material/cloth/armour shape and colour untouched. Four bars should occupy central area with clear gaps. No text.
+Close-up input: /tmp/air-general-batchcheck.png, deterministic magnified inspection crop of generated portrait (General95x100+145+680, Trickster90x100+725+680; resized600%).
+
+FINAL LOCAL CORRECTION after initial generation (references: generated initial full portrait and /tmp/air-general-batchcheck.png close-up):
+Edit the FULL portrait image 1. Image2 is a magnified close-up of the small motif that needs correction, supplied only to locate it. There are THREE dark grey bars on this wrist armour above map hand. ADD ONE NEW SEPARATE FOURTH dark-grey straight bar BELOW THE LOWEST EXISTING BAR in the blank space before cuff edge. Keep all three existing bars, add one new one, total FOUR. The new fourth bar must be visibly separated and as long as other bars, no fifth. Do not just reproduce the three-line motif. No change to full portrait except this tiny addition; exact face, pose, costume, objects, cream sky, mountains and ink/paint unchanged. Return FULL portrait same composition, not close-up.
+
+References:
+/home/rlane/Work/foretold/source-images/air-general.png
+/home/rlane/Work/foretold/source-images/roleplay/water-thief.png
+/home/rlane/Work/foretold/source-images/symbols-air-fire-water-earth.png
+
+Use case: style-transfer. Restyle IMAGE1, the original card, preserving its EXACT individual identity, age/species, facial shape and expression, pose, silhouette, framing, costume CUT, major objects and story/composition. Do not replace it with any new roleplay character. IMAGE2 Water Thief is STYLE ONLY: copy rendering, never its face, smile, scar, hair, costume, pirate props or pose. IMAGE3 symbol sheet is geometry only; never reproduce sheet or floating emblems.
+Rendering: strong confident slightly irregular dark contours with economical inner drawing, broad base colours plus only ONE OR TWO large shadow shapes per material, generous unshaded calm areas, gentle calm gradients and broad scenery masses, sparse fine natural grain. Dramatically reduce original dense hatching, speckling, woodcut noise, tiny fold/skin/hair/detail marks, surface texture and realistic tonal modelling. Retain expressive character, selective painted depth and rich material colours; not flat vector, anime or glossy realism.
+AIR lighting: all actual sky warm cream RGB226,201,138 #E2C98A with gentle nearby gradients, ivory clouds/snow, mountains/stone warm neutral GREY/TAUPE/ochre and low-saturation shadows, no leftover blue/cyan sky holes or mountain/stone shadows. Preserve material colours, not global sepia.
+Remove original conspicuous four-bar badge/contrasting patch. Replace with exactly FOUR small separate STRAIGHT horizontal parallel bars in a single subtle tonal integrated embroidery/engraving/tattoo. Count four, not three/five; keep modest scale, no bright badge, no floating sky symbols.
+Fullbleed portrait approximately5:7 retaining framing. Keep rightmost22%width/top25%height calm background for labels. No text, letters, numbers, borders, frames or watermark. Coherent natural anatomy and connected objects; minor necessary corrections only.
+CARD SPECIFIC: Preserve stern middle-aged moustached receding-dark-haired human general seated cross-legged at map table, ivory windblown cloak/silver armour/slate clothes, hand on map and other knee, sheathed sword, subordinate troops on wall left. Remove huge chest bars plain slate breast, four TINY tonal engraved bars on right wrist armour. No new eye clasp; round plain original clasp stays. Keep face expression severe.

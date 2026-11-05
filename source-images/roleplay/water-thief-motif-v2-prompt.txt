@@ -1,0 +1,4 @@
+Water Thief motif correction — 3 November 2026
+Built-in image generation edit of water-thief.png.
+
+Precise local image edit. Use the original supplied portrait as the edit target. Correct ONLY the blue tattoo on the foreground forearm. Replace the current THREE wavy lines with exactly FOUR (4) separate horizontal wavy lines. Count them top to bottom: wave 1, wave 2, wave 3, wave 4. Not five. Keep this four-wave tattoo within approximately the existing small footprint, only slightly taller if necessary, same muted blue ink and line weight. Match the existing waves, skin perspective and subtle treatment. All pixels outside this small tattoo area should remain unchanged. In particular preserve the character's face, expression, hands, clothing, knife, rope path, boat, water, harbour, composition, rendering style and portrait dimensions. Do not redraw or restyle anything. No text. Exactly FOUR blue waves, not three or five.

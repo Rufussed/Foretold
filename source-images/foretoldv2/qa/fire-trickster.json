@@ -1,0 +1,19 @@
+{
+  "id": "fire-trickster",
+  "status": "complete",
+  "source": null,
+  "output": "fire-trickster.png",
+  "method": "fresh built-in image generation plus prop/motif correction",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "fresh human-looking theatrical deceiver; no horns/scars/Water mask",
+    "style": "broad ink/paint style with simple shadow illusion",
+    "sky": "ember red-orange quiet upper-right",
+    "anatomy_props": "upper hand grips single puppet rod; lower hand holds complete lantern ring"
+  },
+  "notes": [
+    "Original Fire Trickster image and historical prompts were NOT read or viewed.",
+    "Initial disconnected prop arrangement corrected; exact light projection is theatrical rather than optical reconstruction.",
+    "Four dark-red waves visible on cuff, edges have slight ink outlines."
+  ]
+}

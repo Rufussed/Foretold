@@ -1,0 +1,18 @@
+{
+  "id": "fire-consort",
+  "status": "complete",
+  "source": "fire-consort-v2.png",
+  "output": "fire-consort.png",
+  "method": "built-in image generation plus motif corrections",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "mature horned bearded male consort perched at parapet preserved",
+    "style": "broad armour/cloth/stone shadows, reduced texture",
+    "sky": "dark ember crimson, quiet upper-right",
+    "anatomy_props": "continuous sword with correct closed grip; natural wall-resting hand"
+  },
+  "notes": [
+    "Bracer motif repeatedly stayed three; removed and relocated as four tonal red sleeve waves.",
+    "Final motif on sleeve somewhat lighter red than requested but modest integrated scale."
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "id": "fire-farmer",
+  "status": "complete",
+  "source": "fire-farmer.png",
+  "output": "fire-farmer.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "elderly moustached horned man, stacked hands on shovel preserved",
+    "style": "strong contours and broad crop/stone/shadow masses",
+    "sky": "ember red-orange, upper-right quiet",
+    "anatomy_props": "coherent stacked hands, continuous shovel"
+  },
+  "notes": [
+    "Small tonal upper-sleeve embroidery; original sash print removed."
+  ]
+}

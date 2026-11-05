@@ -1,0 +1,12 @@
+ROLEPLAY AIR THIEF — finalized reusable prompt
+Date: 2 November 2026
+
+Use case: stylized-concept / character-preserving style transfer.
+Use general-prompt.md in full, then this individual brief.
+References if supplied: water-thief.png = STYLE ONLY; air-thief.png = CHARACTER/POSE. For Water, use its selected image for both identity and finish. Never borrow the Water pirate or harbour for another suit.
+
+A wiry older human woman with grey hair tied back, sharp hooked nose, lively mischievous sideways expression and sparse age lines. Slate jacket, dark breeches, soft boots and a long windblown ivory scarf. Preserve air-thief.png character and low sneaking tiptoe pose on a mountain fortress battlement. One hand lifts a large plain iron key by its ring off a simple wall hook; other balances on parapet. Connected key/ring, clear separation from hook, natural wrists. Small dozing guard low left, subordinate. Exactly FOUR short straight parallel horizontal bars as a small muted grey wrist tattoo, no contrasting cuff badge. Simplify hair locks, scarf folds, stonework and mountain shapes. Slate/ivory/pale blue palette and quiet upper-right sky.
+
+Full-bleed portrait approximately 5:7. Strong irregular ink contours, broad base colours with one or two main shadows, restrained painted depth, economical faces, sparse surface marks. Subtle motif; overall palette establishes suit first. Correct connected anatomy and readable object interactions. Quiet upper-right label zone (rightmost 22% within upper 25%). No text, numbers, borders or watermarks. Do not increase realistic shading, dense texture or fine detail.
+
+This is a consolidated brief for future use, not the verbatim historical generation input. Exact recorded generation/edit prompts are in prompt-history/air-thief-prompt.txt. Regeneration is not pixel-identical.

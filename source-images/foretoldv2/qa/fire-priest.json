@@ -1,0 +1,17 @@
+{
+  "id": "fire-priest",
+  "status": "complete",
+  "source": "fire-priest.png",
+  "output": "fire-priest.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "elderly horned white-bearded kneeling priest preserved",
+    "style": "large folds and broad stone/shadow shapes",
+    "sky": "ember crimson upper-right quiet",
+    "anatomy_props": "two hands, ring/chains/censer coherent; one broad smoke ribbon"
+  },
+  "notes": [
+    "Large stole emblem and distant banner marks removed; tonal sleeve motif."
+  ]
+}

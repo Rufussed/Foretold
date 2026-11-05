@@ -1,0 +1,17 @@
+{
+  "id": "fire-heir",
+  "status": "complete",
+  "source": "fire-heir.png",
+  "output": "fire-heir.png",
+  "method": "built-in image generation plus motif correction",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "young horned female heir, spear/helmet/fortress stance preserved",
+    "style": "broad armour and castle masses, restrained painted depth",
+    "sky": "ember sunset quiet upper-right",
+    "anatomy_props": "natural spear grip, continuous shaft and held helmet"
+  },
+  "notes": [
+    "First pass three cloak waves corrected to four."
+  ]
+}

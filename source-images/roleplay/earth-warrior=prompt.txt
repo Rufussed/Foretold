@@ -1,0 +1,15 @@
+Earth Warrior — 3 November 2026
+Built-in image generation edit of earth-warrior-v3.png.
+
+Use case: precise-object-edit. Edit the supplied Earth Warrior portrait, preserving this same fierce clean-shaven green forest elf, face, hair, long ears, combat stance, forest gateway setting and confident ink/hand-painted colour style. Make these changes:
+1. Broaden his unnaturally pinched narrow waist. Give him a natural solid athletic torso with straighter sides from lower ribs to hips, proportionate abdomen, broader belt line and modest taper. He remains lean athletic, not stocky or dwarf-like, but no wasp/hourglass waist.
+2. Reshape the shield into a clearly VERTICAL tall narrow war shield, height roughly 2.4 times width. Rounded top and gently tapered lower end, credible wood and rim; keep its face visible and supported by his existing shield arm, natural grip/straps behind shield. It should read taller and narrower than current wide oval.
+3. Replace the small isolated four-zigzag emblem near shield top with a CONTINUOUS integrated pattern spanning the wooden shield face. Use the Earth motif's angular zigzag geometry, FOUR parallel stacked horizontal zigzag bands, each continuing/repeating evenly left-to-right across the entire face from rim to rim. Distribute these four broad rows over most of shield's height rather than a tiny badge at top. Tonal dark-green/wood-brown carved or painted bands, restrained contrast and related material tones; a cohesive continuous zigzag surface pattern, no floating symbol patch, no bright badge. No wave curves, no generic leaf/tree icon.
+4. Replace sword completely with ONE practical long spear in the weapon hand on viewer LEFT. One straight continuous wooden shaft, natural closed hand wrapping it, steel leaf-shaped spearhead firmly attached. Hold spear upright slightly diagonal along LEFT edge, butt low beside left boot and spearhead upper-left; all aligned on a single unbroken axis. Adjust weapon wrist/forearm naturally as required for credible spear grip. No sword, hilt, crossguard or extra weapon. Keep head and spear out of upper-right label zone.
+Preserve fierce snarling expression, no beard/moustache/stubble and no cheek scars, green quilted clothing, cloak, boots, grounded wide combat stance and broad simple forest/stone masses. Keep paint and ink detail level exactly in current style, no additional fine texture or realistic modelling. Full-bleed approximately 5:7 same framing, quiet upper-right sky, no text/border/watermark.
+
+Visual review: broader waist, tall tapered shield and continuous repeating
+zigzag treatment across face, sword replaced by continuous straight spear.
+The generated shield has five repeated bands rather than the four requested
+in the edit prompt; treat this as an overall repeating pattern, not an exact
+four-part emblem. Tall shield enters the former upper-right label area.

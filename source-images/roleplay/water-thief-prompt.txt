@@ -1,0 +1,12 @@
+ROLEPLAY WATER THIEF — finalized reusable prompt
+Date: 2 November 2026
+
+Use case: stylized-concept / character-preserving style transfer.
+Use general-prompt.md in full, then this individual brief.
+References if supplied: water-thief.png = STYLE ONLY; water-thief.png = CHARACTER/POSE. For Water, use its selected image for both identity and finish. Never borrow the Water pirate or harbour for another suit.
+
+A rough-looking warm-brown-skinned male harbour thief with dark curls under a navy sailor's headscarf, broad crooked nose, uneven eyebrows, short scruffy moustache, cheeky sideways smile and a clearly visible healed diagonal cheek scar. Cobalt shirt, rolled ivory cuffs, dark trousers and worn brown boots. Preserve the selected character and natural crouching pose in water-thief.png. He sabotages an enemy boat: plain unpainted brown wooden hull with a dark iron-rimmed hawse hole. ONE unbranched rope emerges visibly through that hole, descends diagonally past his knife and lower gripping hand, then wraps simply around a low dock post. Knife crosses the rope perpendicular to its direction; clear continuous blade and handle. Exactly one left hand and one right hand with natural wrists and arm connections. Lower hand grips the same rope below the cut, never an added branch. Small muted forearm tattoo: exactly FOUR separate horizontal waves, secondary to face/action. Calm blue harbour with only low-contrast blue ripples, no white reflections or sparkles. Distant coastal fort and large simple quay slabs.
+
+Full-bleed portrait approximately 5:7. Strong irregular ink contours, broad base colours with one or two main shadows, restrained painted depth, economical faces, sparse surface marks. Subtle motif; overall palette establishes suit first. Correct connected anatomy and readable object interactions. Quiet upper-right label zone (rightmost 22% within upper 25%). No text, numbers, borders or watermarks. Do not increase realistic shading, dense texture or fine detail.
+
+This is a consolidated brief for future use, not the verbatim historical generation input. Exact recorded generation/edit prompts are in prompt-history/water-thief-prompt.txt. Regeneration is not pixel-identical.

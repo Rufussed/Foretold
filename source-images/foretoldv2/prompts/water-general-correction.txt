@@ -1,0 +1,8 @@
+Date:3 November2026
+Built-in precise-object image edit
+References:
+/home/rlane/.codex/generated_images/01a1a04d-1011-7f22-93de-7f787c99b6c0/exec-d11a74cd-1f47-4292-9776-a24c874f3f95.png
+/home/rlane/Work/foretold/source-images/symbols-air-fire-water-earth.png
+
+Exact correction prompt:
+Precise small local image edit ONLY. The silver forearm bracer at viewer left currently has THREE blue horizontal waves. Replace these three marks with EXACTLY FOUR (4) separate stacked HORIZONTAL WAVES, equal length/spacing, engraved in muted blue-grey on silver, more subtle/less contrast than current bold blue paint. Count top-to-bottom: wave1,wave2,wave3,wave4. Keep them small inside same bracer and material integrated, not a new badge/patch. All other artwork unchanged: dark-skinned bald grey-bearded general face/expression, silver armour/bluecoat/cape, hands, gold trumpet, sword/grip/continuous blade, standing pose on ship, legs/boots, ropes, ships/ocean/blue sky, framing, ink and broad painted style. No added details/text.
