@@ -1,0 +1,10 @@
+{
+  "id": "earth-wizardess",
+  "status": "complete",
+  "source": "earth-sorceress-v2.png",
+  "output": "earth-wizardess.png",
+  "method": "Built-in image generation",
+  "notes": [
+    "Silver-braided elf with a mineral staff and sweeping green magic."
+  ]
+}

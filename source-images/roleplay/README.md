@@ -23,17 +23,17 @@ workpieces specified by user. Water revised to stand and swing indoors.
 | Earth — shovel | [Image](earth-smith-v3.png) | [Fresh generation with furnace](earth-smith-v3-prompt.txt) |
 | Air — spearhead | [Image](air-smith.png) | [Prompts](air-smith-prompt.txt) |
 
-## Shepherds — 3 November 2026
+## Shepherds and Shepherdesses — 3 November 2026
 
 Druidish flock guardians with long crooks, consistent elemental skies.
 New candidates awaiting review; built-in imagegen, exact prompts alongside.
 
 | Element | Artwork | Prompt |
 |---|---|---|
-| Water — coastal salt meadow | [Image](water-shepherd-v2.png) | [Generation](water-shepherd-prompt.txt), [Greek eye clasp](water-shepherd-v2-prompt.txt) |
-| Fire — volcanic grazing terraces | [Image](fire-shepherd.png) | [Prompt](fire-shepherd-prompt.txt) |
-| Earth — forest clearing | [Image](earth-shepherd.png) | [Prompt](earth-shepherd-prompt.txt) |
-| Air — mountain pasture | [Image](air-shepherd.png) | [Prompts](air-shepherd-prompt.txt) |
+| Water Shepherdess — coastal salt meadow | [Image](water-shepherdess-v2.png) | [Greek eye clasp](water-shepherdess-v2-prompt.txt) |
+| Fire Shepherd — volcanic grazing terraces | [Image](fire-shepherd.png) | [Prompt](fire-shepherd-prompt.txt) |
+| Earth Shepherdess — forest clearing | [Image](earth-shepherdess.png) | [Prompt](earth-shepherdess-prompt.txt) |
+| Air Shepherd — mountain pasture | [Image](air-shepherd.png) | [Prompts](air-shepherd-prompt.txt) |
 
 Latest Air sky edits (cream #E2C98A with related gradients):
 [Thief](air-thief-cream-sky-v4.png), [Warrior](air-warrior-v6.png),

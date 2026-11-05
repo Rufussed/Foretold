@@ -1,0 +1,3 @@
+Reference: earth-servant.png
+
+Surgical localized edit of the sleeve ornament only. Replace the existing large zigzag motif on the foreground servant's upper sleeve with four much smaller fine low-contrast olive zigzag stitches in the same area. The complete motif should be at most ONE THIRD the current width and height, about 30 pixels wide in this 1060px wide illustration, olive thread just slightly lighter than the fabric, no patch or outline. Restore surrounding plain green cloth. Preserve everything else.

@@ -1,6 +1,6 @@
 Earth Smith fresh forge composition — 3 November 2026
 Built-in imagegen NEW generation. NO existing Earth Smith image used.
-References: water-thief.png STYLE ONLY, earth-shepherd.png EARTH PALETTE ONLY,
+References: water-thief.png STYLE ONLY, earth-shepherdess.png EARTH PALETTE ONLY,
 references/elemental-symbols.png MOTIF GEOMETRY.
 
 Use case: stylized-concept. Generate a COMPLETELY NEW EARTH SMITH roleplay card FROM SCRATCH. No existing Earth Smith image is supplied or to be reproduced. Fullbleed portrait5:7 no text/numbers/border.

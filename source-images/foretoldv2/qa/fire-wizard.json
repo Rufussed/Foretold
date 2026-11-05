@@ -2,7 +2,7 @@
   "id": "fire-wizard",
   "status": "complete",
   "source": "fire-wizard.png",
-  "output": "fire-wizard.png",
+  "output": "fire-wizardess.png",
   "method": "built-in image generation",
   "elementless": true,
   "motif_visual_count": null,

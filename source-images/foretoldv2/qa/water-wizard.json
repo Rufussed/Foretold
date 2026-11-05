@@ -1,1 +1,10 @@
-{"status":"complete","review":"Original crouched longhair caster and waterarc story preserved, much broader magic/water/cloth groups, removed large suit glyphs; elementless status retained. Raised fingers retain expressive gesture."}
+{
+  "id": "water-wizard",
+  "status": "complete",
+  "source": "water-wizard-surf.png",
+  "output": "water-wizard.png",
+  "method": "Built-in image generation",
+  "notes": [
+    "Updated surfing scene with ice board and breaking wave. The small sleeve mark shows three waves after the edit."
+  ]
+}

@@ -1,6 +1,6 @@
 # Fortold roleplay cards — session handoff
 
-Updated: 4 November 2026. This document is the continuation memory for a new
+Updated: 5 November 2026. This document is the continuation memory for a new
 Codex or ChatGPT session. It does not require access to the previous chat.
 
 ## Start here
@@ -61,6 +61,22 @@ prompts in foretoldv2/prompts/ remain unchanged by documentation updates.
 
 ## Current deliverables and approval
 
+Servant revisions: earth-servant-v2.png has a much smaller tonal olive sleeve
+motif. air-servant-v2.png closes the hole in the rolled sleeve.
+fire-servant-v2.png gives the servant a broader mature face, short dark horns
+and silver-streaked hair. She polishes a red battle horn with an engraved
+bronze band and wears a plain apron. The engraving reads as a repeating wave
+pattern with five visible grooves. Water remains water-servant.png. Exact
+revision prompts are alongside the images.
+
+Four Servant cards added 5 November, awaiting review. Plainly dressed servants
+lead each composition, with a recognizable master based on the corresponding
+original Noble in the parent folder. Earth carries a tray of pottery, Air
+fastens the noblewoman's cloak, Fire polishes a red horn goblet, and Water
+mends a sail aboard ship. Current files are earth-servant.png, air-servant.png,
+fire-servant.png and water-servant.png, with generation and edit prompts beside
+them. Four subtle suit strokes were visually checked on each servant.
+
 Earth Gambler latest earth-gambler-v3.png: user removed overcoat and requested
 younger adventurer. Young adult green elf with dark half-tied hair, hip-length
 emerald jerkin/ivory sleeves, utility belt/pouches/trousers/boots, modest gold
@@ -89,7 +105,7 @@ Latest Earth Smith earth-smith-v3.png: entirely fresh generation without any
 Earth Smith reference per user request, open-air forge with prominent visible
 stone furnace/fire/chimney and substantial stone wall; green elf actively
 forges shovel at anvil. Sage sky, four tonal sleeve zigzags. Prompt records
-only Water Thief style, Earth Shepherd palette and symbol sheet as references.
+only Water Thief style, Earth Shepherdess palette and symbol sheet as references.
 Supersedes Earth v2, previous files retained; awaiting review.
 
 Latest Water Smith water-smith-v4.png: two tall round-arched ocean windows
@@ -111,17 +127,17 @@ enclosed forge, active raised hammer over goblet; ocean seen only through upper
 right window per user correction), air-smith.png (older human man forging
 socketed spearhead with warm cream Air lighting). Exact prompts alongside.
 Earlier Earth grindstone/axe and Water seated outdoor drafts are superseded.
-User explicitly said Shepherds are great; Water Shepherd eye-clasp revision
-remains latest water-shepherd-v2.png.
+User explicitly said Shepherds are great; Water Shepherdess eye-clasp revision
+remains latest water-shepherdess-v2.png.
 
-Water Shepherd update: user said character looks great but requested replacing
+Water Shepherdess update: user said character looks great but requested replacing
 bone cloak clasp with blue Greek eye (nazar) from supplied reference. Latest
-water-shepherd-v2.png has small concentric blue eye clasp, rest preserved.
+water-shepherdess-v2.png has small concentric blue eye clasp, rest preserved.
 Exact edit prompt alongside; reference references/greek-blue-eye.png.
 
-Shepherds added 3 November, awaiting review: water-shepherd.png (human woman,
+Shepherds and Shepherdesses added 3 November: water-shepherdess-v2.png (human woman,
 coastal salt-meadow sheep, blue sky), fire-shepherd.png (horned bearded man,
-volcanic grazing terraces, ember-red sky), earth-shepherd.png (elderly green
+volcanic grazing terraces, ember-red sky), earth-shepherdess.png (elderly green
 elf woman, forest clearing sheep, sage sky), air-shepherd.png (clean-shaven
 human man, alpine goats, approved cream sky/warm mountains and stone).
 Each has a continuous long hooked crook, druidish wool clothing with simple

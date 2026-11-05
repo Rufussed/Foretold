@@ -2,7 +2,7 @@
   "id": "fire-heir",
   "status": "complete",
   "source": "fire-heir.png",
-  "output": "fire-heir.png",
+  "output": "fire-heiress.png",
   "method": "built-in image generation plus motif correction",
   "motif_visual_count": 4,
   "checks": {

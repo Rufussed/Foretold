@@ -81,10 +81,10 @@
       "id": "water-priest",
       "element": "water",
       "rank": 6,
-      "title": "priest",
+      "title": "priestess",
       "source": "water-priest.png",
       "mode": "style-transfer",
-      "output": "water-priest.png",
+      "output": "water-priestess.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -186,10 +186,10 @@
       "id": "water-monarch",
       "element": "water",
       "rank": 13,
-      "title": "monarch",
+      "title": "king",
       "source": "water-monarch.png",
       "mode": "style-transfer",
-      "output": "water-monarch.png",
+      "output": "water-king.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -202,15 +202,15 @@
       "element": "water",
       "rank": 14,
       "title": "wizard",
-      "source": "water-wizard.png",
-      "mode": "style-transfer-elementless",
+      "source": "water-wizard-surf.png",
+      "mode": "style-transfer",
       "output": "water-wizard.png",
       "status": "complete",
       "dimensions": [
         1060,
         1484
       ],
-      "sha256": "3aa29ec77c20b6b544ee49b20b41b1c5a467d98ffefa3ddf776cdf2e5f448e59"
+      "sha256": "cd7c17d2cd06a0f20cdc59f93a7a03ba9032a7bf1fafecdda8eaa6a60d714e98"
     },
     {
       "id": "water-fool",
@@ -219,13 +219,15 @@
       "title": "fool",
       "source": "fool.png",
       "mode": "style-transfer-elementless",
-      "output": "water-fool.png",
+      "output": "fool.png",
       "status": "complete",
       "dimensions": [
         1060,
         1484
       ],
-      "sha256": "ac58dfb7b3f542886333dbe166b97b7fab23786a33cc598dfd196a0d5be4f3fa"
+      "sha256": "75647e64e1101f6e0989a26156482e702b81e4234e3fb84636cea2da622ef6ce",
+      "prompt": "prompts/fool.txt",
+      "qa": "qa/fool.json"
     },
     {
       "id": "fire-peasant",
@@ -381,10 +383,10 @@
       "id": "fire-heir",
       "element": "fire",
       "rank": 11,
-      "title": "heir",
+      "title": "heiress",
       "source": "fire-heir.png",
       "mode": "style-transfer",
-      "output": "fire-heir.png",
+      "output": "fire-heiress.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -411,25 +413,25 @@
       "id": "fire-monarch",
       "element": "fire",
       "rank": 13,
-      "title": "monarch",
+      "title": "queen",
       "source": "fire-monarch.png",
       "mode": "style-transfer",
-      "output": "fire-monarch.png",
+      "output": "fire-queen.png",
       "status": "complete",
       "dimensions": [
         1060,
         1484
       ],
-      "sha256": "86654240aa9bf5872063f454a2b1c9c0dc0e6cb0979dd131c37b22e73ff50254"
+      "sha256": "5b3fc11cf07ff81332563365d34075d8bfa7d6983f89933a1e938c88fb59beba"
     },
     {
       "id": "fire-wizard",
       "element": "fire",
       "rank": 14,
-      "title": "wizard",
+      "title": "wizardess",
       "source": "fire-wizard.png",
       "mode": "style-transfer-elementless",
-      "output": "fire-wizard.png",
+      "output": "fire-wizardess.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -444,13 +446,15 @@
       "title": "fool",
       "source": "fool.png",
       "mode": "style-transfer-elementless",
-      "output": "fire-fool.png",
+      "output": "fool.png",
       "status": "complete",
       "dimensions": [
         1060,
         1484
       ],
-      "sha256": "22edea618fb3a3e90be79ad6d91244622815749dbccfb5a05ec854a5ab5dac5a"
+      "sha256": "75647e64e1101f6e0989a26156482e702b81e4234e3fb84636cea2da622ef6ce",
+      "prompt": "prompts/fool.txt",
+      "qa": "qa/fool.json"
     },
     {
       "id": "earth-peasant",
@@ -531,10 +535,10 @@
       "id": "earth-priest",
       "element": "earth",
       "rank": 6,
-      "title": "priest",
+      "title": "priestess",
       "source": "earth-priest.png",
       "mode": "style-transfer",
-      "output": "earth-priest.png",
+      "output": "earth-priestess.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -636,10 +640,10 @@
       "id": "earth-monarch",
       "element": "earth",
       "rank": 13,
-      "title": "monarch",
+      "title": "king",
       "source": "earth-monarch.png",
       "mode": "style-transfer",
-      "output": "earth-monarch.png",
+      "output": "earth-king.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -669,13 +673,15 @@
       "title": "fool",
       "source": "fool.png",
       "mode": "style-transfer-elementless",
-      "output": "earth-fool.png",
+      "output": "fool.png",
       "status": "complete",
       "dimensions": [
         1060,
         1484
       ],
-      "sha256": "5430c512aad926ee1c1cc392dfc0917e4e063b6dda6512ae1807a2aea2b12965"
+      "sha256": "75647e64e1101f6e0989a26156482e702b81e4234e3fb84636cea2da622ef6ce",
+      "prompt": "prompts/fool.txt",
+      "qa": "qa/fool.json"
     },
     {
       "id": "air-peasant",
@@ -831,10 +837,10 @@
       "id": "air-heir",
       "element": "air",
       "rank": 11,
-      "title": "heir",
+      "title": "heiress",
       "source": "air-heir.png",
       "mode": "style-transfer",
-      "output": "air-heir.png",
+      "output": "air-heiress.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -861,10 +867,10 @@
       "id": "air-monarch",
       "element": "air",
       "rank": 13,
-      "title": "monarch",
+      "title": "queen",
       "source": "air-monarch.png",
       "mode": "style-transfer",
-      "output": "air-monarch.png",
+      "output": "air-queen.png",
       "status": "complete",
       "dimensions": [
         1060,
@@ -885,7 +891,7 @@
         1060,
         1484
       ],
-      "sha256": "20c38d1ce2b1ff2968c6ea1dc1b6d9bfdd4fe0128ed7d3b38648da69534afec2"
+      "sha256": "70fa705401dc9fdde9ea5be2c468b4944a3ec0dcf186db230d26ef35b1878e9d"
     },
     {
       "id": "air-fool",
@@ -894,15 +900,33 @@
       "title": "fool",
       "source": "fool.png",
       "mode": "style-transfer-elementless",
-      "output": "air-fool.png",
+      "output": "fool.png",
       "status": "complete",
       "dimensions": [
         1060,
         1484
       ],
-      "sha256": "d01382b4b66463797e3f5ee4222ef2d334574085965ce79add532d17869c855d"
+      "sha256": "75647e64e1101f6e0989a26156482e702b81e4234e3fb84636cea2da622ef6ce",
+      "prompt": "prompts/fool.txt",
+      "qa": "qa/fool.json"
     }
   ],
   "status": "complete",
-  "completed_cards": 60
+  "completed_cards": 60,
+  "supplemental_cards": [
+    {
+      "id": "earth-wizardess",
+      "element": "earth",
+      "title": "wizardess",
+      "source": "earth-sorceress-v2.png",
+      "output": "earth-wizardess.png",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "0f375e587387d522ff4451f0effc2e208e1324b3df5f9197fa87cb5560bcb6b3",
+      "status": "complete",
+      "mode": "style-transfer"
+    }
+  ]
 }
