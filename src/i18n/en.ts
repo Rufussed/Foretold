@@ -467,6 +467,7 @@ export const en = {
   "game.logRound": "Round {round}",
   "log.plays": "{name} plays {card}",
   "log.playsPower": "{name} plays {card} ⚡ power on",
+  "log.thiefLeads": "· nothing to steal when leading",
   "log.winsTrick": "{name} wins the trick with {card}",
   "game.effectsOff": "Mute sound effects",
 

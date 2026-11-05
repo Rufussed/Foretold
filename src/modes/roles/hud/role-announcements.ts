@@ -221,8 +221,11 @@ export function playLogLines(previous: PublicWizardGameState, next: PublicWizard
   playedCards.slice(from).forEach((played, offset) => {
     const by = played.playedBy ?? played.username;
     const power = rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf);
+    // A Thief's 1 that leads has nothing before it to take; the power is
+    // still on, so the log says why nothing is stolen.
+    const leads = power && from + offset === 0 && roleOf(by) === "thief" ? ` ${t("log.thiefLeads")}` : "";
     const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : played.freePlay ? ` ${t("log.playsFree")}` : "";
-    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) + bet });
+    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) + leads + bet });
   });
 
   const winner = next.currentTrick.winnerUsername;

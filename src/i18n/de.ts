@@ -467,6 +467,7 @@ export const de: Record<MessageKey, string> = {
   "game.logRound": "Runde {round}",
   "log.plays": "{name} spielt {card}",
   "log.playsPower": "{name} spielt {card} ⚡ Kraft aktiv",
+  "log.thiefLeads": "· beim Ausspielen nichts zu stehlen",
   "log.winsTrick": "{name} gewinnt den Stich mit {card}",
   "game.effectsOff": "Soundeffekte aus",
 
