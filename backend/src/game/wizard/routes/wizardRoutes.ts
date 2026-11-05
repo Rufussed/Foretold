@@ -12,7 +12,7 @@ import { WizardGameRunner } from "../services/wizardGameRunner.js";
 import { AVATAR_IDS, isAvatarId, type AvatarId } from "../models/avatar.js";
 import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
-import { DEFAULT_GAME_OPTIONS, normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
+import { DEFAULT_GAME_OPTIONS, defaultGameOptions, normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_MODES, type GameMode } from "../modes/modes.js";
 import { ROLES, type RoleId } from "../modes/roles/roles.js";
 import { assignRoles } from "../modes/roles/assignRoles.js";
@@ -622,7 +622,7 @@ export default async function wizardRoutes(
       body.isPublic ?? true,
       body.turnTimeoutMs === undefined ? 30_000 : body.turnTimeoutMs,
       isGuestRoom,
-      { ...DEFAULT_GAME_OPTIONS, mode: body.mode ?? "classic" },
+      defaultGameOptions(body.mode ?? "classic"),
     );
 
     // Opening a room ends a Quick Play search.

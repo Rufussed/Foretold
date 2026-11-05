@@ -254,6 +254,12 @@ export const en = {
   "room.wizardWins": "Two or more Wizards",
   "room.wizardWins.first": "Default: First Wizard wins",
   "room.wizardWins.last": "Last Wizard wins",
+  // An Expanded room starts blind with the last Wizard winning, so there
+  // those two carry the "Default:" instead.
+  "room.firstRound.ownPlain": "See your own card",
+  "room.firstRound.blindDefault": "Default: Blind, see everyone else's card",
+  "room.wizardWins.firstPlain": "First Wizard wins",
+  "room.wizardWins.lastDefault": "Default: Last Wizard wins",
   "room.lastPrediction": "Last prediction",
   "room.lastPrediction.limited": "Default: ≠ Round Nr.",
   "room.lastPrediction.free": "Free",
@@ -557,7 +563,8 @@ export const en = {
   // The powers: the prompt for the winner, then the announcements.
   "sabotage.seerPrompt": "You won with the Seer. Change your prediction?",
   "sabotage.tricksterPrompt": "You won with the Trickster. Choose a player to change.",
-  "sabotage.tricksterNumbers": "{name} predicted {count}. Change it?",
+  "sabotage.tricksterNumbers": "{name} has won {won} of {count} predicted. Change it?",
+  "sabotage.tricksterTargetScore": "{won} won of {count} predicted",
   "sabotage.powerNoChange": "no change",
   "sabotage.powerSkip": "Don't use it",
   "sabotage.powerBack": "Back",

@@ -255,6 +255,11 @@ export const de: Record<MessageKey, string> = {
   "room.wizardWins": "Zwei oder mehr Zauberer",
   "room.wizardWins.first": "Standard: Der erste Zauberer gewinnt",
   "room.wizardWins.last": "Der letzte Zauberer gewinnt",
+  // In einem Erweitert-Raum ist blind und der letzte Zauberer der Standard.
+  "room.firstRound.ownPlain": "Eigene Karte sehen",
+  "room.firstRound.blindDefault": "Standard: Blind, die Karten der anderen sehen",
+  "room.wizardWins.firstPlain": "Der erste Zauberer gewinnt",
+  "room.wizardWins.lastDefault": "Standard: Der letzte Zauberer gewinnt",
   "room.lastPrediction": "Letzte Ansage",
   "room.lastPrediction.limited": "Standard: ≠ Rundenzahl",
   "room.lastPrediction.free": "Frei",
@@ -558,7 +563,8 @@ export const de: Record<MessageKey, string> = {
   // Die Kräfte: die Frage an den Gewinner, dann die Ansagen.
   "sabotage.seerPrompt": "Du hast mit dem Seher gewonnen. Deine Ansage ändern?",
   "sabotage.tricksterPrompt": "Du hast mit dem Trickser gewonnen. Wähle, wessen Ansage sich ändert.",
-  "sabotage.tricksterNumbers": "{name} hat {count} angesagt. Ändern?",
+  "sabotage.tricksterNumbers": "{name} hat {won} von {count} angesagten Stichen. Ändern?",
+  "sabotage.tricksterTargetScore": "{won} von {count} angesagten",
   "sabotage.powerNoChange": "keine Änderung",
   "sabotage.powerSkip": "Nicht einsetzen",
   "sabotage.powerBack": "Zurück",

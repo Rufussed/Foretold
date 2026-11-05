@@ -7,8 +7,9 @@ import { levelSealUrl } from "../seal-urls";
 
 // Roles mode only. A Roles button beside the Log button (visualizer/hud/
 // event-log.ts) opens a see-through panel over the player list with the
-// roles at this table: each player, in seating order, with their role's
-// seal in their level with it, card number and power. Roles are kept all
+// roles at this table: each player, starting with you and going clockwise
+// round the table as play does (a spectator sees the game's own order), with
+// their role's seal in their level with it, card number and power. Roles are kept all
 // game, so the list is the same from start to end. The panel and the Log
 // share their place: opening one closes the other.
 
@@ -35,7 +36,12 @@ export function createTableRoles(
   panel.className = "event-log table-roles";
   panel.setAttribute("aria-label", t("game.tableRoles"));
   panel.hidden = true;
-  panel.innerHTML = `<ol class="table-roles-list">${state.players
+  // state.players is turn order, which runs clockwise round the table (see
+  // computeSeatAssignments); start it at the local player.
+  const local = state.players.findIndex((player) => player.username === localUsername);
+  const players = local === -1 ? state.players : [...state.players.slice(local), ...state.players.slice(0, local)];
+
+  panel.innerHTML = `<ol class="table-roles-list">${players
     .filter((player) => player.role)
     .map((player) => {
       const role = player.role!;

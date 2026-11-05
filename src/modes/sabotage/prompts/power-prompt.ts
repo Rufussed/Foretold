@@ -99,12 +99,24 @@ export function createPowerPrompt(
     optionsEl.dataset.whose = whose;
   };
 
-  const buildTargets = (names: string[], predictions: Map<string, number>) => {
+  // Each player the Trickster can change, with tricks won so far against
+  // their prediction, so the choice of whom to hit can be made at a glance.
+  const buildTargets = (players: { username: string; prediction: number; tricksWon: number }[]) => {
     optionsEl.replaceChildren();
     targetsEl.replaceChildren(
-      ...names.map((name) => {
-        const choice = button(`${announcedName(name)} · ${predictions.get(name)}`);
-        choice.dataset.target = name;
+      ...players.map((player) => {
+        const choice = button("");
+        const name = document.createElement("span");
+        name.className = "power-target-name";
+        name.textContent = announcedName(player.username);
+        const score = document.createElement("span");
+        score.className = "power-target-score";
+        score.textContent = t("sabotage.tricksterTargetScore", {
+          won: String(player.tricksWon),
+          count: String(player.prediction),
+        });
+        choice.append(name, score);
+        choice.dataset.target = player.username;
         return choice;
       }),
     );
@@ -205,14 +217,18 @@ export function createPowerPrompt(
       } else if (target === null) {
         promptEl.textContent = t("sabotage.tricksterPrompt");
         buildTargets(
-          opponents.map((player) => player.username),
-          new Map(opponents.map((player) => [player.username, player.prediction as number])),
+          opponents.map((player) => ({
+            username: player.username,
+            prediction: player.prediction as number,
+            tricksWon: player.tricksWon,
+          })),
         );
         buildActions(false);
       } else {
         const chosen = state.players.find((player) => player.username === target);
         promptEl.textContent = t("sabotage.tricksterNumbers", {
           name: announcedName(target),
+          won: String(chosen?.tricksWon ?? 0),
           count: String(chosen?.prediction ?? 0),
         });
         buildNumbers(target, chosen?.prediction ?? 0, tricks);

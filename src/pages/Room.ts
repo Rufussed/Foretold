@@ -575,6 +575,26 @@ export async function renderRoomPage(
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {
       optionsLoaded = true;
+      // An Expanded room's own defaults (defaultGameOptions) are the ones
+      // marked "Default:", and the start summary highlights changes from them.
+      if (options.mode === "sabotage") {
+        const relabel = (select: HTMLSelectElement, labels: Record<string, string>, defaultValue: string) => {
+          for (const option of select.options) {
+            option.textContent = labels[option.value] ?? option.textContent;
+            option.defaultSelected = option.value === defaultValue;
+          }
+        };
+        relabel(
+          blindFirstRoundEl,
+          { false: t("room.firstRound.ownPlain"), true: t("room.firstRound.blindDefault") },
+          "true",
+        );
+        relabel(
+          wizardWinsEl,
+          { first: t("room.wizardWins.firstPlain"), last: t("room.wizardWins.lastDefault") },
+          "last",
+        );
+      }
       wizardWinsEl.value = options.wizardWins;
       blindFirstRoundEl.value = String(options.blindFirstRound);
       lastPredictionEl.value = String(options.lastPredictionLimited);

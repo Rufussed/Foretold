@@ -1,10 +1,21 @@
 import { describe, it, expect } from "vitest";
 
 import db from "../../../db/database.js";
-import { DEFAULT_GAME_OPTIONS, normalizeGameOptions } from "../gameOptions.js";
+import { DEFAULT_GAME_OPTIONS, defaultGameOptions, normalizeGameOptions } from "../gameOptions.js";
 import { wizardLobbyManager } from "../services/wizardLobbyManager.js";
 
 describe("game modes in the options", () => {
+  it("starts an Expanded room blind with the last Wizard winning, the others official", () => {
+    expect(defaultGameOptions("sabotage")).toEqual({
+      ...DEFAULT_GAME_OPTIONS,
+      mode: "sabotage",
+      wizardWins: "last",
+      blindFirstRound: true,
+    });
+    expect(defaultGameOptions("classic")).toEqual(DEFAULT_GAME_OPTIONS);
+    expect(defaultGameOptions("roles")).toEqual({ ...DEFAULT_GAME_OPTIONS, mode: "roles" });
+  });
+
   it("reads an older game or room with no mode as Classic", () => {
     expect(normalizeGameOptions(null).mode).toBe("classic");
     expect(normalizeGameOptions({ wizardWins: "last" }).mode).toBe("classic");

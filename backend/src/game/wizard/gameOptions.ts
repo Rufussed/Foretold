@@ -45,6 +45,14 @@ export const DEFAULT_GAME_OPTIONS: WizardGameOptions = {
   lastPredictionLimited: true,
 };
 
+// What a new room of a given mode starts with. Expanded (sabotage) starts with
+// the last Wizard winning and a blind first round; the other modes start with
+// the official rules. The host can still change either one.
+export const defaultGameOptions = (mode: GameMode): WizardGameOptions =>
+  mode === "sabotage"
+    ? { ...DEFAULT_GAME_OPTIONS, mode, wizardWins: "last", blindFirstRound: true }
+    : { ...DEFAULT_GAME_OPTIONS, mode };
+
 // How the game was played before the variations existed: the official rules.
 // What an older saved game with no options recorded at all is read as, so a
 // game in progress never changes its rules when the defaults do.
