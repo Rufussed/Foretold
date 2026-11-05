@@ -25,8 +25,12 @@ const backUrl = (): string => cardFile("back/backCard.webp");
 // visualizer/card-decks.ts): src/assets/card-pool/<element>/<element>-<picture>.webp.
 const cardArtName = (card: Card): string => pictureOf(activeDeck(), card);
 
+// The Fool has no element: one picture, fire's, is every suit's, so the four
+// Fools share one texture.
+const FOOL_ELEMENT = "fire";
+
 export function cardArtUrl(card: Card): string {
-  const element = cardElement(card);
+  const element = card.value === 0 ? FOOL_ELEMENT : cardElement(card);
   return poolFile(`${element}/${element}-${cardArtName(card)}.webp`);
 }
 
@@ -68,9 +72,9 @@ function cardSymbol(card: Card): PowerSymbol | undefined {
 }
 
 // The card's title, in the language being played: its rank in the hierarchy,
-// or Fool and Wizard for the two outside it. Earth's and air's Wizards are
-// women, so those two are the Sorceress; fire's and water's the Sorcerer.
-const SORCERESSES = ["earth", "air"];
+// or Fool and Wizard for the two outside it. Fire's and earth's Wizards are women, the
+// Wizardess; air's and water's are Wizards.
+const SORCERESSES = ["fire", "earth"];
 
 function cardTitle(card: Card): string {
   if (card.value === 0) return t("sabotage.fool");

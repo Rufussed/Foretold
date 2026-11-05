@@ -25,12 +25,37 @@ export interface CardDeck {
   symbols: boolean;
 }
 
-type TitleKey = `sabotage.rank.${number}` | `roleplay.rank.${number}` | "roleplay.duke" | "roleplay.duchess" | "roleplay.shepherdess";
+type TitleKey =
+  | `sabotage.rank.${number}`
+  | `roleplay.rank.${number}`
+  | "cardtitle.king"
+  | "cardtitle.queen"
+  | "cardtitle.heiress"
+  | "cardtitle.priestess"
+  | "roleplay.duke"
+  | "roleplay.duchess"
+  | "roleplay.shepherdess";
 
-// Roleplay's 11 is a Duke or a Duchess, and its 5 a Shepherd or a Shepherdess,
-// by the element it is drawn as.
-const DUCHESSES = ["air", "fire"];
-const SHEPHERDESSES = ["water", "earth"];
+// Some pictures are titled by the element they are drawn as, as the artwork is
+// (source-images/foretoldv2/manifest.json): the feminine title for the elements
+// listed, the masculine one for the rest. A picture not here keeps its
+// deck's own title for its number.
+const BY_ELEMENT: Record<string, { feminine: string[]; feminineKey: TitleKey; masculineKey?: TitleKey }> = {
+  priest: { feminine: ["water", "earth"], feminineKey: "cardtitle.priestess" },
+  heir: { feminine: ["fire", "air"], feminineKey: "cardtitle.heiress" },
+  monarch: { feminine: ["fire", "air"], feminineKey: "cardtitle.queen", masculineKey: "cardtitle.king" },
+  shepherd: { feminine: ["water", "earth"], feminineKey: "roleplay.shepherdess" },
+  noble: { feminine: ["air", "fire"], feminineKey: "roleplay.duchess", masculineKey: "roleplay.duke" },
+};
+
+const titled = (
+  pictures: readonly string[],
+  fallback: (value: number) => TitleKey,
+): CardDeck["titleKey"] => (value, element) => {
+  const rule = BY_ELEMENT[pictures[value - 1]];
+  if (!rule) return fallback(value);
+  return rule.feminine.includes(element) ? rule.feminineKey : (rule.masculineKey ?? fallback(value));
+};
 
 const DECK_A_PICTURES = [
   "peasant",
@@ -68,7 +93,7 @@ const DECK_B_PICTURES = [
 
 const deckA = (symbols: boolean): CardDeck => ({
   picture: (value) => DECK_A_PICTURES[value - 1],
-  titleKey: (value) => `sabotage.rank.${value}`,
+  titleKey: titled(DECK_A_PICTURES, (value) => `sabotage.rank.${value}`),
   symbols,
 });
 
@@ -77,11 +102,7 @@ const DECKS: Record<GameMode, CardDeck> = {
   sabotage: deckA(true),
   roles: {
     picture: (value) => DECK_B_PICTURES[value - 1],
-    titleKey: (value, element) => {
-      if (value === 11) return DUCHESSES.includes(element) ? "roleplay.duchess" : "roleplay.duke";
-      if (value === 5 && SHEPHERDESSES.includes(element)) return "roleplay.shepherdess";
-      return `roleplay.rank.${value}`;
-    },
+    titleKey: titled(DECK_B_PICTURES, (value) => `roleplay.rank.${value}`),
     symbols: false,
   },
 };

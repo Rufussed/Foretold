@@ -540,6 +540,10 @@ export const en = {
   "roleplay.rank.9": "Warrior",
   "roleplay.rank.10": "Gambler",
   // The 11 is a Duke or a Duchess by element (visualizer/card-decks.ts).
+  "cardtitle.king": "King",
+  "cardtitle.queen": "Queen",
+  "cardtitle.heiress": "Heiress",
+  "cardtitle.priestess": "Priestess",
   "roleplay.duke": "Duke",
   "roleplay.shepherdess": "Shepherdess",
   "roleplay.duchess": "Duchess",

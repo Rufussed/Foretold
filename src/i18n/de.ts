@@ -541,6 +541,10 @@ export const de: Record<MessageKey, string> = {
   "roleplay.rank.9": "Krieger",
   "roleplay.rank.10": "Spieler",
   // The 11 is a Duke or a Duchess by element (visualizer/card-decks.ts).
+  "cardtitle.king": "König",
+  "cardtitle.queen": "Königin",
+  "cardtitle.heiress": "Erbin",
+  "cardtitle.priestess": "Priesterin",
   "roleplay.duke": "Herzog",
   "roleplay.shepherdess": "Hirtin",
   "roleplay.duchess": "Herzogin",
