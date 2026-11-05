@@ -1,7 +1,22 @@
 # Wizard Foretold: notes for Claude
 
-Two people work on this repository, each with Claude Code: Carlos (branch
-`carlos`) and Rufus (branch `Rufus`). Both merge into `master`.
+Two people work on this repository, each with Claude Code: Carlos and Rufus.
+
+## Repository and branches
+
+- **One repo only: github.com/Rufussed/Foretold** (`origin`). Carlos has push
+  access. The old `cadenegr/wizard-game-platform` repo is retired: don't pull
+  from it or push to it.
+- **`Master` deploys.** Every push to `Master` goes live automatically through
+  GitHub Actions, so only push there what is ready to play.
+- **`Rufus`** is Rufus's working branch; Carlos works on his own branch. Each
+  merges into `Master` when ready.
+- **`foretold`** is the older Foretold-mode line (Seer and Trickster, elements,
+  card art); its history has diverged from `Master`.
+
+```bash
+git clone https://github.com/Rufussed/Foretold.git
+```
 
 ## Game modes are kept apart
 

@@ -5,6 +5,12 @@ Notes for whoever owns the backend. While building the three.js visualiser
 the working tree; nothing about the existing game rules changed except where
 marked **rule change**.
 
+## Repository and deployment (updated 2026-11-05)
+
+All work happens in **github.com/Rufussed/Foretold**; `cadenegr/wizard-game-platform`
+is no longer used. Pushing to `Master` deploys it automatically through GitHub
+Actions. Branches are described in `CLAUDE.md`.
+
 ## Avatars and the waiting room
 
 Players pick one of six avatars before a game starts, first come first served.
