@@ -1,4 +1,4 @@
-import { CARDS as CLASSIC_CARDS, CARD_HANDLING as CLASSIC_CARD_HANDLING } from "../../visualizer/config";
+import { CARDS as CLASSIC_CARDS } from "../../visualizer/config";
 
 // The look of a Sabotage game (Rufus's settings from the foretold branch).
 // Classic and Roles tables keep src/visualizer/config.ts as it is; where a
@@ -193,34 +193,6 @@ export const CARDS = {
     // measured off the card mesh in Wizard.glb so the wear follows the shape.
     cornerRadius: 0.0513,
   },
-};
-
-export const CARD_HANDLING = {
-  ...CLASSIC_CARD_HANDLING,
-
-  // How far your own hand sits closer to the camera than the table's hand
-  // targets, in metres (scene units): straight out from the table's middle.
-  // Other players' hands are not moved.
-  handTowardCameraMetres: 0.2,
-
-  // How much bigger a raised card is than in the hand, so it can be read.
-  raisedScale: 1.5,
-};
-
-// ══════════════════════════════════════════════════════════════════════════
-// CARDS IN PLAY
-// ══════════════════════════════════════════════════════════════════════════
-
-// How big the cards in play are. With the table full (a card on each of the six
-// slots) they are the size they were authored at; with fewer they are larger,
-// easier to read on a small screen: oneCard times as big with a single card,
-// then smaller by stepPerCard (a fraction of the authored size) for every card
-// added, which brings six cards back to 1. The first card goes to the
-// middle and the others spread out about it as they arrive, with their spacing
-// growing with them so they never overlap.
-export const PLAYED_CARDS = {
-  oneCard: 1.4,
-  stepPerCard: 0.08,
 };
 
 // ══════════════════════════════════════════════════════════════════════════

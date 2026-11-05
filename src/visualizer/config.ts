@@ -616,20 +616,6 @@ export const CARDS = {
     Yellow: "#f9a825",
   } as Record<string, string>,
 
-  // Size of your hand and the trump card, against the targets in
-  // Wizard.glb (1 = as authored). Only face width and length grow, not
-  // thickness; the deck and other players' hands keep the authored size.
-  tableCardScale: 1.1,
-
-  // Size of the trick's played cards, the same way.
-  trickCardScale: 1.05,
-
-  // How far apart the trick's played cards sit, against the targets in
-  // Wizard.glb (1 = as authored, 0.79 between slots). The authored row leaves
-  // 0.05 between cards; at trickCardScale 1.05 that shrinks to 0.01, and 1.035
-  // gives a gap of about 0.04 again. Spread from the row's centre.
-  trickSpread: 1.035,
-
   // Trump card colour when there's no trump suit: a Jester was turned up, or a
   // Wizard whose suit hasn't been chosen yet.
   noTrumpColor: "#8a8a8a",
@@ -670,7 +656,22 @@ export const CARDS = {
 // CARD HANDLING  (your hand, on the scene canvas)
 // ══════════════════════════════════════════════════════════════════════════
 
+// How big the cards in play are. With the table full (a card on each of the six
+// slots) they are the size they were authored at; with fewer they are larger,
+// easier to read on a small screen: oneCard times as big with a single card,
+// then smaller by stepPerCard (a fraction of the authored size) for every card
+// added, which brings six cards back to 1. The first card goes to the
+// middle and the others spread out about it as they arrive, with their spacing
+// growing with them so they never overlap.
+export const PLAYED_CARDS = {
+  oneCard: 1.4,
+  stepPerCard: 0.08,
+};
+
 export const CARD_HANDLING = {
+  // How much bigger a raised card is than in the hand, so it can be read.
+  raisedScale: 1.5,
+
   // Outline around the card under the pointer, or being dragged.
   outlineColor: "#ffd54f",
 
@@ -691,16 +692,10 @@ export const CARD_HANDLING = {
   // How far a clicked card rises, in card lengths.
   raiseLengths: 0.5,
 
-  // How far your hand sits back from its card01..card20 targets, towards you
-  // and away from the table's centre, in scene units (the hand is about 2.5
-  // from the centre). A wide hand's right end otherwise reaches into the table
-  // when the camera turns to the other seats. Other players' hands keep the
-  // authored targets.
-  handPushOut: 0.25,
-
-  // How far your hand sits above its targets, in scene units, so the bottom
-  // of the larger cards (CARDS.tableCardScale) stays on screen.
-  handLift: 0.08,
+  // How far your hand sits closer to the camera than its card01..card20
+  // targets, in metres (scene units), straight out from the table's middle.
+  // The same in every game mode. Other players' hands keep the authored targets.
+  handTowardCameraMetres: 0.2,
 
   // How far above the hand a dragged card must be dropped to play it, in card
   // lengths. Separate from raiseLengths, so a small raise doesn't make cards

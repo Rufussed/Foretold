@@ -1,8 +1,6 @@
 import * as THREE from "three";
 import { SEAT_IDS, type SeatId } from "./player-characters";
-import { CARD_HANDLING, CARDS } from "./config";
-import { isSabotageGame } from "../modes/sabotage/sabotage-game";
-import { CARD_HANDLING as SABOTAGE_CARD_HANDLING } from "../modes/sabotage/sabotage-config";
+import { CARD_HANDLING } from "./config";
 import { numberedNodes, placementOf, type Placement } from "./placement";
 
 export interface TableLayout {
@@ -48,28 +46,14 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
     return nodes.map((node) => placementOf(node, environment));
   };
 
-  // Cards on these targets grow across the face (CARDS.tableCardScale, or
-  // trickCardScale for the trick); the card's thickness (y) stays.
-  const enlarged = (slot: Placement, by = CARDS.tableCardScale): Placement => ({
-    ...slot,
-    scale: slot.scale.clone().multiply(new THREE.Vector3(by, 1, by)),
-  });
-
   const authoredHand = targets(/^card(\d+)$/);
-  const playedTargets = targets(/^played-card-(\d+)$/);
-  // Spread the row from its centre (see CARDS.trickSpread).
-  const playedCentre = playedTargets
-    .reduce((sum, slot) => sum.add(slot.position), new THREE.Vector3())
-    .divideScalar(Math.max(playedTargets.length, 1));
-  const played = playedTargets.map((slot) => ({
-    ...enlarged(slot, CARDS.trickCardScale),
-    position: slot.position.clone().sub(playedCentre).multiplyScalar(CARDS.trickSpread).add(playedCentre),
-  }));
-  // The deck keeps its authored size: larger, it crowds the table's middle.
+  const played = targets(/^played-card-(\d+)$/);
+  // The deck, the trump card and the played slots keep their authored size; a
+  // table's played cards are scaled in table-cards.ts (PLAYED_CARDS in config.ts).
   const stack = targets(/^stack-card-(\d+)$/);
   const trumpNode = environment.getObjectByName("trump-card") ?? null;
   if (trumpNode) trumpNode.visible = false;
-  const trump = trumpNode ? enlarged(placementOf(trumpNode, environment)) : null;
+  const trump = trumpNode ? placementOf(trumpNode, environment) : null;
 
   // Your seat has no target of its own; your hand set shows where it is.
   const handCentre = authoredHand
@@ -77,21 +61,15 @@ export function createTableLayout(environment: THREE.Object3D): TableLayout {
     .divideScalar(Math.max(authoredHand.length, 1));
   const localAngle = angleOf(handCentre);
 
-  // Your own hand, moved back towards you and up a little (see
-  // CARD_HANDLING.handPushOut and handLift).
-  // A Sabotage table brings it closer still (handTowardCameraMetres, in
-  // metres, so in the environment's own units here).
+  // Your own hand, moved towards the camera, the same in every game mode (see
+  // CARD_HANDLING.handTowardCameraMetres, in metres, so in the environment's own
+  // units here). Its cards keep the authored size.
   const outward = new THREE.Vector3(handCentre.x, 0, handCentre.z).normalize();
   const environmentScale = environment.getWorldScale(new THREE.Vector3()).x || 1;
-  const pushOut =
-    CARD_HANDLING.handPushOut +
-    (isSabotageGame() ? SABOTAGE_CARD_HANDLING.handTowardCameraMetres / environmentScale : 0);
+  const toCamera = outward.multiplyScalar(CARD_HANDLING.handTowardCameraMetres / environmentScale);
   const localHand = authoredHand.map((slot) => ({
-    ...enlarged(slot),
-    position: slot.position
-      .clone()
-      .addScaledVector(outward, pushOut)
-      .addScaledVector(UP, CARD_HANDLING.handLift),
+    ...slot,
+    position: slot.position.clone().add(toCamera),
   }));
 
   const seatAngles = new Map<SeatId, number>();

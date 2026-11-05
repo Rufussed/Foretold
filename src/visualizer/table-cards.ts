@@ -2,10 +2,8 @@ import * as THREE from "three";
 import { isJester, isWizard, type Card, type Suit } from "../../backend/src/game/wizard/models/card";
 import type { CardFactory } from "./card-objects";
 import { cardKey, cardTexture, trumpColor } from "./card-textures";
-import { CARD_HANDLING, OPPONENT_PLAYS } from "./config";
-import { isSabotageGame } from "../modes/sabotage/sabotage-game";
+import { CARD_HANDLING, OPPONENT_PLAYS, PLAYED_CARDS } from "./config";
 import { TRICK_SWAP, swapPlacement } from "../modes/roles/mechanics/trick-swap";
-import { CARD_HANDLING as SABOTAGE_CARD_HANDLING, PLAYED_CARDS } from "../modes/sabotage/sabotage-config";
 import { createLeadingOutlineMaterial, setLeadingOutlineTime } from "./leading-outline";
 import { paced, unhurried } from "./pace";
 import { applyPlacement, type Placement } from "./placement";
@@ -191,7 +189,7 @@ export function createTableCards(
   let inUse = centredPlayedSlots(playerCount);
   const playedSlotsInUse = () => inUse;
 
-  // A Sabotage table: the played slots as they are drawn when `count` cards
+  // The played slots, the same in every game mode, as they are drawn when `count` cards
   // are in play. The first card goes to the middle and the rest spread out
   // about it as they arrive: with `count` cards they take the middle `count`
   // slots, so the group stays centred on the full set. The fewer cards, the
@@ -200,7 +198,6 @@ export function createTableCards(
   // from where its bottom edge was. Built once per count.
   const scaledPlayed = new Map<number, readonly Placement[]>();
   const playedSlotsFor = (count: number): readonly Placement[] => {
-    if (!isSabotageGame()) return playedSlotsInUse();
     const shown = Math.max(1, Math.min(count, playerCount));
     const cached = scaledPlayed.get(shown);
     if (cached) return cached;
@@ -366,14 +363,11 @@ export function createTableCards(
       const slot = handSlotFor(entry.key);
       if (!slot) return null;
       if (!entry.raised) return { slot, lift: 0 };
-      if (!isSabotageGame()) return { slot, lift: liftFor(slot) };
-      // On a Sabotage table a raised card also grows to be read; the scale
-      // eases with the rest.
-      const raised = { ...slot, scale: slot.scale.clone().multiplyScalar(SABOTAGE_CARD_HANDLING.raisedScale) };
+      // A raised card also grows to be read; the scale eases with the rest.
+      const raised = { ...slot, scale: slot.scale.clone().multiplyScalar(CARD_HANDLING.raisedScale) };
       return { slot: raised, lift: liftFor(slot) };
     }
-    // A card being played counts as in play already, so on a Sabotage table
-    // the others settle into their new size as it arrives.
+    // A card being played counts as in play already, so the others settle into their new size as it arrives.
     const arriving = pending && !trickOrder.includes(pending.key) ? 1 : 0;
     const inPlay = playedSlotsFor(trickOrder.length + arriving);
     if (pending?.key === entry.key) {

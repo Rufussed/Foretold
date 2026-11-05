@@ -6,7 +6,7 @@ import { formatDateTime } from "../utils/format-date-time";
 import { escapeHtml } from "../utils/escape-html";
 import { t } from "../i18n";
 import { serverError, type ServerError } from "../i18n/server-error";
-import { GAME_MODES } from "../../backend/src/game/wizard/modes/modes";
+import { GAME_MODES, type GameMode } from "../../backend/src/game/wizard/modes/modes";
 import {
   QUICK_PLAY_FULL_TABLE,
   type QuickPlayStatus,
@@ -161,81 +161,40 @@ export async function renderLobbyPage(
               />
             </label>
 
-            <fieldset class="room-form-field">
-              <legend>${t("lobby.mode")}</legend>
-
-              <div class="game-mode-options">
+            <div class="room-form-field">
+              <label for="roomMode" class="room-form-label">${t("lobby.mode")}</label>
+              <select id="roomMode" name="mode" class="room-mode-select mode-classic">
                 ${GAME_MODES.map(
                   (mode) => `
-                    <label class="game-mode-option mode-${mode}">
-                      <input
-                        type="radio"
-                        name="mode"
-                        value="${mode}"
-                        ${mode === "classic" ? "checked" : ""}
-                      />
-                      <span class="game-mode-name">${gameModeName(mode)}</span>
-                      <span class="game-mode-description">${t(`mode.${mode}.description`)}</span>
-                    </label>
+                    <option value="${mode}" class="mode-${mode}" ${mode === "classic" ? "selected" : ""}>
+                      ${gameModeName(mode)}
+                    </option>
                   `,
                 ).join("")}
+              </select>
+              <p class="game-mode-description mode-classic" id="roomModeDescription">${t("mode.classic.description")}</p>
+            </div>
+
+            <div class="room-form-row">
+              <div class="room-form-field">
+                <label for="roomVisibility" class="room-form-label">${t("lobby.visibility")}</label>
+                <select id="roomVisibility" name="isPublic" class="room-visibility-select">
+                  <option value="true" selected>${t("lobby.public")}</option>
+                  <option value="false">${t("lobby.private")}</option>
+                  <option value="guest">${t("lobby.guestRoom")}</option>
+                </select>
               </div>
-            </fieldset>
 
-            <label class="room-form-field" for="roomVisibility">
-              <span>${t("lobby.visibility")}</span>
-              <select
-                class="room-visibility-select"
-                id="roomVisibility"
-                name="isPublic"
-              >
-              <option value="true" selected>${t("lobby.public")}</option>
-              <option value="false">${t("lobby.private")}</option>
-              <option value="guest">${t("lobby.guestRoom")}</option>
-            </select>
-            </label>
-            <fieldset class="room-form-field">
-              <legend>${t("lobby.maxPlayers")}</legend>
-
-              <div class="player-count-options">
-                <label>
-                  <input
-                    type="radio"
-                    name="maxPlayers"
-                    value="3"
-                  />
-                  <span>3</span>
-                </label>
-
-                <label>
-                  <input
-                    type="radio"
-                    name="maxPlayers"
-                    value="4"
-                    checked
-                  />
-                  <span>4</span>
-                </label>
-
-                <label>
-                  <input
-                    type="radio"
-                    name="maxPlayers"
-                    value="5"
-                  />
-                  <span>5</span>
-                </label>
-
-                <label>
-                  <input
-                    type="radio"
-                    name="maxPlayers"
-                    value="6"
-                  />
-                  <span>6</span>
-                </label>
+              <div class="room-form-field">
+                <label for="roomMaxPlayers" class="room-form-label">${t("lobby.maxPlayers")}</label>
+                <select id="roomMaxPlayers" name="maxPlayers" class="room-visibility-select">
+                  <option value="3">3</option>
+                  <option value="4" selected>4</option>
+                  <option value="5">5</option>
+                  <option value="6">6</option>
+                </select>
               </div>
-            </fieldset>
+            </div>
 
             <div class="room-form-actions">
               <button
@@ -760,6 +719,19 @@ export async function renderLobbyPage(
         );
       });
   }
+
+  // The line under the game choice says how the chosen game plays.
+  const modeSelect = createRoomForm?.querySelector<HTMLSelectElement>("#roomMode");
+  const modeDescription = createRoomForm?.querySelector<HTMLElement>("#roomModeDescription");
+  const showModeDescription = (): void => {
+    if (!modeSelect || !modeDescription) return;
+    const mode = modeSelect.value as GameMode;
+    modeDescription.textContent = t(`mode.${mode}.description`);
+    // The game's own colour, on the closed dropdown as on its options.
+    modeSelect.className = `room-mode-select mode-${mode}`;
+  };
+  modeSelect?.addEventListener("change", showModeDescription);
+  createRoomForm?.addEventListener("reset", () => queueMicrotask(showModeDescription));
 
   createRoomForm?.addEventListener(
     "submit",
