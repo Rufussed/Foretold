@@ -1,0 +1,18 @@
+{
+  "id": "fire-wizard",
+  "status": "complete",
+  "source": "fire-wizard.png",
+  "output": "fire-wizard.png",
+  "method": "built-in image generation",
+  "elementless": true,
+  "motif_visual_count": null,
+  "checks": {
+    "identity_pose": "older horned grey-haired grinning woman, staff/flame/wide stance preserved",
+    "style": "large robe folds, simplified flame ribbon/columns",
+    "sky": "source red volcanic atmosphere retained, no suit identity imposed",
+    "anatomy_props": "continuous staff and natural arms; outstretched fingers partly overlap"
+  },
+  "notes": [
+    "Conspicuous cuff suit marks removed entirely, no four-wave suit motif."
+  ]
+}

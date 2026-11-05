@@ -1,0 +1,17 @@
+{
+  "id": "fire-soldier",
+  "status": "complete",
+  "source": "fire-soldier.png",
+  "output": "fire-soldier.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "frightened horned infantryman defensive trench posture retained",
+    "style": "broad clean shadows and simplified rubble",
+    "sky": "ember crimson, quiet upper-right",
+    "anatomy_props": "closed spear grip and continuous shaft; shield arm naturally concealed"
+  },
+  "notes": [
+    "Large emblem removed from shield; small tonal sleeve waves replace it."
+  ]
+}

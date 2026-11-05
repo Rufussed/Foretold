@@ -1,0 +1,5 @@
+FIRE WARRIOR — scar correction, 3 November 2026
+Built-in image generation precise-object edit. Input: fire-warrior.png only.
+Exact edit prompt:
+
+Use case: precise-object-edit. Edit target: supplied Fire Warrior portrait. Make one tiny local correction ONLY: REMOVE the pale crossed/X-shaped scar on the visible cheek below the eye, replacing those light diagonal scar lines with the same natural copper-red skin and broad painted shading as the immediately surrounding cheek. The warrior has NO facial scar. Preserve the exact face shape, fierce clenched-teeth expression, eyes, eyebrows, hair, horns and all other features. Keep every other part of this artwork unchanged: powerful planted stance, two hands, continuous axe haft and iron axe head, armour, crimson coat, EXACTLY FOUR vertical wavy red strokes on the left bracer, boots, basalt mountains, red sky, quiet upper-right area, composition, framing, ink contours, painted colour and texture. No restyling or extra detail. Do not introduce any new marks or scars elsewhere. Return the complete original portrait with ONLY that pale cheek scar removed.

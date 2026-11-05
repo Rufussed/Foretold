@@ -1,0 +1,50 @@
+{
+  "source": "air-thief.png",
+  "output": "air-thief-cream-sky.png",
+  "tool": "photocraft-cli",
+  "target_rgb": [
+    226,
+    201,
+    138
+  ],
+  "steps": [
+    [
+      "select.magicWand",
+      {
+        "x": 1000,
+        "y": 50,
+        "tolerance": 65,
+        "antiAlias": true
+      }
+    ],
+    [
+      "select.magicWand",
+      {
+        "x": 180,
+        "y": 600,
+        "tolerance": 24,
+        "mode": "add",
+        "antiAlias": true
+      }
+    ],
+    [
+      "image.adjustments.gradientMap",
+      {
+        "stops": [
+          [
+            0,
+            "#b9a16b"
+          ],
+          [
+            0.65,
+            "#E2C98A"
+          ],
+          [
+            1,
+            "#f2e1b5"
+          ]
+        ]
+      }
+    ]
+  ]
+}

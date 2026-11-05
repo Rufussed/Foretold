@@ -1,0 +1,18 @@
+{
+  "id": "fire-monarch",
+  "status": "complete",
+  "source": "fire-monarch.png",
+  "output": "fire-monarch.png",
+  "method": "built-in image generation plus motif relocation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "regal female monarch giant red horns/staff/crescent bowl retained",
+    "style": "strong ink, large gown folds and simplified jewellery/volcanic landscape",
+    "sky": "ember red-orange quiet upper-right",
+    "anatomy_props": "natural staff grip and palm supporting bowl"
+  },
+  "notes": [
+    "Glowing horn wave patterns removed; gold cuff made plain.",
+    "Small tonal four-wave motif relocated under gold shoulder clasp after cuff kept three strokes."
+  ]
+}

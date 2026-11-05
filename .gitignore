@@ -47,3 +47,6 @@ startup-error.log
 
 myNotes.txt
 temp
+
+# Large source art (too big for the remote)
+source-images/**/*.png

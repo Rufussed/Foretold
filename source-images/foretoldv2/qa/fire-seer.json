@@ -1,0 +1,18 @@
+{
+  "id": "fire-seer",
+  "status": "complete",
+  "source": "fire-seer.png",
+  "output": "fire-seer.png",
+  "method": "built-in image generation plus hand/motif correction",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "gaunt pale seer with ivory horns, hunch and brazier preserved",
+    "style": "simplified flame and broad stone/cloth shadows",
+    "sky": "subdued ember crimson, quiet upper-right",
+    "anatomy_props": "two hands each visibly five long digits after correction"
+  },
+  "notes": [
+    "Initial near hand missing digit and motif three waves corrected.",
+    "Sleeve motif lighter red thread than requested darker red, but small tonal integration retained."
+  ]
+}

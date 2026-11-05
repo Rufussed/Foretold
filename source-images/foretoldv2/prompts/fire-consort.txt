@@ -1,0 +1,27 @@
+Date:3 November2026
+Built-in image generation
+References:
+/home/rlane/Work/foretold/source-images/fire-consort-v2.png
+/home/rlane/Work/foretold/source-images/roleplay/water-thief.png
+/home/rlane/Work/foretold/source-images/symbols-air-fire-water-earth.png
+
+Generation prompt:
+Use case: style-transfer. Fullbleed portrait fantasy roleplay playing-card art about5:7. Image1 root source = IDENTITY/POSE/COMPOSITION authoritative; keep original character's age/species/face/expression, pose/silhouette, costume cut, main props, story and framing. Minor natural anatomy/object corrections allowed. Image2 WaterThief is STYLE ONLY: copy ink/rendering economy, NEVER his face, scars, smile, pirate costume/props or pose. Image3 elemental sheet GEOMETRY ONLY: Fire top-right FOUR VERTICAL WAVY strokes. Keep only one small discreet tonal integrated Fire motif as specified, remove original conspicuous/bright large emblems. Exactly4 separate vertical wavy strokes, no extra stripes; not flat badge, light patch or prominent pendant.
+Transform rendering to strong confident slightly irregular DARK ink contours, broad base colour plus one or two major shadow shapes per surface, economical lighter internal drawing, generous calm unshaded areas. Restrained painted depth and smooth calm broad gradients, sparse material marks. Group hair, clothing folds, architecture and scenery into broad coherent colour masses. No intricate surface texture, dense mottling/scratches/speckles, tiny facets, busy highlights, dense hatching, photorealistic skin or anatomical overmodelling. Keep warmth, expressive personality, depth; avoid anime, glossy3D, realism, fully flat vector or heavy uniform cartoon outlines. Rich clear colour not sepia.
+FIRE sky must be ember/crimson RED-ORANGE, close gradients allowed; atmosphere/clouds/mountains/stone receive coherent warm light and neutral charcoal/taupe shadows, no blue sky. Keep night/interior story subdued where original requires. Preserve original material/skin colours, not uniform red wash. One dominant character, clear action and small number meaningful objects; don't invent extra people/props. Keep upper-right labelzone rightmost22%width within top25%height quiet simple background without face, objects, strong contours or busy texture, retain original framing. No baked-in text, letters, numbers, labels, borders, frames or watermark.
+Preserve original mature horned male consort, swept black/silver hair, short black beard, stern commanding glance, red cloak, rich black/gold fitted plate armour, seated/perched against basalt castle parapet with legs wide grounded, one hand resting on wall and other firmly gripping sword hilt. Long straight continuous sword blade angles down-right from connected ornate guard and hilt, tip near floor, no broken axis. Keep identity/age/pose/costume cut and volcanic panorama. Remove large bright red wave print on shoulder armour, leave plain dark plate. Instead exactly FOUR TINY muted dark-red vertical wavy embroidered strokes on RED cuff near wall-resting wrist, small tonal. Keep cloak's gold clasps and chain without adding new symbols. Broad paint shadow groups on armour, sparse metal marks, broad large mantle folds, reduce wet paving reflection/highlight texture. Sky dark crimson/ember as original, not blue, quiet upperright.
+
+Correction reference:
+/home/rlane/.codex/generated_images/01a1a0e0-a091-7290-abe0-3542a6b60e2c/exec-5f11beb8-24a8-4dd9-a08d-548532199e0e.png
+Exact correction prompt:
+Precise small local correction ONLY. On wrist bracer of the hand resting on wall at viewer right, there are currently THREE red vertical wavy strokes. Add one matching fourth so there are EXACTLY FOUR separate VERTICAL WAVY strokes side by side, small muted dark-red engraving in black iron. Count four, no light badge. Preserve all other artwork: male consort identity/face/horns/hair/beard/expression, seated stance, sword/hilt/hand, armour, gold clasps/chains, cape, boots, castle, red volcanic sky/landscape and ink/broad painted shading. No other changes or text.
+
+Correction reference:
+/home/rlane/.codex/generated_images/01a1a0e0-a091-7290-abe0-3542a6b60e2c/exec-20469864-7cdb-493d-ab08-cc6cf30ae5ad.png
+Exact correction prompt:
+Make only the small Fire motif correct. On the black bracer at viewer right wrist, replace the THREE red strokes with FOUR (4) equally spaced separate vertical wavy red strokes, side by side. Draw first, second, third AND fourth, four total, no more no less. Reduce stroke width slightly so all four fit the same modest engraved area. Same muted red, no badge. Everything else EXACTLY unchanged: consort, face, pose, hands, sword, clothes, armour, castle, sky and rendering. Return whole image.
+
+Correction reference:
+/home/rlane/.codex/generated_images/01a1a0e0-a091-7290-abe0-3542a6b60e2c/exec-80ce33af-8016-4dce-832d-df908179f49d.png
+Exact correction prompt:
+Edit image1 Fire Consort locally. Image2 geometry reference: use TOP RIGHT FIRE symbol, exactly FOUR vertical wavy strokes. REMOVE the current three red marks on right wrist black bracer entirely; bracer becomes plain black. Add the exact FOUR-part Fire geometry as a small subtle tonal DARK RED embroidery on RED sleeve just above that bracer near the elbow instead. Four separate equal-length vertical wavy strokes side by side, count1,2,3,4. No badge/patch. No other changes: same character face/horns/hair, seated pose, sword/hands, armour, cloak, scenery, sky, style and framing.

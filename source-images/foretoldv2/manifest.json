@@ -1,0 +1,908 @@
+{
+  "date": "2026-11-03",
+  "expected_cards": 60,
+  "cards": [
+    {
+      "id": "water-peasant",
+      "element": "water",
+      "rank": 1,
+      "title": "peasant",
+      "source": "water-peasant.png",
+      "mode": "style-transfer",
+      "output": "water-peasant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "e7a2c3d86f20f25c796c78fae2ca2dfea64a351a31bc48e63408c85c789dc50b"
+    },
+    {
+      "id": "water-farmer",
+      "element": "water",
+      "rank": 2,
+      "title": "farmer",
+      "source": "water-farmer.png",
+      "mode": "style-transfer",
+      "output": "water-farmer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "96f836c3e384b08037f45a97f3bf61551f489f417a0f72d8ae8ee8b59c8ae4ea"
+    },
+    {
+      "id": "water-citizen",
+      "element": "water",
+      "rank": 3,
+      "title": "citizen",
+      "source": "water-citizen.png",
+      "mode": "style-transfer",
+      "output": "water-citizen.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "4c82d6681cab0656879d2186b3b28c685685fee11a4f991615f03a4e98496bcd"
+    },
+    {
+      "id": "water-soldier",
+      "element": "water",
+      "rank": 4,
+      "title": "soldier",
+      "source": "water-soldier.png",
+      "mode": "style-transfer",
+      "output": "water-soldier.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "26620925ff0cb8b9e5c0b8550f74f27d60dda2a44a167ed1ce9563705030373b"
+    },
+    {
+      "id": "water-merchant",
+      "element": "water",
+      "rank": 5,
+      "title": "merchant",
+      "source": "water-merchant.png",
+      "mode": "style-transfer",
+      "output": "water-merchant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "3f17fc931d0182a52507d6521616d7a10b6ee53db4ead62aa2da840cc9329824"
+    },
+    {
+      "id": "water-priest",
+      "element": "water",
+      "rank": 6,
+      "title": "priest",
+      "source": "water-priest.png",
+      "mode": "style-transfer",
+      "output": "water-priest.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "7beafd1c243ff7adf56eecc7b103b92abf7d9c940b96e977fee603be2543262d"
+    },
+    {
+      "id": "water-general",
+      "element": "water",
+      "rank": 7,
+      "title": "general",
+      "source": "water-general.png",
+      "mode": "style-transfer",
+      "output": "water-general.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "632799f0b76ac1be3b75d54a744465147a555b13f32fd2d8532f11942984f4e0"
+    },
+    {
+      "id": "water-thief",
+      "element": "water",
+      "rank": 8,
+      "title": "thief",
+      "source": "water-thief.png",
+      "mode": "style-transfer",
+      "output": "water-thief.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "8f69200cfb77169a8fd8911090865a682279298e6863425ff876a1ec55253948"
+    },
+    {
+      "id": "water-trickster",
+      "element": "water",
+      "rank": 9,
+      "title": "trickster",
+      "source": "water-trickster-v4.png",
+      "mode": "style-transfer",
+      "output": "water-trickster.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "af832eae831bdc4523f8164afd5d4c9e79037353d583ef3f9f9f2a46ac753b04"
+    },
+    {
+      "id": "water-seer",
+      "element": "water",
+      "rank": 10,
+      "title": "seer",
+      "source": "water-seer.png",
+      "mode": "style-transfer",
+      "output": "water-seer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "08ea3999eb6a0b336cee18739bf40554ee62f71ac850fdb68614df7db7e9fc70"
+    },
+    {
+      "id": "water-heir",
+      "element": "water",
+      "rank": 11,
+      "title": "heir",
+      "source": "water-heir.png",
+      "mode": "style-transfer",
+      "output": "water-heir.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "d9f22acb49b0938a6234344b04333f27294015e4389029903458e3c471095b14"
+    },
+    {
+      "id": "water-consort",
+      "element": "water",
+      "rank": 12,
+      "title": "consort",
+      "source": "water-consort-v2.png",
+      "mode": "style-transfer",
+      "output": "water-consort.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "c3171860e5c569a8643bba412a60e9f18bfa3aa32a0a9e4d56b96e53c57823c4"
+    },
+    {
+      "id": "water-monarch",
+      "element": "water",
+      "rank": 13,
+      "title": "monarch",
+      "source": "water-monarch.png",
+      "mode": "style-transfer",
+      "output": "water-monarch.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "7964dccdbfd537acb0a0ae054d34b14b32dd554934e0ad062c192b29a9509682"
+    },
+    {
+      "id": "water-wizard",
+      "element": "water",
+      "rank": 14,
+      "title": "wizard",
+      "source": "water-wizard.png",
+      "mode": "style-transfer-elementless",
+      "output": "water-wizard.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "3aa29ec77c20b6b544ee49b20b41b1c5a467d98ffefa3ddf776cdf2e5f448e59"
+    },
+    {
+      "id": "water-fool",
+      "element": "water",
+      "rank": 0,
+      "title": "fool",
+      "source": "fool.png",
+      "mode": "style-transfer-elementless",
+      "output": "water-fool.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "ac58dfb7b3f542886333dbe166b97b7fab23786a33cc598dfd196a0d5be4f3fa"
+    },
+    {
+      "id": "fire-peasant",
+      "element": "fire",
+      "rank": 1,
+      "title": "peasant",
+      "source": "fire-peasant.png",
+      "mode": "style-transfer",
+      "output": "fire-peasant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "8f426f8ac60fa44a40b7516f2527430013e4c42c8fce31dcff7e183fbe4e965f"
+    },
+    {
+      "id": "fire-farmer",
+      "element": "fire",
+      "rank": 2,
+      "title": "farmer",
+      "source": "fire-farmer.png",
+      "mode": "style-transfer",
+      "output": "fire-farmer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "0c264f485e69ebe76500a4ae00ef177a183fe14409efd81f06d321fea279b16f"
+    },
+    {
+      "id": "fire-citizen",
+      "element": "fire",
+      "rank": 3,
+      "title": "citizen",
+      "source": "fire-citizen.png",
+      "mode": "style-transfer",
+      "output": "fire-citizen.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "6116398eb81f2084efcbeed6b64adc02c2afcdbc4e94f56837d3d3f7c15a3ff9"
+    },
+    {
+      "id": "fire-soldier",
+      "element": "fire",
+      "rank": 4,
+      "title": "soldier",
+      "source": "fire-soldier.png",
+      "mode": "style-transfer",
+      "output": "fire-soldier.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "691e6aa2bd6e6f03d540eb23889b4c0a392caea7730573ff3a20b5e21bf5da47"
+    },
+    {
+      "id": "fire-merchant",
+      "element": "fire",
+      "rank": 5,
+      "title": "merchant",
+      "source": "fire-merchant.png",
+      "mode": "style-transfer",
+      "output": "fire-merchant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "ce5afcd51f806fe45849babdc8c619ae4d6439e3478d1e797149e33d424abf4a"
+    },
+    {
+      "id": "fire-priest",
+      "element": "fire",
+      "rank": 6,
+      "title": "priest",
+      "source": "fire-priest.png",
+      "mode": "style-transfer",
+      "output": "fire-priest.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "c3c2619e5b6079ae764edd93531e4b7ce18a27d3a9edb7bf017028d4775f4243"
+    },
+    {
+      "id": "fire-general",
+      "element": "fire",
+      "rank": 7,
+      "title": "general",
+      "source": "fire-general.png",
+      "mode": "style-transfer",
+      "output": "fire-general.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "894e69e8bc5e07cd0352eb3136d63da5ff3940be83100e981af44c7c2580f3c3"
+    },
+    {
+      "id": "fire-thief",
+      "element": "fire",
+      "rank": 8,
+      "title": "thief",
+      "source": "fire-thief.png",
+      "mode": "style-transfer",
+      "output": "fire-thief.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "103378a1b93296eed7853f0010f26a63a73f419733529f892ad5da563b1abc08"
+    },
+    {
+      "id": "fire-trickster",
+      "element": "fire",
+      "rank": 9,
+      "title": "trickster",
+      "source": null,
+      "mode": "fresh",
+      "output": "fire-trickster.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "59b0fbfa0e51812725ef50d8850a2c186702716c69ec724e36576fa9926bc1e3"
+    },
+    {
+      "id": "fire-seer",
+      "element": "fire",
+      "rank": 10,
+      "title": "seer",
+      "source": "fire-seer.png",
+      "mode": "style-transfer",
+      "output": "fire-seer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "127ba1977448d06460b71909067406a8799cafea4849731a7b6ebc9c0af97bce"
+    },
+    {
+      "id": "fire-heir",
+      "element": "fire",
+      "rank": 11,
+      "title": "heir",
+      "source": "fire-heir.png",
+      "mode": "style-transfer",
+      "output": "fire-heir.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "d37f171b9a6a85763c5c0f26d4e117800abc3f20b8b9a7dbb5da21fb75be6141"
+    },
+    {
+      "id": "fire-consort",
+      "element": "fire",
+      "rank": 12,
+      "title": "consort",
+      "source": "fire-consort-v2.png",
+      "mode": "style-transfer",
+      "output": "fire-consort.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "9904d5f853a444177279bfad4116fda38234f2834ae153bbbcac7ebb9c30fd67"
+    },
+    {
+      "id": "fire-monarch",
+      "element": "fire",
+      "rank": 13,
+      "title": "monarch",
+      "source": "fire-monarch.png",
+      "mode": "style-transfer",
+      "output": "fire-monarch.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "86654240aa9bf5872063f454a2b1c9c0dc0e6cb0979dd131c37b22e73ff50254"
+    },
+    {
+      "id": "fire-wizard",
+      "element": "fire",
+      "rank": 14,
+      "title": "wizard",
+      "source": "fire-wizard.png",
+      "mode": "style-transfer-elementless",
+      "output": "fire-wizard.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "9268b91e306ecf62054ecf1d95dfdc3d69482d339efda6d7efcbc6080a3952cc"
+    },
+    {
+      "id": "fire-fool",
+      "element": "fire",
+      "rank": 0,
+      "title": "fool",
+      "source": "fool.png",
+      "mode": "style-transfer-elementless",
+      "output": "fire-fool.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "22edea618fb3a3e90be79ad6d91244622815749dbccfb5a05ec854a5ab5dac5a"
+    },
+    {
+      "id": "earth-peasant",
+      "element": "earth",
+      "rank": 1,
+      "title": "peasant",
+      "source": "earth-peasant.png",
+      "mode": "style-transfer",
+      "output": "earth-peasant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "1a4e63ff977a1dadd2e7591f3075558379621f61ba310d2514ab5fc27c3f47d7"
+    },
+    {
+      "id": "earth-farmer",
+      "element": "earth",
+      "rank": 2,
+      "title": "farmer",
+      "source": "earth-farmer.png",
+      "mode": "style-transfer",
+      "output": "earth-farmer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "6a9ac5c82ed5fda218e3540b624329fefc607e585e8a34247b7750f921345378"
+    },
+    {
+      "id": "earth-citizen",
+      "element": "earth",
+      "rank": 3,
+      "title": "citizen",
+      "source": "earth-citizen.png",
+      "mode": "style-transfer",
+      "output": "earth-citizen.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "d422fd5ffdaa1cc07dffef316ca508095eed546763107576f6b691ed38a8369a"
+    },
+    {
+      "id": "earth-soldier",
+      "element": "earth",
+      "rank": 4,
+      "title": "soldier",
+      "source": "earth-soldier.png",
+      "mode": "style-transfer",
+      "output": "earth-soldier.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "8161945f391972c2875beb35aec5cb2dc79ae926b476e6a6e69a5738139bdff0"
+    },
+    {
+      "id": "earth-merchant",
+      "element": "earth",
+      "rank": 5,
+      "title": "merchant",
+      "source": "earth-merchant.png",
+      "mode": "style-transfer",
+      "output": "earth-merchant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "4373b5cc45ab80f292cb9cd447dbcd3bc87111d70c8747614a7e457f61714137"
+    },
+    {
+      "id": "earth-priest",
+      "element": "earth",
+      "rank": 6,
+      "title": "priest",
+      "source": "earth-priest.png",
+      "mode": "style-transfer",
+      "output": "earth-priest.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "fd6ba9dd405496a65a7bf085397e1231af93e610d325a2e1be3b6340ccea3f46"
+    },
+    {
+      "id": "earth-general",
+      "element": "earth",
+      "rank": 7,
+      "title": "general",
+      "source": "earth-general.png",
+      "mode": "style-transfer",
+      "output": "earth-general.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "ecd30fb3369ae9cc124ea61bc33359de9bc81cbd240b0f1d781b1e9f500876f6"
+    },
+    {
+      "id": "earth-thief",
+      "element": "earth",
+      "rank": 8,
+      "title": "thief",
+      "source": "earth-thief.png",
+      "mode": "style-transfer",
+      "output": "earth-thief.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "6e93b7b5a24d181c0e6d56249d6d5107a52fe0f4795cdf148d0b40684261b624"
+    },
+    {
+      "id": "earth-trickster",
+      "element": "earth",
+      "rank": 9,
+      "title": "trickster",
+      "source": null,
+      "mode": "fresh",
+      "output": "earth-trickster.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "d7fdfc48498b8c5c622d68918100ed96a6e0e59d07aacf18d495a144eb92ea00"
+    },
+    {
+      "id": "earth-seer",
+      "element": "earth",
+      "rank": 10,
+      "title": "seer",
+      "source": "earth-seer.png",
+      "mode": "style-transfer",
+      "output": "earth-seer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "25bcdf97a8ee814c0d9d22d031ff42acf504386774785e793f73a0a89bd0378e"
+    },
+    {
+      "id": "earth-heir",
+      "element": "earth",
+      "rank": 11,
+      "title": "heir",
+      "source": "earth-heir.png",
+      "mode": "style-transfer",
+      "output": "earth-heir.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "17e6a181d5d32d6847e4453c8745486dfdc47bbe64737bd8922e1ec31f8ccbf0"
+    },
+    {
+      "id": "earth-consort",
+      "element": "earth",
+      "rank": 12,
+      "title": "consort",
+      "source": "earth-consort-v2.png",
+      "mode": "style-transfer",
+      "output": "earth-consort.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "2aa48359bd24f5f8df07362a749ade4f2d2389a6cba48eafd8caddd17c1e06dc"
+    },
+    {
+      "id": "earth-monarch",
+      "element": "earth",
+      "rank": 13,
+      "title": "monarch",
+      "source": "earth-monarch.png",
+      "mode": "style-transfer",
+      "output": "earth-monarch.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "70205dea311cab2acb5d6069b609ff9e47d1691d1f640532223dd0209a455956"
+    },
+    {
+      "id": "earth-wizard",
+      "element": "earth",
+      "rank": 14,
+      "title": "wizard",
+      "source": "earth-wizard.png",
+      "mode": "style-transfer-elementless",
+      "output": "earth-wizard.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "4d983ce2bc402476ddb4f1c3655d622c4b646a041c1fe146cea38452ccda0ef9"
+    },
+    {
+      "id": "earth-fool",
+      "element": "earth",
+      "rank": 0,
+      "title": "fool",
+      "source": "fool.png",
+      "mode": "style-transfer-elementless",
+      "output": "earth-fool.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "5430c512aad926ee1c1cc392dfc0917e4e063b6dda6512ae1807a2aea2b12965"
+    },
+    {
+      "id": "air-peasant",
+      "element": "air",
+      "rank": 1,
+      "title": "peasant",
+      "source": "air-peasant.png",
+      "mode": "style-transfer",
+      "output": "air-peasant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "87ba50cb32a21695fc89c9f44147c6d7805d93f81a05239bf8470142a540b12b"
+    },
+    {
+      "id": "air-farmer",
+      "element": "air",
+      "rank": 2,
+      "title": "farmer",
+      "source": "air-farmer.png",
+      "mode": "style-transfer",
+      "output": "air-farmer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "29f0546ab3b71263bf8d81e19ca1325ccd9ac5f35238aa896e11cebe9c54657f"
+    },
+    {
+      "id": "air-citizen",
+      "element": "air",
+      "rank": 3,
+      "title": "citizen",
+      "source": "air-citizen.png",
+      "mode": "style-transfer",
+      "output": "air-citizen.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "dff799af956525d2544fe5c4240bdab66a5c0c2404e4c7180b7bc7ba5e8812bf"
+    },
+    {
+      "id": "air-soldier",
+      "element": "air",
+      "rank": 4,
+      "title": "soldier",
+      "source": "air-soldier.png",
+      "mode": "style-transfer",
+      "output": "air-soldier.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "7433fda8d33b79860c89dae7ad47b8edf8445467fa35867a8b96b84f26826ddd"
+    },
+    {
+      "id": "air-merchant",
+      "element": "air",
+      "rank": 5,
+      "title": "merchant",
+      "source": "air-merchant.png",
+      "mode": "style-transfer",
+      "output": "air-merchant.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "5edbc4c1dcadedd261cb8ecd165b09ddf87b8c2d0fa62c0a126df359612430ab"
+    },
+    {
+      "id": "air-priest",
+      "element": "air",
+      "rank": 6,
+      "title": "priest",
+      "source": "air-priest.png",
+      "mode": "style-transfer",
+      "output": "air-priest.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "008b7181009747e7222f1d7e5004814d97b29e32e0f4ea4707dd364451f705e5"
+    },
+    {
+      "id": "air-general",
+      "element": "air",
+      "rank": 7,
+      "title": "general",
+      "source": "air-general.png",
+      "mode": "style-transfer",
+      "output": "air-general.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "b0a7868964eacb23ca0dd06524b534583e6c2a5527132f83cfa7af98f2087cc4"
+    },
+    {
+      "id": "air-thief",
+      "element": "air",
+      "rank": 8,
+      "title": "thief",
+      "source": "air-thief.png",
+      "mode": "style-transfer",
+      "output": "air-thief.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "7e209740b0ba8e965d51bd14b757eaf8e63628113bcdd5b130086c1d98036f6c"
+    },
+    {
+      "id": "air-trickster",
+      "element": "air",
+      "rank": 9,
+      "title": "trickster",
+      "source": "air-trickster.png",
+      "mode": "style-transfer",
+      "output": "air-trickster.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "8a84d9ca8f364d344bf69d7c03ecc7bfc547d04b64af106b148ec097b1b7bffb"
+    },
+    {
+      "id": "air-seer",
+      "element": "air",
+      "rank": 10,
+      "title": "seer",
+      "source": "air-seer.png",
+      "mode": "style-transfer",
+      "output": "air-seer.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "820f47d9168acd709ebc1ebf6546958fe76abf0a355ff0d24220899b32c5f47a"
+    },
+    {
+      "id": "air-heir",
+      "element": "air",
+      "rank": 11,
+      "title": "heir",
+      "source": "air-heir.png",
+      "mode": "style-transfer",
+      "output": "air-heir.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "8fb6d41e760a4321646fc4742d12b57456dd758bbac5420ebdadfd82c4673f04"
+    },
+    {
+      "id": "air-consort",
+      "element": "air",
+      "rank": 12,
+      "title": "consort",
+      "source": "air-consort-eagle.png",
+      "mode": "style-transfer",
+      "output": "air-consort.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "aafe175c76b26dbb78a766db163c40d06b5637915d3145b5f70edc69092a81ec"
+    },
+    {
+      "id": "air-monarch",
+      "element": "air",
+      "rank": 13,
+      "title": "monarch",
+      "source": "air-monarch.png",
+      "mode": "style-transfer",
+      "output": "air-monarch.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "d9550e6ff0140bdfad3db59dd35403e30229588217df7842b3dc9203f9fb91a6"
+    },
+    {
+      "id": "air-wizard",
+      "element": "air",
+      "rank": 14,
+      "title": "wizard",
+      "source": "air-wizard.png",
+      "mode": "style-transfer-elementless",
+      "output": "air-wizard.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "20c38d1ce2b1ff2968c6ea1dc1b6d9bfdd4fe0128ed7d3b38648da69534afec2"
+    },
+    {
+      "id": "air-fool",
+      "element": "air",
+      "rank": 0,
+      "title": "fool",
+      "source": "fool.png",
+      "mode": "style-transfer-elementless",
+      "output": "air-fool.png",
+      "status": "complete",
+      "dimensions": [
+        1060,
+        1484
+      ],
+      "sha256": "d01382b4b66463797e3f5ee4222ef2d334574085965ce79add532d17869c855d"
+    }
+  ],
+  "status": "complete",
+  "completed_cards": 60
+}

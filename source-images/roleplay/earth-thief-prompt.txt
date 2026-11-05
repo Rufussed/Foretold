@@ -1,0 +1,12 @@
+ROLEPLAY EARTH THIEF — finalized reusable prompt
+Date: 2 November 2026
+
+Use case: stylized-concept / character-preserving style transfer.
+Use general-prompt.md in full, then this individual brief.
+References if supplied: water-thief.png = STYLE ONLY; earth-thief.png = CHARACTER/POSE. For Water, use its selected image for both identity and finish. Never borrow the Water pirate or harbour for another suit.
+
+A green-skinned adult male forest elf with long pointed ears, dark hair in a knot, angular mischievous face and sly grin. Emerald jerkin, ivory sleeves, dark forest-green cloak, brown soft boots and a plain leather buckle. Preserve earth-thief.png character and crouch on a thick tree branch high above ground, peering through an enemy fortress window at battle plans. One hand rests on stone frame, other braces on branch; credible feet and knee contact. Interior unlettered map and a few abstract troop markers, subordinate general optional. Exactly FOUR small stacked angular zigzag bands in subtle tonal green embroidery near cloak shoulder; no bright belt badge. Group ivy, branch, canopy and fortress into broad simple masses. Deep emerald/forest palette, quiet pale green upper-right sky.
+
+Full-bleed portrait approximately 5:7. Strong irregular ink contours, broad base colours with one or two main shadows, restrained painted depth, economical faces, sparse surface marks. Subtle motif; overall palette establishes suit first. Correct connected anatomy and readable object interactions. Quiet upper-right label zone (rightmost 22% within upper 25%). No text, numbers, borders or watermarks. Do not increase realistic shading, dense texture or fine detail.
+
+This is a consolidated brief for future use, not the verbatim historical generation input. Exact recorded generation/edit prompts are in prompt-history/earth-thief-prompt.txt. Regeneration is not pixel-identical.

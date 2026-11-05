@@ -1,0 +1,17 @@
+{
+  "id": "fire-thief",
+  "status": "complete",
+  "source": "fire-thief.png",
+  "output": "fire-thief.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "horned woman crouched listening at tent retained",
+    "style": "strong ink, broad folds/rocks, simplified curls",
+    "sky": "ember red-orange quiet upper-right",
+    "anatomy_props": "hand/forearm coherent, grounded crouch, shadow story retained"
+  },
+  "notes": [
+    "Enemy tent neutral ochre; crimson cuff replaces light badge."
+  ]
+}

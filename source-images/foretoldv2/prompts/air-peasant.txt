@@ -1,0 +1,12 @@
+Built-in imagegen
+References:
+/home/rlane/Work/foretold/source-images/air-peasant.png
+/home/rlane/Work/foretold/source-images/roleplay/water-thief.png
+/home/rlane/Work/foretold/source-images/symbols-air-fire-water-earth.png
+
+Use case: style-transfer. Restyle IMAGE1, the original card, preserving its EXACT individual identity, age/species, facial shape and expression, pose, silhouette, framing, costume CUT, major objects and story/composition. Do not replace it with any new roleplay character. IMAGE2 Water Thief is STYLE ONLY: copy rendering, never its face, smile, scar, hair, costume, pirate props or pose. IMAGE3 symbol sheet is geometry only; never reproduce sheet or floating emblems.
+Rendering: strong confident slightly irregular dark contours with economical inner drawing, broad base colours plus only ONE OR TWO large shadow shapes per material, generous unshaded calm areas, gentle calm gradients and broad scenery masses, sparse fine natural grain. Dramatically reduce original dense hatching, speckling, woodcut noise, tiny fold/skin/hair/detail marks, surface texture and realistic tonal modelling. Retain expressive character, selective painted depth and rich material colours; not flat vector, anime or glossy realism.
+AIR lighting: all actual sky warm cream RGB226,201,138 #E2C98A with gentle nearby gradients, ivory clouds/snow, mountains/stone warm neutral GREY/TAUPE/ochre and low-saturation shadows, no leftover blue/cyan sky holes or mountain/stone shadows. Preserve material colours, not global sepia.
+Remove original conspicuous four-bar badge/contrasting patch. Replace with exactly FOUR small separate STRAIGHT horizontal parallel bars in a single subtle tonal integrated embroidery/engraving/tattoo. Count four, not three/five; keep modest scale, no bright badge, no floating sky symbols.
+Fullbleed portrait approximately5:7 retaining framing. Keep rightmost22%width/top25%height calm background for labels. No text, letters, numbers, borders, frames or watermark. Coherent natural anatomy and connected objects; minor necessary corrections only.
+CARD SPECIFIC: Preserve original wary dark-haired hooded woman, ivory shawl blowing right, slate long dress, holding tied cloth bundle in both arms, stone hut/path and mountain framing. Subtle four tonal short grey bars embroidered on slate sleeve near existing placement, no patch.

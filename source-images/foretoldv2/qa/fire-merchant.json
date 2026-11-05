@@ -1,0 +1,17 @@
+{
+  "id": "fire-merchant",
+  "status": "complete",
+  "source": "fire-merchant.png",
+  "output": "fire-merchant.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "horned bearded merchant with purse and balance preserved",
+    "style": "broad apron/stone/skin shading",
+    "sky": "ember red-orange, calm upper-right",
+    "anatomy_props": "ring held naturally, balance beam and chains connect two pans"
+  },
+  "notes": [
+    "Chest badge removed; small tonal sleeve embroidery."
+  ]
+}

@@ -1,0 +1,19 @@
+Built-in imagegen
+SELECTED OUTPUT: first motif correction exec-0eb03a16, confirmed four bars at magnified close-up. Later remove-lowest correction below was rejected and is provenance only.
+References:
+/home/rlane/Work/foretold/source-images/air-consort-eagle.png
+/home/rlane/Work/foretold/source-images/roleplay/water-thief.png
+/home/rlane/Work/foretold/source-images/symbols-air-fire-water-earth.png
+
+Use case: style-transfer. Restyle IMAGE1, the original card, preserving its EXACT individual identity, age/species, facial shape and expression, pose, silhouette, framing, costume CUT, major objects and story/composition. Do not replace it with any new roleplay character. IMAGE2 Water Thief is STYLE ONLY: copy rendering, never its face, smile, scar, hair, costume, pirate props or pose. IMAGE3 symbol sheet is geometry only; never reproduce sheet or floating emblems.
+Rendering: strong confident slightly irregular dark contours with economical inner drawing, broad base colours plus only ONE OR TWO large shadow shapes per material, generous unshaded calm areas, gentle calm gradients and broad scenery masses, sparse fine natural grain. Dramatically reduce original dense hatching, speckling, woodcut noise, tiny fold/skin/hair/detail marks, surface texture and realistic tonal modelling. Retain expressive character, selective painted depth and rich material colours; not flat vector, anime or glossy realism.
+AIR lighting: all actual sky warm cream RGB226,201,138 #E2C98A with gentle nearby gradients, ivory clouds/snow, mountains/stone warm neutral GREY/TAUPE/ochre and low-saturation shadows, no leftover blue/cyan sky holes or mountain/stone shadows. Preserve material colours, not global sepia.
+Remove original conspicuous four-bar badge/contrasting patch. Replace with exactly FOUR small separate STRAIGHT horizontal parallel bars in a single subtle tonal integrated embroidery/engraving/tattoo. Count four, not three/five; keep modest scale, no bright badge, no floating sky symbols.
+Fullbleed portrait approximately5:7 retaining framing. Keep rightmost22%width/top25%height calm background for labels. No text, letters, numbers, borders, frames or watermark. Coherent natural anatomy and connected objects; minor necessary corrections only.
+CARD SPECIFIC: IDENTITY SOURCE air-consort-eagle.png, NOT other consorts. Preserve exact young dark-curly-haired human man looking alert right, silver armour/slate tunic/ivory flying cloak, seated on giant EAGLE mount with large wings and ivory head/gold beak. One hand grips upright spear left, other reins. Preserve eagle size, saddle/rider credible contact, eagle gaze/wing silhouette and aerial composition. Remove huge chest bars plain slate chest, four TINY tonal grey straight bars engraved on wrist armour. Continuous straight spear from grip to steel head and reins unbranched. Simplify feather detail into broad groups retaining wing anatomy.
+
+Correction1:
+Tiny local edit ONLY to the rider's wrist bracer on rein-holding arm at image right. Currently THREE dark grey short bars. Replace with FOUR thinner evenly spaced straight horizontal parallel dark grey bars, all four separate with silver gaps, within same modest little bracer footprint. Count FOUR bars not three/five. Preserve exact face/pose/hands, reins, spear, saddle, giant eagle anatomy/wings, costume, sky/mountains warm lighting and simplified ink/paint unchanged. No floating motifs or text.
+
+Correction2:
+Tiny precise edit ONLY wrist bracer on rein-holding arm at image right. It now has FIVE short dark grey bars. REMOVE THE LOWEST FIFTH BAR, fill it with matching silver metal, leaving exactly FOUR top bars. Do not add or redraw extra bars. Four short straight parallel bars only. Preserve all other pixels/artwork: rider face/pose/grips, spear/reins/eagle/feathers/saddle, cream sky/warm mountains and ink/paint style.

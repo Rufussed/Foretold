@@ -1,0 +1,17 @@
+{
+  "id": "fire-general",
+  "status": "complete",
+  "source": "fire-general.png",
+  "output": "fire-general.png",
+  "method": "built-in image generation plus targeted motif correction",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "shouting horned woman general, pointing pose/warhammer preserved",
+    "style": "broad armour/fabric/rock masses",
+    "sky": "ember crimson sunset, quiet upper-right",
+    "anatomy_props": "continuous hammer axis, natural closed grip and pointing hand"
+  },
+  "notes": [
+    "First pass had three cloak strokes; corrected to four with local edit."
+  ]
+}

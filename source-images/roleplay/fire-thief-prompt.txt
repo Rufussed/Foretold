@@ -1,0 +1,12 @@
+ROLEPLAY FIRE THIEF — finalized reusable prompt
+Date: 2 November 2026
+
+Use case: stylized-concept / character-preserving style transfer.
+Use general-prompt.md in full, then this individual brief.
+References if supplied: water-thief.png = STYLE ONLY; fire-thief.png = CHARACTER/POSE. For Water, use its selected image for both identity and finish. Never borrow the Water pirate or harbour for another suit.
+
+A copper-skinned adult horned woman infiltrator, short dark curls and curled goat horns, wicked knowing half-smile and conspiratorial glance. Crimson short hooded coat, charcoal breeches, brown soft boots and plain belts. Preserve fire-thief.png character and crouching eavesdropping pose, hand cupped beside ear at the outside canvas wall. Neutral ochre enemy campaign tent, with one subordinate dark general silhouette planning at a simple map table through the canvas. Volcanic camp and low peaks secondary, ember sky. Exactly FOUR small vertical wavy strokes embroidered in darker red on the crimson cuff, subtle tonal thread with no ivory badge. Simplify curls, cloth folds, rocks and sky; retain one dominant expressive figure.
+
+Full-bleed portrait approximately 5:7. Strong irregular ink contours, broad base colours with one or two main shadows, restrained painted depth, economical faces, sparse surface marks. Subtle motif; overall palette establishes suit first. Correct connected anatomy and readable object interactions. Quiet upper-right label zone (rightmost 22% within upper 25%). No text, numbers, borders or watermarks. Do not increase realistic shading, dense texture or fine detail.
+
+This is a consolidated brief for future use, not the verbatim historical generation input. Exact recorded generation/edit prompts are in prompt-history/fire-thief-prompt.txt. Regeneration is not pixel-identical.

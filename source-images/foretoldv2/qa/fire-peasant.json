@@ -1,0 +1,17 @@
+{
+  "id": "fire-peasant",
+  "status": "complete",
+  "source": "fire-peasant.png",
+  "output": "fire-peasant.png",
+  "method": "built-in image generation",
+  "motif_visual_count": 4,
+  "checks": {
+    "identity_pose": "preserved horned woman, firewood burden, walking stick and rocky path",
+    "style": "broad shadows and strong ink; reduced bark/stone detail",
+    "sky": "ember red-orange, quiet upper-right",
+    "anatomy_props": "two coherent hands, continuous staff and shoulder rope"
+  },
+  "notes": [
+    "Motif on tonal upper sleeve rather than requested cuff; no bright patch."
+  ]
+}

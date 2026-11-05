@@ -1,0 +1,18 @@
+{
+  "id": "fire-fool",
+  "status": "complete",
+  "source": "fool.png",
+  "output": "fire-fool.png",
+  "method": "built-in image generation",
+  "elementless": true,
+  "motif_visual_count": null,
+  "checks": {
+    "identity_pose": "carefree human traveller, bindle/daisy/cliff-step and small white dog retained",
+    "style": "strong ink, simpler floral pattern/landscape and broad shadows",
+    "sky": "original pale grey/ivory and blue-grey landscape retained, no Fire sky imposed",
+    "anatomy_props": "connected staff/bundle and natural hands, readable dog"
+  },
+  "notes": [
+    "All four conspicuous suit symbols removed, replaced with quiet floral pattern."
+  ]
+}
