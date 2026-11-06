@@ -4,8 +4,8 @@ import { WizardRules } from "../../services/wizardRules.js";
 import { isColourWizard, isOwnWizardCard } from "./master/colourWizards.js";
 import { isGreenCard } from "./master/greenWizard.js";
 import { trickRolesOf } from "./master/trickRoles.js";
-import { playerOf, rolePowerOn, type RoleOf } from "./rolePlay.js";
-import type { RoleId } from "./roles.js";
+import { masterOfIn, playerOf, rolePowerOn, type RoleOf } from "./rolePlay.js";
+import { masterRoleOf, roleKind, type RoleId } from "./roles.js";
 
 // Roles mode only. Which role's power shows on a card in the trick: the one
 // the table marks with that role's seal (src/modes/roles/role-seals.ts), and
@@ -25,14 +25,17 @@ export function powerSealAt(
   winner: string | null,
 ): RoleId | null {
   const played = playedCards[index];
-  const role = played && roleOf(playerOf(played));
-  if (!played || !role) return null;
+  if (!played) return null;
+  // A basic role's card first; otherwise the master role's power, if any (a
+  // player of a basic + master game holds both).
+  const basic = roleOf(playerOf(played));
+  if (basic && roleKind(basic) === "basic" && rolePowerOn(playedCards, index, trumpSuit, roleOf)) return basic;
+  const role = masterOfIn(roleOf)(playerOf(played));
+  if (!role || roleKind(role) !== "master") return null;
   // A Joker's card played though holding the suit led.
   if (role === "joker") return played.freePlay ? role : null;
 
-  if (!isColourWizard(role)) {
-    return rolePowerOn(playedCards, index, trumpSuit, roleOf) ? role : null;
-  }
+  if (!isColourWizard(role)) return null;
 
   const roles = trickRolesOf(roleOf);
   const before = playedCards.slice(0, index);
@@ -57,8 +60,8 @@ export function countPowerUses(game: WizardGameState, winner: string, roleOf: Ro
   playedCards.forEach((played, index) => {
     const player = game.players.find((entry) => entry.username === playerOf(played));
     const role = powerSealAt(playedCards, index, game.trumpSuit, roleOf, winner);
-    if (player && role && role === player.role) {
-      player.powerUses = (player.powerUses ?? 0) + 1;
-    }
+    if (!player || !role) return;
+    if (role === player.role) player.powerUses = (player.powerUses ?? 0) + 1;
+    else if (role === masterRoleOf(player)) player.masterPowerUses = (player.masterPowerUses ?? 0) + 1;
   });
 }

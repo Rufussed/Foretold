@@ -4,7 +4,7 @@ import { isBotName } from "../../models/bot.js";
 import { fullRoundCount } from "../../models/rounds.js";
 import type { GamePlayer, WizardGameState } from "../../models/wizardGame.js";
 import { isRoleId, type RoleId } from "./roles.js";
-import { sealPoints, sealState, type RoleRecord } from "./sealLevels.js";
+import { sealPoints, sealState, type RoleRecord, type SealLevelId } from "./sealLevels.js";
 
 // Roles mode only. Each player's record with each role, kept in role_progress
 // (db/migrations.ts) for the Profile's seals. The game completion service
@@ -35,13 +35,21 @@ export interface RoleGameRecord {
 // What one finished game adds to a player's record with their role; null
 // for a player without one.
 export function roleGameRecord(player: GamePlayer, won: boolean): RoleGameRecord | null {
-  const role = player.role;
-  if (!role) return null;
+  return player.role ? recordFor(player, player.role, won, player.powerUses ?? 0) : null;
+}
 
+// The same for each role they held: in a basic + master game, both.
+export function roleGameRecords(player: GamePlayer, won: boolean): RoleGameRecord[] {
+  const basic = roleGameRecord(player, won);
+  const master = player.masterRole ? recordFor(player, player.masterRole, won, player.masterPowerUses ?? 0) : null;
+  return [basic, master].filter((record): record is RoleGameRecord => record !== null);
+}
+
+function recordFor(player: GamePlayer, role: RoleId, won: boolean, powerUses: number): RoleGameRecord {
   // Each round's points by role, their own role's only: what other players'
   // powers took from or gave them is not their role's doing.
   const rolePoints = player.roundScores.reduce((sum, round) => sum + (round.roleBonuses?.[role] ?? 0), 0);
-  return { role, won, powerUses: player.powerUses ?? 0, rolePoints };
+  return { role, won, powerUses, rolePoints };
 }
 
 export function recordRoleGame(userId: number, record: RoleGameRecord): void {
@@ -59,8 +67,7 @@ export function recordRoleGame(userId: number, record: RoleGameRecord): void {
 // The hook for the completion service: records the game if it counts.
 export function recordRoleProgress(game: WizardGameState, player: GamePlayer, userId: number, won: boolean): void {
   if (!countsForRoleProgress(game)) return;
-  const record = roleGameRecord(player, won);
-  if (record) recordRoleGame(userId, record);
+  for (const record of roleGameRecords(player, won)) recordRoleGame(userId, record);
 }
 
 // A player's record with every role they have a row for, for the Profile.
@@ -86,16 +93,23 @@ export function devResetRole(userId: number, role: RoleId): void {
 // record keep none, which shows as wax.
 export function assignSealLevels(players: GamePlayer[]): void {
   for (const player of players) {
-    if (!player.role || isBotName(player.username)) continue;
-    const row = db
-      .prepare(`
-        SELECT games, wins
-        FROM role_progress
-          JOIN users ON users.id = role_progress.user_id
-        WHERE users.username = ? AND role_progress.role = ?
-      `)
-      .get(player.username, player.role) as { games: number; wins: number } | undefined;
-    const level = row ? sealState(sealPoints(row)).done : null;
-    if (level) player.sealLevel = level;
+    if (isBotName(player.username)) continue;
+    const basic = player.role && sealLevelOf(player.username, player.role);
+    if (basic) player.sealLevel = basic;
+    // And the master role's, in a basic + master game.
+    const master = player.masterRole && sealLevelOf(player.username, player.masterRole);
+    if (master) player.masterSealLevel = master;
   }
+}
+
+function sealLevelOf(username: string, role: RoleId): SealLevelId | null {
+  const row = db
+    .prepare(`
+      SELECT games, wins
+      FROM role_progress
+        JOIN users ON users.id = role_progress.user_id
+      WHERE users.username = ? AND role_progress.role = ?
+    `)
+    .get(username, role) as { games: number; wins: number } | undefined;
+  return row ? sealState(sealPoints(row)).done : null;
 }

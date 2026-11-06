@@ -2,6 +2,7 @@ import { isJester, type Card } from "../../../models/card.js";
 import type { GamePlayer, WizardGameState } from "../../../models/wizardGame.js";
 import { WizardRules } from "../../../services/wizardRules.js";
 import { playerOf } from "../rolePlay.js";
+import { masterRoleOf } from "../roles.js";
 
 // The Joker, a master role with no card of its own: with a Joker point, not
 // bound to follow suit. Holding the suit led, even trump, the Joker may spend
@@ -21,8 +22,8 @@ export const JOKER_MAX = 3;
 const rules = new WizardRules();
 
 // Whether this player may play any card now: a Joker with a point to spend.
-export const playsFree = (player: Pick<GamePlayer, "role" | "jokerPoints"> | undefined): boolean =>
-  player?.role === "joker" && (player.jokerPoints ?? 0) > 0;
+export const playsFree = (player: Pick<GamePlayer, "role" | "masterRole" | "jokerPoints"> | undefined): boolean =>
+  !!player && masterRoleOf(player) === "joker" && (player.jokerPoints ?? 0) > 0;
 
 // Whether this card, played now, uses the Joker's power: a card the rules
 // would refuse, because the hand holds the suit led and this is not of it.
@@ -53,7 +54,7 @@ function addJokerSteps(joker: GamePlayer, steps: number): void {
 // gets both.
 export function countJokerTrick(game: WizardGameState, owner: GamePlayer): void {
   const playedCards = game.currentTrick.playedCards;
-  for (const joker of game.players.filter((player) => player.role === "joker")) {
+  for (const joker of game.players.filter((player) => masterRoleOf(player) === "joker")) {
     const own = playedCards.filter((played) => playerOf(played) === joker.username);
     const spent = own.some((played) => played.freePlay);
     const won = joker === owner && !spent ? 1 : 0;

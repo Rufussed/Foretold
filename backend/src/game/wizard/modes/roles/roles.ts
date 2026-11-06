@@ -106,3 +106,12 @@ export interface RoleAction {
   // A Gambler's 10 that won with no bet: luck, not a bet won (gambler.ts).
   lucky?: true;
 }
+
+// A player's master role: the master slot in a basic + master game, or, in a
+// one-role game saved before the slots existed, a master held as the role.
+export const masterRoleOf = (player: { role?: RoleId | null; masterRole?: RoleId | null }): RoleId | undefined =>
+  player.masterRole ?? (player.role && roleKind(player.role) === "master" ? player.role : undefined);
+
+// Every role a player holds, basic first.
+export const rolesHeld = (player: { role?: RoleId | null; masterRole?: RoleId | null }): RoleId[] =>
+  [player.role, player.masterRole].filter((role): role is RoleId => !!role);

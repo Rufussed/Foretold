@@ -1,6 +1,6 @@
 import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/models/wizardGame";
-import type { RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
-import { playerOf, powerOn, rolePowerOn, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { rolesHeld, type RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
+import { playerOf, powerOn, rolePowerOn, rolesOfPlayers, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
 import { trickRolesIn } from "../../../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { WizardRules } from "../../../../backend/src/game/wizard/services/wizardRules";
 import { t, type MessageKey } from "../../../i18n";
@@ -25,8 +25,7 @@ const leadSuitOf = (state: PublicWizardGameState) =>
 const redShieldOf = (state: PublicWizardGameState) =>
   rules.redShield(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
 
-const rolesIn = (state: PublicWizardGameState): RoleOf => (username) =>
-  state.players.find((player) => player.username === username)?.role ?? undefined;
+const rolesIn = (state: PublicWizardGameState): RoleOf => rolesOfPlayers(state.players);
 
 // The standing line while a Roles move of its own is waiting: a Fisher
 // fishing, a Duke keeping or granting the trick. Null in any other phase.
@@ -205,8 +204,9 @@ const roleOfIn = (state: PublicWizardGameState, username: string) =>
 
 // A player as the log names them in a Roles game: "Lúthien (Farmer)".
 function withRole(state: PublicWizardGameState, username: string): string {
-  const role = state.players.find((player) => player.username === username)?.role;
-  return role ? `${announcedName(username)} (${t(`role.${role}`)})` : announcedName(username);
+  const player = state.players.find((entry) => entry.username === username);
+  const roles = player ? rolesHeld(player).map((role) => t(`role.${role}`)).join(" · ") : "";
+  return roles ? `${announcedName(username)} (${roles})` : announcedName(username);
 }
 
 // The log's lines for the cards played since the last snapshot, who played
@@ -215,7 +215,7 @@ function withRole(state: PublicWizardGameState, username: string): string {
 export function playLogLines(previous: PublicWizardGameState, next: PublicWizardGameState): { text: string; trick?: boolean }[] {
   const lines: { text: string; trick?: boolean }[] = [];
   const playedCards = next.currentTrick.playedCards;
-  const roleOf = (username: string) => next.players.find((player) => player.username === username)?.role ?? undefined;
+  const roleOf = rolesOfPlayers(next.players);
   const from = isSameTrick(previous, next) ? previous.currentTrick.playedCards.length : 0;
 
   playedCards.slice(from).forEach((played, offset) => {
@@ -251,7 +251,7 @@ export function roleUses(
   local: string,
 ): { by: string; hitYou: boolean }[] {
   const playedCards = next.currentTrick.playedCards;
-  const roleOf = (username: string) => next.players.find((player) => player.username === username)?.role ?? undefined;
+  const roleOf = rolesOfPlayers(next.players);
   const from = isSameTrick(previous, next) ? previous.currentTrick.playedCards.length : 0;
   const uses = playedCards
     .slice(from)
@@ -320,7 +320,7 @@ export function roleMessages(
       // The King's tax, in a market's words, and the Priest let off.
       const trades = marketTrades(action, local);
       const priest = next.currentTrick.playedCards.some((played, index) =>
-        roleOfIn(next, played.playedBy ?? played.username) === "priest" && rolePowerOn(next.currentTrick.playedCards, index, next.trumpSuit, (name) => roleOfIn(next, name)));
+        roleOfIn(next, played.playedBy ?? played.username) === "priest" && rolePowerOn(next.currentTrick.playedCards, index, next.trumpSuit, rolesOfPlayers(next.players)));
       const text = (action.by === local ? t("ann.yourTax", { trades }) : t("ann.tax", { ...values, trades }))
         + (priest ? ` ${t("ann.taxPriest")}` : "");
       return { text, username: action.by, atTrickEnd: true, ...about };

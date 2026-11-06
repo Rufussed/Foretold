@@ -1,7 +1,7 @@
 import type { Card, Suit } from "../../../models/card.js";
 import { isWizard } from "../../../models/card.js";
 import type { GamePlayer, TrickState } from "../../../models/wizardGame.js";
-import type { RoleId } from "../roles.js";
+import { masterRoleOf, type RoleId } from "../roles.js";
 
 // The colour Wizards: roles with no card of their own, one for each colour
 // whose Wizard they are. Their powers:
@@ -34,7 +34,7 @@ export const isOwnWizardCard = (role: ColourWizardId, card: Card): boolean =>
 // The bonus the trick's winner earns: a colour Wizard who won it with the
 // Wizard of their colour, whoever played it first.
 export function colourWizardBonus(trick: TrickState, winner: GamePlayer): number {
-  const role = winner.role;
+  const role = masterRoleOf(winner);
   if (!isColourWizard(role)) return 0;
   const winning = trick.playedCards.find((played) => played.username === winner.username);
   return winning && isOwnWizardCard(role, winning.card) ? COLOUR_WIZARDS[role].bonus : 0;

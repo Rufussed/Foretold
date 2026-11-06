@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { rolesOfPlayers } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
 import type { Card } from "../../../../backend/src/game/wizard/models/card";
 import { canBet } from "../../../../backend/src/game/wizard/modes/roles/gambler";
 import { canLower } from "../../../../backend/src/game/wizard/modes/roles/prophet";
@@ -42,7 +43,7 @@ function choiceFor(game: GameConnection, card: Card): "bet" | "lower" | null {
   const player = localPlayer(game);
   if (!state || !player) return null;
   const local = game.localUsername;
-  const roleOf = (username: string) => state.players.find((player) => player.username === username)?.role ?? undefined;
+  const roleOf = rolesOfPlayers(state.players);
   const trick = [...state.currentTrick.playedCards, { username: local, playedBy: local, card }];
   if (canBet(trick, trick.length - 1, state.trumpSuit, roleOf)) return "bet";
   return canLower(trick, trick.length - 1, state.trumpSuit, roleOf, player) ? "lower" : null;

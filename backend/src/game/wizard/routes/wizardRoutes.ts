@@ -14,11 +14,11 @@ import { fullRoundCount } from "../models/rounds.js";
 import { clampPace } from "../gameplayPace.js";
 import { DEFAULT_GAME_OPTIONS, defaultGameOptions, normalizeGameOptions, type WizardGameOptions } from "../gameOptions.js";
 import { GAME_MODES, type GameMode } from "../modes/modes.js";
-import { ROLES, type RoleId } from "../modes/roles/roles.js";
+import { ROLES, roleKind, type RoleId } from "../modes/roles/roles.js";
 import { assignRoles } from "../modes/roles/assignRoles.js";
 import { assignSealLevels } from "../modes/roles/roleProgress.js";
 import { openRolesForUsername } from "../modes/roles/roleAccess.js";
-import { DEFAULT_NPC_ROLES, NPC_ROLES, normalizeNpcRoles, type NpcRoles } from "../modes/roles/npcRoles.js";
+import { NO_MASTER_ERROR, isPairRoom, pairSeatRefusal, playersWithoutMaster } from "../modes/roles/rolePairs.js";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, normalizeBotLevel, type BotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
 import { isTurnTimeoutMs } from "../turnTimeout.js";
@@ -189,8 +189,6 @@ export default async function wizardRoutes(
       pace: number;
       options: WizardGameOptions;
       botLevel: BotLevel;
-      // Roles mode only: which roles the NPCs draw (modes/roles/npcRoles.ts).
-      npcRoles: NpcRoles;
       // Whether the room's creator is counted as having made a game.
       countCreated: boolean;
     },
@@ -233,11 +231,13 @@ export default async function wizardRoutes(
     if (game.options?.mode === "roles") {
       assignRoles(
         game.players,
-        new Map(room.players.map((player) => [player.username, player.role])),
-        Math.random,
-        setup.npcRoles,
-        // Players who chose none draw from their own open roles (roleLocks.ts).
-        openRolesForUsername,
+        new Map(room.players.map((player) => [player.username, { role: player.role, masterRole: player.masterRole }])),
+        {
+          // A basic + master game: everyone gets one of each (rolePairs.ts).
+          pair: isPairRoom(normalizeGameOptions(game.options)),
+          // Players who chose none draw from their own open roles (roleLocks.ts).
+          openFor: openRolesForUsername,
+        },
       );
       // Each player's seal level, for the table (modes/roles/roleProgress.ts).
       assignSealLevels(game.players);
@@ -309,7 +309,6 @@ export default async function wizardRoutes(
           pace: QUICK_PLAY_PACE,
           options: DEFAULT_GAME_OPTIONS,
           botLevel: DEFAULT_BOT_LEVEL,
-          npcRoles: DEFAULT_NPC_ROLES,
           countCreated: false,
         });
 
@@ -717,6 +716,12 @@ export default async function wizardRoutes(
       }
     }
 
+    // Roles mode: a basic + master room needs a master role open (modes/roles/rolePairs.ts).
+    const noMaster = room.players.some((player) => player.username === username) ? null : pairSeatRefusal(room, username);
+    if (noMaster) {
+      return reply.status(403).send({ error: noMaster });
+    }
+
     const result = wizardLobbyManager.joinRoom(body.roomId, username);
 
     // Taking a seat ends a Quick Play search.
@@ -844,7 +849,9 @@ export default async function wizardRoutes(
   });
 
   // A player's role in a Roles room, chosen while the room waits; null takes
-  // it back. Everyone waiting sees it with the room.
+  // it back (kind says which: the basic one when left out). Everyone waiting
+  // sees it with the room. A master role only in a basic + master room
+  // (modes/roles/rolePairs.ts).
   server.post(
     "/lobby/:roomId/role",
     {
@@ -870,6 +877,10 @@ export default async function wizardRoutes(
                 { type: "string", enum: ROLES.map((role) => role.id) },
                 { type: "null" }
               ]
+            },
+            kind: {
+              type: "string",
+              enum: ["basic", "master"]
             }
           }
         }
@@ -883,7 +894,8 @@ export default async function wizardRoutes(
     }
 
     const roomId = Number((request.params as { roomId: string }).roomId);
-    const { role } = request.body as { role: RoleId | null };
+    const { role, kind: askedKind } = request.body as { role: RoleId | null; kind?: "basic" | "master" };
+    const kind = role ? roleKind(role) : askedKind ?? "basic";
     const username = getAuthenticatedUsername(request);
     const room = wizardLobbyManager.getRoomById(roomId);
 
@@ -912,7 +924,12 @@ export default async function wizardRoutes(
       return reply.status(403).send({ error: "This role is still locked for you" });
     }
 
-    wizardLobbyManager.chooseRole(roomId, username, role);
+    if (kind === "master" && !isPairRoom(room.options)) {
+      return reply.status(409).send({ error: "Master roles are played only in basic + master rooms" });
+    }
+
+    if (kind === "master") wizardLobbyManager.chooseMasterRole(roomId, username, role);
+    else wizardLobbyManager.chooseRole(roomId, username, role);
 
     return reply.send(wizardLobbyManager.getRoomById(roomId));
   });
@@ -960,6 +977,10 @@ export default async function wizardRoutes(
             },
             // Whether the last prediction may not add up to the tricks.
             lastPredictionLimited: {
+              type: "boolean"
+            },
+            // Roles mode only: one basic + one master role each (modes/roles/rolePairs.ts).
+            rolePair: {
               type: "boolean"
             },
             // The turn timeout (see turnTimeout.ts); null for no limit. Left
@@ -1288,6 +1309,12 @@ export default async function wizardRoutes(
         return reply.status(409).send({ error: "Room is full" });
       }
 
+      // Roles mode: guests have no master role, which a basic + master room
+      // needs (modes/roles/rolePairs.ts).
+      if (isPairRoom(room.options)) {
+        return reply.status(403).send({ error: NO_MASTER_ERROR });
+      }
+
       const username = `Guest-${randomUUID().slice(0, 8)}-${name}`;
       const guestId = Number(
         db
@@ -1352,6 +1379,16 @@ export default async function wizardRoutes(
         return reply.status(404).send({
           error: "This invitation is no longer valid",
         });
+      }
+
+      // Roles mode: a basic + master room needs a master role open (modes/roles/rolePairs.ts).
+      const invited = wizardLobbyManager.getRoomById(roomId);
+      const noMaster =
+        invited && !invited.players.some((player) => player.username === tokenUser.username)
+          ? pairSeatRefusal(invited, tokenUser.username)
+          : null;
+      if (noMaster) {
+        return reply.status(403).send({ error: noMaster });
       }
 
       const joined = wizardLobbyManager.joinRoom(roomId, tokenUser.username);
@@ -1458,10 +1495,10 @@ export default async function wizardRoutes(
               type: "string",
               enum: BOT_LEVELS.map(({ level }) => level)
             },
-            // Roles mode only (modes/roles/npcRoles.ts).
+            // No longer used: NPCs draw by the room's role slots
+            // (modes/roles/rolePairs.ts). Still accepted from older pages.
             npcRoles: {
-              type: "string",
-              enum: [...NPC_ROLES]
+              type: "string"
             }
           }
         }
@@ -1539,6 +1576,15 @@ export default async function wizardRoutes(
       });
     }
 
+    // Roles mode: in a basic + master room, everyone seated needs a master
+    // role open (modes/roles/rolePairs.ts).
+    const withoutMaster = playersWithoutMaster(room);
+    if (withoutMaster.length > 0) {
+      return reply.status(409).send({
+        error: `Basic + master: ${withoutMaster.join(", ")} has no master role open yet.`,
+      });
+    }
+
     try {
       const game = startGame(room, {
         botCount,
@@ -1555,9 +1601,10 @@ export default async function wizardRoutes(
               ? body.missedTurnsToQuit
               : room.options.missedTurnsToQuit,
           lastPredictionLimited: body.lastPredictionLimited ?? room.options.lastPredictionLimited,
+          // Roles mode only: saved with the room (modes/roles/rolePairs.ts).
+          rolePair: room.options.rolePair,
         }),
         botLevel: normalizeBotLevel(body.botLevel),
-        npcRoles: normalizeNpcRoles(body.npcRoles),
         countCreated: true,
       });
 

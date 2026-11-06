@@ -408,6 +408,19 @@ const MIGRATIONS: Migration[] = [
       `);
     },
   },
+  {
+    version: 20,
+    description: "roles: the master role each player chose in a basic + master room",
+    up(db) {
+      // Empty until the player picks one (modes/roles/rolePairs.ts).
+      if (!hasColumn(db, "room_players", "master_role")) {
+        db.exec(`
+          ALTER TABLE room_players
+          ADD COLUMN master_role TEXT
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

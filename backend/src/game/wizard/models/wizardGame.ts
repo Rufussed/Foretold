@@ -11,8 +11,12 @@ import type { TurnTimeoutMs } from "../turnTimeout.js";
 export interface RoomPlayer {
   username: string;
   avatar: AvatarId | null;
-  // The role chosen for a Roles game; null until chosen.
+  // The role chosen for a Roles game; null until chosen. In a basic +
+  // master room, the basic one.
   role: RoleId | null;
+  // In a basic + master room, the master role chosen; null until chosen
+  // (modes/roles/rolePairs.ts).
+  masterRole: RoleId | null;
   // Sent for a running game only: the player quit it (playerQuit.ts).
   quit?: boolean;
 }
@@ -49,8 +53,12 @@ export interface GamePlayer {
   // saved before personalities existed; both are played as the Apprentice.
   botPersonality?: BotPersonality;
   // In a Roles game, the role played all game (modes/roles/). Missing in
-  // Classic games and in games saved before roles existed.
+  // Classic games and in games saved before roles existed. In a basic +
+  // master game, the basic one; games from before held a master role here.
   role?: RoleId;
+  // In a basic + master game, the master role played alongside it
+  // (modes/roles/rolePairs.ts). Read it through masterRoleOf (roles.ts).
+  masterRole?: RoleId;
   // This round's points from roles' powers so far, by role; already added to
   // score, and moved into the round's RoundScore when it ends.
   roleBonuses?: Partial<Record<RoleId, number>>;
@@ -58,6 +66,8 @@ export interface GamePlayer {
   // for the Profile's seals (modes/roles/powerSeal.ts). Missing until the
   // first use.
   powerUses?: number;
+  // The same for their master role, in a basic + master game.
+  masterPowerUses?: number;
   // Set when the player left for good, by choice or after missing three turns
   // in a row: the server plays their seat from then on (playerQuit.ts).
   quit?: boolean;
@@ -77,6 +87,8 @@ export interface GamePlayer {
   // began, shown on the table (modes/roles/roleProgress.ts). Missing for
   // bots, guests and older games, who show wax.
   sealLevel?: SealLevelId;
+  // The same for their master role, in a basic + master game.
+  masterSealLevel?: SealLevelId;
   // Turns in a row the timer ran out on; a move of their own resets it.
   missedTurns?: number;
   // Tricks won this game with a card of each colour: no Wizard or Jester, and
@@ -179,8 +191,11 @@ export interface PublicGamePlayer {
   roundScores: RoundScore[];
   // The player has left; the server plays the seat (playerQuit.ts).
   quit: boolean;
-  // Their role in a Roles game, known to all; null in Classic.
+  // Their role in a Roles game, known to all; null in Classic. With a
+  // master role too (basic + master), the basic one.
   role: RoleId | null;
+  // Their master role in a basic + master game; null otherwise.
+  masterRole: RoleId | null;
   // The Farmers' seeds they hold, by Farmer; empty in Classic.
   seeds: Record<string, number>;
   // The Shepherds' sheep they hold, by Shepherd; empty in Classic.
@@ -191,6 +206,8 @@ export interface PublicGamePlayer {
   jokerTricks: number;
   // Their role seal's level (modes/roles/sealLevels.ts); null in Classic.
   sealLevel: SealLevelId | null;
+  // Their master role's seal level; null without one.
+  masterSealLevel: SealLevelId | null;
   // A Smith's pieces of armour; 0 for everyone else.
   armor: number;
 }

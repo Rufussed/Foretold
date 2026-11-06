@@ -3,7 +3,7 @@ import type { Card } from "../models/card.js";
 import type { PlayedCard, WizardGameState } from "../models/wizardGame.js";
 import { powerOn } from "../modes/roles/rolePlay.js";
 import { armorOf, playPower, rolesOf } from "../modes/roles/rolePowers.js";
-import { roleCard, type RoleId } from "../modes/roles/roles.js";
+import { masterRoleOf, roleCard, type RoleId } from "../modes/roles/roles.js";
 import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 import { trades } from "../modes/roles/merchant.js";
 import { canBet } from "../modes/roles/gambler.js";
@@ -50,6 +50,11 @@ const isRoles = (game: WizardGameState): boolean =>
 // The role of the bot whose turn it is, in a Roles game.
 export const roleOfBot = (game: WizardGameState): RoleId | undefined =>
   isRoles(game) ? currentPlayer(game).role : undefined;
+
+// Its master role: alongside the basic one in a basic + master game, or the
+// one role of an older one-role game (roles.ts masterRoleOf).
+export const masterOfBot = (game: WizardGameState): RoleId | undefined =>
+  isRoles(game) ? masterRoleOf(currentPlayer(game)) : undefined;
 
 // Whether this card is the bot's role card, in whatever suit.
 export function isRoleCard(game: WizardGameState, card: Card): boolean {

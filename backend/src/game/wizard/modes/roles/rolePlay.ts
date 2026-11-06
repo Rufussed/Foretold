@@ -1,13 +1,34 @@
 import { isJester, isWizard, type Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
 import { WizardRules } from "../../services/wizardRules.js";
-import { roleCard, type RoleId } from "./roles.js";
+import { masterRoleOf, roleCard, type RoleId } from "./roles.js";
 import { trickRolesOf } from "./master/trickRoles.js";
 
 const rules = new WizardRules();
 
-// Who holds which role in the game, by username.
-export type RoleOf = (username: string) => RoleId | undefined;
+// Who holds which role in the game, by username: the role whose card powers
+// work (the basic one). masterOf gives the master role, in a basic + master
+// game; without it, the one role is asked for both (masterOfIn).
+export type RoleOf = ((username: string) => RoleId | undefined) & {
+  masterOf?: (username: string) => RoleId | undefined;
+};
+
+// Who holds which role among these players: the basic one, and the master
+// one apart (roles.ts masterRoleOf). For the server and the table alike.
+export const rolesOfPlayers = (
+  players: readonly { username: string; role?: RoleId | null; masterRole?: RoleId | null }[],
+): RoleOf => {
+  const find = (username: string) => players.find((player) => player.username === username);
+  return Object.assign((username: string) => find(username)?.role ?? undefined, {
+    masterOf: (username: string) => {
+      const player = find(username);
+      return player ? masterRoleOf(player) : undefined;
+    },
+  });
+};
+
+// Who holds which master role, for the master powers.
+export const masterOfIn = (roleOf: RoleOf): ((username: string) => RoleId | undefined) => roleOf.masterOf ?? roleOf;
 
 // Who first played a card, whoever owns it after a swap. Games saved before
 // this was kept read the owner.

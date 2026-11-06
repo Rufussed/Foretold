@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { rolesOfPlayers } from "../../../backend/src/game/wizard/modes/roles/rolePlay";
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import { powerSealAt } from "../../../backend/src/game/wizard/modes/roles/powerSeal";
 import type { RoleId } from "../../../backend/src/game/wizard/modes/roles/roles";
@@ -41,9 +42,7 @@ export const ROLE_SEALS = {
 // The role whose seal goes on the card at this place in the trick, if any
 // (the backend's powerSeal.ts, which also counts it for the Profile).
 function sealAt(state: PublicWizardGameState, index: number): RoleId | null {
-  const roleOf = (username: string) =>
-    state.players.find((player) => player.username === username)?.role ?? undefined;
-  return powerSealAt(state.currentTrick.playedCards, index, state.trumpSuit, roleOf, state.currentTrick.winnerUsername);
+  return powerSealAt(state.currentTrick.playedCards, index, state.trumpSuit, rolesOfPlayers(state.players), state.currentTrick.winnerUsername);
 }
 
 // A card's badge: one at a time, the most telling one.
@@ -83,7 +82,10 @@ function badgesFor(state: PublicWizardGameState): Map<string, Badge> {
   playedCards.forEach((played, index) => {
     const role = sealAt(state, index);
     const player = state.players.find((entry) => entry.username === (played.playedBy ?? played.username));
-    if (role) badges.set(cardKey(played.card), { kind: "seal", role, url: levelSealUrl(role, player?.sealLevel) });
+    // The level of the role whose seal it is: the master role's own in a
+    // basic + master game.
+    const level = role && player?.masterRole === role ? player.masterSealLevel : player?.sealLevel;
+    if (role) badges.set(cardKey(played.card), { kind: "seal", role, url: levelSealUrl(role, level) });
   });
 
   for (const [username, points] of pointsMoved(state)) {

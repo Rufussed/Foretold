@@ -4,7 +4,9 @@
 // a baseline. Not a test: no pass or fail, only numbers to compare after a
 // rule change. Run from backend/: npm run sim -- 10000 [adept|apprentice|mixed]
 // Mixed gives each seat a random personality every game, and splits each
-// role's line by it.
+// role's line by it. Add "pairs" for basic + master games: every seat a
+// basic and a master role, drawn each game; the lines are then each pair,
+// each basic role and each master role.
 
 import { normalizeBotLevel, type BotLevel } from "../game/wizard/botLevels.js";
 import { assignBotPersonalities } from "../game/wizard/bots/index.js";
@@ -16,7 +18,8 @@ import { ROLES, type RoleId } from "../game/wizard/modes/roles/roles.js";
 import { WizardBotService } from "../game/wizard/services/wizardBotService.js";
 import { WizardGameService } from "../game/wizard/services/wizardGameService.js";
 
-type Seat = RoleId | "classic";
+// A role, Classic, or a basic + master pair as "duke+joker".
+type Seat = RoleId | "classic" | `${RoleId}+${RoleId}`;
 
 interface Stat {
   games: number;
@@ -49,7 +52,10 @@ function playGame(mode: GameMode, seats: Seat[], level: BotLevel): GamePlayer[] 
   assignBotPersonalities(game.players, level);
   game.players.forEach((player, i) => {
     const seat = seats[i];
-    if (mode === "roles" && seat && seat !== "classic") player.role = seat;
+    if (mode !== "roles" || !seat || seat === "classic") return;
+    const [role, master] = seat.split("+") as [RoleId, RoleId | undefined];
+    player.role = role;
+    if (master) player.masterRole = master;
   });
 
   while (game.status !== "finished") {
@@ -78,11 +84,11 @@ function playGame(mode: GameMode, seats: Seat[], level: BotLevel): GamePlayer[] 
 const TABLE_SEATS = 6;
 
 // Each seat's results over many games; a shared win counts as a part.
-function run(mode: GameMode, seats: Seat[], games: number, level: BotLevel): Map<string, Stat> {
+function run(mode: GameMode, seats: Seat[] | (() => Seat[]), games: number, level: BotLevel): Map<string, Stat> {
   const stats = new Map<string, Stat>();
 
   for (let g = 0; g < games; g++) {
-    const order = shuffled(seats).slice(0, TABLE_SEATS);
+    const order = typeof seats === "function" ? seats() : shuffled(seats).slice(0, TABLE_SEATS);
     const players = playGame(mode, order, level);
     const best = Math.max(...players.map((player) => player.score));
     const winners = players.filter((player) => player.score === best).length;
@@ -131,6 +137,45 @@ const games = Number(process.argv[2] ?? 1000);
 const level = normalizeBotLevel(process.argv[3] ?? "adept");
 const roles = ROLES.map((role) => role.id);
 const byWins = (stats: Map<string, Stat>) => [...stats].sort((a, b) => b[1].wins / b[1].games - a[1].wins / a[1].games);
+
+// Basic + master: each seat's pair drawn every game, no role twice.
+if (process.argv[4] === "pairs") {
+  const basics = ROLES.filter((role) => role.kind === "basic").map((role) => role.id);
+  const masters = ROLES.filter((role) => role.kind === "master").map((role) => role.id);
+  const seats = Math.min(TABLE_SEATS, masters.length);
+  const draw = (): Seat[] => {
+    const b = shuffled(basics);
+    const m = shuffled(masters);
+    return Array.from({ length: seats }, (_, i) => `${b[i]!}+${m[i]!}` as const);
+  };
+  const stats = run("roles", draw, games, level);
+  // The same results added up by one half of the pair.
+  const byHalf = (half: 0 | 1) => {
+    const sums = new Map<string, Stat>();
+    for (const [seat, stat] of stats) {
+      const key = seat.split("+")[half]!;
+      const sum = sums.get(key) ?? { games: 0, wins: 0, scores: [], rounds: 0, hits: 0, tricks: 0, gained: 0, lost: 0 };
+      sums.set(key, {
+        games: sum.games + stat.games, wins: sum.wins + stat.wins, scores: [...sum.scores, ...stat.scores],
+        rounds: sum.rounds + stat.rounds, hits: sum.hits + stat.hits, tricks: sum.tricks + stat.tricks,
+        gained: sum.gained + stat.gained, lost: sum.lost + stat.lost,
+      });
+    }
+    return sums;
+  };
+  const header = `${"role".padEnd(19)} | win rate | avg score | median | bid hit | tricks/game | role gain | role loss`;
+  console.log(`${games} basic + master games (${level}), ${seats} seats; fair win rate ${percent(1 / seats)}\n`);
+  console.log(`By master role\n${header}`);
+  for (const [seat, stat] of byWins(byHalf(1))) console.log(row(seat, stat));
+  console.log(`\nBy basic role\n${header}`);
+  for (const [seat, stat] of byWins(byHalf(0))) console.log(row(seat, stat));
+  const pairs = byWins(stats).filter(([, stat]) => stat.games >= games / 40);
+  console.log(`\nStrongest pairs\n${header}`);
+  for (const [seat, stat] of pairs.slice(0, 10)) console.log(row(seat, stat));
+  console.log(`\nWeakest pairs\n${header}`);
+  for (const [seat, stat] of pairs.slice(-10)) console.log(row(seat, stat));
+  process.exit(0);
+}
 
 const seated = Math.min(roles.length, TABLE_SEATS);
 console.log(`${games} games per mode, ${seated} of ${roles.length} roles per game (${level}), a full game each; fair win rate ${percent(1 / seated)}\n`);

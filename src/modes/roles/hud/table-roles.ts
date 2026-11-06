@@ -1,5 +1,5 @@
 import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/models/wizardGame";
-import { roleCard } from "../../../../backend/src/game/wizard/modes/roles/roles";
+import { roleCard, rolesHeld } from "../../../../backend/src/game/wizard/modes/roles/roles";
 import { t } from "../../../i18n";
 import { displayName } from "../../../utils/display-name";
 import { escapeHtml } from "../../../utils/escape-html";
@@ -42,11 +42,11 @@ export function createTableRoles(
   const players = local === -1 ? state.players : [...state.players.slice(local), ...state.players.slice(0, local)];
 
   panel.innerHTML = `<ol class="table-roles-list">${players
-    .filter((player) => player.role)
-    .map((player) => {
-      const role = player.role!;
+    // One line per role held: two in a basic + master game.
+    .flatMap((player) => rolesHeld(player).map((role) => ({ player, role })))
+    .map(({ player, role }) => {
       const card = roleCard(role);
-      const seal = levelSealUrl(role, player.sealLevel);
+      const seal = levelSealUrl(role, role === player.masterRole ? player.masterSealLevel : player.sealLevel);
       const own = player.username === localUsername;
       return `
         <li class="table-roles-item${own ? " is-own" : ""}">

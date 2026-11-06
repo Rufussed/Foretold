@@ -1,6 +1,7 @@
 import type { Card } from "../../../models/card.js";
 import { SUITS } from "../../../models/card.js";
 import type { GamePlayer, WizardGameState } from "../../../models/wizardGame.js";
+import { masterRoleOf } from "../roles.js";
 
 // Roles mode only. The Watcher: a free master role with no card. Before each
 // round is dealt, 2 of the 4 Wizards and 2 of the 4 Jesters are picked at
@@ -43,6 +44,6 @@ export function watcherSight(
   player: GamePlayer,
   handVisible: boolean,
 ): number | undefined {
-  if (viewer.role !== "watcher" || handVisible) return undefined;
+  if (masterRoleOf(viewer) !== "watcher" || handVisible) return undefined;
   return watchedCount(player.hand, game.watchedCards ?? []);
 }
