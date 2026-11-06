@@ -18,7 +18,6 @@ import green from "../../assets/role-seals/seal-colour-green.png";
 import red from "../../assets/role-seals/seal-colour-red.png";
 import yellow from "../../assets/role-seals/seal-colour-yellow.png";
 import joker from "../../assets/role-seals/seal-master-joker.png";
-// A stand-in until Carlos draws the Watcher's own: the Prophet's glass ball, in purple.
 import watcher from "../../assets/role-seals/seal-master-watcher.png";
 
 // Roles mode only. Each role's wax seal picture, apart from the 3D table code
