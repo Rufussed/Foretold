@@ -1,5 +1,5 @@
 import { displayName } from "../../utils/display-name";
-import { rolesHeld } from "../../../backend/src/game/wizard/modes/roles/roles";
+import { rolesName } from "../../modes/roles/role-names";
 import { seedCount } from "../../../backend/src/game/wizard/modes/roles/farmer";
 import { jokerCarried, jokerMarks } from "../../modes/roles/hud/joker-marks";
 import { sheepCount } from "../../../backend/src/game/wizard/modes/roles/shepherd";
@@ -226,7 +226,7 @@ export function createPlayerList(
               ? [spans[0]!, spans[1]!]
               : [document.createElement("span"), document.createElement("span")];
             // Roles mode: both roles in a basic + master game, "Duke · Joker".
-            role.textContent = `${rolesHeld(player).map((held) => t(`role.${held}`)).join(" · ")}:${marks}`;
+            role.textContent = `${rolesName(player)}:${marks}`;
             name.textContent = shortName(player.username);
             if (spans.length !== 2) caption.replaceChildren(role, name);
           } else {

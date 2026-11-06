@@ -4,7 +4,6 @@ import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/s
 import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
 import { t } from "../../i18n";
 import { isSabotageGame } from "../../modes/sabotage/sabotage-game";
-import { isRolesDeck } from "../card-decks";
 import { choiceMessages } from "../../modes/roles/hud/choice-announcements";
 import {
   masterMessages,
@@ -53,9 +52,8 @@ export const announcedName = (username: string): string =>
 
 const nameOf = (username: string, local: string) => (username === local ? t("ann.you") : announcedName(username));
 
-// A Sabotage game names its suits as elements (modes/sabotage/hud/).
-// Elements, not colours; Roles mode (Carlos's) keeps the colours.
-export const suitName = (suit: Suit): string => (isRolesDeck() ? t(`roles.suit.${suit}`) : elementName(suit));
+// Every game names its suits as elements (modes/sabotage/hud/), Roleplay too.
+export const suitName = (suit: Suit): string => elementName(suit);
 
 export function cardName(card: Card): string {
   if (isSabotageGame()) return sabotageCardName(card);

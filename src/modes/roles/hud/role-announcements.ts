@@ -1,5 +1,6 @@
 import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/models/wizardGame";
-import { rolesHeld, type RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
+import { rolesName } from "../role-names";
+import type { RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
 import { playerOf, powerOn, rolePowerOn, rolesOfPlayers, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
 import { trickRolesIn } from "../../../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { WizardRules } from "../../../../backend/src/game/wizard/services/wizardRules";
@@ -205,7 +206,7 @@ const roleOfIn = (state: PublicWizardGameState, username: string) =>
 // A player as the log names them in a Roles game: "Lúthien (Farmer)".
 function withRole(state: PublicWizardGameState, username: string): string {
   const player = state.players.find((entry) => entry.username === username);
-  const roles = player ? rolesHeld(player).map((role) => t(`role.${role}`)).join(" · ") : "";
+  const roles = player ? rolesName(player) : "";
   return roles ? `${announcedName(username)} (${roles})` : announcedName(username);
 }
 

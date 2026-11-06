@@ -1,4 +1,5 @@
 import { API_BASE } from "../services/api";
+import { rolesName } from "../modes/roles/role-names";
 import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL } from "../../backend/src/game/wizard/botLevels";
 import { t } from "../i18n";
@@ -27,7 +28,7 @@ import {
 } from "../services/auth";
 import { serverError, type ServerError } from "../i18n/server-error";
 import { gameModeBadge, gameModeName } from "../utils/game-mode";
-import { isRoleId, roleKind, rolesHeld, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
+import { isRoleId, roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
 import { roleSlotsChoice } from "../modes/roles/role-slots-choice";
 import { loadRoleAccess, lockRoleOptions } from "../modes/roles/role-locks";
@@ -823,7 +824,7 @@ export async function renderRoomPage(
     const isRoles = mode === "roles";
     const wizards = (room?.players ?? []).map((player) => {
       const name = player.username === user.username ? greeting : displayName(player.username);
-      const roles = rolesHeld(player).map((role) => t(`role.${role}`)).join(" · ");
+      const roles = rolesName(player);
       return isRoles && roles ? `${name} (${roles})` : name;
     });
     const rows: StartSummaryRow[] = [

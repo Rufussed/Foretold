@@ -1,8 +1,7 @@
 import * as THREE from "three";
-import { rolesHeld } from "../../../backend/src/game/wizard/modes/roles/roles";
+import { rolesName } from "./role-names";
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { SeatId } from "../../visualizer/player-characters";
-import { t } from "../../i18n";
 import { roleUses } from "./hud/role-announcements";
 
 // In a Roles game, each other player's role floats above their head as a word
@@ -184,7 +183,7 @@ export function createRoleLabels(options: RoleLabelOptions): RoleLabels {
 
         wanted.add(player.username);
         // Both roles in a basic + master game: "Duke · Joker".
-        const label = labelFor(player.username, rolesHeld(player).map((role) => t(`role.${role}`)).join(" · "));
+        const label = labelFor(player.username, rolesName(player));
 
         // World sizes, brought into the parent's own units.
         options.parent.getWorldScale(parentScale);

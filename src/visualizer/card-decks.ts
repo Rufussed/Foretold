@@ -128,7 +128,5 @@ export function setCardDeckMode(state: Pick<PublicWizardGameState, "options"> | 
   mode = isGameMode(wanted) ? wanted : "classic";
 }
 
-// Roles mode keeps the colour names (Carlos's; modes/roles/).
-export const isRolesDeck = (): boolean => mode === "roles";
 
 export const activeDeck = (): CardDeck => DECKS[mode];

@@ -12,6 +12,7 @@
     "sim": "tsx src/sim/rolesSim.ts",
     "users": "tsx src/db/listUsers.ts",
     "verify-user": "tsx src/db/verifyUser.ts",
+    "test-user": "tsx src/db/testUser.ts",
     "test": "vitest"
   },
   "engines": {
