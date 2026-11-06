@@ -17,6 +17,7 @@ import { GAME_MODES, type GameMode } from "../modes/modes.js";
 import { ROLES, type RoleId } from "../modes/roles/roles.js";
 import { assignRoles } from "../modes/roles/assignRoles.js";
 import { assignSealLevels } from "../modes/roles/roleProgress.js";
+import { openRolesForUsername } from "../modes/roles/roleAccess.js";
 import { DEFAULT_NPC_ROLES, NPC_ROLES, normalizeNpcRoles, type NpcRoles } from "../modes/roles/npcRoles.js";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL, normalizeBotLevel, type BotLevel } from "../botLevels.js";
 import { assignBotPersonalities } from "../bots/index.js";
@@ -235,6 +236,8 @@ export default async function wizardRoutes(
         new Map(room.players.map((player) => [player.username, player.role])),
         Math.random,
         setup.npcRoles,
+        // Players who chose none draw from their own open roles (roleLocks.ts).
+        openRolesForUsername,
       );
       // Each player's seal level, for the table (modes/roles/roleProgress.ts).
       assignSealLevels(game.players);
@@ -902,6 +905,11 @@ export default async function wizardRoutes(
       return reply.status(409).send({
         error: "Roles can only be chosen before the game starts",
       });
+    }
+
+    // Roles mode: a role still locked for this player (modes/roles/roleLocks.ts).
+    if (role && !openRolesForUsername(username).includes(role)) {
+      return reply.status(403).send({ error: "This role is still locked for you" });
     }
 
     wizardLobbyManager.chooseRole(roomId, username, role);

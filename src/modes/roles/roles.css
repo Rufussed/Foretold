@@ -86,8 +86,7 @@
   text-align: center;
 }
 
-/* The seal: the one earned; before the first, a blank one with the wood
-   printing over it from the bottom up to its fill. */
+/* The seal: the level earned, whole, until the next one is reached. */
 .seal-art {
   position: relative;
   width: 50px;
@@ -102,41 +101,23 @@
   object-fit: contain;
 }
 
-.seal-fill {
-  clip-path: inset(calc(100% - var(--fill)) 0 0 0);
+/* A role still locked (roleLocks.ts), on your own Profile: a dark seal
+   with a lock over it. */
+.seal-locked .seal-base {
+  filter: grayscale(1) brightness(0.3);
 }
 
-/* A fine shining line where the first seal's printing has reached, only
-   within the seal's own shape. */
-.seal-edge {
+.seal-locked .seal-name {
+  opacity: 0.5;
+}
+
+.seal-lock {
   position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    transparent calc(var(--fill) - 1px),
-    #fff8dc var(--fill),
-    transparent calc(var(--fill) + 1px)
-  );
-  -webkit-mask: var(--seal) center / contain no-repeat;
-  mask: var(--seal) center / contain no-repeat;
-  animation: seal-shine 2.4s ease-in-out infinite;
-  pointer-events: none;
-}
+  right: 0;
+  bottom: 0;
 
-@keyframes seal-shine {
-  0%,
-  100% {
-    opacity: 0.65;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .seal-edge {
-    animation: none;
-  }
+  font-size: 0.85rem;
+  line-height: 1;
 }
 
 .seal-name {

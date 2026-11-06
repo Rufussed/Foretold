@@ -20,6 +20,8 @@ export interface AdminUser {
   createdAt: string;
   isGuest: boolean;
   roomsCreated: number;
+  // Roles mode: every role open to them (modes/roles/roleAccess.ts).
+  rolesOpen: boolean;
 }
 
 // Who may use the admin page: the usernames in ADMIN_USERNAMES (comma
@@ -79,13 +81,17 @@ export const adminService = {
             SELECT COUNT(*)
             FROM rooms
             WHERE rooms.created_by = users.id
-          ) AS roomsCreated
+          ) AS roomsCreated,
+          -- Roles mode: every role open (modes/roles/roleAccess.ts).
+          EXISTS (
+            SELECT 1 FROM roles_all_open WHERE roles_all_open.user_id = users.id
+          ) AS rolesOpen
         FROM users
         ORDER BY users.created_at DESC
       `)
-      .all() as (Omit<AdminUser, "isGuest"> & { isGuest: number })[];
+      .all() as (Omit<AdminUser, "isGuest" | "rolesOpen"> & { isGuest: number; rolesOpen: number })[];
 
-    return rows.map((row) => ({ ...row, isGuest: row.isGuest === 1 }));
+    return rows.map((row) => ({ ...row, isGuest: row.isGuest === 1, rolesOpen: row.rolesOpen === 1 }));
   },
 
   // The room, its players and its game, including a game held in memory. A

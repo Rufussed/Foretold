@@ -14,7 +14,8 @@ export function randomRole(random: () => number = Math.random, from: readonly Ro
 // At the start of a Roles game, every seat gets its role for the whole
 // game: the one its player chose in the Antechamber, or a random one for
 // bots and for anyone who chose none. Bots draw only the kinds the host
-// chose (npcRoles.ts); players who chose none draw from every role. Roles
+// chose (npcRoles.ts); players who chose none draw from the roles open to
+// them (openFor, roleLocks.ts; every role when left out). Roles
 // drawn at random are never drawn twice in one game and never one a player
 // chose, so no NPC shares a role with an NPC or a player; only once every
 // such role is out can one come round again.
@@ -23,6 +24,7 @@ export function assignRoles(
   chosen: ReadonlyMap<string, RoleId | null>,
   random: () => number = Math.random,
   npcRoles: NpcRoles = DEFAULT_NPC_ROLES,
+  openFor: (username: string) => readonly RoleId[] = () => ROLES.map((role) => role.id),
 ): void {
   const taken = new Set(players.map((player) => chosen.get(player.username)).filter((role) => role != null));
   const drawn = new Set<RoleId>();
@@ -36,7 +38,7 @@ export function assignRoles(
       continue;
     }
 
-    const from = isBotName(player.username) ? forNpcs : all;
+    const from = isBotName(player.username) ? forNpcs : all.filter((id) => openFor(player.username).includes(id));
     let left = from.filter((id) => !taken.has(id) && !drawn.has(id));
     if (left.length === 0) {
       // Every such role is out: they come round again.

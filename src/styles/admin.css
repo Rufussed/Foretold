@@ -80,7 +80,8 @@
   white-space: nowrap;
 }
 
-.admin-delete {
+.admin-delete,
+.admin-roles {
   padding: 5px 12px;
   font-size: 0.72rem;
 }

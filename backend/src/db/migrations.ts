@@ -36,6 +36,14 @@ const ROLE_PROGRESS_TABLE = `
   )
 `;
 
+// Roles mode only: accounts with every role open (modes/roles/roleAccess.ts),
+// the ones made before the locks and those opened by hand in Admin.
+const ROLES_ALL_OPEN_TABLE = `
+  CREATE TABLE IF NOT EXISTS roles_all_open (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE
+  )
+`;
+
 // The links mailed to a player: confirming their address, or setting a new
 // password. Only a hash of each link's secret is kept, so a copy of the
 // database opens no accounts. A link is deleted once used.
@@ -386,6 +394,18 @@ const MIGRATIONS: Migration[] = [
         `);
       }
       db.exec(EMAIL_TOKENS_TABLE);
+    },
+  },
+  {
+    version: 19,
+    description: "roles: role locks, every role open for the accounts made before them",
+    up(db) {
+      // New accounts start with the first basic roles (modes/roles/roleLocks.ts).
+      db.exec(ROLES_ALL_OPEN_TABLE);
+      db.exec(`
+        INSERT OR IGNORE INTO roles_all_open (user_id)
+        SELECT id FROM users WHERE is_guest = 0
+      `);
     },
   },
 ];

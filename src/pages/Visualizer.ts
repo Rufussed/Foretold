@@ -632,6 +632,7 @@ export async function renderVisualizerPage(
           seatOf: (username) => sync.seatOf(username),
           headOf: (seat) => players.headPosition(seat),
           headRadiusOf: (seat) => players.headRadius(seat),
+          acrossSeat: layout.clockwiseSeats[2] ?? null,
           onUse: (username, hitYou) => gameHud?.flashRole(username, hitYou),
           onClear: (username) => gameHud?.clearRole(username),
         });

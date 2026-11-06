@@ -9,14 +9,14 @@ import {
 import { t } from "../../i18n";
 import { API_BASE } from "../../services/api";
 import { openInfoWindow } from "../../components/info-window";
+import { openRoles } from "../../../backend/src/game/wizard/modes/roles/roleLocks";
+import { lockTip, type RoleAccess } from "./role-locks";
 import { levelSealUrl, roleSealUrl } from "./seal-urls";
 
 // Roles mode only. The Profile's Seals box (pages/Profile.ts calls it): every
-// role's seal, in wax to start with. Each game that counts with a role prints
-// its wood seal a little more over the wax, from the bottom up, a fine
-// shining line at its edge. After that the seal earned stays whole until the
-// next level is reached, and then becomes that level's (hovering a seal names
-// the level under way and how far it is). The records come from the server
+// role's seal, in wax to start with. A seal shows the level earned, whole,
+// until the next level is reached, and then becomes that level's (hovering a
+// seal names the level under way and how far it is). The records come from the server
 // (backend modes/roles/roleProgressRoutes.ts), the levels from sealLevels.ts.
 //
 // Dev only, on your own Profile, with the backend run with WIZARD_DEV_TOOLS
@@ -25,6 +25,13 @@ import { levelSealUrl, roleSealUrl } from "./seal-urls";
 // Ctrl+Shift+click to wipe its record.
 
 type Records = Map<RoleId, RoleRecord>;
+
+// What decides the locks besides the seals, on the player's own Profile;
+// null on another's, where nothing shows locked.
+type Access = Pick<RoleAccess, "allOpen" | "colorPoints"> | null;
+
+const openSet = (records: Records, access: Access): Set<RoleId> | null =>
+  access === null ? null : new Set(openRoles([...records.values()], access.allOpen, access.colorPoints));
 
 const progressUrl = (path: string) => `${API_BASE}/roles/progress/${path}`;
 const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("wizardToken") ?? ""}` });
@@ -59,18 +66,13 @@ export function saveSealsOpen(open: boolean): void {
   }
 }
 
-function renderSeal(role: RoleId, records: Records): string {
+function renderSeal(role: RoleId, records: Records, open: Set<RoleId> | null): string {
   const url = roleSealUrl(role);
   if (!url) return "";
   const record = records.get(role) ?? { role, games: 0, wins: 0 };
   const points = sealPoints(record);
-  const { done, next, fill } = sealState(points);
+  const { done, next } = sealState(points);
   const art = (level: SealLevelId) => levelSealUrl(role, level) ?? url;
-  // Wood, the first level earned, prints from the bottom up over the wax
-  // seal every player starts with, a fine shining line at its edge; later
-  // levels replace the seal once reached.
-  const printing = done === SEAL_LEVELS[0].id && next !== null;
-  const percent = `${(fill * 100).toFixed(1)}%`;
   const target = SEAL_LEVELS.find((entry) => entry.id === next)?.at ?? points;
   // Shown on hover, to keep the box small: the level earned, the one under
   // way and how far, and the record. "Merchant: Copper · to Silver 70/90 · …"
@@ -78,14 +80,14 @@ function renderSeal(role: RoleId, records: Records): string {
   const toward = next
     ? ` · ${t("seals.toward", { level: t(`seals.level.${next}`), points: String(points), target: String(target) })}`
     : "";
-  const tip = `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
+  const locked = open !== null && !open.has(role);
+  const tip = locked ? `${t(`role.${role}`)}: ${lockTip(role)}` : `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
 
   return `
-    <div class="seal-tile seal-at-${done ?? "none"}" data-seal-tip="${tip}" data-seal-role="${role}" tabindex="0">
+    <div class="seal-tile seal-at-${done ?? "none"}${locked ? " seal-locked" : ""}" data-seal-tip="${tip}" data-seal-role="${role}" tabindex="0">
       <div class="seal-art">
         <img class="seal-base" src="${done ? art(done) : url}" alt="" />
-        ${printing ? `<img class="seal-fill" src="${art(next)}" alt="" style="--fill: ${percent}" />` : ""}
-        ${printing && fill > 0 ? `<span class="seal-edge" style="--fill: ${percent}; --seal: url(${art(next)})"></span>` : ""}
+        ${locked ? `<span class="seal-lock" aria-label="${t("seals.locked")}">🔒</span>` : ""}
       </div>
       <span class="seal-name">${t(`role.${role}`)}</span>
     </div>
@@ -118,13 +120,13 @@ function renderTabs(shown: RoleKind): string {
   return `<div class="seal-tabs" role="tablist">${KINDS.map(tab).join("")}</div>`;
 }
 
-const renderSeals = (kind: RoleKind, records: Records): string =>
-  rolesOfKind(kind).map((role) => renderSeal(role.id, records)).join("");
+const renderSeals = (kind: RoleKind, records: Records, open: Set<RoleId> | null): string =>
+  rolesOfKind(kind).map((role) => renderSeal(role.id, records, open)).join("");
 
-function renderGroup(kind: RoleKind, shown: RoleKind, records: Records): string {
+function renderGroup(kind: RoleKind, shown: RoleKind, records: Records, open: Set<RoleId> | null): string {
   return `
     <div class="seal-grid" role="tabpanel" data-seal-group="${kind}" ${kind === shown ? "" : "hidden"}>
-      ${renderSeals(kind, records)}
+      ${renderSeals(kind, records, open)}
     </div>
   `;
 }
@@ -138,8 +140,9 @@ const earnedCount = (records: Records): string =>
 const byRole = (records: RoleRecord[]): Records => new Map(records.map((record) => [record.role, record]));
 
 // The box. toggle and body are the Profile's open/close attributes for its
-// header and its body.
-export function renderSealsCard(records: RoleRecord[], toggle: string, body: string): string {
+// header and its body. access: on your own Profile, what besides the seals
+// decides the locks (role-locks.ts); null on another player's.
+export function renderSealsCard(records: RoleRecord[], toggle: string, body: string, access: Access = null): string {
   const shown = loadTab();
   const known = byRole(records);
   return `
@@ -157,7 +160,7 @@ export function renderSealsCard(records: RoleRecord[], toggle: string, body: str
       </div>
       <div class="profile-seals-body" ${body}>
         ${renderTabs(shown)}
-        ${KINDS.map((kind) => renderGroup(kind, shown, known)).join("")}
+        ${KINDS.map((kind) => renderGroup(kind, shown, known, openSet(known, access))).join("")}
       </div>
     </article>
   `;
@@ -167,7 +170,7 @@ export function renderSealsCard(records: RoleRecord[], toggle: string, body: str
 // record in a tip over it while hovered, kept on the page itself so the
 // box's scrolling never cuts it off. own: the player's own Profile, where
 // the dev clicks work.
-export function setupSeals(container: HTMLElement, own: boolean): void {
+export function setupSeals(container: HTMLElement, own: boolean, access: Access = null): void {
   const card = container.querySelector<HTMLElement>(".profile-seals");
   if (!card) return;
   setupTip(container, card);
@@ -182,7 +185,7 @@ export function setupSeals(container: HTMLElement, own: boolean): void {
       saveTab(kind);
     });
   }
-  if (import.meta.env.DEV && own) setupDevClicks(card, groups);
+  if (import.meta.env.DEV && own) setupDevClicks(card, groups, access);
 }
 
 // The window behind the "?": how a seal grows, its steps from sealLevels.ts.
@@ -196,6 +199,7 @@ function openSealsHelp(): void {
         <section class="home-rules-section">
           <p>${t("seals.help.points")}</p>
           <p>${t("seals.help.levels", at)}</p>
+          <p>${t("seals.help.locks")}</p>
           <p>${t("seals.help.table")}</p>
         </section>
       </div>
@@ -204,14 +208,15 @@ function openSealsHelp(): void {
 }
 
 // Shows records again, in place: the seals and the count.
-function showRecords(card: HTMLElement, groups: HTMLElement[], records: RoleRecord[]): void {
+function showRecords(card: HTMLElement, groups: HTMLElement[], records: RoleRecord[], access: Access): void {
   const known = byRole(records);
-  for (const group of groups) group.innerHTML = renderSeals(group.dataset.sealGroup as RoleKind, known);
+  const open = openSet(known, access);
+  for (const group of groups) group.innerHTML = renderSeals(group.dataset.sealGroup as RoleKind, known, open);
   const earned = card.querySelector<HTMLElement>("[data-seals-earned]");
   if (earned) earned.textContent = earnedCount(known);
 }
 
-function setupDevClicks(card: HTMLElement, groups: HTMLElement[]): void {
+function setupDevClicks(card: HTMLElement, groups: HTMLElement[], access: Access): void {
   card.addEventListener("click", async (event) => {
     const tile = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-seal-role]") : null;
     if (!tile || !(event.shiftKey || event.ctrlKey)) return;
@@ -227,7 +232,7 @@ function setupDevClicks(card: HTMLElement, groups: HTMLElement[]): void {
         console.warn("[dev] Seals: the backend refused; run it with WIZARD_DEV_TOOLS (npm run dev:tools in backend/).");
         return;
       }
-      showRecords(card, groups, (await response.json()) as RoleRecord[]);
+      showRecords(card, groups, (await response.json()) as RoleRecord[], access);
       card.querySelector<HTMLElement>(`[data-seal-role="${body.role}"]`)?.focus();
     } catch {
       console.warn("[dev] Seals: the backend could not be reached.");

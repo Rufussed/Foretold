@@ -1,7 +1,9 @@
 import db from "../../../db/database.js";
 import type { Suit } from "../models/card.js";
 import {
+  COLOR_MASTERY_POINTS,
   COLOR_POINTS_PER_TRICK,
+  nextStrongColor,
   RANDOM_COLOR_SQL,
   isSuit,
 } from "../strongColor.js";
@@ -89,6 +91,32 @@ class PlayerStatsRepository {
       SET ${COLOR_POINTS_COLUMN[color]} = ${COLOR_POINTS_COLUMN[color]} + ?
       WHERE user_id = ?
     `).run(tricks * COLOR_POINTS_PER_TRICK, userId);
+
+    this.dealNextColorIfMastered(userId, color);
+  }
+
+  // A strong colour that reached COLOR_MASTERY_POINTS is mastered: the player
+  // is dealt the next one (strongColor.ts). The last one mastered stays.
+  private dealNextColorIfMastered(userId: number, color: Suit): void {
+    const row = db.prepare(`
+      SELECT
+        color_points_blue AS Blue,
+        color_points_red AS Red,
+        color_points_yellow AS Yellow,
+        color_points_green AS Green
+      FROM player_stats
+      WHERE user_id = ?
+    `).get(userId) as Record<Suit, number> | undefined;
+
+    if (!row || row[color] < COLOR_MASTERY_POINTS) {
+      return;
+    }
+
+    const next = nextStrongColor(row);
+
+    if (next) {
+      db.prepare("UPDATE player_stats SET strong_color = ? WHERE user_id = ?").run(next, userId);
+    }
   }
 
   incrementGamesPlayed(userId: number): void {

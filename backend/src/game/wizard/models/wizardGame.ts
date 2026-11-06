@@ -151,6 +151,9 @@ export interface WizardGameState {
   options?: WizardGameOptions;
   turnDeadlineAt: number | null;
   turnTimeoutMs: TurnTimeoutMs;
+  // Roles games only: the round's watched cards, 2 Wizards and 2 Jesters
+  // (modes/roles/master/watcher.ts). Never sent to players.
+  watchedCards?: Card[];
   // Test shortcut only: the player a bot's Sabotage Thief must rob
   // (modes/sabotage/devTools.ts).
   devThiefTarget?: string | null;
@@ -167,6 +170,9 @@ export interface PublicGamePlayer {
   // Told only to a Blue Wizard, for a hand hidden from them: how many of its
   // cards are blue (modes/roles/master/blueWizard.ts).
   blueCards?: number;
+  // Told only to a Watcher, for a hand hidden from them: how many of the
+  // round's watched cards it holds (modes/roles/master/watcher.ts).
+  watchedCards?: number;
   prediction: number | null;
   tricksWon: number;
   score: number;

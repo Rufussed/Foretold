@@ -5,8 +5,9 @@
 // server and the Study, so like gameOptions.ts it must stay free of Node-only
 // code, because Vite bundles it into the browser.
 //
-// Later, reaching COLOR_MASTERY_POINTS will master the colour and give the
-// player the next one, at random; the skills that come with it are for other
+// Reaching COLOR_MASTERY_POINTS masters the colour and deals the player the
+// next one, at random from those not yet mastered. What a mastered colour
+// opens (its colour Wizard in Roles: modes/roles/roleLocks.ts) is for other
 // game modes, never Wizard Classic.
 import { SUITS, type Suit } from "./models/card.js";
 
@@ -25,3 +26,14 @@ export const RANDOM_COLOR_SQL = `
     ELSE 'Green'
   END
 `;
+
+// The colour to deal once the current one is mastered: one not yet mastered,
+// at random; null when all four are.
+export function nextStrongColor(
+  points: Partial<Record<Suit, number>>,
+  random: () => number = Math.random,
+): Suit | null {
+  const left = SUITS.filter((suit) => (points[suit] ?? 0) < COLOR_MASTERY_POINTS);
+  if (left.length === 0) return null;
+  return left[Math.min(Math.floor(random() * left.length), left.length - 1)]!;
+}

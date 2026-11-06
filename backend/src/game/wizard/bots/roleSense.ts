@@ -40,6 +40,8 @@ const BID_VALUE: Record<RoleId, number> = {
   redWizard: 0,
   // No card: the Joker plays any card it likes (master/joker.ts).
   joker: 0,
+  // No card: the Watcher only sees (master/watcher.ts).
+  watcher: 0,
 };
 
 const isRoles = (game: WizardGameState): boolean =>

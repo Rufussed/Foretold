@@ -23,6 +23,9 @@ export interface CardDeck {
   // Whether the Fool, Thief, Trickster, Seer and Wizard carry their symbol:
   // only on an Expanded table.
   symbols: boolean;
+  // Without the symbols: whether the Wizard still carries a "W" and the
+  // Jester its hat, as the old cards did (Classic and Roleplay).
+  markSpecials?: boolean;
 }
 
 type TitleKey =
@@ -91,10 +94,12 @@ const DECK_B_PICTURES = [
   "monarch",
 ] as const;
 
+// Classic, without the symbols, still marks its Wizard ("W") and Jester (hat).
 const deckA = (symbols: boolean): CardDeck => ({
   picture: (value) => DECK_A_PICTURES[value - 1],
   titleKey: titled(DECK_A_PICTURES, (value) => `sabotage.rank.${value}`),
   symbols,
+  markSpecials: !symbols,
 });
 
 const DECKS: Record<GameMode, CardDeck> = {
@@ -104,6 +109,8 @@ const DECKS: Record<GameMode, CardDeck> = {
     picture: (value) => DECK_B_PICTURES[value - 1],
     titleKey: titled(DECK_B_PICTURES, (value) => `roleplay.rank.${value}`),
     symbols: false,
+    // The Wizard's "W" and the Jester's hat (sabotage-card-loader.ts).
+    markSpecials: true,
   },
 };
 

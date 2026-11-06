@@ -27,6 +27,7 @@ import { escapeHtml } from "../utils/escape-html";
 import { t, type MessageKey } from "../i18n";
 import { COLOR_MASTERY_POINTS } from "../../backend/src/game/wizard/strongColor";
 import { loadRoleRecords, loadSealsOpen, renderSealsCard, saveSealsOpen, setupSeals } from "../modes/roles/profile-seals";
+import { loadRoleAccess } from "../modes/roles/role-locks";
 
 // About half the 400 points of a perfect three-player game, so short games
 // can earn a level too: 200 points stand in for one full game.
@@ -267,8 +268,12 @@ export async function renderProfilePage(
       };
 
   const user = profile;
-  // Roles mode: the role seals (modes/roles/profile-seals.ts).
-  const roleRecords = await loadRoleRecords(playerId);
+  // Roles mode: the role seals (modes/roles/profile-seals.ts), and on one's
+  // own profile which roles are still locked (modes/roles/role-locks.ts).
+  const [roleRecords, roleAccess] = await Promise.all([
+    loadRoleRecords(playerId),
+    ownProfile ? loadRoleAccess() : Promise.resolve(null),
+  ]);
 
   // Friends and requests on one's own profile, the friendship on another's.
   // Also asked again in the background (see the end of this function).
@@ -387,7 +392,7 @@ export async function renderProfilePage(
   const historyPrefs = loadHistoryPrefs();
   const socialPanels = loadSocialPanels();
   const sealsOpen = loadSealsOpen();
-  const sealsCard = renderSealsCard(roleRecords, collapseToggle("seals", sealsOpen), collapseBody("seals", sealsOpen));
+  const sealsCard = renderSealsCard(roleRecords, collapseToggle("seals", sealsOpen), collapseBody("seals", sealsOpen), roleAccess);
   const visibleOpponents = (): PlayerOpponent[] =>
     sortOpponents(opponents, historyPrefs.sort).slice(0, historyPrefs.limit);
 
@@ -956,7 +961,7 @@ export async function renderProfilePage(
 
   // Roles mode: the role seals (modes/roles/profile-seals.ts).
   setupCollapsible(container, "seals", saveSealsOpen);
-  setupSeals(container, ownProfile);
+  setupSeals(container, ownProfile, roleAccess);
 
   const scrollFriendRequests = container.querySelector<HTMLButtonElement>(
     "[data-scroll-friend-requests]",

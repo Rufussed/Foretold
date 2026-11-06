@@ -59,4 +59,14 @@ describe("assignRoles", () => {
       }
     }
   });
+
+  it("draws a player's random role only from the roles open to them", () => {
+    for (let run = 0; run < 30; run++) {
+      const game = new WizardGameService().createGame(1, ["alice", "bob", "carol"]);
+      assignRoles(game.players, new Map(), Math.random, undefined, (name) => (name === "alice" ? ["fisher"] : name === "bob" ? ["thief", "servant"] : ["farmer"]));
+      const roles = Object.fromEntries(game.players.map((player) => [player.username, player.role]));
+      expect(roles.alice).toBe("fisher");
+      expect(["thief", "servant"]).toContain(roles.bob);
+    }
+  });
 });
