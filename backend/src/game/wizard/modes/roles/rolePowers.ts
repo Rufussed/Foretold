@@ -13,7 +13,7 @@ import { botGrant, dukeWinning, GRANT_POINTS, KEEP_POINTS } from "./duke.js";
 import { kingsPeace, playerOf, rolesOfPlayers, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
 import { bringsPeace, PEACE_POINTS, peaceTribute, stoppedBy, TAX_POINTS, taxIn } from "./king.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
-import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
+import { burnsWinner, colourWizardBonus, FIRE_BURN, isColourWizard } from "./master/colourWizards.js";
 import { trickRolesIn } from "./master/trickRoles.js";
 import { countPowerUses } from "./powerSeal.js";
 import { countJokerTrick } from "./master/joker.js";
@@ -478,6 +478,11 @@ function settleTrickPowers(game: WizardGameState, winner: GamePlayer): void {
   // peace does not stop it.
   const master = masterRoleOf(winner);
   if (isColourWizard(master)) addBonus(winner, master, colourWizardBonus(trick, winner));
+  // A higher red card that beat a Red Wizard's shield is burned
+  // (colourWizards.ts); the King's peace does not stop it either.
+  if (burnsWinner(trick, game.trumpSuit, trickRolesIn(game), winner)) {
+    addBonus(winner, "redWizard", -Math.min(FIRE_BURN, Math.max(0, winner.score)));
+  }
 
   // Under the King's peace no other power works at the end of the trick;
   // a King who won it with his trump 13 is paid his tribute.

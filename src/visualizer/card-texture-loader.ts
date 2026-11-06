@@ -14,6 +14,9 @@ export const cardArtTexture = (card: Card): THREE.Texture => deck.cardArtTexture
 
 export const cardBackTexture = (): THREE.Texture => deck.cardBackTexture();
 
+// Roles mode only: a face with a boost under its number (modes/roles/master/earth-boost.ts).
+export const boostedCardArtTexture = (card: Card, boost: number): THREE.Texture => deck.boostedCardArtTexture(card, boost);
+
 // The same texture, but resolving once its image has actually arrived, so the
 // prefetch queue holds one card open at a time instead of starting the whole
 // deck at once. A failed download is forgotten, so a later card can retry it.

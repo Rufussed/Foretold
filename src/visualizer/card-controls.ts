@@ -59,6 +59,11 @@ export function createCardControls(options: CardControlsOptions): CardControls {
     };
   };
 
+  const clearTextSelection = () => {
+    const selection = window.getSelection();
+    if (selection && !selection.isCollapsed) selection.removeAllRanges();
+  };
+
   // Anywhere above the play line (CARD_HANDLING.playLineLengths) counts as the play area.
   const inPlayArea = (event: PointerEvent) => {
     const targets = cards.handTargets();
@@ -82,6 +87,9 @@ export function createCardControls(options: CardControlsOptions): CardControls {
   };
 
   const onPointerDown = (event: PointerEvent) => {
+    // Text left selected on the page (copied from the log) would make the
+    // browser drag that text instead of the card, and the press would be lost.
+    clearTextSelection();
     if (event.button !== 0 || press || options.picking?.()) return;
     aim(event);
     const key = cards.cardAt(raycaster);

@@ -66,6 +66,9 @@ export function createTableRoles(
 
   const show = (open: boolean) => {
     panel.hidden = !open;
+    // Text selected in it goes with it, so no hidden selection is left behind.
+    const selection = window.getSelection();
+    if (!open && selection && panel.contains(selection.anchorNode)) selection.removeAllRanges();
     button.setAttribute("aria-expanded", String(open));
   };
 

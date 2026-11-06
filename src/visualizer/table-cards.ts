@@ -57,6 +57,8 @@ export interface TableCards {
   // The cards showing in the trick, in play order, and the trump card if it's
   // showing: for the end-of-trick reward, which gathers copies of them.
   trickCardObjects(): Array<{ key: string; object: THREE.Object3D }>;
+  // A card's object on the table, in your hand or the trick; null if none.
+  cardObject(key: string): THREE.Object3D | null;
   trumpCardObject(): THREE.Object3D | null;
   // Outlines this trick card, the one winning so far, as hovering does; null for none.
   setLeading(key: string | null): void;
@@ -691,6 +693,10 @@ export function createTableCards(
       trumpHeld = isHeld;
       if (isHeld) trumpSuppressed = false;
       if (trump?.card) trump.object.visible = !isHeld && !trumpSuppressed;
+    },
+
+    cardObject(key) {
+      return cards.get(key)?.object ?? null;
     },
 
     trickCardObjects() {

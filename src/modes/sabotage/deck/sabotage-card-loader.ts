@@ -40,7 +40,7 @@ export function cardArtUrl(card: Card): string {
 // letter in the special colour and no icon. The font and the icon are fetched
 // on first use, so a face waits on both; if either fails the face still gets
 // what did arrive.
-async function cardPrint(card: Card): Promise<FacePrint> {
+async function cardPrint(card: Card, boost?: string): Promise<FacePrint> {
   const special = isSpecialCard(card);
   const element = cardElement(card);
   const symbolName = cardSymbol(card);
@@ -58,7 +58,7 @@ async function cardPrint(card: Card): Promise<FacePrint> {
   const badgeGap =
     symbolName === "trickster" ? CARDS.tricksterBadgeGap : symbolName === "thief" ? CARDS.thiefBadgeGap : CARDS.badgeGap;
   const badgeScale = (symbolName && CARDS.symbolScales[symbolName]) || 1;
-  const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card) };
+  const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card), ...(boost ? { boost } : {}) };
   if (!CARDS.embossEnabled) return (context, width, height) => drawCardPrint(context, width, height, print);
   return (context, width, height) =>
     embossPrint(context, width, height, (target, pass) => drawCardPrint(target, width, height, print, pass));
@@ -202,6 +202,11 @@ export const cardArtTexture = (card: Card): THREE.Texture =>
   load(cardArtUrl(card), faceId(card), () => cardPrint(card), cardTint(card));
 
 export const cardBackTexture = (): THREE.Texture => load(backUrl(), "back", prepareCardBack);
+
+// Roles mode only: the same face with a boost printed under its number, "+3"
+// on the Power of Earth's earth cards (modes/roles/master/earth-boost.ts).
+export const boostedCardArtTexture = (card: Card, boost: number): THREE.Texture =>
+  load(cardArtUrl(card), `${faceId(card)}+boost${boost}`, () => cardPrint(card, `+${boost}`), cardTint(card));
 
 // The same texture, but resolving once its image has actually arrived, so the
 // prefetch queue holds one card open at a time instead of starting the whole

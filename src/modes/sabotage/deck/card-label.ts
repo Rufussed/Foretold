@@ -60,7 +60,13 @@ export interface CardPrint {
   badgeGap?: number;
   // The card's title in the hierarchy, printed across the middle of the card.
   name?: string;
+  // Roles mode only: a boost printed under the number, in its colour, "+3"
+  // on the Power of Earth's earth cards (modes/roles/master/earth-boost.ts).
+  boost?: string;
 }
+
+// A boost's size against the number's (CardPrint.boost).
+const BOOST_SCALE = 0.5;
 
 // An outlined, feathered line of text: the black outline first, so the fill
 // sits on top of its inner half. Stroked twice because a shadow is faint on
@@ -81,7 +87,7 @@ function inkText(context: CanvasRenderingContext2D, text: string, x: number, y: 
 // Draws the print onto a face `width` pixels wide and `height` tall, which is
 // what its size and margins are measured against.
 export function drawCardPrint(context: CanvasRenderingContext2D, width: number, height: number, print: CardPrint, pass: PrintPass = "both"): void {
-  const { label, color, icon, badge, badgeScale = 1, badgeGap = CARDS.badgeGap, name } = print;
+  const { label, color, icon, badge, badgeScale = 1, badgeGap = CARDS.badgeGap, name, boost } = print;
   if (!label && !badge && !name) return;
 
   const size = Math.round(width * CARDS.labelSize);
@@ -131,7 +137,10 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
   const symbolBox = size * CARDS.symbolSize * (label ? 1 : CARDS.soloSymbolScale) * badgeScale;
   // The column runs number, element icon, then the symbol (on a Seer or
   // Trickster); a Fool or Wizard has no number, so its symbol takes the top.
-  const iconTop = top + context.lineWidth / 2 + size * CARDS.iconGap;
+  // A boost goes straight under the number, the icon under it.
+  const boostPx = Math.round(size * BOOST_SCALE);
+  const boostTop = top + context.lineWidth / 2 + size * CARDS.iconGap;
+  const iconTop = boost && label ? boostTop + boostPx * 1.15 : boostTop;
   const iconBottom = icon
     ? iconTop + icon.height * Math.min(iconStyle.box / icon.width, iconStyle.box / icon.height)
     : iconTop;
@@ -149,6 +158,17 @@ export function drawCardPrint(context: CanvasRenderingContext2D, width: number, 
       // Raised by what the smaller digits lost in height, so the tops still line up.
       const baseline = top - wide.actualBoundingBoxAscent * (1 - scale);
       inkText(context, label, center - penOffset, baseline, color, feather * scale, pass);
+      context.font = baseFont;
+      context.lineWidth = baseLine;
+    }
+
+    if (boost && label) {
+      context.font = `${NAME_WEIGHT} ${boostPx}px ${NAME_FONT}, serif`;
+      context.lineWidth = baseLine * BOOST_SCALE;
+      context.textAlign = "center";
+      const ink = context.measureText(boost);
+      inkText(context, boost, center, boostTop + ink.actualBoundingBoxAscent, color, feather * BOOST_SCALE, pass);
+      context.textAlign = "left";
       context.font = baseFont;
       context.lineWidth = baseLine;
     }

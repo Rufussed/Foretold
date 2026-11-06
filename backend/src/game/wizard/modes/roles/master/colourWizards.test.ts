@@ -16,6 +16,12 @@ describe("the colour Wizards' bonus", () => {
     expect(colourWizardBonus(trick([play("ann", 14, "Red")]), player("ann", "redWizard"))).toBe(COLOUR_WIZARDS.redWizard.bonus);
   });
 
+  it("pays the Green Wizard for a trick won with any green card too", () => {
+    expect(colourWizardBonus(trick([play("ann", 7, "Green")]), player("ann", "greenWizard"))).toBe(COLOUR_WIZARDS.greenWizard.bonus);
+    expect(colourWizardBonus(trick([play("ann", 7, "Red")]), player("ann", "greenWizard"))).toBe(0);
+    expect(colourWizardBonus(trick([play("ann", 0, "Green")]), player("ann", "greenWizard"))).toBe(0);
+  });
+
   it("pays the Blue and Red Wizards 10 more than the others", () => {
     expect(COLOUR_WIZARDS.blueWizard.bonus).toBe(COLOUR_WIZARDS.greenWizard.bonus + 10);
     expect(COLOUR_WIZARDS.redWizard.bonus).toBe(COLOUR_WIZARDS.yellowWizard.bonus + 10);

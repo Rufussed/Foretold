@@ -16,6 +16,7 @@ import { canAct, isLocalTurn, localPlayer, type GameConnection } from "./game-co
 import { createOpponentHands, type OpponentHands } from "./opponent-hands";
 import { cardsByOwner } from "../modes/roles/mechanics/trick-swap";
 import { applyBlueSight } from "../modes/roles/master/blue-sight";
+import { applyEarthBoost } from "../modes/roles/master/earth-boost";
 import { trickRolesIn } from "../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
@@ -602,6 +603,9 @@ export function createCardTable({
           localBlindCard: () => blind.localCard(),
         });
       }
+      // Roles mode: the Power of Earth's "+3" on its earth cards
+      // (modes/roles/master/earth-boost.ts).
+      if (game) applyEarthBoost(game.state(), { localUsername: game.localUsername, cardObject: (key) => cards.cardObject(key) });
       rewards.update(deltaSeconds);
       burst.update(deltaSeconds);
       // crown.update(deltaSeconds);

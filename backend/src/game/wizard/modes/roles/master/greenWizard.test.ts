@@ -20,9 +20,9 @@ describe("the Green Wizard's green cards", () => {
     expect(winner(play("bo", 13, "Green"), play("gw", 12, "Green"))).toBe("gw");
   });
 
-  it("lose when they only draw level: a 7 against a 10", () => {
-    expect(winner(play("gw", 7, "Green"), play("bo", 10, "Green"))).toBe("bo");
-    expect(winner(play("bo", 10, "Green"), play("gw", 7, "Green"))).toBe("bo");
+  it("win when they draw level: a 7 against a 10", () => {
+    expect(winner(play("gw", 7, "Green"), play("bo", 10, "Green"))).toBe("gw");
+    expect(winner(play("bo", 10, "Green"), play("gw", 7, "Green"))).toBe("gw");
   });
 
   it("still lose to a trump and a Wizard, and other suits are not raised", () => {

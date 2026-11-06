@@ -1,4 +1,5 @@
 import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/models/wizardGame";
+import { burnsWinner, FIRE_BURN } from "../../../../backend/src/game/wizard/modes/roles/master/colourWizards";
 import { rolesName } from "../role-names";
 import type { RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
 import { playerOf, powerOn, rolePowerOn, rolesOfPlayers, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
@@ -109,9 +110,11 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
     });
   }
 
-  // A Roles Red Wizard's red card on a red lead: no trumps in this trick.
+  // A Roles Red Wizard's red card on a red lead: no trumps in this trick,
+  // from the lead card itself when they led it.
   const shieldedBy = next.currentTrick.playedCards.at(-1);
-  if (sameTrick && shieldedBy && !redShieldOf(previous) && redShieldOf(next)) {
+  const freshTrick = !isSameTrick(previous, next) && next.currentTrick.playedCards.length === 1;
+  if ((sameTrick || freshTrick) && shieldedBy && !(sameTrick && redShieldOf(previous)) && redShieldOf(next)) {
     const by = shieldedBy.playedBy ?? shieldedBy.username;
     messages.push({
       text: by === local ? t("ann.youRedShield") : t("ann.redShield", { name: announcedName(by) }),
@@ -120,8 +123,21 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
     });
   }
 
+  // A higher red card beat the shield: its winner is burned.
+  const winner = next.currentTrick.winnerUsername;
+  if (winner && previous.currentTrick.winnerUsername !== winner && burnsWinner(next.currentTrick, next.trumpSuit, trickRolesIn(next), winnerOf(next, winner))) {
+    messages.push({
+      text: winner === local ? t("ann.youBurned", { points: String(FIRE_BURN) }) : t("ann.burns", { name: announcedName(winner), points: String(FIRE_BURN) }),
+      username: winner,
+      role: true,
+    });
+  }
+
   return messages;
 }
+
+const winnerOf = (state: PublicWizardGameState, username: string) =>
+  state.players.find((player) => player.username === username) ?? { username, role: null, masterRole: null };
 
 // What the banner says when a role's power is used: by you, on you, by and on
 // others.
@@ -375,6 +391,8 @@ const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
 // visualizer/hud/announcements.ts): what the role's power brought this
 // round.
 export function roleBonusLabel(role: string, points: number): string {
+  // Burned by the Power of Fire's shield (backend master/colourWizards.ts).
+  if (role === "redWizard" && points < 0) return t("ann.burned");
   // Points another player's power took are a loss of their own: robbed by
   // a Thief, a Servant's tip, a Fisher's catch, a Farmer's harvest, a
   // Shepherd's sheep.
