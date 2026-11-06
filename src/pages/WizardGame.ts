@@ -618,10 +618,10 @@ function renderGame(
                 <p>The turned card is a Jester. Choose the trump suit for this round.</p>
 
                 <div class="trump-suit-buttons">
-                  <button type="button" data-trump-suit="Blue">Blue</button>
-                  <button type="button" data-trump-suit="Red">Red</button>
-                  <button type="button" data-trump-suit="Yellow">Yellow</button>
-                  <button type="button" data-trump-suit="Green">Green</button>
+                  <button type="button" data-trump-suit="Blue">Water</button>
+                  <button type="button" data-trump-suit="Red">Fire</button>
+                  <button type="button" data-trump-suit="Yellow">Air</button>
+                  <button type="button" data-trump-suit="Green">Earth</button>
                 </div>
               </section>
             `
