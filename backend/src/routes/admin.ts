@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { adminService, isAdminUsername } from "../services/adminService.js";
 import { UserService } from "../services/userService.js";
+import { setRolesAllOpen } from "../game/wizard/modes/roles/roleAccess.js";
 
 interface IdParams {
   id: string;
@@ -59,5 +60,17 @@ export default async function adminRoutes(
     }
 
     return { deleted: userId };
+  });
+
+  // Roles mode: every role open for an account, or the locks back on
+  // (modes/roles/roleAccess.ts).
+  server.post<{ Params: IdParams; Body: { open?: unknown } }>("/users/:id/roles-open", async (request, reply) => {
+    const userId = Number(request.params.id);
+    if (!Number.isInteger(userId) || !UserService.getUserById(userId)) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+    const open = request.body?.open === true;
+    setRolesAllOpen(userId, open);
+    return { userId, rolesOpen: open };
   });
 }

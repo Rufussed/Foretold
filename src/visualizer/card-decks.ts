@@ -20,10 +20,12 @@ export interface CardDeck {
   // The title's translation key for a numbered card (see i18n); the element
   // is the one the card is drawn as, for the titles that differ by it.
   titleKey(value: number, element: string): TitleKey;
-  // Whether the Fool and the Wizard carry their symbol: Classic and Expanded.
+  // Whether the Fool, Thief, Trickster, Seer and Wizard carry their symbol:
+  // only on an Expanded table.
   symbols: boolean;
-  // Whether the Seer, Thief and Trickster carry theirs too: only Expanded.
-  powerSymbols: boolean;
+  // Without the symbols: whether the Wizard still carries a "W" and the
+  // Jester its hat, as the old cards did (Classic and Roleplay).
+  markSpecials?: boolean;
 }
 
 type TitleKey =
@@ -92,11 +94,12 @@ const DECK_B_PICTURES = [
   "monarch",
 ] as const;
 
-const deckA = (powerSymbols: boolean): CardDeck => ({
+// Classic, without the symbols, still marks its Wizard ("W") and Jester (hat).
+const deckA = (symbols: boolean): CardDeck => ({
   picture: (value) => DECK_A_PICTURES[value - 1],
   titleKey: titled(DECK_A_PICTURES, (value) => `sabotage.rank.${value}`),
-  symbols: true,
-  powerSymbols,
+  symbols,
+  markSpecials: !symbols,
 });
 
 const DECKS: Record<GameMode, CardDeck> = {
@@ -106,7 +109,8 @@ const DECKS: Record<GameMode, CardDeck> = {
     picture: (value) => DECK_B_PICTURES[value - 1],
     titleKey: titled(DECK_B_PICTURES, (value) => `roleplay.rank.${value}`),
     symbols: false,
-    powerSymbols: false,
+    // The Wizard's "W" and the Jester's hat (sabotage-card-loader.ts).
+    markSpecials: true,
   },
 };
 
@@ -124,6 +128,5 @@ export function setCardDeckMode(state: Pick<PublicWizardGameState, "options"> | 
   mode = isGameMode(wanted) ? wanted : "classic";
 }
 
-export const isClassicDeck = (): boolean => mode === "classic";
 
 export const activeDeck = (): CardDeck => DECKS[mode];

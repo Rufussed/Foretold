@@ -33,6 +33,9 @@ export interface WizardGameOptions {
   // add up to the round's tricks, so at least one player must miss. false
   // lets them choose anything (gameplayRules.ts).
   lastPredictionLimited: boolean;
+  // Roles mode only: every player plays one basic role and one master role
+  // (modes/roles/rolePairs.ts); false, one basic role each.
+  rolePair: boolean;
 }
 
 // What every new room starts with: the official rules (you see your own
@@ -43,6 +46,7 @@ export const DEFAULT_GAME_OPTIONS: WizardGameOptions = {
   blindFirstRound: false,
   missedTurnsToQuit: 5,
   lastPredictionLimited: true,
+  rolePair: false,
 };
 
 // What a new room of a given mode starts with. Expanded (sabotage) starts with
@@ -63,6 +67,7 @@ export const LEGACY_GAME_OPTIONS: WizardGameOptions = {
   missedTurnsToQuit: null,
   // Before it was a choice, the last prediction was always limited.
   lastPredictionLimited: true,
+  rolePair: false,
 };
 
 // The options to actually use, given whatever arrived from a client or an
@@ -84,6 +89,7 @@ export const normalizeGameOptions = (
       : fallback.missedTurnsToQuit,
     lastPredictionLimited:
       typeof raw.lastPredictionLimited === "boolean" ? raw.lastPredictionLimited : fallback.lastPredictionLimited,
+    rolePair: typeof raw.rolePair === "boolean" ? raw.rolePair : fallback.rolePair,
   };
 };
 

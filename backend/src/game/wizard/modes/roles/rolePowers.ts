@@ -10,23 +10,22 @@ import { battlesIn, PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
 import { BET_LOSS_POINTS, BET_WIN_POINTS, betsIn, LUCKY_POINTS, luckIn } from "./gambler.js";
 import { FORESIGHT_POINTS, foresightsIn } from "./prophet.js";
 import { botGrant, dukeWinning, GRANT_POINTS, KEEP_POINTS } from "./duke.js";
-import { kingsPeace, playerOf, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
+import { kingsPeace, playerOf, rolesOfPlayers, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
 import { bringsPeace, PEACE_POINTS, peaceTribute, stoppedBy, TAX_POINTS, taxIn } from "./king.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
-import { colourWizardBonus, isColourWizard } from "./master/colourWizards.js";
+import { burnsWinner, colourWizardBonus, FIRE_BURN, isColourWizard } from "./master/colourWizards.js";
 import { trickRolesIn } from "./master/trickRoles.js";
 import { countPowerUses } from "./powerSeal.js";
 import { countJokerTrick } from "./master/joker.js";
 import { collect, giveSheep, laidBy } from "./shepherd.js";
 import { block, BLOCK_POINTS, forge, forgesArmor } from "./smith.js";
 import { steal, STEAL_POINTS, stealSpots } from "./thief.js";
-import { roleCard, type RoleAction, type RoleId } from "./roles.js";
+import { masterRoleOf, roleCard, type RoleAction, type RoleId } from "./roles.js";
 
 const rules = new WizardRules();
 
-// Who holds which role in this game.
-export const rolesOf = (game: WizardGameState): RoleOf => (username) =>
-  game.players.find((player) => player.username === username)?.role;
+// Who holds which role in this game: the basic one, and the master one apart.
+export const rolesOf = (game: WizardGameState): RoleOf => rolesOfPlayers(game.players);
 
 // The pieces of armour each player wears; only Smiths have any.
 export const armorOf = (game: WizardGameState) => (username: string): number =>
@@ -477,7 +476,13 @@ function settleTrickPowers(game: WizardGameState, winner: GamePlayer): void {
 
   // A colour Wizard who won with the Wizard of their colour: the King's
   // peace does not stop it.
-  if (isColourWizard(winner.role)) addBonus(winner, winner.role, colourWizardBonus(trick, winner));
+  const master = masterRoleOf(winner);
+  if (isColourWizard(master)) addBonus(winner, master, colourWizardBonus(trick, winner));
+  // A higher red card that beat a Red Wizard's shield is burned
+  // (colourWizards.ts); the King's peace does not stop it either.
+  if (burnsWinner(trick, game.trumpSuit, trickRolesIn(game), winner)) {
+    addBonus(winner, "redWizard", -Math.min(FIRE_BURN, Math.max(0, winner.score)));
+  }
 
   // Under the King's peace no other power works at the end of the trick;
   // a King who won it with his trump 13 is paid his tribute.

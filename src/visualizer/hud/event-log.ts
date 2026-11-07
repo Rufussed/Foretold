@@ -70,6 +70,11 @@ export function createEventLog(page: HTMLElement): EventLog {
 
   const toggle = () => {
     panel.hidden = !panel.hidden;
+    // Text selected in it goes with it, so no hidden selection is left behind.
+    if (panel.hidden) {
+      const selection = window.getSelection();
+      if (selection && panel.contains(selection.anchorNode)) selection.removeAllRanges();
+    }
     button.setAttribute("aria-expanded", String(!panel.hidden));
     if (!panel.hidden) panel.scrollTop = panel.scrollHeight;
   };

@@ -1,4 +1,5 @@
 import type { Card } from "../../../../backend/src/game/wizard/models/card";
+import { rolesOfPlayers } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
 import { stealSpots } from "../../../../backend/src/game/wizard/modes/roles/thief";
 import { cardKey } from "../../../visualizer/card-textures";
 import { isLocalTurn, localPlayer, type GameConnection } from "../../../visualizer/game-connection";
@@ -39,7 +40,7 @@ function spotsFor(game: GameConnection, card: Card): number[] {
   const state = game.state();
   if (!state) return [];
   const local = game.localUsername;
-  const roleOf = (username: string) => state.players.find((player) => player.username === username)?.role ?? undefined;
+  const roleOf = rolesOfPlayers(state.players);
   return stealSpots(
     [...state.currentTrick.playedCards, { username: local, playedBy: local, card }],
     state.trumpSuit,

@@ -1,11 +1,14 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { isRoleId } from "./roles.js";
+import { colorPointsOf, openRolesFor, rolesAllOpen } from "./roleAccess.js";
 import { devAddRoleGame, devResetRole, getRoleProgress } from "./roleProgress.js";
 
 // Roles mode only. The Profile's seals (src/modes/roles/profile-seals.ts),
 // under /roles (server.ts):
 //
 //   GET  /roles/progress/me        your record with each role
+//   GET  /roles/open/me            { allOpen, open, colorPoints }: the roles you may choose
+//                                  (roleLocks.ts), for the Antechamber and Profile
 //   GET  /roles/progress/:userId   another player's
 //   POST /roles/progress/dev       { role, won?, reset? }  WIZARD_DEV_TOOLS only:
 //                                  one more game with a role, or its record wiped
@@ -26,6 +29,12 @@ export default async function roleProgressRoutes(server: FastifyInstance): Promi
     const userId = await signedIn(request, reply);
     if (userId === null) return reply;
     return reply.send(getRoleProgress(userId));
+  });
+
+  server.get("/open/me", async (request, reply) => {
+    const userId = await signedIn(request, reply);
+    if (userId === null) return reply;
+    return reply.send({ allOpen: rolesAllOpen(userId), open: openRolesFor(userId), colorPoints: colorPointsOf(userId) });
   });
 
   server.get("/progress/:userId", async (request, reply) => {

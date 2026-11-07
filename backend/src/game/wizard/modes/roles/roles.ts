@@ -46,6 +46,10 @@ export const ROLES = [
   // The Joker, no colour and no card: never bound to follow suit
   // (master/joker.ts).
   { id: "joker", kind: "master", card: null },
+  // The Watcher, free to every player with the master roles open: sees how
+  // many of the round's 2 watched Wizards and 2 watched Jesters each
+  // opponent holds (master/watcher.ts).
+  { id: "watcher", kind: "master", card: null },
 ] as const;
 
 export type RoleId = (typeof ROLES)[number]["id"];
@@ -68,7 +72,7 @@ export const roleCard = (id: RoleId): number | null =>
 // A role's power at work in a trick, for the players to be told about.
 // The roles whose power acts in a trick as an action to announce: all but the
 // colour Wizards, whose powers are a sight and a boost.
-export type ActingRoleId = Exclude<RoleId, "blueWizard" | "greenWizard" | "yellowWizard" | "redWizard" | "joker">;
+export type ActingRoleId = Exclude<RoleId, "blueWizard" | "greenWizard" | "yellowWizard" | "redWizard" | "joker" | "watcher">;
 
 export interface RoleAction {
   role: ActingRoleId;
@@ -102,3 +106,12 @@ export interface RoleAction {
   // A Gambler's 10 that won with no bet: luck, not a bet won (gambler.ts).
   lucky?: true;
 }
+
+// A player's master role: the master slot in a basic + master game, or, in a
+// one-role game saved before the slots existed, a master held as the role.
+export const masterRoleOf = (player: { role?: RoleId | null; masterRole?: RoleId | null }): RoleId | undefined =>
+  player.masterRole ?? (player.role && roleKind(player.role) === "master" ? player.role : undefined);
+
+// Every role a player holds, basic first.
+export const rolesHeld = (player: { role?: RoleId | null; masterRole?: RoleId | null }): RoleId[] =>
+  [player.role, player.masterRole].filter((role): role is RoleId => !!role);

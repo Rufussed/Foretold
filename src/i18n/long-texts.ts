@@ -181,10 +181,18 @@ const rules = {
     <div class="home-rules-content">
 
       <section class="home-rules-section">
+        <h3>Introduction</h3>
+        <p>
+          Foretold is based on the beloved card game "Wizard", which is in
+          turn based on a popular card game called "Oh Hell".
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Materials</h3>
         <p>
-          Wizard is played with a 60-card deck containing four coloured
-          suits, numbered cards, Wizards, and Jesters.
+          Foretold is played with a 60-card deck containing four elemental
+          suits (Water, Fire, Air and Earth), numbered cards, Wizards, and Jesters.
           Wizards are the highest-ranking special cards, while Jesters
           are the lowest. The game also uses a score pad.
         </p>
@@ -284,7 +292,7 @@ const rules = {
         <p>
           In every round except the final round, a card is revealed
           after dealing to determine the trump suit. Trump is stronger
-          than the other coloured suits.
+          than the other suits.
         </p>
         <p>
           You may play a trump card when the lead suit is trump or
@@ -295,7 +303,7 @@ const rules = {
         <p>
           <strong>If the revealed card is a Wizard:</strong>
           The player leading the first trick chooses the trump suit.
-          A coloured rim around the Wizard displays the chosen suit
+          A glowing rim around the Wizard displays the chosen suit
           throughout the round.
         </p>
         <p>
@@ -380,9 +388,17 @@ const rules = {
     <div class="home-rules-content">
 
       <section class="home-rules-section">
+        <h3>Einführung</h3>
+        <p>
+          Foretold beruht auf dem beliebten Kartenspiel „Wizard“, das
+          seinerseits auf dem bekannten Kartenspiel „Oh Hell“ beruht.
+        </p>
+      </section>
+
+      <section class="home-rules-section">
         <h3>Spielmaterial</h3>
         <p>
-          Wizard wird mit 60 Karten gespielt: vier Farben mit Zahlenkarten,
+          Foretold wird mit 60 Karten gespielt: vier Elemente (Wasser, Feuer, Luft und Erde) mit Zahlenkarten,
           dazu Zauberer und Narren. Die Zauberer sind die höchsten
           Sonderkarten, die Narren die niedrigsten. Außerdem braucht
           man einen Block für die Punkte.
@@ -417,7 +433,7 @@ const rules = {
         </ul>
         <p>
           Nach jeder Runde gibt die nächste Person. Nach dem Geben wird
-          die nächste Karte aufgedeckt: Sie bestimmt die Trumpffarbe.
+          die nächste Karte aufgedeckt: Sie bestimmt das Trumpf-Element.
           Nur in der letzten Runde gibt es keinen Trumpf.
         </p>
       </section>
@@ -463,14 +479,14 @@ const rules = {
       <section class="home-rules-section">
         <h3>Karten spielen und Stiche gewinnen</h3>
         <p>
-          Die erste ausgespielte Karte bestimmt die Farbe des Stichs.
-          Diese Farbe musst du bedienen, wenn du kannst. Hast du keine
-          Karte dieser Farbe, darfst du jede Karte spielen, auch einen
+          Die erste ausgespielte Karte bestimmt das Element des Stichs.
+          Dieses Element musst du bedienen, wenn du kannst. Hast du keine
+          Karte dieses Elements, darfst du jede Karte spielen, auch einen
           Trumpf, einen Zauberer oder einen Narren.
         </p>
         <ol>
-          <li>Normalerweise gewinnt die höchste Karte der ausgespielten Farbe.</li>
-          <li>Ein Trumpf schlägt die Karten der ausgespielten Farbe.</li>
+          <li>Normalerweise gewinnt die höchste Karte des ausgespielten Elements.</li>
+          <li>Ein Trumpf schlägt die Karten des ausgespielten Elements.</li>
           <li>Liegen mehrere Trümpfe im Stich, gewinnt der höchste,
             außer ein Zauberer entscheidet den Stich.</li>
           <li>Für Zauberer und Narren gelten eigene Regeln.</li>
@@ -481,19 +497,19 @@ const rules = {
         <h3>Trumpf</h3>
         <p>
           In jeder Runde außer der letzten wird nach dem Geben eine Karte
-          aufgedeckt, die die Trumpffarbe bestimmt. Trumpf ist stärker als
-          die anderen Farben.
+          aufgedeckt, das Trumpf-Element bestimmt. Trumpf ist stärker als
+          die anderen Elemente.
         </p>
         <p>
           Einen Trumpf darfst du spielen, wenn Trumpf ausgespielt wurde
-          oder wenn du die ausgespielte Farbe nicht bedienen kannst.
+          oder wenn du das ausgespielte Element nicht bedienen kannst.
           Liegen mehrere Trümpfe im Stich, gewinnt der höchste, außer
           ein Zauberer entscheidet den Stich.
         </p>
         <p>
           <strong>Wird ein Zauberer aufgedeckt:</strong>
-          Wer zum ersten Stich ausspielt, wählt die Trumpffarbe. Ein
-          farbiger Rand um den Zauberer zeigt die Farbe die ganze Runde
+          Wer zum ersten Stich ausspielt, wählt das Trumpf-Element. Ein
+          leuchtender Rand um den Zauberer zeigt das Element die ganze Runde
           über an.
         </p>
         <p>
@@ -517,7 +533,7 @@ const rules = {
 
         <p>
           <strong>Zauberer:</strong> Einen Zauberer darfst du immer
-          spielen, egal welche Farbe ausgespielt wurde. Normalerweise
+          spielen, egal welches Element ausgespielt wurde. Normalerweise
           gewinnt der erste Zauberer im Stich, auch wenn danach noch
           weitere gespielt werden.
         </p>
@@ -943,14 +959,14 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
-        <h3>Your strong colour</h3>
+        <h3>Your strong element</h3>
         <p>
-          When you joined, fate gave you one of the four colours: blue,
-          red, yellow or green. It is yours and cannot be changed. Every
-          trick you win with a card of that colour brings 10 points to it;
+          When you joined, fate gave you one of the four elements: Water,
+          Fire, Air or Earth. It is yours and cannot be changed. Every
+          trick you win with a card of that element brings 10 points to it;
           Wizards, Jesters and moves the bot made for you do not count, and
           a game you quit brings none. The bar under your name fills as
-          your colour gathers points, up to 1,000. What it leads to will
+          your element gathers points, up to 1,000. What it leads to will
           be revealed in time.
         </p>
       </section>
@@ -1019,15 +1035,15 @@ const help: Partial<Record<HelpPage, { en: string; de: string }>> = {
       </section>
 
       <section class="home-rules-section">
-        <h3>Deine starke Farbe</h3>
+        <h3>Dein starkes Element</h3>
         <p>
-          Als du kamst, hat das Schicksal dir eine der vier Farben gegeben:
-          Blau, Rot, Gelb oder Grün. Sie gehört dir und lässt sich nicht
-          ändern. Jeder Stich, den du mit einer Karte dieser Farbe
+          Als du kamst, hat das Schicksal dir eines der vier Elemente gegeben:
+          Wasser, Feuer, Luft oder Erde. Sie gehört dir und lässt sich nicht
+          ändern. Jeder Stich, den du mit einer Karte dieses Elements
           gewinnst, bringt ihr 10 Punkte; Zauberer, Narren und Züge, die
           der Bot für dich macht, zählen nicht, und eine aufgegebene
           Partie bringt keine. Der Balken unter deinem Namen füllt sich,
-          während deine Farbe Punkte sammelt, bis 1.000. Wohin sie führt,
+          während dein Element Punkte sammelt, bis 1.000. Wohin sie führt,
           wird sich mit der Zeit zeigen.
         </p>
       </section>

@@ -436,4 +436,30 @@ describe("PlayerStatsRepository", () => {
       db.prepare("DELETE FROM users WHERE id = ?").run(userId);
     }
   });
+
+  it("deals a new strong colour once the current one is mastered", () => {
+    const user = db.prepare(`
+      INSERT INTO users (username, password_hash, display_name, email)
+      VALUES (?, ?, ?, ?)
+    `).run("stats-test-user-mastery", "test", "Stats Test User Mastery", "stats-test-mastery@example.com");
+
+    const userId = Number(user.lastInsertRowid);
+
+    try {
+      playerStatsRepository.initializeForUser(userId);
+      const color = playerStatsRepository.getStats(userId)!.strongColor!;
+
+      playerStatsRepository.addColorTricks(userId, { [color]: 99 });
+      expect(playerStatsRepository.getStats(userId)?.strongColor).toBe(color);
+
+      playerStatsRepository.addColorTricks(userId, { [color]: 1 });
+      const stats = playerStatsRepository.getStats(userId)!;
+      expect(stats.colorPoints[color]).toBe(1000);
+      expect(stats.strongColor).not.toBe(color);
+      expect(stats.colorPoints[stats.strongColor!]).toBe(0);
+    } finally {
+      db.prepare("DELETE FROM player_stats WHERE user_id = ?").run(userId);
+      db.prepare("DELETE FROM users WHERE id = ?").run(userId);
+    }
+  });
 });

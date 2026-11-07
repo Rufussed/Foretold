@@ -27,6 +27,7 @@ import { canLower } from "../modes/roles/prophet.js";
 import { breaksSuit, playsFree, spendJokerPoint } from "../modes/roles/master/joker.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { blueSight } from "../modes/roles/master/blueWizard.js";
+import { pickWatchedCards, watcherSight } from "../modes/roles/master/watcher.js";
 import { trickRolesIn } from "../modes/roles/master/trickRoles.js";
 
 import type {
@@ -200,6 +201,9 @@ export class WizardGameService {
         player.hand.push(card);
       }
     }
+
+    // Roles mode: the Watcher's cards for this round (modes/roles/master/watcher.ts).
+    if (normalizeGameOptions(game.options).mode === "roles") game.watchedCards = pickWatchedCards();
   }
 
   drawTrumpCard(game: WizardGameState): void {
@@ -591,6 +595,12 @@ export class WizardGameService {
           const blueCards = blueSight(requestingPlayer, of, visible);
           return blueCards === undefined ? {} : { blueCards };
         };
+        // A Watcher is told the watched cards of hands hidden from them
+        // (modes/roles/master/watcher.ts).
+        const watchedOf = (of: GamePlayer, visible: boolean) => {
+          const watchedCards = watcherSight(game, requestingPlayer, of, visible);
+          return watchedCards === undefined ? {} : { watchedCards };
+        };
 
         return {
           username: player.username,
@@ -603,13 +613,16 @@ export class WizardGameService {
           roundScores: player.roundScores,
           quit: player.quit === true,
           role: player.role ?? null,
+          masterRole: player.masterRole ?? null,
           seeds: player.seeds ?? {},
           sheep: player.sheep ?? {},
           armor: player.armor ?? 0,
           jokerPoints: player.jokerPoints ?? 0,
           jokerTricks: player.jokerTricks ?? 0,
           sealLevel: player.role ? player.sealLevel ?? "wax" : null,
+          masterSealLevel: player.masterRole ? player.masterSealLevel ?? "wax" : null,
           ...blueSightOf(player, handVisible),
+          ...watchedOf(player, handVisible),
         };
       }),
       currentRound: game.currentRound,

@@ -1,7 +1,7 @@
 import * as THREE from "three";
+import { rolesName } from "./role-names";
 import type { PublicWizardGameState } from "../../../backend/src/game/wizard/models/wizardGame";
 import type { SeatId } from "../../visualizer/player-characters";
-import { t } from "../../i18n";
 import { roleUses } from "./hud/role-announcements";
 
 // In a Roles game, each other player's role floats above their head as a word
@@ -30,6 +30,14 @@ export const ROLE_LABELS = {
   // The label's height, and its gap above the head's middle, in head radii.
   heightRadii: 0.75,
   liftRadii: 1.9,
+  // At a 6-player table the seat straight across has its label beside the
+  // head, to your right, so it does not cover the trump card: the gap between
+  // the head's middle and the word's left edge, in head radii.
+  asideGapRadii: 0.6,
+  // ...then moved this many of its own letters further right, and this many
+  // rows (label heights) down.
+  asideLetters: 3,
+  asideRows: 1,
   // The texture's height in pixels; its width follows the word.
   textPx: 96,
 };
@@ -46,6 +54,9 @@ export interface RoleLabelOptions {
   seatOf(username: string): SeatId | null;
   headOf(seat: SeatId): THREE.Vector3 | null;
   headRadiusOf(seat: SeatId): number | null;
+  // The seat straight across from you at a 6-player table, whose label goes
+  // to the side (table-layout.ts clockwiseSeats, the middle one).
+  acrossSeat?: SeatId | null;
   // A player's power just went off, as the table shows it...
   onUse?(username: string, hitYou: boolean): void;
   // ...and the trick it went off in is cleared.
@@ -109,6 +120,9 @@ export function createRoleLabels(options: RoleLabelOptions): RoleLabels {
   let previous: PublicWizardGameState | null = null;
   const head = new THREE.Vector3();
   const parentScale = new THREE.Vector3();
+  const centre = new THREE.Vector3();
+  const aside = new THREE.Vector3();
+  const UP = new THREE.Vector3(0, 1, 0);
 
   const remove = (username: string) => {
     const label = labels.get(username);
@@ -168,12 +182,24 @@ export function createRoleLabels(options: RoleLabelOptions): RoleLabels {
         if (!middle || !radius) continue;
 
         wanted.add(player.username);
-        const label = labelFor(player.username, t(`role.${player.role}`));
+        // Both roles in a basic + master game: "Duke · Joker".
+        const label = labelFor(player.username, rolesName(player));
 
         // World sizes, brought into the parent's own units.
         options.parent.getWorldScale(parentScale);
         const scale = parentScale.y || 1;
         head.copy(middle).setY(middle.y + radius * ROLE_LABELS.liftRadii);
+        if (state && state.players.length === 6 && seat === options.acrossSeat) {
+          // To your right as you look across: the table's centre (the
+          // scene's origin) to the head, turned a quarter to the right.
+          options.parent.getWorldPosition(centre);
+          aside.subVectors(middle, centre).setY(0).normalize().cross(UP);
+          const rowHeight = radius * ROLE_LABELS.heightRadii;
+          const halfWord = (rowHeight * label.aspect) / 2;
+          const letter = (rowHeight * label.aspect) / Math.max(label.text.length, 1);
+          head.addScaledVector(aside, halfWord + radius * ROLE_LABELS.asideGapRadii + letter * ROLE_LABELS.asideLetters);
+          head.y -= rowHeight * ROLE_LABELS.asideRows;
+        }
         label.sprite.position.copy(options.parent.worldToLocal(head));
         // Lit for the whole trick, then fading back; the swell settles first.
         const flash = flashes.get(player.username);

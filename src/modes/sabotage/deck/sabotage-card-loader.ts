@@ -40,7 +40,7 @@ export function cardArtUrl(card: Card): string {
 // letter in the special colour and no icon. The font and the icon are fetched
 // on first use, so a face waits on both; if either fails the face still gets
 // what did arrive.
-async function cardPrint(card: Card): Promise<FacePrint> {
+async function cardPrint(card: Card, boost?: string): Promise<FacePrint> {
   const special = isSpecialCard(card);
   const element = cardElement(card);
   const symbolName = cardSymbol(card);
@@ -52,25 +52,28 @@ async function cardPrint(card: Card): Promise<FacePrint> {
   const color = special ? CARDS.specialColor : CARDS.elementColors[element] ?? "#ffffff";
   // The Fool and Wizard are outside the ranks, so they have no number: just
   // their symbol and title.
-  const label = special ? "" : cardLabel(card);
+  // A deck that marks them without the symbols (card-decks.ts markSpecials)
+  // gives the Wizard its "W"; the Jester has its hat (cardSymbol).
+  const label = special ? (card.value === 14 && markedSpecials() ? "W" : "") : cardLabel(card);
   const badgeGap =
     symbolName === "trickster" ? CARDS.tricksterBadgeGap : symbolName === "thief" ? CARDS.thiefBadgeGap : CARDS.badgeGap;
   const badgeScale = (symbolName && CARDS.symbolScales[symbolName]) || 1;
-  const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card) };
+  const print = { label, color, icon, badge, badgeScale, badgeGap, name: cardTitle(card), ...(boost ? { boost } : {}) };
   if (!CARDS.embossEnabled) return (context, width, height) => drawCardPrint(context, width, height, print);
   return (context, width, height) =>
     embossPrint(context, width, height, (target, pass) => drawCardPrint(target, width, height, print, pass));
 }
 
-// The symbol a card carries: the Fool and the Wizard in Classic and Expanded,
-// and also the Seer, the Thief and the Trickster in Expanded.
+// Wizards and Jesters marked without the other symbols (card-decks.ts).
+const markedSpecials = (): boolean => !activeDeck().symbols && activeDeck().markSpecials === true;
+
+// The symbol a card carries, if it is one of the four that have one: the Fool
+// and the Wizard, and the Seer, the Thief and the Trickster among the ranks.
 function cardSymbol(card: Card): PowerSymbol | undefined {
-  const deck = activeDeck();
-  if (!deck.symbols) return undefined;
+  if (!activeDeck().symbols) return card.value === 0 && markedSpecials() ? "fool" : undefined;
   if (card.value === 0) return "fool";
   if (card.value === 14) return "wizard";
-  // The Seer, Thief and Trickster: Expanded only.
-  return deck.powerSymbols ? (powerOf(card) ?? undefined) : undefined;
+  return powerOf(card) ?? undefined;
 }
 
 // The card's title, in the language being played: its rank in the hierarchy,
@@ -190,12 +193,20 @@ function load(
 // Cards sharing a file can still differ in number and tint, so both are part of
 // what tells their textures apart.
 // A title in another language is another face, so the title is part of it too.
-const faceId = (card: Card): string => `${cardLabel(card)}${cardTint(card) ?? ""}${cardTitle(card) ?? ""}`;
+// Whether the deck marks the Wizard and Jester too, as the same picture is
+// printed differently then.
+const faceId = (card: Card): string =>
+  `${cardLabel(card)}${cardTint(card) ?? ""}${cardTitle(card) ?? ""}${markedSpecials() ? "+marked" : ""}`;
 
 export const cardArtTexture = (card: Card): THREE.Texture =>
   load(cardArtUrl(card), faceId(card), () => cardPrint(card), cardTint(card));
 
 export const cardBackTexture = (): THREE.Texture => load(backUrl(), "back", prepareCardBack);
+
+// Roles mode only: the same face with a boost printed under its number, "+3"
+// on the Power of Earth's earth cards (modes/roles/master/earth-boost.ts).
+export const boostedCardArtTexture = (card: Card, boost: number): THREE.Texture =>
+  load(cardArtUrl(card), `${faceId(card)}+boost${boost}`, () => cardPrint(card, `+${boost}`), cardTint(card));
 
 // The same texture, but resolving once its image has actually arrived, so the
 // prefetch queue holds one card open at a time instead of starting the whole

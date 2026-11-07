@@ -6,6 +6,7 @@ import {
   deleteAdminUser,
   listAdminRooms,
   listAdminUsers,
+  setAdminRolesOpen,
   type AdminRoom,
   type AdminUser,
 } from "../services/admin";
@@ -43,6 +44,10 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
           Deleting a user also deletes the rooms they created and any game in
           progress they are playing in. Seeded test accounts come back when
           the server restarts.
+        </p>
+        <p class="admin-note">
+          Roles: new accounts start with the first four basic roles and open
+          the rest with their seals. "Open all" gives an account every role.
         </p>
         <div id="admin-users" class="admin-table-wrap">Loading…</div>
       </section>
@@ -110,7 +115,7 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
         <thead>
           <tr>
             <th>Wizard name</th><th>Email</th>
-            <th>Joined</th><th>Rooms</th><th></th>
+            <th>Joined</th><th>Rooms</th><th>Roles</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -122,6 +127,12 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
                   <td>${escapeHtml(user.email)}</td>
                   <td>${formatDateTime(user.createdAt)}</td>
                   <td>${user.roomsCreated}</td>
+                  <td>
+                    <button type="button" class="admin-roles"
+                      data-user-id="${user.id}" data-open="${!user.rolesOpen}">
+                      ${user.rolesOpen ? "All open · Lock" : "Locked · Open all"}
+                    </button>
+                  </td>
                   <td>
                     ${
                       user.id === currentUser.id
@@ -159,6 +170,20 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
       if (usersBox) usersBox.innerHTML = "";
     }
   }
+
+  // Roles mode: every role open for an account, or the locks back on.
+  container.addEventListener("click", async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".admin-roles");
+    if (!button) return;
+    button.disabled = true;
+    try {
+      await setAdminRolesOpen(Number(button.dataset.userId), button.dataset.open === "true");
+      await load();
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Could not change the roles");
+      button.disabled = false;
+    }
+  });
 
   container.addEventListener("click", async (event) => {
     const button = (event.target as HTMLElement).closest<HTMLButtonElement>(

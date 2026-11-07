@@ -27,6 +27,7 @@ interface PlayerRow {
   username: string;
   avatar: string | null;
   role: string | null;
+  masterRole: string | null;
 }
 
 type JoinRoomResult =
@@ -76,7 +77,7 @@ class WizardLobbyManager {
     const rows = db
       .prepare(
         `
-          SELECT username, avatar, role
+          SELECT username, avatar, role, master_role AS masterRole
           FROM room_players
           WHERE room_id = ?
           ORDER BY joined_at ASC
@@ -88,6 +89,7 @@ class WizardLobbyManager {
       username: row.username,
       avatar: isAvatarId(row.avatar) ? row.avatar : null,
       role: isRoleId(row.role) ? row.role : null,
+      masterRole: isRoleId(row.masterRole) ? row.masterRole : null,
     }));
   }
 
@@ -551,6 +553,16 @@ class WizardLobbyManager {
     db.prepare(`
       UPDATE room_players
       SET role = ?
+      WHERE room_id = ? AND username = ?
+    `).run(role, roomId, username);
+  }
+
+  // The same for the master role, in a basic + master room
+  // (modes/roles/rolePairs.ts).
+  chooseMasterRole(roomId: number, username: string, role: RoleId | null): void {
+    db.prepare(`
+      UPDATE room_players
+      SET master_role = ?
       WHERE room_id = ? AND username = ?
     `).run(role, roomId, username);
   }

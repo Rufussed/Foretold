@@ -1,4 +1,5 @@
 import { API_BASE } from "../services/api";
+import { rolesName } from "../modes/roles/role-names";
 import { fullRoundCount } from "../../backend/src/game/wizard/models/rounds";
 import { BOT_LEVELS, DEFAULT_BOT_LEVEL } from "../../backend/src/game/wizard/botLevels";
 import { t } from "../i18n";
@@ -29,7 +30,8 @@ import { serverError, type ServerError } from "../i18n/server-error";
 import { gameModeBadge, gameModeName } from "../utils/game-mode";
 import { isRoleId, roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
-import { npcRolesChoice } from "../modes/roles/npc-roles-choice";
+import { roleSlotsChoice } from "../modes/roles/role-slots-choice";
+import { loadRoleAccess, lockRoleOptions } from "../modes/roles/role-locks";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -189,7 +191,7 @@ export async function renderRoomPage(
                   </select>
                 </label>
 
-                ${/* Roles mode only: modes/roles/npc-roles-choice.ts */ npcRolesChoice()}
+                ${/* Roles mode only: modes/roles/role-slots-choice.ts */ roleSlotsChoice()}
 
                 <label>
                   <span>${t("room.rounds")}</span>
@@ -333,7 +335,9 @@ export async function renderRoomPage(
   const hostRoleEls = [...container.querySelectorAll<HTMLLabelElement>(".room-role-field")];
   const ownRoleEl = element<HTMLDivElement>("#room-role-own");
   const roleSelects = [...container.querySelectorAll<HTMLSelectElement>(".room-role-select")];
-  let chosenRole: RoleId | null = null;
+  // The roles chosen, one per list kind: the master one only in a basic +
+  // master room (modes/roles/rolePairs.ts).
+  const chosenRoles: Record<RoleKind, RoleId | null> = { basic: null, master: null };
   for (const button of container.querySelectorAll<HTMLButtonElement>(".roles-help-button")) {
     button.addEventListener("click", (event) => {
       // Inside the role's label, which would otherwise open the list.
@@ -341,12 +345,12 @@ export async function renderRoomPage(
       openRolesHelp(button.dataset.kind === "master" ? "master" : "basic");
     });
   }
-  // The lists of the role's kind show the choice, with its power as the
-  // hint; the other kind's lists go back to their prompt.
-  const showRole = (role: RoleId | null) => {
-    chosenRole = role;
+  // The lists of the kind show the choice, with its power as the hint.
+  const showRole = (kind: RoleKind, role: RoleId | null) => {
+    const shown = role && roleKind(role) === kind ? role : null;
+    chosenRoles[kind] = shown;
     for (const select of roleSelects) {
-      const shown = role && roleKind(role) === select.dataset.kind ? role : null;
+      if (select.dataset.kind !== kind) continue;
       select.value = shown ?? "";
       select.title = shown ? t(`role.${shown}.power`) : "";
     }
@@ -358,8 +362,9 @@ export async function renderRoomPage(
   let roleSyncAfter = 0;
   for (const select of roleSelects) {
     select.addEventListener("change", () => {
+      const kind: RoleKind = select.dataset.kind === "master" ? "master" : "basic";
       const role = isRoleId(select.value) ? select.value : null;
-      showRole(role);
+      showRole(kind, role);
       roleSyncAfter = Number.POSITIVE_INFINITY;
       roleSave = roleSave.then(async () => {
         if (destroyed) return;
@@ -370,7 +375,7 @@ export async function renderRoomPage(
               "Content-Type": "application/json",
               Authorization: `Bearer ${token}`,
             },
-            body: JSON.stringify({ role }),
+            body: JSON.stringify({ role, kind }),
           });
           if (!response.ok) {
             const data = (await response.json()) as ServerError;
@@ -383,12 +388,17 @@ export async function renderRoomPage(
       });
     });
   }
+  // Roles mode only: roles still locked for this player show greyed out
+  // (modes/roles/role-locks.ts).
+  void loadRoleAccess(token).then((access) => {
+    if (access && !destroyed) lockRoleOptions(roleSelects, access.open);
+  });
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
   // How well the NPCs play. See botLevels.ts.
   const botLevelEl = element<HTMLSelectElement>("#room-bot-level");
-  // Roles mode only: which roles the NPCs draw. See modes/roles/npc-roles-choice.ts.
-  const npcRolesEl = element<HTMLSelectElement>("#room-npc-roles");
+  // Roles mode only: one basic role each, or basic + master. See modes/roles/role-slots-choice.ts.
+  const roleSlotsEl = element<HTMLSelectElement>("#room-role-slots");
   // How fast the game plays out, for everyone in it: the server's pauses and
   // the table's animations both scale by it. See gameplayPace.ts.
   const paceEl = element<HTMLSelectElement>("#room-pace");
@@ -414,6 +424,8 @@ export async function renderRoomPage(
     lastPredictionLimited: lastPredictionEl.value === "true",
     missedTurnsToQuit: missedTurnsEl.value === "off" ? null : Number(missedTurnsEl.value),
     turnTimeoutMs: turnTimeoutEl.value === "none" ? null : Number(turnTimeoutEl.value),
+    // Roles mode only (modes/roles/role-slots-choice.ts).
+    rolePair: roleSlotsEl.value === "pair",
   });
   let humanCount = 0;
   let maxPlayers = 0;
@@ -564,17 +576,24 @@ export async function renderRoomPage(
     const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
     const isRoles = options.mode === "roles";
     for (const roleEl of hostRoleEls) roleEl.hidden = !isRoles;
-    npcRolesEl.closest("label")!.hidden = !isRoles;
-    // The role the room has for this player, unless a change is on its way.
-    const savedRole = room.players.find((player) => player.username === user.username)?.role ?? null;
-    if (savedRole !== chosenRole && Date.now() > roleSyncAfter) {
-      showRole(savedRole);
+    roleSlotsEl.closest("label")!.hidden = !isRoles;
+    // Roles mode: the master list only in a basic + master room.
+    for (const masterEl of container.querySelectorAll<HTMLElement>(".room-role-master")) {
+      masterEl.hidden = !isRoles || !options.rolePair;
+    }
+    // The roles the room has for this player, unless a change is on its way.
+    const seat = room.players.find((player) => player.username === user.username);
+    if (Date.now() > roleSyncAfter) {
+      if ((seat?.role ?? null) !== chosenRoles.basic) showRole("basic", seat?.role ?? null);
+      if ((seat?.masterRole ?? null) !== chosenRoles.master) showRole("master", seat?.masterRole ?? null);
     }
     ownRoleEl.hidden = !isRoles || isHost;
     variationsSummaryEl.hidden = isHost;
     variationsSummaryEl.textContent = describeRuleVariations(options, room.turnTimeoutMs);
     if (isHost && !optionsLoaded) {
       optionsLoaded = true;
+      // Roles mode: one basic role each, or basic + master, as the room has it.
+      roleSlotsEl.value = options.rolePair ? "pair" : "one";
       // An Expanded room's own defaults (defaultGameOptions) are the ones
       // marked "Default:", and the start summary highlights changes from them.
       if (options.mode === "sabotage") {
@@ -785,6 +804,7 @@ export async function renderRoomPage(
     });
   };
   wizardWinsEl.addEventListener("change", saveOptions);
+  roleSlotsEl.addEventListener("change", saveOptions);
   blindFirstRoundEl.addEventListener("change", saveOptions);
   lastPredictionEl.addEventListener("change", saveOptions);
   missedTurnsEl.addEventListener("change", saveOptions);
@@ -804,16 +824,17 @@ export async function renderRoomPage(
     const isRoles = mode === "roles";
     const wizards = (room?.players ?? []).map((player) => {
       const name = player.username === user.username ? greeting : displayName(player.username);
-      return isRoles && player.role ? `${name} (${t(`role.${player.role}`)})` : name;
+      const roles = rolesName(player);
+      return isRoles && roles ? `${name} (${roles})` : name;
     });
     const rows: StartSummaryRow[] = [
       { label: t("lobby.mode"), value: gameModeName(mode), changed: mode !== "classic" },
       { label: t("start.wizards"), value: wizards.join(", ") },
+      ...(isRoles ? [{ label: t("room.roleSlots"), ...chosen(roleSlotsEl) }] : []),
       { label: t("room.bots"), value: chosen(botsEl).value },
     ];
     if (Number(botsEl.value) > 0) {
       rows.push({ label: t("room.botLevel"), ...chosen(botLevelEl) });
-      if (isRoles) rows.push({ label: t("room.npcRoles"), ...chosen(npcRolesEl) });
     }
     rows.push(
       // A full game is the first choice; fewer rounds is the host's own.
@@ -835,7 +856,8 @@ export async function renderRoomPage(
     try {
       // The time per move goes with the room, not the start: the game takes
       // the room's saved one, so a save still on its way lands first.
-      const { turnTimeoutMs: _saved, ...rules } = chosenOptions();
+      // The role slots too go with the room (rolePair), not the start.
+      const { turnTimeoutMs: _saved, rolePair: _pair, ...rules } = chosenOptions();
       await optionsSave;
       const response = await fetch(`${API_BASE}/wizard/games`, {
         method: "POST",
@@ -850,7 +872,6 @@ export async function renderRoomPage(
           pace: Number(paceEl.value),
           botLevel: botLevelEl.value,
           // Roles mode only: the server ignores it in other modes.
-          ...(roomMode() === "roles" ? { npcRoles: npcRolesEl.value } : {}),
           ...rules,
         }),
       });

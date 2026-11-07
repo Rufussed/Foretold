@@ -1,5 +1,6 @@
 import type { PublicGamePlayer } from "../../../../backend/src/game/wizard/models/wizardGame";
 import { JOKER_MAX, JOKER_TRICKS } from "../../../../backend/src/game/wizard/modes/roles/master/joker";
+import { masterRoleOf } from "../../../../backend/src/game/wizard/modes/roles/roles";
 import { t } from "../../../i18n";
 
 // Roles mode only. A Joker's points and tricks towards the next, after their
@@ -7,14 +8,14 @@ import { t } from "../../../i18n";
 // just "🃏3" when full, as no trick counts then.
 
 export function jokerMarks(player: PublicGamePlayer): string {
-  if (player.role !== "joker") return "";
+  if (masterRoleOf(player) !== "joker") return "";
   const points = player.jokerPoints ?? 0;
   return points >= JOKER_MAX ? ` \u{1F0CF}${points}` : ` \u{1F0CF}${points} · ${player.jokerTricks ?? 0}/${JOKER_TRICKS}`;
 }
 
 // The same, in words, for screen readers.
 export function jokerCarried(player: PublicGamePlayer): string {
-  if (player.role !== "joker") return "";
+  if (masterRoleOf(player) !== "joker") return "";
   return t("game.jokerPoints", {
     count: String(player.jokerPoints ?? 0),
     tricks: String(player.jokerTricks ?? 0),

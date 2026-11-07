@@ -75,7 +75,7 @@ export class WizardRules {
   // the second wins, and zero when neither card outranks the other.
   // firstBoost and secondBoost raise a card's rank against a card of its own
   // suit: a Roles Green Wizard's green cards (modes/roles/master/greenWizard.ts). A
-  // boosted card that only draws level loses.
+  // boosted card that draws level wins.
   compareCards(
     firstCard: Card,
     secondCard: Card,
@@ -85,7 +85,7 @@ export class WizardRules {
     secondBoost = 0,
   ): number {
     const byRank = () =>
-      firstCard.value + firstBoost - (secondCard.value + secondBoost) || secondBoost - firstBoost;
+      firstCard.value + firstBoost - (secondCard.value + secondBoost) || firstBoost - secondBoost;
 
     if (isWizard(firstCard)) {
       return 1;
@@ -228,7 +228,11 @@ export class WizardRules {
     // red card has already shielded a red lead, which holds to the trick's end.
     const isYellowWizard = roles?.isYellowWizard;
     if (isYellowWizard && firstRelevantCard.suit !== "Yellow" && trumpSuit !== "Yellow") {
-      let shielded = false;
+      // A Red Wizard who led red shields it from the first card on.
+      const isRedLead = (play: TrickPlay) =>
+        firstRelevantCard.suit === "Red" && !isWizard(play.card) && !isJester(play.card) &&
+        play.card.suit === "Red" && !!roles?.isRedWizard?.(play);
+      let shielded = isRedLead(playedCards[leadIndex]!);
 
       for (const play of playedCards.slice(leadIndex + 1)) {
         const numbered = !isWizard(play.card) && !isJester(play.card);
@@ -243,7 +247,7 @@ export class WizardRules {
           return "Yellow";
         }
 
-        if (firstRelevantCard.suit === "Red" && numbered && play.card.suit === "Red" && roles?.isRedWizard?.(play)) {
+        if (isRedLead(play)) {
           shielded = true;
         }
       }

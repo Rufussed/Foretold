@@ -19,14 +19,20 @@ export interface AdminUser {
   createdAt: string;
   isGuest: boolean;
   roomsCreated: number;
+  // Roles mode: every role open to them (backend modes/roles/roleAccess.ts).
+  rolesOpen: boolean;
 }
 
 // Calls the /admin routes as the signed-in account; the server decides
 // whether that account is an admin.
-async function adminRequest<T>(path: string, method = "GET"): Promise<T> {
+async function adminRequest<T>(path: string, method = "GET", body?: unknown): Promise<T> {
   const response = await fetch(`${API_BASE}/admin${path}`, {
     method,
-    headers: { Authorization: `Bearer ${getToken() ?? ""}` },
+    headers: {
+      Authorization: `Bearer ${getToken() ?? ""}`,
+      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+    },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
 
   const data = (await response.json().catch(() => ({}))) as T & {
@@ -54,4 +60,9 @@ export async function deleteAdminRoom(roomId: number): Promise<void> {
 
 export async function deleteAdminUser(userId: number): Promise<void> {
   await adminRequest(`/users/${userId}`, "DELETE");
+}
+
+// Roles mode: every role open for an account, or the locks back on.
+export async function setAdminRolesOpen(userId: number, open: boolean): Promise<void> {
+  await adminRequest(`/users/${userId}/roles-open`, "POST", { open });
 }

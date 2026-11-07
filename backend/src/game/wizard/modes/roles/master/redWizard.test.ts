@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import { WizardRules } from "../../../services/wizardRules.js";
 import { play } from "../roleTestHelpers.js";
 import { trickRolesIn } from "./trickRoles.js";
+import { burnsWinner, FIRE_BURN } from "./colourWizards.js";
 import type { RoleId } from "../roles.js";
 
 const rules = new WizardRules();
@@ -43,5 +44,33 @@ describe("the Red Wizard's shield", () => {
     const plays = [play("bo", 5, "Red"), play("yw", 6, "Yellow"), play("rw", 9, "Red"), play("cy", 2, "Blue")];
     expect(rules.getLeadSuit(plays, "Blue", roles)).toBe("Yellow");
     expect(winner(...plays)).toBe("cy");
+  });
+
+  it("holds from the first card when the Red Wizard leads red", () => {
+    // The trick from a played game: Fire 4 led by the Fire power, a Wizard,
+    // then the Air power's 11 may not turn the lead.
+    const plays = [play("rw", 4, "Red"), play("cy", 14, "Green"), play("bo", 7, "Red"), play("yw", 11, "Yellow")];
+    expect(rules.getLeadSuit(plays, "Blue", roles)).toBe("Red");
+    expect(rules.redShield(plays, "Blue", roles)).toBe(true);
+  });
+});
+
+describe("the Red Wizard's burn", () => {
+  const player = (username: string, role: RoleId) => ({ username, role }) as never;
+  const trick = (plays: ReturnType<typeof play>[]) => ({ playedCards: plays, winnerUsername: null });
+
+  it("burns a higher red card that beat the shield", () => {
+    const plays = [play("bo", 5, "Red"), play("rw", 9, "Red"), play("cy", 2, "Blue"), play("yw", 11, "Red")];
+    expect(burnsWinner(trick(plays), "Blue", roles, player("yw", "yellowWizard"))).toBe(true);
+    expect(FIRE_BURN).toBe(5);
+  });
+
+  it("burns no one without the shield, for a Wizard, or the Red Wizard's own win", () => {
+    const noShield = [play("bo", 5, "Red"), play("cy", 9, "Red")];
+    expect(burnsWinner(trick(noShield), "Blue", roles, player("cy", "farmer"))).toBe(false);
+    const wizard = [play("bo", 5, "Red"), play("rw", 9, "Red"), play("cy", 14, "Green")];
+    expect(burnsWinner(trick(wizard), "Blue", roles, player("cy", "farmer"))).toBe(false);
+    const own = [play("bo", 5, "Red"), play("rw", 9, "Red")];
+    expect(burnsWinner(trick(own), "Blue", roles, player("rw", "redWizard"))).toBe(false);
   });
 });

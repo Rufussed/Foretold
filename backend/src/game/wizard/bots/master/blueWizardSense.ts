@@ -3,14 +3,14 @@ import type { WizardGameState } from "../../models/wizardGame.js";
 import { blueCardCount, isBlueCard } from "../../modes/roles/master/blueWizard.js";
 import { currentPlayer } from "../personality.js";
 import { strength } from "../handStrength.js";
-import { roleOfBot, type Play } from "../roleSense.js";
+import { masterOfBot, type Play } from "../roleSense.js";
 
 // How the Adept plays the Blue Wizard (modes/roles/blueWizard.ts). It uses
 // only what a human Blue Wizard is shown: how many blue cards each opponent
 // holds. Whoever holds none cannot follow blue, so can trump a blue lead;
 // whoever holds some must follow it.
 
-const isBlueWizard = (game: WizardGameState): boolean => roleOfBot(game) === "blueWizard";
+const isBlueWizard = (game: WizardGameState): boolean => masterOfBot(game) === "blueWizard";
 
 // Each opponent's blue cards.
 const opponentsBlue = (game: WizardGameState): number[] => {
