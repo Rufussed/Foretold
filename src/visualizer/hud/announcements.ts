@@ -4,6 +4,7 @@ import type { PublicGamePlayer, PublicWizardGameState } from "../../../backend/s
 import type { Card, Suit } from "../../../backend/src/game/wizard/models/card";
 import { t } from "../../i18n";
 import { isSabotageGame } from "../../modes/sabotage/sabotage-game";
+import { isClassicDeck } from "../card-decks";
 import { choiceMessages } from "../../modes/roles/hud/choice-announcements";
 import {
   masterMessages,
@@ -53,7 +54,10 @@ export const announcedName = (username: string): string =>
 const nameOf = (username: string, local: string) => (username === local ? t("ann.you") : announcedName(username));
 
 // A Sabotage game names its suits as elements (modes/sabotage/hud/).
-export const suitName = (suit: Suit): string => (isSabotageGame() ? elementName(suit) : t(`suit.${suit}`));
+// Classic's cards are drawn with the elements, so its suits are named by them
+// too (Earth, not Green), as Expanded's are.
+const namesElements = (): boolean => isSabotageGame() || isClassicDeck();
+export const suitName = (suit: Suit): string => (namesElements() ? elementName(suit) : t(`suit.${suit}`));
 
 export function cardName(card: Card): string {
   if (isSabotageGame()) return sabotageCardName(card);
@@ -142,7 +146,7 @@ export function statusMessage(state: PublicWizardGameState, local: string): stri
 // choosing), so it says nothing here; the last round has no trump card at all.
 export function trumpMessage(state: PublicWizardGameState): string | null {
   const card = state.trumpCard;
-  const sabotage = isSabotageGame();
+  const sabotage = namesElements();
   if (!card) return t(sabotage ? "sabotage.ann.noTrump" : "ann.noTrump");
   if (card.value === 14 || card.value === 0) return null;
   return state.trumpSuit

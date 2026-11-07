@@ -20,9 +20,10 @@ export interface CardDeck {
   // The title's translation key for a numbered card (see i18n); the element
   // is the one the card is drawn as, for the titles that differ by it.
   titleKey(value: number, element: string): TitleKey;
-  // Whether the Fool, Thief, Trickster, Seer and Wizard carry their symbol:
-  // only on an Expanded table.
+  // Whether the Fool and the Wizard carry their symbol: Classic and Expanded.
   symbols: boolean;
+  // Whether the Seer, Thief and Trickster carry theirs too: only Expanded.
+  powerSymbols: boolean;
 }
 
 type TitleKey =
@@ -91,10 +92,11 @@ const DECK_B_PICTURES = [
   "monarch",
 ] as const;
 
-const deckA = (symbols: boolean): CardDeck => ({
+const deckA = (powerSymbols: boolean): CardDeck => ({
   picture: (value) => DECK_A_PICTURES[value - 1],
   titleKey: titled(DECK_A_PICTURES, (value) => `sabotage.rank.${value}`),
-  symbols,
+  symbols: true,
+  powerSymbols,
 });
 
 const DECKS: Record<GameMode, CardDeck> = {
@@ -104,6 +106,7 @@ const DECKS: Record<GameMode, CardDeck> = {
     picture: (value) => DECK_B_PICTURES[value - 1],
     titleKey: titled(DECK_B_PICTURES, (value) => `roleplay.rank.${value}`),
     symbols: false,
+    powerSymbols: false,
   },
 };
 
@@ -120,5 +123,7 @@ export function setCardDeckMode(state: Pick<PublicWizardGameState, "options"> | 
   const wanted = state?.options?.mode;
   mode = isGameMode(wanted) ? wanted : "classic";
 }
+
+export const isClassicDeck = (): boolean => mode === "classic";
 
 export const activeDeck = (): CardDeck => DECKS[mode];

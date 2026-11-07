@@ -62,13 +62,15 @@ async function cardPrint(card: Card): Promise<FacePrint> {
     embossPrint(context, width, height, (target, pass) => drawCardPrint(target, width, height, print, pass));
 }
 
-// The symbol a card carries, if it is one of the four that have one: the Fool
-// and the Wizard, and the Seer, the Thief and the Trickster among the ranks.
+// The symbol a card carries: the Fool and the Wizard in Classic and Expanded,
+// and also the Seer, the Thief and the Trickster in Expanded.
 function cardSymbol(card: Card): PowerSymbol | undefined {
-  if (!activeDeck().symbols) return undefined;
+  const deck = activeDeck();
+  if (!deck.symbols) return undefined;
   if (card.value === 0) return "fool";
   if (card.value === 14) return "wizard";
-  return powerOf(card) ?? undefined;
+  // The Seer, Thief and Trickster: Expanded only.
+  return deck.powerSymbols ? (powerOf(card) ?? undefined) : undefined;
 }
 
 // The card's title, in the language being played: its rank in the hierarchy,
