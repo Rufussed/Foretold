@@ -112,8 +112,9 @@ const DECKS: Record<GameMode, CardDeck> = {
     picture: (value) => DECK_B_PICTURES[value - 1],
     titleKey: titled(DECK_B_PICTURES, (value) => `roleplay.rank.${value}`),
     symbols: false,
-    // The Wizard's "W" and the Jester's hat (sabotage-card-loader.ts).
+    // The Jester's hat and the Wizard's symbol, as in Classic (sabotage-card-loader.ts).
     markSpecials: true,
+    wizardSymbol: true,
   },
 };
 
