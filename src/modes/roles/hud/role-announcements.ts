@@ -1,3 +1,4 @@
+import type { Card } from "../../../../backend/src/game/wizard/models/card";
 import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/models/wizardGame";
 import { burnsWinner, FIRE_BURN } from "../../../../backend/src/game/wizard/modes/roles/master/colourWizards";
 import { rolesName } from "../role-names";
@@ -10,6 +11,7 @@ import {
   announcedName,
   cardName,
   isSameTrick,
+  suitName,
   type EventMessage,
 } from "../../../visualizer/hud/announcements";
 
@@ -26,6 +28,27 @@ const leadSuitOf = (state: PublicWizardGameState) =>
   rules.getLeadSuit(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
 const redShieldOf = (state: PublicWizardGameState) =>
   rules.redShield(state.currentTrick.playedCards, state.trumpSuit, trickRolesIn(state));
+
+// A Yellow Wizard turned the lead: there was a lead suit, not yellow, and now
+// yellow leads. After a Jester lead (or none yet) the first card only sets
+// the lead suit, as in every game.
+const turnedToAir = (previous: PublicWizardGameState, next: PublicWizardGameState): boolean => {
+  const before = leadSuitOf(previous);
+  return !!before && before !== "Yellow" && leadSuitOf(next) === "Yellow";
+};
+
+// Whether this card of the trick raised a Red Wizard's shield.
+const raisesShield = (state: PublicWizardGameState, index: number): boolean => {
+  const cards = state.currentTrick.playedCards;
+  const roles = trickRolesIn(state);
+  return !rules.redShield(cards.slice(0, index), state.trumpSuit, roles)
+    && rules.redShield(cards.slice(0, index + 1), state.trumpSuit, roles);
+};
+
+// A card as the Roles log names it: a Wizard with its element, "Earth Wizard",
+// as the colour Wizards' powers and bonuses go by it.
+const logCardName = (card: Card): string =>
+  card.value === 14 ? t("card.elementWizard", { suit: suitName(card.suit) }) : cardName(card);
 
 const rolesIn = (state: PublicWizardGameState): RoleOf => rolesOfPlayers(state.players);
 
@@ -90,7 +113,7 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
 
   // A Roles Yellow Wizard just made yellow the lead suit.
   const switcher = next.currentTrick.playedCards.at(-1);
-  if (sameTrick && switcher && leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow") {
+  if (sameTrick && switcher && turnedToAir(previous, next)) {
     const by = switcher.playedBy ?? switcher.username;
     // The player who led loses points to it (backend colourWizards.ts AIR_TAKE).
     const lead = next.currentTrick.playedCards.find((played) => played.card.value !== 0);
@@ -125,8 +148,15 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
   const freshTrick = !isSameTrick(previous, next) && next.currentTrick.playedCards.length === 1;
   if ((sameTrick || freshTrick) && shieldedBy && !(sameTrick && redShieldOf(previous)) && redShieldOf(next)) {
     const by = shieldedBy.playedBy ?? shieldedBy.username;
+    // "No trumps" only while it matters: a trump is in the trick, or
+    // someone is still to play.
+    const cards = next.currentTrick.playedCards;
+    const trumped = cards.some((played) => played.card.suit === next.trumpSuit && played.card.value >= 1 && played.card.value <= 13);
+    const matters = trumped || cards.length < next.players.length;
     messages.push({
-      text: by === local ? t("ann.youRedShield") : t("ann.redShield", { name: announcedName(by) }),
+      text: matters
+        ? by === local ? t("ann.youRedShield") : t("ann.redShield", { name: announcedName(by) })
+        : by === local ? t("ann.youRedShieldPlain") : t("ann.redShieldPlain", { name: announcedName(by) }),
       username: by,
       role: true,
     });
@@ -246,19 +276,20 @@ export function playLogLines(previous: PublicWizardGameState, next: PublicWizard
 
   playedCards.slice(from).forEach((played, offset) => {
     const by = played.playedBy ?? played.username;
-    const power = rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf);
+    // A Red Wizard's card that raised the shield is marked as a power too.
+    const power = rolePowerOn(playedCards, from + offset, next.trumpSuit, roleOf) || raisesShield(next, from + offset);
     // A Thief's 1 that leads has nothing before it to take; the power is
     // still on, so the log says why nothing is stolen.
     const leads = power && from + offset === 0 && roleOf(by) === "thief" ? ` ${t("log.thiefLeads")}` : "";
     const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : played.freePlay ? ` ${t("log.playsFree")}` : "";
-    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: cardName(played.card) }) + leads + bet });
+    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: logCardName(played.card) }) + leads + bet });
   });
 
   const winner = next.currentTrick.winnerUsername;
   if (winner && previous.currentTrick.winnerUsername !== winner) {
     const won = playedCards.find((entry) => entry.username === winner);
     lines.push({
-      text: t("log.winsTrick", { name: withRole(next, winner), card: won ? cardName(won.card) : "" }),
+      text: t("log.winsTrick", { name: withRole(next, winner), card: won ? logCardName(won.card) : "" }),
       trick: true,
     });
   }
@@ -288,7 +319,7 @@ export function roleUses(
     next.currentTrick.playedCards.length > previous.currentTrick.playedCards.length &&
     previous.currentTrick.playedCards.length > 0;
   const last = next.currentTrick.playedCards.at(-1);
-  const switched = leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow";
+  const switched = turnedToAir(previous, next);
   const shielded = !redShieldOf(previous) && redShieldOf(next);
   if (sameTrick && last && (switched || shielded || last.freePlay)) uses.push({ by: last.playedBy ?? last.username, hitYou: false });
   return uses;
@@ -303,7 +334,9 @@ export function roleMessages(
   next: PublicWizardGameState,
   local: string,
 ): (EventMessage & { atTrickEnd: boolean })[] {
-  return newRoleActions(previous, next).map((action) => {
+  // A King's tax or tribute that took nothing is not told.
+  const told = newRoleActions(previous, next).filter((action) => !(action.role === "king" && !action.stopped && (action.points ?? 0) === 0));
+  return told.map((action) => {
     const card = cardName(action.card);
     const values = { name: announcedName(action.by), victim: announcedName(action.on), card, points: String(action.points ?? 0) };
     const about = { role: true, aboutYou: touches(action, local) };
@@ -370,8 +403,19 @@ export function roleMessages(
     if (action.role === "priest") {
       // The faith paid and the alms given, in a market's words:
       // "+10 from Rufus, Anna · −5 to Carl".
-      const trades = marketTrades(action, local);
-      const text = action.by === local ? t("ann.yourFaith", { trades }) : t("ann.faith", { ...values, trades });
+      // Faith received and alms given (their 8 won) are told apart.
+      const faith = (action.trades ?? []).filter((trade) => trade.points >= 0);
+      const alms = (action.trades ?? []).filter((trade) => trade.points < 0);
+      const parts: string[] = [];
+      if (faith.length) {
+        const trades = marketTrades({ ...action, trades: faith }, local);
+        parts.push(action.by === local ? t("ann.yourFaith", { trades }) : t("ann.faith", { ...values, trades }));
+      }
+      if (alms.length) {
+        const trades = marketTrades({ ...action, trades: alms }, local);
+        parts.push(action.by === local ? t("ann.yourAlms", { trades }) : t("ann.alms", { ...values, trades }));
+      }
+      const text = parts.join(" ");
       return { text, username: action.by, atTrickEnd: true, ...about };
     }
     const [youUse, usedOnYou, used] = textsFor(action);
