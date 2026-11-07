@@ -22,6 +22,8 @@ export interface AdminUser {
   roomsCreated: number;
   // Roles mode: every role open to them (modes/roles/roleAccess.ts).
   rolesOpen: boolean;
+  // Whether they confirmed their email, or an admin did for them.
+  emailVerified: boolean;
 }
 
 // Who may use the admin page: the usernames in ADMIN_USERNAMES (comma
@@ -77,6 +79,7 @@ export const adminService = {
           users.email,
           users.created_at AS createdAt,
           users.is_guest AS isGuest,
+          users.email_verified AS emailVerified,
           (
             SELECT COUNT(*)
             FROM rooms
@@ -89,9 +92,18 @@ export const adminService = {
         FROM users
         ORDER BY users.created_at DESC
       `)
-      .all() as (Omit<AdminUser, "isGuest" | "rolesOpen"> & { isGuest: number; rolesOpen: number })[];
+      .all() as (Omit<AdminUser, "isGuest" | "rolesOpen" | "emailVerified"> & {
+        isGuest: number;
+        rolesOpen: number;
+        emailVerified: number;
+      })[];
 
-    return rows.map((row) => ({ ...row, isGuest: row.isGuest === 1, rolesOpen: row.rolesOpen === 1 }));
+    return rows.map((row) => ({
+      ...row,
+      isGuest: row.isGuest === 1,
+      rolesOpen: row.rolesOpen === 1,
+      emailVerified: row.emailVerified === 1,
+    }));
   },
 
   // The room, its players and its game, including a game held in memory. A

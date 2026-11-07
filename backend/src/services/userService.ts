@@ -138,6 +138,11 @@ export class UserService {
     return this.getUserByEmail(email) !== null;
   }
 
+  // A new address, confirmed at once: set by an admin (routes/admin.ts).
+  static setConfirmedEmail(id: number, email: string): void {
+    db.prepare("UPDATE users SET email = ?, email_verified = 1 WHERE id = ?").run(email, id);
+  }
+
   static markEmailVerified(id: number): void {
     db.prepare("UPDATE users SET email_verified = 1 WHERE id = ?").run(id);
   }

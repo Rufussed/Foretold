@@ -21,6 +21,8 @@ export interface AdminUser {
   roomsCreated: number;
   // Roles mode: every role open to them (backend modes/roles/roleAccess.ts).
   rolesOpen: boolean;
+  // Whether their email is confirmed, by them or by an admin.
+  emailVerified: boolean;
 }
 
 // Calls the /admin routes as the signed-in account; the server decides
@@ -65,4 +67,18 @@ export async function deleteAdminUser(userId: number): Promise<void> {
 // Roles mode: every role open for an account, or the locks back on.
 export async function setAdminRolesOpen(userId: number, open: boolean): Promise<void> {
   await adminRequest(`/users/${userId}/roles-open`, "POST", { open });
+}
+
+// Confirms one account's email by hand, or every account still waiting.
+export async function confirmAdminEmail(userId: number): Promise<void> {
+  await adminRequest(`/users/${userId}/confirm-email`, "POST");
+}
+
+export async function confirmAllAdminEmails(): Promise<number> {
+  return (await adminRequest<{ confirmed: number }>("/users/confirm-all", "POST")).confirmed;
+}
+
+// Sets an account's email to a new address, confirmed at once.
+export async function setAdminEmail(userId: number, email: string): Promise<void> {
+  await adminRequest(`/users/${userId}/email`, "POST", { email });
 }

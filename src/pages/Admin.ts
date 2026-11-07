@@ -7,6 +7,9 @@ import {
   listAdminRooms,
   listAdminUsers,
   setAdminRolesOpen,
+  confirmAdminEmail,
+  confirmAllAdminEmails,
+  setAdminEmail,
   type AdminRoom,
   type AdminUser,
 } from "../services/admin";
@@ -48,6 +51,12 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
         <p class="admin-note">
           Roles: new accounts start with the first four basic roles and open
           the rest with their seals. "Open all" gives an account every role.
+        </p>
+        <p class="admin-note">
+          Email: an account must confirm its email before it can sign in.
+          "Confirm" does it for them, for an address that is wrong or never
+          gets the mail; "Edit" gives them a new address, confirmed at once.
+          <button type="button" class="admin-confirm-all" id="admin-confirm-all">Confirm all waiting</button>
         </p>
         <div id="admin-users" class="admin-table-wrap">Loading…</div>
       </section>
@@ -124,7 +133,20 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
               (user) => `
                 <tr>
                   <td>${escapeHtml(user.username)}${user.isGuest ? " <small>guest</small>" : ""}</td>
-                  <td>${escapeHtml(user.email)}</td>
+                  <td>
+                    ${escapeHtml(user.email)}
+                    ${
+                      user.emailVerified
+                        ? ""
+                        : `<button type="button" class="admin-confirm" data-user-id="${user.id}">Confirm</button>`
+                    }
+                    ${
+                      user.isGuest
+                        ? ""
+                        : `<button type="button" class="admin-email" data-user-id="${user.id}"
+                            data-email="${escapeHtml(user.email)}" data-label="${escapeHtml(user.username)}">Edit</button>`
+                    }
+                  </td>
                   <td>${formatDateTime(user.createdAt)}</td>
                   <td>${user.roomsCreated}</td>
                   <td>
@@ -170,6 +192,42 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
       if (usersBox) usersBox.innerHTML = "";
     }
   }
+
+  // A new email for an account, confirmed at once.
+  container.addEventListener("click", async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".admin-email");
+    if (!button) return;
+    const email = window.prompt(`New email for ${button.dataset.label ?? ""}:`, button.dataset.email ?? "");
+    if (email === null || email.trim() === "" || email.trim() === button.dataset.email) return;
+    button.disabled = true;
+    try {
+      await setAdminEmail(Number(button.dataset.userId), email.trim());
+      showMessage(`Email of ${button.dataset.label ?? ""} set to ${email.trim()}, confirmed.`);
+      await load();
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Could not change the email");
+      button.disabled = false;
+    }
+  });
+
+  // Confirms an account's email by hand, or every one still waiting.
+  container.addEventListener("click", async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".admin-confirm, .admin-confirm-all");
+    if (!button) return;
+    button.disabled = true;
+    try {
+      if (button.classList.contains("admin-confirm-all")) {
+        const confirmed = await confirmAllAdminEmails();
+        showMessage(`Confirmed ${confirmed} account${confirmed === 1 ? "" : "s"}.`);
+      } else {
+        await confirmAdminEmail(Number(button.dataset.userId));
+      }
+      await load();
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Could not confirm");
+    }
+    button.disabled = false;
+  });
 
   // Roles mode: every role open for an account, or the locks back on.
   container.addEventListener("click", async (event) => {
