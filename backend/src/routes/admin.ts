@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { adminService, isAdminUsername } from "../services/adminService.js";
 import { UserService } from "../services/userService.js";
 import db from "../db/database.js";
+import { EMAIL_PATTERN } from "./auth.js";
 import { setRolesAllOpen } from "../game/wizard/modes/roles/roleAccess.js";
 
 interface IdParams {
@@ -90,5 +91,25 @@ export default async function adminRoutes(
   server.post("/users/confirm-all", async () => {
     const result = db.prepare("UPDATE users SET email_verified = 1 WHERE email_verified = 0 AND is_guest = 0").run();
     return { confirmed: Number(result.changes) };
+  });
+
+  // Sets an account's email to a new address, confirmed at once, for a player
+  // who signed up with a wrong one. No mail is sent.
+  server.post<{ Params: IdParams; Body: { email?: unknown } }>("/users/:id/email", async (request, reply) => {
+    const userId = Number(request.params.id);
+    const user = Number.isInteger(userId) ? UserService.getUserById(userId) : null;
+    if (!user) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+    const email = typeof request.body?.email === "string" ? request.body.email.trim() : "";
+    if (email.length > 254 || !EMAIL_PATTERN.test(email)) {
+      return reply.status(400).send({ error: "Please enter a valid email" });
+    }
+    const owner = UserService.getUserByEmail(email);
+    if (owner && owner.id !== userId) {
+      return reply.status(409).send({ error: `That email belongs to ${owner.username}` });
+    }
+    UserService.setConfirmedEmail(userId, email);
+    return { userId, email };
   });
 }

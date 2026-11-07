@@ -12,7 +12,7 @@ import { mailLanguage, mailService, type MailLanguage } from "../services/mailSe
 const USERNAME_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
 // Something@something.something: enough to catch a typo, and the mailed link
 // proves the rest.
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // The shortest wait between two mails of one kind to one player.
 const MAIL_COOLDOWN_SECONDS = 60;
 

@@ -83,7 +83,8 @@
 .admin-delete,
 .admin-roles,
 .admin-confirm,
-.admin-confirm-all {
+.admin-confirm-all,
+.admin-email {
   padding: 5px 12px;
   font-size: 0.72rem;
 }

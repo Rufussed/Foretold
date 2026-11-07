@@ -9,6 +9,7 @@ import {
   setAdminRolesOpen,
   confirmAdminEmail,
   confirmAllAdminEmails,
+  setAdminEmail,
   type AdminRoom,
   type AdminUser,
 } from "../services/admin";
@@ -54,7 +55,7 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
         <p class="admin-note">
           Email: an account must confirm its email before it can sign in.
           "Confirm" does it for them, for an address that is wrong or never
-          gets the mail.
+          gets the mail; "Edit" gives them a new address, confirmed at once.
           <button type="button" class="admin-confirm-all" id="admin-confirm-all">Confirm all waiting</button>
         </p>
         <div id="admin-users" class="admin-table-wrap">Loading…</div>
@@ -139,6 +140,12 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
                         ? ""
                         : `<button type="button" class="admin-confirm" data-user-id="${user.id}">Confirm</button>`
                     }
+                    ${
+                      user.isGuest
+                        ? ""
+                        : `<button type="button" class="admin-email" data-user-id="${user.id}"
+                            data-email="${escapeHtml(user.email)}" data-label="${escapeHtml(user.username)}">Edit</button>`
+                    }
                   </td>
                   <td>${formatDateTime(user.createdAt)}</td>
                   <td>${user.roomsCreated}</td>
@@ -185,6 +192,23 @@ export async function renderAdminPage(container: HTMLElement): Promise<void> {
       if (usersBox) usersBox.innerHTML = "";
     }
   }
+
+  // A new email for an account, confirmed at once.
+  container.addEventListener("click", async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".admin-email");
+    if (!button) return;
+    const email = window.prompt(`New email for ${button.dataset.label ?? ""}:`, button.dataset.email ?? "");
+    if (email === null || email.trim() === "" || email.trim() === button.dataset.email) return;
+    button.disabled = true;
+    try {
+      await setAdminEmail(Number(button.dataset.userId), email.trim());
+      showMessage(`Email of ${button.dataset.label ?? ""} set to ${email.trim()}, confirmed.`);
+      await load();
+    } catch (error) {
+      showMessage(error instanceof Error ? error.message : "Could not change the email");
+      button.disabled = false;
+    }
+  });
 
   // Confirms an account's email by hand, or every one still waiting.
   container.addEventListener("click", async (event) => {

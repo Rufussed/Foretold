@@ -77,3 +77,8 @@ export async function confirmAdminEmail(userId: number): Promise<void> {
 export async function confirmAllAdminEmails(): Promise<number> {
   return (await adminRequest<{ confirmed: number }>("/users/confirm-all", "POST")).confirmed;
 }
+
+// Sets an account's email to a new address, confirmed at once.
+export async function setAdminEmail(userId: number, email: string): Promise<void> {
+  await adminRequest(`/users/${userId}/email`, "POST", { email });
+}
