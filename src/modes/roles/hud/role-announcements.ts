@@ -92,8 +92,17 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
   const switcher = next.currentTrick.playedCards.at(-1);
   if (sameTrick && switcher && leadSuitOf(previous) !== "Yellow" && leadSuitOf(next) === "Yellow") {
     const by = switcher.playedBy ?? switcher.username;
+    // The player who led loses points to it (backend colourWizards.ts AIR_TAKE).
+    const lead = next.currentTrick.playedCards.find((played) => played.card.value !== 0);
+    const from = lead ? lead.playedBy ?? lead.username : "";
+    const text =
+      by === local
+        ? t("ann.youTurnLead", { from: announcedName(from) })
+        : from === local
+          ? t("ann.turnsLeadFromYou", { name: announcedName(by) })
+          : t("ann.turnsLead", { name: announcedName(by), from: announcedName(from) });
     messages.push({
-      text: by === local ? t("ann.youTurnLead") : t("ann.turnsLead", { name: announcedName(by) }),
+      text,
       username: by,
       role: true,
     });
@@ -393,6 +402,8 @@ const LOSS_LABELS: Record<RoleAction["role"], MessageKey> = {
 export function roleBonusLabel(role: string, points: number): string {
   // Burned by the Power of Fire's shield (backend master/colourWizards.ts).
   if (role === "redWizard" && points < 0) return t("ann.burned");
+  // The lead the Power of Air turned, and the points it took with it.
+  if (role === "yellowWizard" && points < 0) return t("ann.leadTaken");
   // Points another player's power took are a loss of their own: robbed by
   // a Thief, a Servant's tip, a Fisher's catch, a Farmer's harvest, a
   // Shepherd's sheep.
