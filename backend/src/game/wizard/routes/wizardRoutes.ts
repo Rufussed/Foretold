@@ -925,7 +925,7 @@ export default async function wizardRoutes(
     }
 
     if (kind === "master" && !isPairRoom(room.options)) {
-      return reply.status(409).send({ error: "Master roles are played only in basic + master rooms" });
+      return reply.status(409).send({ error: "Powers are played only in role + power rooms" });
     }
 
     if (kind === "master") wizardLobbyManager.chooseMasterRole(roomId, username, role);
@@ -1581,7 +1581,7 @@ export default async function wizardRoutes(
     const withoutMaster = playersWithoutMaster(room);
     if (withoutMaster.length > 0) {
       return reply.status(409).send({
-        error: `Basic + master: ${withoutMaster.join(", ")} has no master role open yet.`,
+        error: `Role + power: ${withoutMaster.join(", ")} has no power open yet.`,
       });
     }
 

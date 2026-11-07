@@ -6,8 +6,8 @@ import { API_BASE } from "../../services/api";
 import { t } from "../../i18n";
 
 // Roles mode only. The roles still locked for the signed-in player
-// (backend modes/roles/roleLocks.ts): greyed out with a lock in the
-// Antechamber's role lists (pages/Room.ts calls it). The server refuses a
+// (backend modes/roles/roleLocks.ts): left out of the Antechamber's role
+// lists (pages/Room.ts calls it). The server refuses a
 // locked role anyway; this only shows it.
 
 export interface RoleAccess {
@@ -51,15 +51,12 @@ export function lockTip(role: RoleId): string {
   return t("roles.locked.basic");
 }
 
-// Each locked role's option: greyed out, a lock before its name, and what
-// opens it as its hint.
-export function lockRoleOptions(selects: readonly HTMLSelectElement[], open: readonly RoleId[]): void {
+// Each locked role's option is taken out, so a player sees only the roles
+// open to them, and each new one as it opens.
+export function hideLockedRoles(selects: readonly HTMLSelectElement[], open: readonly RoleId[]): void {
   for (const select of selects) {
-    for (const option of select.options) {
-      if (!isRoleId(option.value) || open.includes(option.value)) continue;
-      option.disabled = true;
-      option.textContent = `🔒 ${option.textContent?.trim() ?? ""}`;
-      option.title = lockTip(option.value);
+    for (const option of [...select.options]) {
+      if (isRoleId(option.value) && !open.includes(option.value)) option.remove();
     }
   }
 }

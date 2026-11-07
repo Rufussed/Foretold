@@ -31,7 +31,7 @@ import { gameModeBadge, gameModeName } from "../utils/game-mode";
 import { isRoleId, roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
 import { roleSlotsChoice } from "../modes/roles/role-slots-choice";
-import { loadRoleAccess, lockRoleOptions } from "../modes/roles/role-locks";
+import { hideLockedRoles, loadRoleAccess } from "../modes/roles/role-locks";
 
 // The lobby socket only exists once a game starts, so the waiting room polls.
 const POLL_MS = 2000;
@@ -388,10 +388,10 @@ export async function renderRoomPage(
       });
     });
   }
-  // Roles mode only: roles still locked for this player show greyed out
+  // Roles mode only: roles still locked for this player are left out
   // (modes/roles/role-locks.ts).
   void loadRoleAccess(token).then((access) => {
-    if (access && !destroyed) lockRoleOptions(roleSelects, access.open);
+    if (access && !destroyed) hideLockedRoles(roleSelects, access.open);
   });
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");

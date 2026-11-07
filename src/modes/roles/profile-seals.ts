@@ -1,4 +1,4 @@
-import { rolesOfKind, type RoleId, type RoleKind } from "../../../backend/src/game/wizard/modes/roles/roles";
+import { roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../../backend/src/game/wizard/modes/roles/roles";
 import {
   SEAL_LEVELS,
   sealPoints,
@@ -14,7 +14,10 @@ import { lockTip, type RoleAccess } from "./role-locks";
 import { levelSealUrl, roleSealUrl } from "./seal-urls";
 
 // Roles mode only. The Profile's Seals box (pages/Profile.ts calls it): every
-// role's seal, in wax to start with. A seal shows the level earned, whole,
+// role's seal, in wax to start with. On your own Profile only the roles open
+// to you show, so the seals appear one by one as they open, and the Powers
+// tab once a power is open; a role newly opened since your last visit is
+// told in a window. A seal shows the level earned, whole,
 // until the next level is reached, and then becomes that level's (hovering a
 // seal names the level under way and how far it is). The records come from the server
 // (backend modes/roles/roleProgressRoutes.ts), the levels from sealLevels.ts.
@@ -81,6 +84,8 @@ function renderSeal(role: RoleId, records: Records, open: Set<RoleId> | null): s
     ? ` · ${t("seals.toward", { level: t(`seals.level.${next}`), points: String(points), target: String(target) })}`
     : "";
   const locked = open !== null && !open.has(role);
+  // Your own Profile shows only the roles open to you.
+  if (locked) return "";
   const tip = locked ? `${t(`role.${role}`)}: ${lockTip(role)}` : `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
 
   return `
@@ -114,10 +119,15 @@ function saveTab(kind: RoleKind): void {
   }
 }
 
-function renderTabs(shown: RoleKind): string {
+// The groups shown: the Powers only once one is open to you.
+const kindsShown = (open: Set<RoleId> | null): RoleKind[] =>
+  KINDS.filter((kind) => kind === "basic" || open === null || [...open].some((role) => roleKind(role) === kind));
+
+function renderTabs(shown: RoleKind, kinds: readonly RoleKind[]): string {
+  if (kinds.length < 2) return "";
   const tab = (kind: RoleKind) =>
     `<button class="seal-tab" type="button" role="tab" aria-selected="${kind === shown}" data-seal-tab="${kind}">${t(`seals.${kind}`)}</button>`;
-  return `<div class="seal-tabs" role="tablist">${KINDS.map(tab).join("")}</div>`;
+  return `<div class="seal-tabs" role="tablist">${kinds.map(tab).join("")}</div>`;
 }
 
 const renderSeals = (kind: RoleKind, records: Records, open: Set<RoleId> | null): string =>
@@ -143,8 +153,10 @@ const byRole = (records: RoleRecord[]): Records => new Map(records.map((record) 
 // header and its body. access: on your own Profile, what besides the seals
 // decides the locks (role-locks.ts); null on another player's.
 export function renderSealsCard(records: RoleRecord[], toggle: string, body: string, access: Access = null): string {
-  const shown = loadTab();
   const known = byRole(records);
+  const open = openSet(known, access);
+  const kinds = kindsShown(open);
+  const shown = kinds.includes(loadTab()) ? loadTab() : "basic";
   return `
     <article class="profile-card profile-seals">
       <div class="profile-section-heading profile-collapse-toggle" ${toggle}>
@@ -159,8 +171,8 @@ export function renderSealsCard(records: RoleRecord[], toggle: string, body: str
         </span>
       </div>
       <div class="profile-seals-body" ${body}>
-        ${renderTabs(shown)}
-        ${KINDS.map((kind) => renderGroup(kind, shown, known, openSet(known, access))).join("")}
+        ${renderTabs(shown, kinds)}
+        ${kinds.map((kind) => renderGroup(kind, shown, known, open)).join("")}
       </div>
     </article>
   `;
@@ -170,9 +182,10 @@ export function renderSealsCard(records: RoleRecord[], toggle: string, body: str
 // record in a tip over it while hovered, kept on the page itself so the
 // box's scrolling never cuts it off. own: the player's own Profile, where
 // the dev clicks work.
-export function setupSeals(container: HTMLElement, own: boolean, access: Access = null): void {
+export function setupSeals(container: HTMLElement, own: boolean, access: Access = null, records: RoleRecord[] = [], player = ""): void {
   const card = container.querySelector<HTMLElement>(".profile-seals");
   if (!card) return;
+  if (own) tellNewlyOpen(openSet(byRole(records), access), player);
   setupTip(container, card);
   card.querySelector("[data-seals-help]")?.addEventListener("click", openSealsHelp);
   const tabs = [...card.querySelectorAll<HTMLButtonElement>("[data-seal-tab]")];
@@ -275,4 +288,39 @@ function setupTip(container: HTMLElement, card: HTMLElement): void {
   });
   card.addEventListener("focusout", hide);
   card.querySelector(".profile-seals-body")?.addEventListener("scroll", hide);
+}
+
+const SEEN_KEY = "wizardSeenRoles:";
+
+// The roles that opened since this player last saw their Profile, told in a
+// window: "New seal: the Fisher", "New power: the Power of Fire". Nothing
+// the first time, nor when every role is open anyway.
+function tellNewlyOpen(open: Set<RoleId> | null, player: string): void {
+  if (!open || !player) return;
+  const key = SEEN_KEY + player;
+  let seen: string[] | null = null;
+  try {
+    const stored = localStorage.getItem(key);
+    seen = stored ? (JSON.parse(stored) as string[]) : null;
+    localStorage.setItem(key, JSON.stringify([...open]));
+  } catch {
+    return;
+  }
+  if (!seen) return;
+  const fresh = [...open].filter((role) => !seen!.includes(role));
+  if (!fresh.length) return;
+  const line = (role: RoleId) =>
+    `<p>${t(roleKind(role) === "basic" ? "seals.unlocked.role" : "seals.unlocked.power", { name: t(`role.${role}`) })}</p>`;
+  openInfoWindow(
+    "roles-unlocked",
+    t("seals.unlocked.title"),
+    `
+      <div class="home-rules-content">
+        <section class="home-rules-section">
+          ${fresh.map(line).join("")}
+          <p>${t("seals.unlocked.where")}</p>
+        </section>
+      </div>
+    `,
+  );
 }

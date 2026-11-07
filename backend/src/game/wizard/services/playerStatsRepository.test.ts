@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import db from "../../../db/database.js";
 
 import { playerStatsRepository } from "./playerStatsRepository.js";
+import { COLOR_MASTERY_POINTS, COLOR_POINTS_PER_TRICK } from "../strongColor.js";
 
 describe("PlayerStatsRepository", () => {
   it("initializes statistics for a user with zero values", () => {
@@ -449,12 +450,12 @@ describe("PlayerStatsRepository", () => {
       playerStatsRepository.initializeForUser(userId);
       const color = playerStatsRepository.getStats(userId)!.strongColor!;
 
-      playerStatsRepository.addColorTricks(userId, { [color]: 99 });
+      playerStatsRepository.addColorTricks(userId, { [color]: COLOR_MASTERY_POINTS / COLOR_POINTS_PER_TRICK - 1 });
       expect(playerStatsRepository.getStats(userId)?.strongColor).toBe(color);
 
       playerStatsRepository.addColorTricks(userId, { [color]: 1 });
       const stats = playerStatsRepository.getStats(userId)!;
-      expect(stats.colorPoints[color]).toBe(1000);
+      expect(stats.colorPoints[color]).toBe(COLOR_MASTERY_POINTS);
       expect(stats.strongColor).not.toBe(color);
       expect(stats.colorPoints[stats.strongColor!]).toBe(0);
     } finally {

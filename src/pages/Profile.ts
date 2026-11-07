@@ -48,6 +48,9 @@ interface PlayerLevel {
   // 0–1 of the way from this level to the next, by whichever of full games
   // or points is further along.
   progress: number;
+  // What the next level needs: full games, or the highest total points.
+  games?: number;
+  points?: number;
 }
 
 // Reached by full games or by the highest total points ever held, whichever
@@ -78,6 +81,8 @@ function getPlayerLevel(
   return {
     name: t(level.name),
     next: index + 2,
+    games: next.fullGames,
+    points: next.fullGames * POINTS_PER_FULL_GAME,
     progress: Math.min(1, Math.max(0, byGames, byPoints)),
   };
 }
@@ -363,7 +368,7 @@ export async function renderProfilePage(
         <span class="profile-color-name">
           ${t("profile.strongColor")} · <strong>${t(`suit.${strongColor}`)}</strong>
         </span>
-        <span class="profile-color-bar" aria-hidden="true">
+        <span class="profile-color-bar profile-tip" data-tip="${t("profile.colorToGo", { points: String(Math.max(0, COLOR_MASTERY_POINTS - colorPoints)), total: String(COLOR_MASTERY_POINTS), have: String(colorPoints) })}">
           <span style="width: ${Math.min(100, (colorPoints / COLOR_MASTERY_POINTS) * 100)}%"></span>
         </span>
       </div>
@@ -383,7 +388,16 @@ export async function renderProfilePage(
           ? `<span class="profile-level-label">${t("profile.levelNextLabel", { level: String(playerLevel.next) })}</span>`
           : ""
       }
-      <span class="profile-level-bar" aria-hidden="true">
+      <span class="profile-level-bar${playerLevel.next ? " profile-tip" : ""}"${
+        playerLevel.next
+          ? ` data-tip="${t("profile.levelToGo", {
+              games: String(stats.fullGamesFinished),
+              gamesNeeded: String(playerLevel.games),
+              points: String(stats.peakTotalPoints),
+              pointsNeeded: String(playerLevel.points),
+            })}"`
+          : ""
+      }>
         <span style="width: ${playerLevel.progress * 100}%"></span>
       </span>
     </div>
@@ -961,7 +975,7 @@ export async function renderProfilePage(
 
   // Roles mode: the role seals (modes/roles/profile-seals.ts).
   setupCollapsible(container, "seals", saveSealsOpen);
-  setupSeals(container, ownProfile, roleAccess);
+  setupSeals(container, ownProfile, roleAccess, roleRecords, String(user.username ?? ""));
 
   const scrollFriendRequests = container.querySelector<HTMLButtonElement>(
     "[data-scroll-friend-requests]",

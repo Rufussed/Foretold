@@ -1024,3 +1024,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* A bar's numbers, shown at once on hover: "120 / 500 points · 380 to go". */
+.profile-tip {
+  position: relative;
+  cursor: help;
+}
+
+.profile-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  z-index: 5;
+  padding: 5px 9px;
+  border: 1px solid rgba(224, 161, 77, 0.6);
+  background: rgba(14, 12, 9, 0.95);
+  color: #f4ebd9;
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-50%);
+  transition: opacity 0.12s;
+}
+
+.profile-tip:hover::after {
+  opacity: 1;
+}
+
+/* The bars are thin: a taller hover area around them. */
+.profile-tip::before {
+  content: "";
+  position: absolute;
+  inset: -8px 0;
+}
+
+/* The level bar sits at the line's right end: its tip opens leftwards. */
+.profile-level-bar.profile-tip::after {
+  left: auto;
+  right: 0;
+  transform: none;
+}

@@ -12,7 +12,7 @@
 import { SUITS, type Suit } from "./models/card.js";
 
 export const COLOR_POINTS_PER_TRICK = 10;
-export const COLOR_MASTERY_POINTS = 1000;
+export const COLOR_MASTERY_POINTS = 500;
 
 export const isSuit = (value: unknown): value is Suit =>
   SUITS.some((suit) => suit === value);

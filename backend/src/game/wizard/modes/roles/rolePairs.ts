@@ -15,7 +15,7 @@ export const isPairRoom = (options: Pick<WizardGameOptions, "mode" | "rolePair">
 export const hasOpenMaster = (username: string): boolean =>
   openRolesForUsername(username).some((role) => roleKind(role) === "master");
 
-export const NO_MASTER_ERROR = "This room plays one basic and one master role each, and you have no master role open yet.";
+export const NO_MASTER_ERROR = "This room plays one role and one power each, and you have no power open yet.";
 
 // Why this player may not join the room; null when they may.
 export function pairSeatRefusal(room: Pick<Room, "options">, username: string): string | null {
