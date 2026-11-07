@@ -1,6 +1,6 @@
 import type { PublicWizardGameState } from "../../backend/src/game/wizard/models/wizardGame";
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
-import { OPPONENT_PLAYS, TRICK_REWARD } from "./config";
+import { OPPONENT_PLAYS, PLAYED_CARDS, TRICK_REWARD } from "./config";
 import { paced } from "./pace";
 import {
   onlyHandsChanged,
@@ -193,7 +193,7 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       // Portrait: back to the middle so the last card is seen landing.
       if (centre) void camera(null, centre.panSeconds);
       // The last card lands and the finished trick stays a moment.
-      await wait(TRICK_REWARD.startDelaySeconds + TRICK_REWARD.winnerHoldSeconds);
+      await wait(TRICK_REWARD.startDelaySeconds + PLAYED_CARDS.showcaseHoldSeconds + TRICK_REWARD.winnerHoldSeconds);
       const winner = next.currentTrick.winnerUsername;
       const turned = camera(winner);
       const rewarded = step((done) => options.playTrickReward(done));

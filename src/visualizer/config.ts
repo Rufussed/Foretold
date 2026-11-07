@@ -666,6 +666,13 @@ export const CARDS = {
 export const PLAYED_CARDS = {
   oneCard: 1.4,
   stepPerCard: 0.08,
+
+  // A card just played is showcased first: it lands at the one-card size in the
+  // middle, this many metres nearer the viewer than the cards in play, and the
+  // others do nothing. After this long it moves into its own place in the
+  // trick and the cards scale to make room.
+  showcaseHoldSeconds: 1,
+  showcaseTowardViewerMetres: 0.5,
 };
 
 export const CARD_HANDLING = {

@@ -217,6 +217,25 @@ export function createTableCards(
     return slots;
   };
   const trumpSlot = layout.trump;
+  // The card just played, held out in front of the others at the one-card size
+  // until `until` (PLAYED_CARDS.showcase*), while the rest keep their places.
+  let showcase: { key: string; until: number } | null = null;
+  let showcaseSlot: Placement | null = null;
+  const showcaseSlotFor = (): Placement => {
+    if (showcaseSlot) return showcaseSlot;
+    const base = playedSlotsFor(1)[0] ?? playedSlots[0]!;
+    // Towards the viewer: along the card's face normal, whichever way points at your hand.
+    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(base.quaternion);
+    if (normal.dot(centroid(handSlots).sub(base.position)) < 0) normal.negate();
+    const worldScale = environment.getWorldScale(new THREE.Vector3()).x || 1;
+    showcaseSlot = {
+      position: base.position.clone().addScaledVector(normal, PLAYED_CARDS.showcaseTowardViewerMetres / worldScale),
+      quaternion: base.quaternion,
+      scale: base.scale,
+    };
+    return showcaseSlot;
+  };
+  const showcased = () => (showcase && trickOrder.includes(showcase.key) ? showcase.key : null);
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
   const liftFor = (slot: Placement) => CARD_HANDLING.raiseLengths * factory.length * slot.scale.z;
 
@@ -368,8 +387,14 @@ export function createTableCards(
       return { slot: raised, lift: liftFor(slot) };
     }
     // A card being played counts as in play already, so the others settle into their new size as it arrives.
+    // The newest card is showcased first, and the others do not make room yet.
     const arriving = pending && !trickOrder.includes(pending.key) ? 1 : 0;
-    const inPlay = playedSlotsFor(trickOrder.length + arriving);
+    const holding = showcased();
+    const showcasing = holding !== null || (arriving === 1 && trickOrder.length > 0);
+    if (showcasing && (holding === entry.key || pending?.key === entry.key)) {
+      return { slot: showcaseSlotFor(), lift: 0 };
+    }
+    const inPlay = playedSlotsFor(trickOrder.length + arriving - (showcasing ? 1 : 0));
     if (pending?.key === entry.key) {
       const slot = inPlay[trickOrder.length];
       return slot ? { slot, lift: 0 } : null;
@@ -492,6 +517,7 @@ export function createTableCards(
 
     setTrick(cardsPlayed, origins, flyFromHand, byOwner) {
       const previousPlaces = trickPlaces;
+      const wasPending = pending?.key ?? null;
       trickOrder = cardsPlayed.map(cardKey);
       for (const key of [...suppressed]) {
         if (!trickOrder.includes(key)) suppressed.delete(key);
@@ -513,6 +539,22 @@ export function createTableCards(
         }
       }
       if (pending && trickOrder.includes(pending.key)) pending = null;
+
+      // The newest card of a trick with others in it: a play seen as it happens
+      // (not a table opened mid-trick) is showcased once it has landed.
+      const newest = trickOrder[trickOrder.length - 1];
+      const entryNew = newest !== undefined ? cards.get(newest) : undefined;
+      if (newest !== undefined && trickOrder.length > 1 && !trickOrderShown.has(newest) && showcase?.key !== newest) {
+        const seen = wasPending === newest || !!entryNew?.flight;
+        if (seen) {
+          const flight = entryNew?.flight;
+          const lands = flight
+            ? flight.startedAt + paced(OPPONENT_PLAYS.liftSeconds) + paced(OPPONENT_PLAYS.travelSeconds)
+            : clock;
+          showcase = { key: newest, until: lands + unhurried(PLAYED_CARDS.showcaseHoldSeconds) };
+        }
+      }
+      if (trickOrder.length < 2) showcase = null;
       trickOrderShown = new Set(trickOrder);
 
       // Cards already on the table keep their places for now, and a new one
@@ -536,7 +578,7 @@ export function createTableCards(
               ? flight.startedAt + paced(OPPONENT_PLAYS.liftSeconds) + paced(OPPONENT_PLAYS.travelSeconds)
               : clock + paced(OPPONENT_PLAYS.travelSeconds);
           });
-        const lands = Math.max(clock, ...landing);
+        const lands = Math.max(clock, ...landing, showcase?.until ?? 0);
         // A repeat of the same state keeps the swap's start where it was.
         const at = waiting?.places.join() === owned.join() ? waiting.at : lands + unhurried(TRICK_SWAP.pauseSeconds);
         swapWaiting = { places: owned, at };
@@ -569,6 +611,7 @@ export function createTableCards(
         pending = null;
       }
 
+      if (showcase && clock >= showcase.until) showcase = null;
       if (swapWaiting && clock >= swapWaiting.at) startSwap();
 
       const follow = 1 - Math.exp(-CARD_HANDLING.followSpeed * deltaSeconds);
