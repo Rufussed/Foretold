@@ -56,6 +56,10 @@ async function warmCache(url: string): Promise<void> {
   await response.arrayBuffer();
 }
 
+// Set once a room's own deck is queued: the Classic deck the home page warms
+// by default is then not wanted.
+let roomDeckKnown = false;
+
 const bytesOnlyTasks = (): PrefetchTask[] => [
   { name: "table scene", run: () => warmCache(WIZARD_TABLE_MODEL_URL) },
   ...CHARACTER_IDS.map((character) => ({
@@ -65,6 +69,7 @@ const bytesOnlyTasks = (): PrefetchTask[] => [
   {
     name: "card art",
     run: async () => {
+      if (roomDeckKnown) return;
       for (const card of DECK) await warmCache(cardArtUrl(card));
     },
   },
@@ -85,6 +90,7 @@ const parsedTasks = (): PrefetchTask[] => [
     // each other anyway, and this way a page that suddenly needs the network
     // is only sharing it with a single request.
     run: async () => {
+      if (roomDeckKnown) return;
       cardBackTexture();
       for (const card of DECK) await preloadCardArt(card);
     },
@@ -107,6 +113,10 @@ export function prefetchRoomDeck(options: Pick<WizardGameOptions, "mode">): void
   const mode = options.mode ?? "classic";
   setCardDeckMode({ options } as Parameters<typeof setCardDeckMode>[0]);
   const constrained = isConstrainedDevice();
+  roomDeckKnown = true;
+  // The characters are queued first (they are what the waiting room needs),
+  // so the cards begin once the last of them has arrived.
+  prefetchGameAssets();
   enqueuePrefetch({
     name: `${constrained ? "bytes of " : ""}room deck ${mode}`,
     run: async () => {
