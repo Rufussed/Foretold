@@ -241,7 +241,7 @@ export const de: Record<MessageKey, string> = {
   "seals.level.gold": "Gold",
   "seals.help.button": "Wie Siegel wachsen",
   "seals.help.title": "Wie Siegel wachsen",
-  "seals.help.points": "Jede Rolle beginnt mit einem Wachssiegel. Jede Rollenspiel-Partie, die du mit einer Rolle beendest, bringt ihrem Siegel Punkte: 1 fürs Spielen, 1 mehr fürs Gewinnen. Eine Partie zählt, wenn sie mindestens die Hälfte ihrer vollen Länge lief und nicht nur gegen Lehrling-NPCs gespielt wurde.",
+  "seals.help.points": "Jede Rolle beginnt mit einem Wachssiegel. Jede Rollenspiel-Partie, die du mit einer Rolle beendest, bringt ihrem Siegel Punkte: 1 fürs Spielen, 2 für eine Partie in voller Länge, 1 mehr fürs Gewinnen. Eine Partie zählt, wenn sie mindestens die Hälfte ihrer vollen Länge lief und nicht nur gegen Lehrling-NPCs gespielt wurde.",
   "seals.help.levels": "Holz bei {wood} Punkten, Kupfer bei {copper}, Silber bei {silver}, Gold bei {gold}. Fahre über ein Siegel, um zu sehen, wie weit es ist.",
   "roles.locked.basic": "Gesperrt: dein nächstes Holzsiegel öffnet sie",
   "roles.locked.colourWizard": "Gesperrt: braucht jedes Grundsiegel aus Holz und {element} gemeistert als dein starkes Element ({points} Punkte)",

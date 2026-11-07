@@ -6,6 +6,8 @@ const [wax, wood, copper, , gold] = SEAL_LEVELS;
 describe("sealPoints", () => {
   it("is one point a game and one more a win", () => {
     expect(sealPoints({ games: 5, wins: 2 })).toBe(7);
+    // 5 games, 3 of them full length: 8, and 2 won.
+    expect(sealPoints({ games: 5, fullGames: 3, wins: 2 })).toBe(10);
   });
 });
 

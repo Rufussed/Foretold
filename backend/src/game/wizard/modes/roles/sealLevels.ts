@@ -23,10 +23,13 @@ export interface RoleRecord {
   role: RoleId;
   games: number;
   wins: number;
+  // Those of the games that ran their full length.
+  fullGames?: number;
 }
 
-// A game that counts is one point, a win one more.
-export const sealPoints = (record: Pick<RoleRecord, "games" | "wins">): number => record.games + record.wins;
+// A game that counts is one point, a full-length one two, a win one more.
+export const sealPoints = (record: Pick<RoleRecord, "games" | "wins" | "fullGames">): number =>
+  record.games + (record.fullGames ?? 0) + record.wins;
 
 export interface SealState {
   // The last level completed, or null for none yet.

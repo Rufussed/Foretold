@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { WizardGameService } from "../../services/wizardGameService.js";
+import { BOT_NAME_SUFFIX } from "../../models/bot.js";
 import { assignRoles, randomRole, type ChosenRoles } from "./assignRoles.js";
 import { ROLES, roleKind, rolesOfKind } from "./roles.js";
 
@@ -85,6 +86,21 @@ describe("assignRoles", () => {
       expect(["thief", "servant"]).toContain(bob!.role);
       // Bob has no master open: he gets none.
       expect(bob!.masterRole).toBeUndefined();
+    }
+  });
+
+  it("draws the NPCs' roles only from those open to every player", () => {
+    const ann = "ann";
+    const bots = ["Lyra", "Oberon", "Merlin"].map((name) => `${name}${BOT_NAME_SUFFIX}`);
+    for (let run = 0; run < 30; run++) {
+      const game = new WizardGameService().createGame(1, [ann, "ben", ...bots]);
+      const openFor = (name: string) =>
+        name === ann ? (["thief", "servant", "fisher", "farmer", "watcher"] as const) : (["thief", "servant", "fisher", "smith", "watcher"] as const);
+      assignRoles(game.players, new Map(), { pair: true, openFor });
+      for (const bot of game.players.filter((player) => bots.includes(player.username))) {
+        expect(["thief", "servant", "fisher"]).toContain(bot.role);
+        expect(bot.masterRole).toBe("watcher");
+      }
     }
   });
 });

@@ -235,7 +235,8 @@ export default async function wizardRoutes(
         {
           // A basic + master game: everyone gets one of each (rolePairs.ts).
           pair: isPairRoom(normalizeGameOptions(game.options)),
-          // Players who chose none draw from their own open roles (roleLocks.ts).
+          // Players who chose none draw from their own open roles, NPCs from
+          // those open to every player (roleLocks.ts, assignRoles.ts).
           openFor: openRolesForUsername,
         },
       );

@@ -421,6 +421,20 @@ const MIGRATIONS: Migration[] = [
       }
     },
   },
+  {
+    version: 21,
+    description: "role_progress: the full-length games among them",
+    up(db) {
+      // A full game is worth one seal point more (modes/roles/sealLevels.ts).
+      // Games from before are not known, so they count as half games.
+      if (!hasColumn(db, "role_progress", "full_games")) {
+        db.exec(`
+          ALTER TABLE role_progress
+          ADD COLUMN full_games INTEGER NOT NULL DEFAULT 0
+        `);
+      }
+    },
+  },
 ];
 
 const currentVersion = (db: MigratableDb): number =>

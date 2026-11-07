@@ -240,7 +240,7 @@ export const en = {
   "seals.level.gold": "Gold",
   "seals.help.button": "How seals grow",
   "seals.help.title": "How seals grow",
-  "seals.help.points": "Every role starts with a wax seal. Each Roleplay game you finish with a role adds to its seal: 1 point for playing, 1 more for winning. A game counts when it ran at least half its full length and was not played against Apprentice NPCs alone.",
+  "seals.help.points": "Every role starts with a wax seal. Each Roleplay game you finish with a role adds to its seal: 1 point for playing, 2 for a full-length game, 1 more for winning. A game counts when it ran at least half its full length and was not played against Apprentice NPCs alone.",
   "seals.help.levels": "Wood at {wood} points, Copper at {copper}, Silver at {silver}, Gold at {gold}. Hover a seal to see how far it is.",
   "roles.locked.basic": "Locked: your next Wood seal opens it",
   "roles.locked.colourWizard": "Locked: needs every basic seal at Wood and {element} mastered as your strong element ({points} points)",

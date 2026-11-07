@@ -12,7 +12,8 @@ import { sealPoints, sealState, type RoleRecord, type SealLevelId } from "./seal
 //
 // A game counts for a role when it was finished, ran at least half its full
 // length (3 players: 10 rounds of 20), and was not played against Apprentice
-// NPCs alone, who do not know the roles.
+// NPCs alone, who do not know the roles. A full-length game counts one
+// point more (sealLevels.ts).
 
 export function countsForRoleProgress(game: WizardGameState): boolean {
   if (normalizeGameOptions(game.options).mode !== "roles") return false;
@@ -25,9 +26,17 @@ export function countsForRoleProgress(game: WizardGameState): boolean {
   return bots.length === 0 || bots.some((bot) => bot.botPersonality === "adept");
 }
 
+// Whether the game ran its full length.
+export function isFullRoleGame(game: WizardGameState): boolean {
+  const fullRounds = fullRoundCount(game.players.length);
+  return fullRounds !== undefined && game.totalRounds >= fullRounds;
+}
+
 export interface RoleGameRecord {
   role: string;
   won: boolean;
+  // Set when the game ran its full length.
+  full?: boolean;
   powerUses: number;
   rolePoints: number;
 }
@@ -54,27 +63,29 @@ function recordFor(player: GamePlayer, role: RoleId, won: boolean, powerUses: nu
 
 export function recordRoleGame(userId: number, record: RoleGameRecord): void {
   db.prepare(`
-    INSERT INTO role_progress (user_id, role, games, wins, power_uses, role_points)
-    VALUES (?, ?, 1, ?, ?, ?)
+    INSERT INTO role_progress (user_id, role, games, full_games, wins, power_uses, role_points)
+    VALUES (?, ?, 1, ?, ?, ?, ?)
     ON CONFLICT (user_id, role) DO UPDATE SET
       games = games + 1,
+      full_games = full_games + excluded.full_games,
       wins = wins + excluded.wins,
       power_uses = power_uses + excluded.power_uses,
       role_points = role_points + excluded.role_points
-  `).run(userId, record.role, record.won ? 1 : 0, record.powerUses, record.rolePoints);
+  `).run(userId, record.role, record.full ? 1 : 0, record.won ? 1 : 0, record.powerUses, record.rolePoints);
 }
 
 // The hook for the completion service: records the game if it counts.
 export function recordRoleProgress(game: WizardGameState, player: GamePlayer, userId: number, won: boolean): void {
   if (!countsForRoleProgress(game)) return;
-  for (const record of roleGameRecords(player, won)) recordRoleGame(userId, record);
+  const full = isFullRoleGame(game);
+  for (const record of roleGameRecords(player, won)) recordRoleGame(userId, { ...record, full });
 }
 
 // A player's record with every role they have a row for, for the Profile.
 export function getRoleProgress(userId: number): RoleRecord[] {
   const rows = db
-    .prepare("SELECT role, games, wins FROM role_progress WHERE user_id = ?")
-    .all(userId) as { role: string; games: number; wins: number }[];
+    .prepare("SELECT role, games, wins, full_games AS fullGames FROM role_progress WHERE user_id = ?")
+    .all(userId) as { role: string; games: number; wins: number; fullGames?: number }[];
   return rows.filter((row): row is RoleRecord => isRoleId(row.role));
 }
 
@@ -105,11 +116,11 @@ export function assignSealLevels(players: GamePlayer[]): void {
 function sealLevelOf(username: string, role: RoleId): SealLevelId | null {
   const row = db
     .prepare(`
-      SELECT games, wins
+      SELECT games, wins, full_games AS fullGames
       FROM role_progress
         JOIN users ON users.id = role_progress.user_id
       WHERE users.username = ? AND role_progress.role = ?
     `)
-    .get(username, role) as { games: number; wins: number } | undefined;
+    .get(username, role) as { games: number; wins: number; fullGames: number } | undefined;
   return row ? sealState(sealPoints(row)).done : null;
 }

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import db from "../../../../db/database.js";
 import type { GamePlayer, WizardGameState } from "../../models/wizardGame.js";
 import { countPowerUses } from "./powerSeal.js";
-import { countsForRoleProgress, devResetRole, getRoleProgress, recordRoleGame, roleGameRecord } from "./roleProgress.js";
+import { countsForRoleProgress, devResetRole, isFullRoleGame, getRoleProgress, recordRoleGame, roleGameRecord } from "./roleProgress.js";
 import { play, roles } from "./roleTestHelpers.js";
 
 const player = (username: string, extra: Partial<GamePlayer> = {}): GamePlayer => ({
@@ -29,6 +29,13 @@ const game = (players: GamePlayer[], extra: Partial<WizardGameState> = {}): Wiza
   }) as WizardGameState;
 
 const three = (extra: Partial<GamePlayer> = {}) => [player("ana", { role: "thief", ...extra }), player("ben"), player("cy")];
+
+describe("isFullRoleGame", () => {
+  it("is a game that ran every round of its full length", () => {
+    expect(isFullRoleGame(game(three()))).toBe(true);
+    expect(isFullRoleGame(game(three(), { totalRounds: 10 }))).toBe(false);
+  });
+});
 
 describe("countsForRoleProgress", () => {
   it("counts a full Roles game between humans", () => {
@@ -108,7 +115,7 @@ describe("recordRoleGame", () => {
     const userId = Number(user.lastInsertRowid);
 
     try {
-      recordRoleGame(userId, { role: "thief", won: true, powerUses: 2, rolePoints: 20 });
+      recordRoleGame(userId, { role: "thief", won: true, full: true, powerUses: 2, rolePoints: 20 });
       recordRoleGame(userId, { role: "thief", won: false, powerUses: 1, rolePoints: -5 });
       recordRoleGame(userId, { role: "fisher", won: false, powerUses: 0, rolePoints: 0 });
 
@@ -120,14 +127,14 @@ describe("recordRoleGame", () => {
         { role: "thief", games: 2, wins: 1, powerUses: 3, rolePoints: 15 },
       ]);
 
-      // What the Profile gets: games and wins by role.
+      // What the Profile gets: games, full games and wins by role.
       expect(getRoleProgress(userId).sort((a, b) => a.role.localeCompare(b.role))).toEqual([
-        { role: "fisher", games: 1, wins: 0 },
-        { role: "thief", games: 2, wins: 1 },
+        { role: "fisher", games: 1, wins: 0, fullGames: 0 },
+        { role: "thief", games: 2, wins: 1, fullGames: 1 },
       ]);
 
       devResetRole(userId, "thief");
-      expect(getRoleProgress(userId)).toEqual([{ role: "fisher", games: 1, wins: 0 }]);
+      expect(getRoleProgress(userId)).toEqual([{ role: "fisher", games: 1, wins: 0, fullGames: 0 }]);
     } finally {
       db.prepare("DELETE FROM users WHERE id = ?").run(userId);
     }

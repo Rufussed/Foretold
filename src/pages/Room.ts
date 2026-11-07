@@ -389,9 +389,14 @@ export async function renderRoomPage(
     });
   }
   // Roles mode only: roles still locked for this player are left out
-  // (modes/roles/role-locks.ts).
+  // (modes/roles/role-locks.ts), and the host's choice of role + power too
+  // until a power is open to them.
+  let hasPower = true;
   void loadRoleAccess(token).then((access) => {
-    if (access && !destroyed) hideLockedRoles(roleSelects, access.open);
+    if (!access || destroyed) return;
+    hideLockedRoles(roleSelects, access.open);
+    hasPower = access.open.some((role) => roleKind(role) === "master");
+    if (!hasPower) roleSlotsEl.closest("label")!.hidden = true;
   });
   const botsEl = element<HTMLSelectElement>("#room-bots");
   const roundsEl = element<HTMLSelectElement>("#room-rounds");
@@ -584,7 +589,7 @@ export async function renderRoomPage(
     }
     const isRoles = options.mode === "roles";
     for (const roleEl of hostRoleEls) roleEl.hidden = !isRoles;
-    roleSlotsEl.closest("label")!.hidden = !isRoles;
+    roleSlotsEl.closest("label")!.hidden = !isRoles || !hasPower;
     // Roles mode: the master list only in a basic + master room.
     for (const masterEl of container.querySelectorAll<HTMLElement>(".room-role-master")) {
       masterEl.hidden = !isRoles || !options.rolePair;

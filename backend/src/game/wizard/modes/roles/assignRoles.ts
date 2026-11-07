@@ -29,7 +29,9 @@ export interface AssignOptions {
 // a basic role, and in a basic + master game a master role too. Each is the
 // one its player chose in the Antechamber, or one drawn at random for bots
 // and for anyone who chose none: players draw from the roles open to them,
-// bots from every role of the kind. Roles drawn at random are never drawn
+// bots from the roles open to every player in the game, so nobody meets an
+// NPC with a role they have not opened yet (every role of the kind in a game
+// of bots alone). Roles drawn at random are never drawn
 // twice in one game and never one a player chose, so no NPC shares a role
 // with an NPC or a player; only once every such role is out can one come
 // round again. A master role chosen for a one-role game is not played.
@@ -62,6 +64,8 @@ function drawSlot(
   const all = rolesOfKind(kind).map((role) => role.id);
   const taken = new Set(players.map(chosenOf).filter((role) => role !== null));
   const drawn = new Set<RoleId>();
+  const humans = players.filter((player) => !isBotName(player.username));
+  const forBots = all.filter((id) => humans.every((human) => openFor(human.username).includes(id)));
 
   for (const player of players) {
     const own = chosenOf(player);
@@ -70,7 +74,7 @@ function drawSlot(
       continue;
     }
 
-    const open = isBotName(player.username) ? all : all.filter((id) => openFor(player.username).includes(id));
+    const open = isBotName(player.username) ? forBots : all.filter((id) => openFor(player.username).includes(id));
     // A player with none of the kind open (no master yet) gets none.
     if (open.length === 0) continue;
     let left = open.filter((id) => !taken.has(id) && !drawn.has(id));
