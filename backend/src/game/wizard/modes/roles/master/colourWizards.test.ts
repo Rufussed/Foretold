@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import type { GamePlayer } from "../../../models/wizardGame.js";
-import { COLOUR_WIZARDS, colourWizardBonus } from "./colourWizards.js";
+import { COLOUR_WIZARDS, GREEN_CARD_BONUS, colourWizardBonus } from "./colourWizards.js";
 import { play } from "../roleTestHelpers.js";
 import type { RoleId } from "../roles.js";
 
@@ -16,15 +16,15 @@ describe("the colour Wizards' bonus", () => {
     expect(colourWizardBonus(trick([play("ann", 14, "Red")]), player("ann", "redWizard"))).toBe(COLOUR_WIZARDS.redWizard.bonus);
   });
 
-  it("pays the Green Wizard for a trick won with any green card too", () => {
-    expect(colourWizardBonus(trick([play("ann", 7, "Green")]), player("ann", "greenWizard"))).toBe(COLOUR_WIZARDS.greenWizard.bonus);
+  it("pays the Green Wizard less for a trick won with any green card", () => {
+    expect(colourWizardBonus(trick([play("ann", 7, "Green")]), player("ann", "greenWizard"))).toBe(GREEN_CARD_BONUS);
     expect(colourWizardBonus(trick([play("ann", 7, "Red")]), player("ann", "greenWizard"))).toBe(0);
     expect(colourWizardBonus(trick([play("ann", 0, "Green")]), player("ann", "greenWizard"))).toBe(0);
   });
 
-  it("pays the Blue and Red Wizards 10 more than the others", () => {
+  it("pays the Blue Wizard 10 more than the others", () => {
     expect(COLOUR_WIZARDS.blueWizard.bonus).toBe(COLOUR_WIZARDS.greenWizard.bonus + 10);
-    expect(COLOUR_WIZARDS.redWizard.bonus).toBe(COLOUR_WIZARDS.yellowWizard.bonus + 10);
+    expect(COLOUR_WIZARDS.redWizard.bonus).toBe(COLOUR_WIZARDS.yellowWizard.bonus);
   });
 
   it("pays nothing for another colour's Wizard, another card, or another role", () => {

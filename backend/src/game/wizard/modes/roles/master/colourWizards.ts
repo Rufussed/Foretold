@@ -14,8 +14,9 @@ import { isGreenCard } from "./greenWizard.js";
 //   Red Wizard     a red card of theirs on a red lead means no trumps count
 //                  in that trick, for anyone, and no Yellow Wizard can turn
 //                  the lead after it (wizardRules.redShield)
-// Each also earns points for a trick won with the Wizard of their colour: the
-// Blue and Red Wizards 10 more than the others.
+// Each also earns 10 points for a trick won with the Wizard of their colour
+// (the Green Wizard with any green card too), the Blue Wizard 20: the Red one
+// has its burn, the Yellow and Green ones win tricks with their power.
 
 const rules = new WizardRules();
 
@@ -23,7 +24,7 @@ export const COLOUR_WIZARDS = {
   blueWizard: { suit: "Blue", bonus: 20 },
   greenWizard: { suit: "Green", bonus: 10 },
   yellowWizard: { suit: "Yellow", bonus: 10 },
-  redWizard: { suit: "Red", bonus: 20 },
+  redWizard: { suit: "Red", bonus: 10 },
 } as const satisfies Partial<Record<RoleId, { suit: Suit; bonus: number }>>;
 
 export type ColourWizardId = keyof typeof COLOUR_WIZARDS;
@@ -54,14 +55,43 @@ export function burnsWinner(
 export const isOwnWizardCard = (role: ColourWizardId, card: Card): boolean =>
   isWizard(card) && card.suit === COLOUR_WIZARDS[role].suit;
 
+// The Green Wizard's bonus for a trick won with a green number card; the
+// green Wizard pays the full bonus, as the others' Wizards do.
+export const GREEN_CARD_BONUS = 5;
+
 // The bonus the trick's winner earns, from the house: a colour Wizard who won
 // it with the Wizard of their colour, whoever played it first; the Green
-// Wizard with any green card too.
+// Wizard GREEN_CARD_BONUS with any green card.
 export function colourWizardBonus(trick: TrickState, winner: GamePlayer): number {
   const role = masterRoleOf(winner);
   if (!isColourWizard(role)) return 0;
   const winning = trick.playedCards.find((played) => played.username === winner.username);
   if (!winning) return 0;
-  const earns = isOwnWizardCard(role, winning.card) || (role === "greenWizard" && isGreenCard(winning.card));
-  return earns ? COLOUR_WIZARDS[role].bonus : 0;
+  if (isOwnWizardCard(role, winning.card)) return COLOUR_WIZARDS[role].bonus;
+  return role === "greenWizard" && isGreenCard(winning.card) ? GREEN_CARD_BONUS : 0;
+}
+
+// The Yellow Wizard's take (shown as the Power of Air): turning the lead takes
+// these points from the player who led, never more than they have.
+export const AIR_TAKE = 5;
+
+// Who turned this trick's lead to yellow, and who had led it; null when no
+// one did.
+export function airSwitch(
+  trick: TrickState,
+  trumpSuit: Suit | null,
+  roles: TrickRoles | undefined,
+): { by: string; from: string } | null {
+  const plays = trick.playedCards;
+  const lead = plays.find((played) => !isJester(played.card));
+  if (!lead || isWizard(lead.card) || lead.card.suit === "Yellow") return null;
+  for (let index = 1; index < plays.length; index++) {
+    const before = rules.getLeadSuit(plays.slice(0, index), trumpSuit, roles);
+    const after = rules.getLeadSuit(plays.slice(0, index + 1), trumpSuit, roles);
+    if (before !== "Yellow" && after === "Yellow") {
+      const turned = plays[index]!;
+      return { by: turned.playedBy ?? turned.username, from: lead.playedBy ?? lead.username };
+    }
+  }
+  return null;
 }
