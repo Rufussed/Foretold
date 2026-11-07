@@ -134,7 +134,7 @@ export function createCardTable({
 }: CardTableOptions): CardTable {
   const cameraPosition = new THREE.Vector3();
   const factory = createCardFactory(environment);
-  const cards = createTableCards(environment, factory, layout);
+  const cards = createTableCards(environment, factory, layout, () => sound.play());
   const opponents = createOpponentHands(
     factory,
     layout,

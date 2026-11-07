@@ -140,14 +140,14 @@ interface TableCard {
   raised: boolean;
   drag: THREE.Vector3 | null; // environment-local position while dragged
   placed: boolean;
-  flight: { from: Placement; startedAt: number } | null; // another player's play
+  flight: { from: Placement; startedAt: number; via?: THREE.Vector3 | null } | null; // another player's play
   // Trading places with another card in the trick (a Roles swap).
   swap: { from: Placement; startedAt: number; high: boolean } | null;
 }
 
-const smooth = (x: number) => {
+const smoother = (x: number) => {
   const t = Math.min(Math.max(x, 0), 1);
-  return t * t * (3 - 2 * t);
+  return t * t * t * (t * (t * 6 - 15) + 10);
 };
 
 // Your hand on card01..card20, the trick on played-card-1..6 and the trump:
@@ -156,6 +156,8 @@ export function createTableCards(
   environment: THREE.Object3D,
   factory: CardFactory,
   layout: TableLayout,
+  // A card has begun to leave a hand to be played (the deal's swish).
+  onLeavesHand?: () => void,
 ): TableCards {
   const handSlots = layout.localHand;
   const playedSlots = layout.played;
@@ -216,24 +218,50 @@ export function createTableCards(
     scaledPlayed.set(shown, slots);
     return slots;
   };
+  // A card from the back half of the table passes to one side of the cards
+  // already played on its way in, rather than through them: left of them from
+  // the seat on your left, right of them from straight across and from the seat
+  // on your right. Returns the point to pass through, or null for the front.
+  const viaFor = (from: Placement, onTable: number): THREE.Vector3 | null => {
+    const centre = centroid(playedSlots);
+    const toViewer = centroid(handSlots).sub(centre);
+    toViewer.y = 0;
+    const rel = from.position.clone().sub(centre);
+    rel.y = 0;
+    const radius = rel.length();
+    if (toViewer.lengthSq() < 1e-9 || radius < 1e-6) return null;
+    toViewer.normalize();
+    const behind = -rel.dot(toViewer) / radius;
+    if (behind < PLAYED_CARDS.backHalfDepth) return null;
+    // Your right as you face the table.
+    const right = new THREE.Vector3().crossVectors(toViewer.clone().negate(), new THREE.Vector3(0, 1, 0)).normalize();
+    const side = rel.dot(right) < -0.15 * radius ? -1 : 1;
+    const row = playedSlotsFor(Math.max(onTable, 1));
+    const halfRow = Math.max(...row.map((slot) => Math.abs(slot.position.clone().sub(centre).dot(right))));
+    const base = playedSlotsFor(1)[0] ?? playedSlots[0]!;
+    const cardWidth = factory.length * 0.75 * base.scale.z;
+    const raisedY = from.position.y + OPPONENT_PLAYS.liftLengths * factory.length * from.scale.z;
+    return centre
+      .clone()
+      .addScaledVector(right, side * (halfRow + cardWidth * PLAYED_CARDS.passClearanceCards))
+      .setY((raisedY + base.position.y) / 2);
+  };
   const trumpSlot = layout.trump;
   // The card just played, held out in front of the others at the one-card size
   // until `until` (PLAYED_CARDS.showcase*), while the rest keep their places.
   let showcase: { key: string; until: number } | null = null;
-  let showcaseSlot: Placement | null = null;
+  let settle: { startedAt: number; from: Map<string, Placement> } | null = null;
   const showcaseSlotFor = (): Placement => {
-    if (showcaseSlot) return showcaseSlot;
     const base = playedSlotsFor(1)[0] ?? playedSlots[0]!;
-    // Towards the viewer: along the card's face normal, whichever way points at your hand.
-    const normal = new THREE.Vector3(0, 0, 1).applyQuaternion(base.quaternion);
-    if (normal.dot(centroid(handSlots).sub(base.position)) < 0) normal.negate();
+    // On the line from where the first card lands straight towards the camera.
+    const toCamera = handPivot.clone().sub(base.position);
+    if (toCamera.lengthSq() < 1e-12) return base;
     const worldScale = environment.getWorldScale(new THREE.Vector3()).x || 1;
-    showcaseSlot = {
-      position: base.position.clone().addScaledVector(normal, PLAYED_CARDS.showcaseTowardViewerMetres / worldScale),
+    return {
+      position: base.position.clone().addScaledVector(toCamera.normalize(), PLAYED_CARDS.showcaseTowardViewerMetres / worldScale),
       quaternion: base.quaternion,
       scale: base.scale,
     };
-    return showcaseSlot;
   };
   const showcased = () => (showcase && trickOrder.includes(showcase.key) ? showcase.key : null);
   const up = new THREE.Vector3(0, 1, 0).transformDirection(environment.matrixWorld.clone().invert());
@@ -254,6 +282,7 @@ export function createTableCards(
     !!swapWaiting || [...cards.values()].some((entry) => entry.swap && !suppressed.has(entry.key));
   // The card played and waiting for the server; while held (a Roles choice
   // still open, e.g. a Gambler's bet) it waits without a limit.
+  let justPlayed: string | null = null;
   let pending: { key: string; since: number; held?: boolean } | null = null;
   let hovered: string | null = null;
   let leading: string | null = null;
@@ -332,13 +361,25 @@ export function createTableCards(
       .addScaledVector(up, OPPONENT_PLAYS.liftLengths * factory.length * flight.from.scale.z);
 
     if (t < lift) {
-      entry.object.position.lerpVectors(flight.from.position, raised, smooth(t / lift));
+      entry.object.position.lerpVectors(flight.from.position, raised, smoother(t / lift));
       entry.object.quaternion.copy(flight.from.quaternion);
       return true;
     }
     if (t < lift + travel) {
-      const k = smooth((t - lift) / travel);
-      entry.object.position.lerpVectors(raised, slot.position, k);
+      const k = smoother((t - lift) / travel);
+      if (flight.via) {
+        // Passes through the via point at the half way: a quadratic curve whose
+        // control point is chosen to put it there.
+        const control = flight.via.clone().multiplyScalar(2).addScaledVector(raised, -0.5).addScaledVector(slot.position, -0.5);
+        const a = 1 - k;
+        entry.object.position
+          .copy(raised)
+          .multiplyScalar(a * a)
+          .addScaledVector(control, 2 * a * k)
+          .addScaledVector(slot.position, k * k);
+      } else {
+        entry.object.position.lerpVectors(raised, slot.position, k);
+      }
       entry.object.quaternion.slerpQuaternions(flight.from.quaternion, slot.quaternion, k);
       entry.object.scale.copy(slot.scale);
       return true;
@@ -457,7 +498,11 @@ export function createTableCards(
         entry.drag = null;
       }
       // A card that has left the hand has been played.
-      if (pending && !byKey.has(pending.key)) pending = null;
+      if (pending && !byKey.has(pending.key)) {
+        // The hand update can come before the trick's: remember whose play it was.
+        justPlayed = pending.key;
+        pending = null;
+      }
       if (hovered && !byKey.has(hovered)) hovered = null;
     },
 
@@ -517,7 +562,8 @@ export function createTableCards(
 
     setTrick(cardsPlayed, origins, flyFromHand, byOwner) {
       const previousPlaces = trickPlaces;
-      const wasPending = pending?.key ?? null;
+      const wasPending = pending?.key ?? justPlayed;
+      justPlayed = null;
       trickOrder = cardsPlayed.map(cardKey);
       for (const key of [...suppressed]) {
         if (!trickOrder.includes(key)) suppressed.delete(key);
@@ -534,8 +580,9 @@ export function createTableCards(
           : origins?.get(entry.key);
         if (from && (!entry.placed || inHand)) {
           applyPlacement(entry.object, from);
-          entry.flight = { from, startedAt: clock };
+          entry.flight = { from, startedAt: clock, via: inHand ? null : viaFor(from, trickOrder.length - 1) };
           entry.placed = true;
+          onLeavesHand?.();
         }
       }
       if (pending && trickOrder.includes(pending.key)) pending = null;
@@ -611,7 +658,23 @@ export function createTableCards(
         pending = null;
       }
 
-      if (showcase && clock >= showcase.until) showcase = null;
+      if (showcase && clock >= showcase.until) {
+        // The showcase is over: every card in the trick eases from where it is
+        // to its place, so the room made for the new one opens softly.
+        showcase = null;
+        settle = { startedAt: clock, from: new Map() };
+        for (const key of trickOrder) {
+          const object = cards.get(key)?.object;
+          if (object) {
+            settle.from.set(key, {
+              position: object.position.clone(),
+              quaternion: object.quaternion.clone(),
+              scale: object.scale.clone(),
+            });
+          }
+        }
+      }
+      if (settle && clock - settle.startedAt >= paced(PLAYED_CARDS.showcaseSettleSeconds)) settle = null;
       if (swapWaiting && clock >= swapWaiting.at) startSwap();
 
       const follow = 1 - Math.exp(-CARD_HANDLING.followSpeed * deltaSeconds);
@@ -652,13 +715,27 @@ export function createTableCards(
           entry.placed = true;
         }
 
-        entry.object.position.lerp(destination, follow);
-        entry.object.quaternion.slerp(target.slot.quaternion, follow);
+        const start = settle?.from.get(entry.key);
+        const gentle = showcased() === entry.key || pending?.key === entry.key;
+        if (settle && start && !entry.drag) {
+          const k = smoother((clock - settle.startedAt) / Math.max(paced(PLAYED_CARDS.showcaseSettleSeconds), 1e-6));
+          entry.object.position.lerpVectors(start.position, destination, k);
+          entry.object.quaternion.slerpQuaternions(start.quaternion, target.slot.quaternion, k);
+          entry.object.scale.lerpVectors(start.scale, target.slot.scale, k);
+        } else if (gentle) {
+          const soft = 1 - Math.exp(-PLAYED_CARDS.showcaseFollowSpeed * deltaSeconds);
+          entry.object.position.lerp(destination, soft);
+          entry.object.quaternion.slerp(target.slot.quaternion, soft);
+          entry.object.scale.lerp(target.slot.scale, soft);
+        } else {
+          entry.object.position.lerp(destination, follow);
+          entry.object.quaternion.slerp(target.slot.quaternion, follow);
+          entry.object.scale.lerp(target.slot.scale, follow);
+        }
         // Scale eases with the rest. Your own card moves through here rather
         // than flyFromHand, so without this it keeps the hand slot's size all
         // the way to the played slot - invisible while the two matched, plain
         // as soon as they differ.
-        entry.object.scale.lerp(target.slot.scale, follow);
         entry.object.visible = true;
         const pointed = hovered === entry.key || entry.drag !== null;
         const isLeading = leading === entry.key && trickOrder.includes(entry.key);

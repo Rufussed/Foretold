@@ -673,6 +673,17 @@ export const PLAYED_CARDS = {
   // trick and the cards scale to make room.
   showcaseHoldSeconds: 1,
   showcaseTowardViewerMetres: 0.5,
+  // How long the showcased card takes to move into its place (and the others
+  // to rescale), easing softly in and out.
+  showcaseSettleSeconds: 0.9,
+  // A card from the back half of the table passes beside the cards already
+  // played: this far past the row's edge, in card widths, and a seat counts as
+  // the back half when it is this far behind the centre (1 = straight behind).
+  passClearanceCards: 0.8,
+  backHalfDepth: 0.3,
+  // How gently your own card glides out to the showcase spot (the usual card
+  // follow speed is CARD_HANDLING.followSpeed; smaller is softer).
+  showcaseFollowSpeed: 4,
 };
 
 export const CARD_HANDLING = {
