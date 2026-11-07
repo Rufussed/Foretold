@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { adminService, isAdminUsername } from "../services/adminService.js";
 import { UserService } from "../services/userService.js";
+import db from "../db/database.js";
 import { setRolesAllOpen } from "../game/wizard/modes/roles/roleAccess.js";
 
 interface IdParams {
@@ -72,5 +73,22 @@ export default async function adminRoutes(
     const open = request.body?.open === true;
     setRolesAllOpen(userId, open);
     return { userId, rolesOpen: open };
+  });
+
+  // Confirms an account's email by hand, for players whose address is wrong
+  // or never gets the mail: they can sign in at once.
+  server.post<{ Params: IdParams }>("/users/:id/confirm-email", async (request, reply) => {
+    const userId = Number(request.params.id);
+    if (!Number.isInteger(userId) || !UserService.getUserById(userId)) {
+      return reply.status(404).send({ error: "User not found" });
+    }
+    UserService.markEmailVerified(userId);
+    return { userId, emailVerified: true };
+  });
+
+  // The same for every account still waiting, guests aside.
+  server.post("/users/confirm-all", async () => {
+    const result = db.prepare("UPDATE users SET email_verified = 1 WHERE email_verified = 0 AND is_guest = 0").run();
+    return { confirmed: Number(result.changes) };
   });
 }
