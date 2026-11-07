@@ -369,6 +369,7 @@
 }
 
 .room-start-controls .room-role-field[hidden],
+.room-start-controls .room-role-slots[hidden],
 .room-role-own[hidden] {
   display: none;
 }
