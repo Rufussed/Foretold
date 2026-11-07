@@ -387,7 +387,9 @@
 
 .home-modal-backdrop {
   position: fixed;
-  z-index: 100;
+  /* Above #app (base.css, 9999): the info windows (components/info-window.ts)
+     are added to the body, outside it. */
+  z-index: 10000;
   inset: 0;
 
   display: grid;

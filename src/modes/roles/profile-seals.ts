@@ -6,7 +6,7 @@ import {
   type RoleRecord,
   type SealLevelId,
 } from "../../../backend/src/game/wizard/modes/roles/sealLevels";
-import { t } from "../../i18n";
+import { t, type MessageKey } from "../../i18n";
 import { API_BASE } from "../../services/api";
 import { openInfoWindow } from "../../components/info-window";
 import { openRoles } from "../../../backend/src/game/wizard/modes/roles/roleLocks";
@@ -35,6 +35,10 @@ type Access = Pick<RoleAccess, "allOpen" | "colorPoints"> | null;
 
 const openSet = (records: Records, access: Access): Set<RoleId> | null =>
   access === null ? null : new Set(openRoles([...records.values()], access.allOpen, access.colorPoints));
+
+// A basic role's story; the powers have none yet.
+const storyOf = (role: RoleId): string | null =>
+  roleKind(role) === "basic" ? t(`role.${role}.story` as MessageKey) : null;
 
 const progressUrl = (path: string) => `${API_BASE}/roles/progress/${path}`;
 const authHeaders = () => ({ Authorization: `Bearer ${localStorage.getItem("wizardToken") ?? ""}` });
@@ -86,7 +90,9 @@ function renderSeal(role: RoleId, records: Records, open: Set<RoleId> | null): s
   const locked = open !== null && !open.has(role);
   // Your own Profile shows only the roles open to you.
   if (locked) return "";
-  const tip = locked ? `${t(`role.${role}`)}: ${lockTip(role)}` : `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })}`;
+  const tip = locked
+    ? `${t(`role.${role}`)}: ${lockTip(role)}`
+    : `${name}${toward} · ${t("seals.games", { games: String(record.games), wins: String(record.wins) })} · ${t("seals.clickStory")}`;
 
   return `
     <div class="seal-tile seal-at-${done ?? "none"}${locked ? " seal-locked" : ""}" data-seal-tip="${tip}" data-seal-role="${role}" tabindex="0">
@@ -188,6 +194,17 @@ export function setupSeals(container: HTMLElement, own: boolean, access: Access 
   if (own) tellNewlyOpen(openSet(byRole(records), access), player);
   setupTip(container, card);
   card.querySelector("[data-seals-help]")?.addEventListener("click", openSealsHelp);
+  // A seal clicked (or Enter on it): its story and its power.
+  const tileOf = (target: EventTarget | null) =>
+    target instanceof Element ? target.closest<HTMLElement>("[data-seal-role]") : null;
+  card.addEventListener("click", (event) => {
+    const tile = tileOf(event.target);
+    if (tile && !event.shiftKey && !event.ctrlKey) openSealStory(tile.dataset.sealRole as RoleId);
+  });
+  card.addEventListener("keydown", (event) => {
+    const tile = tileOf(event.target);
+    if (tile && event.key === "Enter") openSealStory(tile.dataset.sealRole as RoleId);
+  });
   const tabs = [...card.querySelectorAll<HTMLButtonElement>("[data-seal-tab]")];
   const groups = [...card.querySelectorAll<HTMLElement>("[data-seal-group]")];
   for (const tab of tabs) {
@@ -199,6 +216,26 @@ export function setupSeals(container: HTMLElement, own: boolean, access: Access 
     });
   }
   if (import.meta.env.DEV && own) setupDevClicks(card, groups, access);
+}
+
+// A role's window: its seal, its story and what its power does.
+function openSealStory(role: RoleId): void {
+  const story = storyOf(role);
+  const url = roleSealUrl(role);
+  openInfoWindow(
+    "seal-story",
+    t(`role.${role}`),
+    `
+      <div class="home-rules-content">
+        <section class="home-rules-section">
+          ${url ? `<img class="seal-story-art" src="${url}" alt="" />` : ""}
+          ${story ? `<p class="seal-story">${story}</p>` : ""}
+          <h3>${t("seals.power")}</h3>
+          <p>${t(`role.${role}.power` as MessageKey)}</p>
+        </section>
+      </div>
+    `,
+  );
 }
 
 // The window behind the "?": how a seal grows, its steps from sealLevels.ts.
@@ -309,8 +346,11 @@ function tellNewlyOpen(open: Set<RoleId> | null, player: string): void {
   if (!seen) return;
   const fresh = [...open].filter((role) => !seen!.includes(role));
   if (!fresh.length) return;
-  const line = (role: RoleId) =>
-    `<p>${t(roleKind(role) === "basic" ? "seals.unlocked.role" : "seals.unlocked.power", { name: t(`role.${role}`) })}</p>`;
+  const line = (role: RoleId) => {
+    const story = storyOf(role);
+    return `<p><strong>${t(roleKind(role) === "basic" ? "seals.unlocked.role" : "seals.unlocked.power", { name: t(`role.${role}`) })}</strong></p>
+      ${story ? `<p class="seal-story">${story}</p>` : ""}`;
+  };
   openInfoWindow(
     "roles-unlocked",
     t("seals.unlocked.title"),

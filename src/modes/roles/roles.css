@@ -183,3 +183,22 @@
     overflow-y: auto;
   }
 }
+
+/* A role's story, in its window and when it opens (profile-seals.ts). */
+.seal-story {
+  font-style: italic;
+  line-height: 1.55;
+  color: rgba(244, 235, 217, 0.85);
+}
+
+.seal-story-art {
+  display: block;
+  width: 96px;
+  height: 96px;
+  margin: 0 auto 12px;
+  object-fit: contain;
+}
+
+.seal-tile {
+  cursor: pointer;
+}
