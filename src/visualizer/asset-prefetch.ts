@@ -1,5 +1,7 @@
 import { SUITS, type Card, type CardValue } from "../../backend/src/game/wizard/models/card";
 import { enqueuePrefetch, type PrefetchTask } from "../services/prefetch-queue";
+import type { WizardGameOptions } from "../../backend/src/game/wizard/gameOptions";
+import { setCardDeckMode } from "./card-decks";
 import { cardArtUrl, cardBackTexture, preloadCardArt } from "./card-texture-loader";
 import { CHARACTER_IDS, characterModelUrl, loadCharacterAsset } from "./character-assets";
 import { isTouchDevice } from "./device-limits";
@@ -94,4 +96,26 @@ const parsedTasks = (): PrefetchTask[] => [
 
 export function prefetchGameAssets(): void {
   enqueuePrefetch(...(isConstrainedDevice() ? bytesOnlyTasks() : parsedTasks()));
+}
+
+// Once a room is entered its game mode is known, so the deck it will deal is
+// too: Roleplay's cards are not Classic's, and the faces differ between modes
+// even where the pictures do not. The deck is set to the room's, then its
+// cards are fetched (and, on a device that can hold them, built) ahead of the
+// first deal so no card is dealt before its face has arrived.
+export function prefetchRoomDeck(options: Pick<WizardGameOptions, "mode">): void {
+  const mode = options.mode ?? "classic";
+  setCardDeckMode({ options } as Parameters<typeof setCardDeckMode>[0]);
+  const constrained = isConstrainedDevice();
+  enqueuePrefetch({
+    name: `${constrained ? "bytes of " : ""}room deck ${mode}`,
+    run: async () => {
+      if (constrained) {
+        for (const card of DECK) await warmCache(cardArtUrl(card));
+        return;
+      }
+      cardBackTexture();
+      for (const card of DECK) await preloadCardArt(card);
+    },
+  });
 }

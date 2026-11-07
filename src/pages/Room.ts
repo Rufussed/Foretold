@@ -498,6 +498,7 @@ export async function renderRoomPage(
   });
 
   let room: Room | null = null;
+  let prefetchedDeck: string | null = null;
   // Whether the host's selects have been set from what the room saved, so a
   // reload keeps their choices.
   let optionsLoaded = false;
@@ -574,6 +575,13 @@ export async function renderRoomPage(
     waitingEl.hidden = isHost;
 
     const options = normalizeGameOptions(room.options, DEFAULT_GAME_OPTIONS);
+    // The room's deck is known now: have its cards ready before the first deal.
+    if (options.mode !== prefetchedDeck) {
+      prefetchedDeck = options.mode;
+      void import("../visualizer/asset-prefetch")
+        .then((module) => module.prefetchRoomDeck(options))
+        .catch((error) => console.warn("[room] no deck prefetch:", error));
+    }
     const isRoles = options.mode === "roles";
     for (const roleEl of hostRoleEls) roleEl.hidden = !isRoles;
     roleSlotsEl.closest("label")!.hidden = !isRoles;
