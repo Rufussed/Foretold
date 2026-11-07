@@ -54,7 +54,7 @@ async function cardPrint(card: Card, boost?: string): Promise<FacePrint> {
   // their symbol and title.
   // A deck that marks them without the symbols (card-decks.ts markSpecials)
   // gives the Wizard its "W"; the Jester has its hat (cardSymbol).
-  const label = special ? (card.value === 14 && markedSpecials() ? "W" : "") : cardLabel(card);
+  const label = special ? (card.value === 14 && markedSpecials() && !activeDeck().wizardSymbol ? "W" : "") : cardLabel(card);
   const badgeGap =
     symbolName === "trickster" ? CARDS.tricksterBadgeGap : symbolName === "thief" ? CARDS.thiefBadgeGap : CARDS.badgeGap;
   const badgeScale = (symbolName && CARDS.symbolScales[symbolName]) || 1;
@@ -70,7 +70,10 @@ const markedSpecials = (): boolean => !activeDeck().symbols && activeDeck().mark
 // The symbol a card carries, if it is one of the four that have one: the Fool
 // and the Wizard, and the Seer, the Thief and the Trickster among the ranks.
 function cardSymbol(card: Card): PowerSymbol | undefined {
-  if (!activeDeck().symbols) return card.value === 0 && markedSpecials() ? "fool" : undefined;
+  if (!activeDeck().symbols) {
+    if (card.value === 0 && markedSpecials()) return "fool";
+    return card.value === 14 && activeDeck().wizardSymbol ? "wizard" : undefined;
+  }
   if (card.value === 0) return "fool";
   if (card.value === 14) return "wizard";
   return powerOf(card) ?? undefined;

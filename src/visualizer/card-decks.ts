@@ -26,6 +26,8 @@ export interface CardDeck {
   // Without the symbols: whether the Wizard still carries a "W" and the
   // Jester its hat, as the old cards did (Classic and Roleplay).
   markSpecials?: boolean;
+  // Without the symbols: the Wizard wears its Expanded symbol instead of the "W" (Classic).
+  wizardSymbol?: boolean;
 }
 
 type TitleKey =
@@ -94,12 +96,13 @@ const DECK_B_PICTURES = [
   "monarch",
 ] as const;
 
-// Classic, without the symbols, still marks its Wizard ("W") and Jester (hat).
+// Classic, without the other symbols, marks its Jester (hat) and gives its Wizard the Expanded symbol.
 const deckA = (symbols: boolean): CardDeck => ({
   picture: (value) => DECK_A_PICTURES[value - 1],
   titleKey: titled(DECK_A_PICTURES, (value) => `sabotage.rank.${value}`),
   symbols,
   markSpecials: !symbols,
+  wizardSymbol: !symbols,
 });
 
 const DECKS: Record<GameMode, CardDeck> = {
