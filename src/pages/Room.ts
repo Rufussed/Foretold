@@ -30,6 +30,7 @@ import { serverError, type ServerError } from "../i18n/server-error";
 import { gameModeBadge, gameModeName } from "../utils/game-mode";
 import { isRoleId, roleKind, rolesOfKind, type RoleId, type RoleKind } from "../../backend/src/game/wizard/modes/roles/roles";
 import { openRolesHelp, rolesHelpButton } from "../modes/roles/roles-help";
+import { roleRulesHint } from "../modes/roles/role-rules";
 import { roleSlotsChoice } from "../modes/roles/role-slots-choice";
 import { hideLockedRoles, loadRoleAccess } from "../modes/roles/role-locks";
 
@@ -338,11 +339,14 @@ export async function renderRoomPage(
   // The roles chosen, one per list kind: the master one only in a basic +
   // master room (modes/roles/rolePairs.ts).
   const chosenRoles: Record<RoleKind, RoleId | null> = { basic: null, master: null };
+  // Roles mode only: the roles open to this player, once loaded below.
+  let openRoleIds: RoleId[] | null = null;
   for (const button of container.querySelectorAll<HTMLButtonElement>(".roles-help-button")) {
     button.addEventListener("click", (event) => {
       // Inside the role's label, which would otherwise open the list.
       event.preventDefault();
-      openRolesHelp(button.dataset.kind === "master" ? "master" : "basic");
+      // Only the roles open to this player (modes/roles/role-locks.ts).
+      openRolesHelp(button.dataset.kind === "master" ? "master" : "basic", openRoleIds);
     });
   }
   // The lists of the kind show the choice, with its power as the hint.
@@ -352,7 +356,7 @@ export async function renderRoomPage(
     for (const select of roleSelects) {
       if (select.dataset.kind !== kind) continue;
       select.value = shown ?? "";
-      select.title = shown ? t(`role.${shown}.power`) : "";
+      select.title = shown ? roleRulesHint(shown) : "";
     }
   };
   // One save at a time, so a quick change of mind lands last. Until a poll
@@ -395,6 +399,7 @@ export async function renderRoomPage(
   void loadRoleAccess(token).then((access) => {
     if (!access || destroyed) return;
     hideLockedRoles(roleSelects, access.open);
+    openRoleIds = access.open;
     hasPower = access.open.some((role) => roleKind(role) === "master");
     if (!hasPower) roleSlotsEl.closest("label")!.hidden = true;
   });

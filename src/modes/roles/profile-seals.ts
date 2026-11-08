@@ -12,6 +12,7 @@ import { openInfoWindow } from "../../components/info-window";
 import { openRoles } from "../../../backend/src/game/wizard/modes/roles/roleLocks";
 import { lockTip, type RoleAccess } from "./role-locks";
 import { levelSealUrl, roleSealUrl } from "./seal-urls";
+import { roleRulesHtml } from "./role-rules";
 
 // Roles mode only. The Profile's Seals box (pages/Profile.ts calls it): every
 // role's seal, in wax to start with. On your own Profile only the roles open
@@ -231,7 +232,7 @@ function openSealStory(role: RoleId): void {
           ${url ? `<img class="seal-story-art" src="${url}" alt="" />` : ""}
           ${story ? `<p class="seal-story">${story}</p>` : ""}
           <h3>${t("seals.power")}</h3>
-          <p>${t(`role.${role}.power` as MessageKey)}</p>
+          ${roleRulesHtml(role)}
         </section>
       </div>
     `,

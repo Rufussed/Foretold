@@ -4,6 +4,7 @@ import { t } from "../../../i18n";
 import { displayName } from "../../../utils/display-name";
 import { escapeHtml } from "../../../utils/escape-html";
 import { levelSealUrl } from "../seal-urls";
+import { roleRulesHtml } from "../role-rules";
 
 // Roles mode only. A Roles button beside the Log button (visualizer/hud/
 // event-log.ts) opens a see-through panel over the player list with the
@@ -56,7 +57,7 @@ export function createTableRoles(
               ${escapeHtml(displayName(player.username))}
               <span class="table-roles-role">${card === null ? "" : `${card} · `}${t(`role.${role}`)}</span>
             </p>
-            <p class="table-roles-power">${t(`role.${role}.power`)}</p>
+            <div class="table-roles-power">${roleRulesHtml(role)}</div>
           </div>
         </li>
       `;

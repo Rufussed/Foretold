@@ -202,3 +202,97 @@
 .seal-tile {
   cursor: pointer;
 }
+
+/* Roles mode only. A role's or power's rules card (role-rules.ts), in the
+   Roles help windows, a seal's window and the table's Roles panel: the
+   same fields in the same order, label left, text right. */
+.role-rules {
+  display: grid;
+  margin: 4px 0 10px;
+}
+
+.role-rules-row {
+  display: grid;
+  grid-template-columns: 82px 1fr;
+  gap: 12px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(224, 161, 77, 0.14);
+}
+
+.role-rules-row:first-child {
+  border-top: 0;
+}
+
+.role-rules dt {
+  padding-top: 3px;
+  color: #e0a14d;
+  font-family: "Cinzel Variable", serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.role-rules dd {
+  margin: 0;
+  color: #e6dac4;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.role-rules-limits {
+  margin: 0;
+  padding-left: 17px;
+}
+
+.role-rules-limits li {
+  margin: 0 0 3px;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.role-rules-limits li::marker {
+  color: #b36e27;
+}
+
+/* The limits are where the surprises are: a faint band marks them. */
+.role-rules-row.is-limits {
+  background: rgba(224, 161, 77, 0.05);
+}
+
+.role-rules-row.is-example dd {
+  color: #cbbfa8;
+  font-style: italic;
+}
+
+/* In the table's Roles panel: smaller, to fit beside the seal. */
+.table-roles-power .role-rules {
+  margin: 4px 0 0;
+}
+
+.table-roles-power .role-rules-row {
+  grid-template-columns: 62px 1fr;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.table-roles-power .role-rules dt {
+  padding-top: 2px;
+  font-size: 9.5px;
+}
+
+.table-roles-power .role-rules dd {
+  color: rgba(244, 235, 217, 0.9);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+/* On a phone the labels go above their text. */
+@media (max-width: 480px) {
+  .role-rules-row,
+  .table-roles-power .role-rules-row {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+}
