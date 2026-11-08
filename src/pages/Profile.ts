@@ -43,6 +43,8 @@ const PLAYER_LEVELS: { name: MessageKey; fullGames: number }[] = [
 
 interface PlayerLevel {
   name: string;
+  // Which level, for its colour (profile.css [data-level]).
+  id: string;
   // The next level's number, counting the first as 1; none at the top.
   next?: number;
   // 0–1 of the way from this level to the next, by whichever of full games
@@ -68,8 +70,10 @@ function getPlayerLevel(
   const level = PLAYER_LEVELS[index];
   const next = PLAYER_LEVELS[index + 1];
 
+  const id = level.name.split(".").at(-1)!;
+
   if (!next) {
-    return { name: t(level.name), progress: 1 };
+    return { name: t(level.name), id, progress: 1 };
   }
 
   const span = next.fullGames - level.fullGames;
@@ -80,6 +84,7 @@ function getPlayerLevel(
 
   return {
     name: t(level.name),
+    id,
     next: index + 2,
     games: next.fullGames,
     points: next.fullGames * POINTS_PER_FULL_GAME,
@@ -554,7 +559,7 @@ export async function renderProfilePage(
           <div class="profile-main-column">
             <article class="profile-card">
               <p class="profile-card-kicker">${t("profile.record")}</p>
-              <div class="profile-skills-heading">
+              <div class="profile-skills-heading" data-level="${playerLevel.id}">
                 <h2>${t("profile.skills")}:</h2>
                 <span class="profile-rank">${playerLevel.name}</span>
                 ${levelProgressLine}
