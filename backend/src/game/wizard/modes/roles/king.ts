@@ -1,7 +1,11 @@
 import type { Card, Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
+import { airSwitch } from "./master/colourWizards.js";
 import { playerOf, powerOn, rolePowerOn, type RoleOf } from "./rolePlay.js";
-import { roleCard } from "./roles.js";
+import { WizardRules } from "../../services/wizardRules.js";
+import { trickRolesOf } from "./master/trickRoles.js";
+
+const rules = new WizardRules();
 
 // What every power used in a trick the King's 13 won pays him.
 export const TAX_POINTS = 10;
@@ -19,26 +23,28 @@ export const PEACE_POINTS = 5;
 //   him PEACE_POINTS, never more than they have - all but the Priest, who
 //   collects from the King. Under the peace no Smith's armour blocks it.
 // - The King's tax: when his own 13, played with its power on but not as a
-//   trump, wins the trick, every other card in it showing its role's seal
-//   pays him TAX_POINTS, never more than its player has. Nothing is undone.
+//   trump, wins the trick, every other card in it showing its role's seal,
+//   and every card a Joker played free, pays him TAX_POINTS, never more than its player has. Nothing is undone.
 //   The Priest pays no tax: the Priest collects from the King. A Smith in
 //   armour blocks it, and the King pays them for the block.
 
 // Whether the card at this place is a King's trump 13: the King's peace.
-export const bringsPeace = (playedCards: PlayedCard[], index: number, trumpSuit: Suit | null, roleOf: RoleOf): boolean => {
-  const played = playedCards[index];
-  return !!played
-    && trumpSuit !== null
-    && played.card.suit === trumpSuit
-    && played.card.value === roleCard("king")
-    && roleOf(playerOf(played)) === "king";
-};
+export const bringsPeace = (playedCards: PlayedCard[], index: number, trumpSuit: Suit | null, roleOf: RoleOf): boolean =>
+  index >= 0 && rules.kingsPeaceAt(playedCards.slice(0, index + 1), trumpSuit, trickRolesOf(roleOf)) === index;
 
 // The players whose cards before this place had their role's power on, in
 // order: whom the King's peace at this place stops.
+// A Yellow Wizard who turned the lead before it loses the points it would
+// take, and with fire trumps a Red Wizard's shield comes down.
 export function stoppedBy(playedCards: PlayedCard[], index: number, trumpSuit: Suit | null, roleOf: RoleOf): string[] {
   const before = playedCards.slice(0, index);
-  return before.flatMap((played, at) => (rolePowerOn(before, at, trumpSuit, roleOf) ? [playerOf(played)] : []));
+  const roles = trickRolesOf(roleOf);
+  const basic = before.flatMap((played, at) => (rolePowerOn(before, at, trumpSuit, roleOf) ? [playerOf(played)] : []));
+  const turned = airSwitch({ playedCards: before }, trumpSuit, roles)?.by;
+  const shieldAt = rules.scanShieldAt(before, trumpSuit, roles);
+  const shield = trumpSuit === "Red" && shieldAt !== -1 ? playerOf(before[shieldAt]!) : undefined;
+  const masters = [turned, shield].filter((name): name is string => !!name);
+  return [...new Set([...basic, ...masters])];
 }
 
 // The tribute for the King's peace: the King whose own trump 13 won this
@@ -82,8 +88,10 @@ export function taxIn(
     return null;
   }
 
+  // A Joker's free play shows its power too, and pays like a role's card.
   const payers = playedCards.flatMap((played, at) =>
-    at !== index && roleOf(playerOf(played)) !== "priest" && rolePowerOn(playedCards, at, trumpSuit, roleOf)
+    at !== index && roleOf(playerOf(played)) !== "priest"
+    && (rolePowerOn(playedCards, at, trumpSuit, roleOf) || !!played.freePlay)
       ? [{ player: playerOf(played), card: played.card }]
       : []);
 

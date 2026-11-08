@@ -1,4 +1,4 @@
-import type { Suit } from "../../models/card.js";
+import { isJester, isWizard, type Suit } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
 import { canBeTaken, powerOn, swapOwners, type RoleOf } from "./rolePlay.js";
 import type { RoleAction } from "./roles.js";
@@ -36,6 +36,25 @@ export function stealSpots(
   }
 
   return spots;
+}
+
+// Why a Thief's 1 with its power on, not leading, steals nothing: the card
+// nearest it is a Wizard, a Jester or a Servant's 2, and nothing further
+// back may be taken. Undefined when there is something to steal, or no
+// power at work.
+export function stealFails(
+  playedCards: PlayedCard[],
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): "wizard" | "jester" | "servant" | undefined {
+  const last = playedCards.length - 1;
+  const nearest = playedCards[last - 1];
+
+  if (!nearest || !powerOn(playedCards, last, "thief", trumpSuit, roleOf) || stealSpots(playedCards, trumpSuit, roleOf).length) {
+    return undefined;
+  }
+
+  return isWizard(nearest.card) ? "wizard" : isJester(nearest.card) ? "jester" : "servant";
 }
 
 // The Thief's 1, the trick's last card, takes the card at this place.

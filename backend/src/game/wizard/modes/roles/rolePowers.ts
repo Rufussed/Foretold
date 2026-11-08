@@ -263,7 +263,7 @@ function applyMarkets(game: WizardGameState): RoleAction[] {
     const done: { player: string; points: number }[] = [];
     const blocks: RoleAction[] = [];
 
-    for (const trade of trades(trick.playedCards, merchant, game.trumpSuit, trickRolesIn(game))) {
+    for (const trade of trades(trick.playedCards, merchant)) {
       if (!trade.sells) {
         const buyer = playerNamed(merchant);
         const seller = playerNamed(trade.player);
@@ -421,7 +421,13 @@ function applyForesight(game: WizardGameState, winner: GamePlayer): RoleAction[]
 // it: the peace stops the Smith too.
 function applyTribute(game: WizardGameState, winner: GamePlayer): void {
   const trick = game.currentTrick;
-  const players = game.players.map((player) => player.username);
+  // With fire trumps, a Red Wizard whose shield the King's red 13 took down
+  // pays no tribute: the two cancel each other.
+  const shieldDown = game.trumpSuit === "Red" &&
+    rules.redShield(trick.playedCards.slice(0, Math.max(0, rules.kingsPeaceAt(trick.playedCards, game.trumpSuit, trickRolesIn(game)))), game.trumpSuit, trickRolesIn(game));
+  const players = game.players
+    .filter((player) => !(shieldDown && masterRoleOf(player) === "redWizard"))
+    .map((player) => player.username);
   const tribute = peaceTribute(trick.playedCards, game.trumpSuit, rolesOf(game), winner.username, players);
   if (!tribute?.payers.length) return;
 
@@ -474,26 +480,26 @@ export function applyTrickEndPowers(game: WizardGameState, winner: GamePlayer): 
 function settleTrickPowers(game: WizardGameState, winner: GamePlayer): void {
   const trick = game.currentTrick;
 
-  // A colour Wizard who won with the Wizard of their colour: the King's
-  // peace does not stop it.
-  const master = masterRoleOf(winner);
-  if (isColourWizard(master)) addBonus(winner, master, colourWizardBonus(trick, winner));
-  // A higher red card that beat a Red Wizard's shield is burned
-  // (colourWizards.ts); the King's peace does not stop it either.
-  if (burnsWinner(trick, game.trumpSuit, trickRolesIn(game), winner)) {
-    addBonus(winner, "redWizard", -Math.min(FIRE_BURN, Math.max(0, winner.score)));
-  }
-  // A Yellow Wizard who turned the lead takes from the player who led
-  // (colourWizards.ts), whoever wins; the King's peace does not stop it.
-  const turned = airSwitch(trick, game.trumpSuit, trickRolesIn(game));
-  if (turned) movePoints(game, turned.from, turned.by, "yellowWizard", AIR_TAKE);
-
-  // Under the King's peace no other power works at the end of the trick;
-  // a King who won it with his trump 13 is paid his tribute.
+  // Under the King's peace no power works at the end of the trick, the
+  // colour Wizards' neither (rolePlay.ts kingsPeace); a King who won it with
+  // his trump 13 is paid his tribute.
   if (kingsPeace(trick.playedCards, game.trumpSuit, rolesOf(game))) {
     applyTribute(game, winner);
     return;
   }
+
+  // A colour Wizard who won with the Wizard of their colour.
+  const master = masterRoleOf(winner);
+  if (isColourWizard(master)) addBonus(winner, master, colourWizardBonus(trick, winner));
+  // A higher red card that beat a Red Wizard's shield is burned
+  // (colourWizards.ts).
+  if (burnsWinner(trick, game.trumpSuit, trickRolesIn(game), winner)) {
+    addBonus(winner, "redWizard", -Math.min(FIRE_BURN, Math.max(0, winner.score)));
+  }
+  // A Yellow Wizard who turned the lead takes from the player who led
+  // (colourWizards.ts), whoever wins.
+  const turned = airSwitch(trick, game.trumpSuit, trickRolesIn(game));
+  if (turned) movePoints(game, turned.from, turned.by, "yellowWizard", AIR_TAKE);
 
   for (const served of tippers(trick.roleActions, winner.username)) {
     movePoints(game, served, winner.username, "servant", SERVANT_BONUS);

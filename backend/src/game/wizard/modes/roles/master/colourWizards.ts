@@ -78,7 +78,7 @@ export const AIR_TAKE = 5;
 // Who turned this trick's lead to yellow, and who had led it; null when no
 // one did.
 export function airSwitch(
-  trick: TrickState,
+  trick: Pick<TrickState, "playedCards">,
   trumpSuit: Suit | null,
   roles: TrickRoles | undefined,
 ): { by: string; from: string } | null {

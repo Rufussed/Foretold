@@ -3,7 +3,8 @@ import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/
 import { burnsWinner, FIRE_BURN } from "../../../../backend/src/game/wizard/modes/roles/master/colourWizards";
 import { rolesName } from "../role-names";
 import type { RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
-import { playerOf, powerOn, rolePowerOn, rolesOfPlayers, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { kingHumbledAt, playerOf, powerOn, rolePowerOn, rolesOfPlayers, wizardBlocked, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { stealFails } from "../../../../backend/src/game/wizard/modes/roles/thief";
 import { trickRolesIn } from "../../../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { WizardRules } from "../../../../backend/src/game/wizard/services/wizardRules";
 import { t, type MessageKey } from "../../../i18n";
@@ -126,6 +127,46 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
           : t("ann.turnsLead", { name: announcedName(by), from: announcedName(from) });
     messages.push({
       text,
+      username: by,
+      role: true,
+    });
+  }
+
+  // A Warrior's, Gambler's, Duke's or Prophet's card after a Wizard: it
+  // cannot win, so its power is off (backend rolePlay.ts wizardBlocked).
+  const lastIndex = next.currentTrick.playedCards.length - 1;
+  const roleOf = rolesIn(next);
+  const blocked = sameTrick ? wizardBlocked(next.currentTrick.playedCards, lastIndex, next.trumpSuit, roleOf) : undefined;
+  if (blocked && switcher) {
+    const by = playerOf(switcher);
+    messages.push({
+      text: by === local
+        ? t(`ann.youWizardBlocked.${blocked}` as MessageKey)
+        : t(`ann.wizardBlocked.${blocked}` as MessageKey, { name: announcedName(by) }),
+      username: by,
+      role: true,
+    });
+  }
+
+  // A Thief's 1 that finds nothing it may take (backend thief.ts stealFails).
+  const failed = sameTrick ? stealFails(next.currentTrick.playedCards, next.trumpSuit, roleOf) : undefined;
+  if (failed && switcher) {
+    const by = playerOf(switcher);
+    messages.push({
+      text: by === local
+        ? t(`ann.youStealFail.${failed}` as MessageKey)
+        : t(`ann.stealFails.${failed}` as MessageKey, { name: announcedName(by) }),
+      username: by,
+      role: true,
+    });
+  }
+
+  // A King's trump 13 after a Red Wizard's shield: no trumps, so no peace
+  // (backend rolePlay.ts kingHumbledAt).
+  if (sameTrick && switcher && kingHumbledAt(next.currentTrick.playedCards, next.trumpSuit, roleOf) === lastIndex) {
+    const by = playerOf(switcher);
+    messages.push({
+      text: by === local ? t("ann.yourKingHumbled") : t("ann.kingHumbled", { name: announcedName(by) }),
       username: by,
       role: true,
     });
@@ -281,8 +322,10 @@ export function playLogLines(previous: PublicWizardGameState, next: PublicWizard
     // A Thief's 1 that leads has nothing before it to take; the power is
     // still on, so the log says why nothing is stolen.
     const leads = power && from + offset === 0 && roleOf(by) === "thief" ? ` ${t("log.thiefLeads")}` : "";
+    // A role card that lost its power to a Wizard before it says so.
+    const wizard = wizardBlocked(playedCards, from + offset, next.trumpSuit, roleOf) ? ` ${t("log.wizardBlocked")}` : "";
     const bet = played.bet ? ` ${t("log.bets")}` : played.lowered ? ` ${t("log.lowers")}` : played.lowered === false ? ` ${t("log.keepsBid")}` : played.freePlay ? ` ${t("log.playsFree")}` : "";
-    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: logCardName(played.card) }) + leads + bet });
+    lines.push({ text: t(power ? "log.playsPower" : "log.plays", { name: withRole(next, by), card: logCardName(played.card) }) + leads + wizard + bet });
   });
 
   const winner = next.currentTrick.winnerUsername;
@@ -342,7 +385,14 @@ export function roleMessages(
     const about = { role: true, aboutYou: touches(action, local) };
     if (action.role === "merchant") {
       const trades = marketTrades(action, local);
-      const text = action.by === local ? t("ann.yourMarket", { trades }) : t("ann.market", { ...values, trades });
+      // The 7 taken by a Thief, a Servant or a Fisher: the market still
+      // trades at 7 (backend merchant.ts).
+      const seven = next.currentTrick.playedCards.find((played) => playerOf(played) === action.by);
+      const holder = seven && seven.username !== action.by ? seven.username : undefined;
+      const swapped = holder
+        ? ` ${holder === local ? t("ann.marketSwappedYours") : t("ann.marketSwapped", { holder: announcedName(holder) })}`
+        : "";
+      const text = (action.by === local ? t("ann.yourMarket", { trades }) : t("ann.market", { ...values, trades })) + swapped;
       return { text, username: action.by, atTrickEnd: true, ...about };
     }
     if (action.role === "gambler") {

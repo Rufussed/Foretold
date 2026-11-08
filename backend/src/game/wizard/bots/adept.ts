@@ -6,7 +6,7 @@ import { WizardRules } from "../services/wizardRules.js";
 import { blindPrediction, chooseLongestSuit } from "./apprentice.js";
 import { type BotStrategy, currentPlayer, isBlind } from "./personality.js";
 import { type Play, roleBidValue, roleOfBot, rolePick, servesNext, trickAfter } from "./roleSense.js";
-import { playsFree } from "../modes/roles/master/joker.js";
+import { playsFreeIn } from "../modes/roles/master/joker.js";
 import { crowdFactor, trickChance } from "./handStrength.js";
 import { sabotagePick } from "../modes/sabotage/bots/index.js";
 import { blueLead, blueTrickChance } from "./master/blueWizardSense.js";
@@ -50,7 +50,7 @@ export const adept: BotStrategy = {
     const legal: Play[] = player.hand
       .map((card, index) => ({ card, index }))
       // A Roles Joker with a point may play any card (modes/roles/master/joker.ts).
-      .filter(({ card }) => playsFree(player) || rules.isValidCardPlay(card, player.hand, leadSuit));
+      .filter(({ card }) => playsFreeIn(game, player) || rules.isValidCardPlay(card, player.hand, leadSuit));
 
     if (legal.length === 0) {
       throw new Error("Bot has no legal card to play");

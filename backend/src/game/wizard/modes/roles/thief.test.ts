@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 
-import { steal, stealSpots } from "./thief.js";
+import { steal, stealFails, stealSpots } from "./thief.js";
 import { card, play, roles } from "./roleTestHelpers.js";
 
 const roleOf = roles({ thief: "thief", serv: "servant", fisher: "fisher" });
@@ -70,5 +70,29 @@ describe("steal", () => {
 
     expect(steal(trick, 0)).toEqual({ role: "thief", by: "thief", on: "ana", card: card(13) });
     expect(trick.map((played) => played.username)).toEqual(["thief", "ben", "ana"]);
+  });
+});
+
+describe("stealFails", () => {
+  it("names a Wizard just before a 1 in the lead suit", () => {
+    expect(stealFails([play("ana", 5), play("ben", 14), play("thief", 1)], null, roleOf)).toBe("wizard");
+  });
+
+  it("names a Jester just before it", () => {
+    expect(stealFails([play("ana", 5), play("ben", 0), play("thief", 1)], null, roleOf)).toBe("jester");
+  });
+
+  it("names a Servant's 2 just before it", () => {
+    expect(stealFails([play("ana", 9), play("serv", 2), play("thief", 1)], null, roleOf)).toBe("servant");
+  });
+
+  it("says nothing when there is a card to steal", () => {
+    expect(stealFails([play("ana", 5), play("ben", 9), play("thief", 1)], null, roleOf)).toBeUndefined();
+    expect(stealFails([play("ana", 5), play("ben", 14), play("thief", 1, "Blue")], "Blue", roleOf)).toBeUndefined();
+  });
+
+  it("says nothing when the 1 leads or has no power", () => {
+    expect(stealFails([play("thief", 1)], null, roleOf)).toBeUndefined();
+    expect(stealFails([play("ana", 5), play("ben", 14), play("thief", 1, "Green")], "Blue", roleOf)).toBeUndefined();
   });
 });

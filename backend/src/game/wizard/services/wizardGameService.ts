@@ -24,7 +24,7 @@ import {
 } from "../modes/roles/rolePowers.js";
 import { canBet } from "../modes/roles/gambler.js";
 import { canLower } from "../modes/roles/prophet.js";
-import { breaksSuit, playsFree, spendJokerPoint } from "../modes/roles/master/joker.js";
+import { breaksSuit, playsFreeIn, spendJokerPoint } from "../modes/roles/master/joker.js";
 import { earnCardPower, hasPendingPower } from "../modes/sabotage/cardPowers.js";
 import { blueSight } from "../modes/roles/master/blueWizard.js";
 import { pickWatchedCards, watcherSight } from "../modes/roles/master/watcher.js";
@@ -298,7 +298,7 @@ export class WizardGameService {
     // (modes/roles/master/joker.ts).
     const freePlay =
       normalizeGameOptions(game.options).mode === "roles" &&
-      playsFree(currentPlayer) &&
+      playsFreeIn(game, currentPlayer) &&
       breaksSuit(card, currentPlayer.hand, leadSuit);
 
     if (

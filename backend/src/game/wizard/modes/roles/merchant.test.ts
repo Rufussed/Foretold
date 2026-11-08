@@ -18,26 +18,34 @@ describe("marketsIn", () => {
 });
 
 describe("trades", () => {
-  it("sells to every card the Merchant's card beats and buys from every card that beats it", () => {
-    const market = trades([play("ana", 3), play("merchant", 7), play("ben", 10), play("cid", 4, "Green")], "merchant", null);
+  it("trades by number: 7 or lower pays the Merchant, higher is paid, whatever the suit", () => {
+    const market = trades(
+      [play("ana", 3), play("merchant", 7), play("ben", 10), play("cid", 4, "Green"), play("dan", 7, "Blue"), play("eve", 12, "Green")],
+      "merchant",
+    );
 
     expect(market.map(({ player, sells }) => [player, sells])).toEqual([
       ["ana", true],
       ["ben", false],
       ["cid", true],
+      ["dan", true],
+      ["eve", false],
     ]);
   });
 
   it("leaves Wizards and Jesters out", () => {
-    expect(trades([play("ana", 14), play("merchant", 7), play("ben", 0)], "merchant", null)).toEqual([]);
+    expect(trades([play("ana", 14), play("merchant", 7), play("ben", 0)], "merchant")).toEqual([]);
   });
 
-  it("trades with the card the Merchant holds now, after a swap", () => {
+  it("still trades at 7 when a Thief took it, each card for whoever played it", () => {
     const stolen = [play("ana", 3), play("merchant", 7), play("thief", 1)];
     // The Thief took the 7 and left the 1.
     stolen[1]!.username = "thief";
     stolen[2]!.username = "merchant";
 
-    expect(trades(stolen, "merchant", null).every(({ sells }) => !sells)).toBe(true);
+    expect(trades(stolen, "merchant").map(({ player, sells }) => [player, sells])).toEqual([
+      ["ana", true],
+      ["thief", true],
+    ]);
   });
 });

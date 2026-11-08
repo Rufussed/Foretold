@@ -171,7 +171,7 @@ function forgesNow(game: WizardGameState, card: Card): boolean {
 }
 
 // A Merchant's 7 as the trick's last card, with its power on and a market
-// that pays: more cards it beats than cards that beat it.
+// that pays: more cards of 7 or lower than above it.
 function profitableMarket(game: WizardGameState, card: Card): boolean {
   const trick = trickAfter(game, card);
   const last = trick.length - 1;
@@ -181,7 +181,7 @@ function profitableMarket(game: WizardGameState, card: Card): boolean {
     return false;
   }
 
-  const market = trades(trick, currentPlayer(game).username, game.trumpSuit);
+  const market = trades(trick, currentPlayer(game).username);
 
   return market.filter((trade) => trade.sells).length > market.filter((trade) => !trade.sells).length;
 }

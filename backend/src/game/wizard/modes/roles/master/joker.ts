@@ -1,7 +1,7 @@
 import { isJester, type Card } from "../../../models/card.js";
 import type { GamePlayer, WizardGameState } from "../../../models/wizardGame.js";
 import { WizardRules } from "../../../services/wizardRules.js";
-import { playerOf } from "../rolePlay.js";
+import { kingsPeace, playerOf, rolesOfPlayers } from "../rolePlay.js";
 import { masterRoleOf } from "../roles.js";
 
 // The Joker, a master role with no card of its own: with a Joker point, not
@@ -24,6 +24,13 @@ const rules = new WizardRules();
 // Whether this player may play any card now: a Joker with a point to spend.
 export const playsFree = (player: Pick<GamePlayer, "role" | "masterRole" | "jokerPoints"> | undefined): boolean =>
   !!player && masterRoleOf(player) === "joker" && (player.jokerPoints ?? 0) > 0;
+
+// The same in this trick: after a King's trump 13 brought peace, no Joker
+// plays free (rolePlay.ts kingsPeace); a free play before it stands.
+export const playsFreeIn = (
+  game: Pick<WizardGameState, "currentTrick" | "trumpSuit" | "players">,
+  player: Pick<GamePlayer, "role" | "masterRole" | "jokerPoints"> | undefined,
+): boolean => playsFree(player) && !kingsPeace(game.currentTrick.playedCards, game.trumpSuit, rolesOfPlayers(game.players));
 
 // Whether this card, played now, uses the Joker's power: a card the rules
 // would refuse, because the hand holds the suit led and this is not of it.

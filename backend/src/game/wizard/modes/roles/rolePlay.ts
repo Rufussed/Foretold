@@ -34,19 +34,51 @@ export const masterOfIn = (roleOf: RoleOf): ((username: string) => RoleId | unde
 // this was kept read the owner.
 export const playerOf = (played: PlayedCard): string => played.playedBy ?? played.username;
 
-// Whether a King's trump 13 is in the trick: the King's peace, which stops
-// every other basic role's power in it, before and after the 13
-// (modes/roles/king.ts). The colour Wizards' powers are not roles' cards and
-// go on.
+// Whether a King's trump 13 brought peace to the trick: it stops every other
+// basic role's power in it, before and after the 13 (modes/roles/king.ts),
+// and every master power from the 13 on - no switch of the lead, no shield,
+// no green boost, no free play, no Wizard bonus (wizardRules.scanTrick).
+// With a Red Wizard's shield already up there are no trumps, so no peace,
+// unless fire is trumps.
 export const kingsPeace = (playedCards: PlayedCard[], trumpSuit: Suit | null, roleOf: RoleOf): boolean =>
-  trumpSuit !== null && playedCards.some((played) =>
+  rules.kingsPeaceAt(playedCards, trumpSuit, trickRolesOf(roleOf)) !== -1;
+
+// A King's trump 13 that brings no peace: a Red Wizard's shield was already
+// up, so the trick has no trumps (fire trumps aside, where the King wins
+// over the shield). Its place in the trick, or -1.
+export function kingHumbledAt(playedCards: PlayedCard[], trumpSuit: Suit | null, roleOf: RoleOf): number {
+  if (trumpSuit === null || trumpSuit === "Red" || kingsPeace(playedCards, trumpSuit, roleOf)) return -1;
+  return playedCards.findIndex((played) =>
     played.card.suit === trumpSuit && played.card.value === roleCard("king") && roleOf(playerOf(played)) === "king");
+}
+
+// The roles whose power needs their card to win the trick: once a Wizard is
+// in it, before their card, it cannot, so the power is off - no bet, no
+// lowering, no choice, no battle, and no pride paid for a trump 9.
+export const WIZARD_BLOCKED_ROLES: readonly RoleId[] = ["warrior", "gambler", "duke", "prophet"];
+
+// Whether a Wizard was played before this place in the trick.
+const wizardBefore = (playedCards: PlayedCard[], index: number): boolean =>
+  playedCards.slice(0, index).some((played) => isWizard(played.card));
 
 // Whether the card at this place in the trick has its role's power on: the
 // role's card, played by a player of that role, in the lead suit or as a
 // trump. A trick opened by a Wizard (after any Jesters) has no lead suit and
-// anyone may play anything, so there the card works in any suit.
+// anyone may play anything, so there the card works in any suit - but not
+// for the roles that must win the trick (WIZARD_BLOCKED_ROLES).
 export function powerOn(
+  playedCards: PlayedCard[],
+  index: number,
+  role: RoleId,
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): boolean {
+  return cardPowerOn(playedCards, index, role, trumpSuit, roleOf)
+    && !(WIZARD_BLOCKED_ROLES.includes(role) && wizardBefore(playedCards, index));
+}
+
+// The card's power as it would be with no Wizard in the trick.
+function cardPowerOn(
   playedCards: PlayedCard[],
   index: number,
   role: RoleId,
@@ -66,6 +98,22 @@ export function powerOn(
   const leadSuit = rules.getLeadSuit(playedCards.slice(0, index + 1), trumpSuit, trickRolesOf(roleOf));
 
   return leadSuit === null || played.card.suit === leadSuit || played.card.suit === trumpSuit;
+}
+
+// The role whose card at this place lost its power to a Wizard played before
+// it (WIZARD_BLOCKED_ROLES), for the table to tell; undefined otherwise.
+export function wizardBlocked(
+  playedCards: PlayedCard[],
+  index: number,
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): RoleId | undefined {
+  const played = playedCards[index];
+  const role = played && roleOf(playerOf(played));
+  return role && WIZARD_BLOCKED_ROLES.includes(role) && wizardBefore(playedCards, index)
+    && cardPowerOn(playedCards, index, role, trumpSuit, roleOf)
+    ? role
+    : undefined;
 }
 
 // Whether the card at this place is a role's card played with its power on,

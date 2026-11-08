@@ -14,7 +14,11 @@ import { BET_LOSS_POINTS, BET_WIN_POINTS, LUCKY_POINTS } from "./gambler.js";
 import { GRANT_POINTS, KEEP_POINTS } from "./duke.js";
 import { FORESIGHT_POINTS } from "./prophet.js";
 import { PEACE_POINTS, TAX_POINTS } from "./king.js";
-import { botGrantTo } from "./rolePowers.js";
+import { botGrantTo, rolesOf } from "./rolePowers.js";
+import { kingHumbledAt, kingsPeace } from "./rolePlay.js";
+import { trickRolesIn } from "./master/trickRoles.js";
+import { playsFreeIn } from "./master/joker.js";
+import { WizardRules } from "../../services/wizardRules.js";
 import { SERVANT_BONUS, SERVICE_POINTS } from "./servant.js";
 import { SHEEP_POINTS } from "./shepherd.js";
 import { BLOCK_POINTS } from "./smith.js";
@@ -588,7 +592,7 @@ describe("the Merchant in a game", () => {
     for (const player of players) player.score = points;
   };
 
-  it("is paid by every card his 7 beats and pays every card that beats it", () => {
+  it("is paid by every card of 7 or lower and pays every card above it", () => {
     const { trick, score } = playTrick(
       "roles",
       [
@@ -621,9 +625,9 @@ describe("the Merchant in a game", () => {
     const trump = playTrick(
       "roles",
       [
-        { name: "ana", card: card(13) },
+        { name: "ana", card: card(3) },
         { name: "merchant", card: card(7, "Blue"), role: "merchant" },
-        { name: "ben", card: card(9) },
+        { name: "ben", card: card(2) },
       ],
       startAt(50),
       "Blue",
@@ -633,9 +637,9 @@ describe("the Merchant in a game", () => {
     const offSuit = playTrick(
       "roles",
       [
-        { name: "ana", card: card(13) },
+        { name: "ana", card: card(3) },
         { name: "merchant", card: card(7, "Blue"), role: "merchant" },
-        { name: "ben", card: card(9) },
+        { name: "ben", card: card(2) },
       ],
       startAt(50),
     );
@@ -669,7 +673,7 @@ describe("the Merchant in a game", () => {
     expect(trick.roleActions?.[0]?.points).toBe(0);
   });
 
-  it("trades with the 1 a Thief left him for his 7", () => {
+  it("still trades at 7 when a Thief took it", () => {
     const { score } = playTrick(
       "roles",
       [
@@ -681,10 +685,10 @@ describe("the Merchant in a game", () => {
       startAt(50),
     );
 
-    // Every other card beats the 1, the Thief's 7 among them.
-    expect(score("merchant")).toBe(50 - STEAL_POINTS - 3 * MARKET_POINTS);
-    expect(score("thief")).toBe(50 + STEAL_POINTS + MARKET_POINTS);
-    expect(score("ana")).toBe(50 + MARKET_POINTS);
+    // The 3 and the Thief's 1 pay, the 9 is paid: the market is at 7.
+    expect(score("merchant")).toBe(50 - STEAL_POINTS + MARKET_POINTS);
+    expect(score("thief")).toBe(50 + STEAL_POINTS - MARKET_POINTS);
+    expect(score("ana")).toBe(50 - MARKET_POINTS);
     expect(score("ben")).toBe(50 + MARKET_POINTS);
   });
 
@@ -726,7 +730,7 @@ describe("the Merchant in a game", () => {
     expect(score("smith")).toBe(50 + MARKET_POINTS);
   });
 
-  it("two Merchants: the trump 7 wins both markets", () => {
+  it("two Merchants: each 7 pays the other's market", () => {
     const { score } = playTrick(
       "roles",
       [
@@ -738,10 +742,31 @@ describe("the Merchant in a game", () => {
       "Blue",
     );
 
-    // first pays second at both markets; ben's off-suit 9 loses to both 7s.
-    expect(score("first")).toBe(50 - 2 * MARKET_POINTS + MARKET_POINTS);
-    expect(score("second")).toBe(50 + 2 * MARKET_POINTS + MARKET_POINTS);
-    expect(score("ben")).toBe(50 - 2 * MARKET_POINTS);
+    // Each 7 pays the other, and both Merchants pay ben's 9.
+    expect(score("first")).toBe(50 - MARKET_POINTS);
+    expect(score("second")).toBe(50 - MARKET_POINTS);
+    expect(score("ben")).toBe(50 + 2 * MARKET_POINTS);
+  });
+
+  it("keeps the market open after an Air turn, trading by number", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "merchant", card: card(7), role: "merchant" },
+        { name: "air", card: card(9, "Yellow") },
+        { name: "ben", card: card(3) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        find({ players }, "air").masterRole = "yellowWizard";
+      },
+    );
+
+    expect(trick.winnerUsername).toBe("air");
+    // The Air turn takes 5 from the Merchant who led; the 9 is paid, the 3 pays.
+    expect(score("merchant")).toBe(50 - 5 - MARKET_POINTS + MARKET_POINTS);
+    expect(score("air")).toBe(50 + 5 + MARKET_POINTS);
+    expect(score("ben")).toBe(50 - MARKET_POINTS);
   });
 });
 
@@ -1235,6 +1260,30 @@ describe("the King in a game", () => {
     expect(score("warrior")).toBe(50 - TAX_POINTS);
   });
 
+  it("taxes a Joker's free play", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "king", card: card(13), role: "king" },
+        { name: "joker", card: card(4, "Green") },
+        { name: "ana", card: card(2) },
+      ],
+      (players) => {
+        startAt(50)(players);
+        const joker = players.find((player) => player.username === "joker")!;
+        joker.masterRole = "joker";
+        joker.jokerPoints = 1;
+        joker.hand = [card(4, "Green"), card(3)];
+      },
+      "Blue",
+    );
+
+    expect(trick.playedCards[1]!.freePlay).toBe(true);
+    expect(trick.winnerUsername).toBe("king");
+    expect(score("joker")).toBe(50 - TAX_POINTS);
+    expect(score("king")).toBe(50 + TAX_POINTS);
+  });
+
   it("is paid for nothing when his 13 does not win", () => {
     const { score } = playTrick(
       "roles",
@@ -1249,6 +1298,140 @@ describe("the King in a game", () => {
 
     expect(score("king")).toBe(50);
     expect(score("gambler")).toBe(50);
+  });
+});
+
+describe("the King's peace against the master powers", () => {
+  const setUp = (masters: Record<string, RoleId>) => (players: GamePlayer[]) => {
+    for (const player of players) {
+      player.score = 50;
+      const master = masters[player.username];
+      if (master) player.masterRole = master;
+    }
+  };
+
+  it("brings no peace after a Fire shield, when fire is not trumps", () => {
+    const { trick, score, game } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(5, "Red") },
+        { name: "fire", card: card(9, "Red") },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+      ],
+      setUp({ fire: "redWizard" }),
+      "Blue",
+    );
+
+    expect(kingsPeace(trick.playedCards, "Blue", rolesOf(game))).toBe(false);
+    expect(kingHumbledAt(trick.playedCards, "Blue", rolesOf(game))).toBe(2);
+    expect(trick.winnerUsername).toBe("fire");
+    expect(score("king")).toBe(50);
+    expect(score("ana")).toBe(50);
+  });
+
+  it("stops a Fire shield played after his trump 13", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(5, "Red") },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+        { name: "fire", card: card(9, "Red") },
+      ],
+      setUp({ fire: "redWizard" }),
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("king");
+    expect(score("king")).toBe(50 + 2 * PEACE_POINTS);
+    expect(score("fire")).toBe(50 - PEACE_POINTS);
+  });
+
+  it("with fire trumps takes the shield down: no burn for the King, no tribute from Fire", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(5, "Red") },
+        { name: "fire", card: card(9, "Red") },
+        { name: "king", card: card(13, "Red"), role: "king" },
+      ],
+      setUp({ fire: "redWizard" }),
+      "Red",
+    );
+
+    expect(trick.winnerUsername).toBe("king");
+    expect(score("king")).toBe(50 + PEACE_POINTS);
+    expect(score("fire")).toBe(50);
+    expect(score("ana")).toBe(50 - PEACE_POINTS);
+  });
+
+  it("lets no Air power turn the lead after his trump 13", () => {
+    const { trick, game } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(5, "Green") },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+        { name: "air", card: card(9, "Yellow") },
+      ],
+      setUp({ air: "yellowWizard" }),
+      "Blue",
+    );
+
+    expect(new WizardRules().getLeadSuit(trick.playedCards, "Blue", trickRolesIn(game))).toBe("Green");
+  });
+
+  it("stops the Air power's take for a turn before his trump 13", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(5, "Green") },
+        { name: "air", card: card(9, "Yellow") },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+      ],
+      setUp({ air: "yellowWizard" }),
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("king");
+    // Only the tribute: the 5 the turn would take are not taken.
+    expect(score("ana")).toBe(50 - PEACE_POINTS);
+    expect(score("air")).toBe(50 - PEACE_POINTS);
+    expect(trick.roleActions?.find((action) => action.stopped)?.stopped).toEqual(["air"]);
+  });
+
+  it("stops an element Wizard's bonus", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "earth", card: card(14, "Green") },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+        { name: "ana", card: card(2, "Blue") },
+      ],
+      setUp({ earth: "greenWizard" }),
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("earth");
+    expect(score("earth")).toBe(50);
+  });
+
+  it("lets no Joker play free after his trump 13", () => {
+    const { game } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(5, "Green") },
+        { name: "king", card: card(13, "Blue"), role: "king" },
+        { name: "joker", card: card(9, "Green") },
+      ],
+      setUp({ joker: "joker" }),
+      "Blue",
+    );
+    const joker = game.players.find((player) => player.username === "joker")!;
+    joker.jokerPoints = 1;
+    const during = { ...game, currentTrick: { ...game.currentTrick, playedCards: game.currentTrick.playedCards.slice(0, 2) } };
+    const before = { ...game, currentTrick: { ...game.currentTrick, playedCards: game.currentTrick.playedCards.slice(0, 1) } };
+
+    expect(playsFreeIn(during, joker)).toBe(false);
+    expect(playsFreeIn(before, joker)).toBe(true);
   });
 });
 
