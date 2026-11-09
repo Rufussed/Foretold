@@ -17,6 +17,7 @@ import { createOpponentHands, type OpponentHands } from "./opponent-hands";
 import { cardsByOwner } from "../modes/roles/mechanics/trick-swap";
 import { applyBlueSight } from "../modes/roles/master/blue-sight";
 import { applyEarthBoost } from "../modes/roles/master/earth-boost";
+import { showcasesPlays } from "../modes/roles/plain-card-play";
 import { trickRolesIn } from "../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { createSabotageThiefHeist, type SabotageThiefHeist } from "../modes/sabotage/heist/sabotage-thief-heist";
 import type { Placement } from "./placement";
@@ -417,6 +418,8 @@ export function createCardTable({
             .filter((played) => (played.playedBy ?? played.username) === game.localUsername)
             .map((played) => cardKey(played.card)),
     );
+    // Roles mode: no showcase of the card just played (modes/roles/plain-card-play.ts).
+    cards.setShowcase(showcasesPlays(state));
     cards.setTrick(
       state.currentTrick.playedCards.map((played) => played.card),
       origins,

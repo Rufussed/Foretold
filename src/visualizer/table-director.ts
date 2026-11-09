@@ -2,6 +2,7 @@ import type { PublicWizardGameState } from "../../backend/src/game/wizard/models
 import { isBotName } from "../../backend/src/game/wizard/models/bot";
 import { OPPONENT_PLAYS, PLAYED_CARDS, TRICK_REWARD } from "./config";
 import { paced } from "./pace";
+import { showcasesPlays } from "../modes/roles/plain-card-play";
 import {
   onlyHandsChanged,
   onlyThiefTargetChanged,
@@ -195,12 +196,11 @@ export function createTableDirector(options: TableDirectorOptions): TableDirecto
       // The last card lands and the finished trick stays a moment.
       // The last card lands, is showcased, then settles into the arrangement,
       // which then stays winnerHoldSeconds before the trick is gathered.
-      await wait(
-        TRICK_REWARD.startDelaySeconds +
-          PLAYED_CARDS.showcaseHoldSeconds +
-          PLAYED_CARDS.showcaseSettleSeconds +
-          TRICK_REWARD.winnerHoldSeconds,
-      );
+      // Roles mode has no showcase (modes/roles/plain-card-play.ts).
+      const showcaseSeconds = showcasesPlays(next)
+        ? PLAYED_CARDS.showcaseHoldSeconds + PLAYED_CARDS.showcaseSettleSeconds
+        : 0;
+      await wait(TRICK_REWARD.startDelaySeconds + showcaseSeconds + TRICK_REWARD.winnerHoldSeconds);
       const winner = next.currentTrick.winnerUsername;
       const turned = camera(winner);
       const rewarded = step((done) => options.playTrickReward(done));

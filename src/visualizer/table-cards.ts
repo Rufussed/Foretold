@@ -99,6 +99,9 @@ export interface TableCards {
   // Calls back once no Roles swap is waiting or moving in the trick: at once
   // if none is.
   whenSwapsDone(done: () => void): void;
+  // Whether a card just played is showcased before it settles (on unless
+  // turned off; off in Roles mode, modes/roles/plain-card-play.ts).
+  setShowcase(on: boolean): void;
   positionOf(key: string): THREE.Vector3 | null;
   startDrag(key: string): void;
   dragTo(key: string, world: THREE.Vector3): void;
@@ -252,6 +255,7 @@ export function createTableCards(
   // The card just played, held out in front of the others at the one-card size
   // until `until` (PLAYED_CARDS.showcase*), while the rest keep their places.
   let showcase: { key: string; until: number } | null = null;
+  let showcaseOn = true;
   let settle: { startedAt: number; from: Map<string, Placement> } | null = null;
   const showcaseSlotFor = (): Placement => {
     const base = playedSlotsFor(1)[0] ?? playedSlots[0]!;
@@ -433,7 +437,7 @@ export function createTableCards(
     // The newest card is showcased first, and the others do not make room yet.
     const arriving = pending && !trickOrder.includes(pending.key) ? 1 : 0;
     const holding = showcased();
-    const showcasing = holding !== null || (arriving === 1 && trickOrder.length > 0);
+    const showcasing = holding !== null || (showcaseOn && arriving === 1 && trickOrder.length > 0);
     if (showcasing && (holding === entry.key || pending?.key === entry.key)) {
       return { slot: showcaseSlotFor(), lift: 0 };
     }
@@ -593,7 +597,7 @@ export function createTableCards(
       // (not a table opened mid-trick) is showcased once it has landed.
       const newest = trickOrder[trickOrder.length - 1];
       const entryNew = newest !== undefined ? cards.get(newest) : undefined;
-      if (newest !== undefined && trickOrder.length > 1 && !trickOrderShown.has(newest) && showcase?.key !== newest) {
+      if (showcaseOn && newest !== undefined && trickOrder.length > 1 && !trickOrderShown.has(newest) && showcase?.key !== newest) {
         const seen = wasPending === newest || !!entryNew?.flight;
         if (seen) {
           const flight = entryNew?.flight;
@@ -718,7 +722,7 @@ export function createTableCards(
         }
 
         const start = settle?.from.get(entry.key);
-        const gentle = showcased() === entry.key || pending?.key === entry.key;
+        const gentle = showcased() === entry.key || (showcaseOn && pending?.key === entry.key);
         if (settle && start && !entry.drag) {
           const k = smoother((clock - settle.startedAt) / Math.max(paced(PLAYED_CARDS.showcaseSettleSeconds), 1e-6));
           entry.object.position.lerpVectors(start.position, destination, k);
@@ -889,6 +893,11 @@ export function createTableCards(
       // One card is read at a time.
       for (const other of cards.values()) other.raised = false;
       entry.raised = raise;
+    },
+
+    setShowcase(on) {
+      showcaseOn = on;
+      if (!on) showcase = null;
     },
 
     whenSwapsDone(done) {
