@@ -1,6 +1,6 @@
 import type { Card } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
-import { playerOf, type RoleOf } from "./rolePlay.js";
+import { playerOf, wizardIn, type RoleOf } from "./rolePlay.js";
 import { roleCard } from "./roles.js";
 
 // What a holder pays the Shepherd per sheep, and how many sheep a Shepherd
@@ -35,8 +35,9 @@ export const sheepOut = (players: readonly { sheep?: Sheep }[], shepherd: string
 
 // The Shepherd's power, a must: each Shepherd's 5 gives a sheep to whoever
 // wins the trick, wherever the 5 ended up. Like the Farmer's 4, the 5 does
-// so in any suit.
+// so in any suit. A trick a Wizard is in gives no sheep: its winner takes none.
 export function laidBy(playedCards: PlayedCard[], roleOf: RoleOf): { shepherd: string; card: Card }[] {
+  if (wizardIn(playedCards)) return [];
   return playedCards.flatMap((played) =>
     played.card.value === roleCard("shepherd") && roleOf(playerOf(played)) === "shepherd"
       ? [{ shepherd: playerOf(played), card: played.card }]

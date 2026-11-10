@@ -1,6 +1,6 @@
 import type { Card } from "../../models/card.js";
 import type { PlayedCard } from "../../models/wizardGame.js";
-import { playerOf, type RoleOf } from "./rolePlay.js";
+import { playerOf, wizardIn, type RoleOf } from "./rolePlay.js";
 import { roleCard } from "./roles.js";
 
 // What one seed is worth at harvest, and how many seeds a player can hold in
@@ -24,7 +24,9 @@ export const seedCount = (seeds: Seeds | undefined): number =>
 // The Farmer's power, a must: each Farmer's 4 plants a seed for whoever wins
 // the trick, wherever the 4 ended up; a trump 4 plants two. Unlike the other roles' cards, the 4
 // plants in any suit: off the lead suit it only loses, which suits a seed.
+// A trick a Wizard is in plants nothing: its winner takes no seed.
 export function plantedBy(playedCards: PlayedCard[], roleOf: RoleOf): { farmer: string; card: Card }[] {
+  if (wizardIn(playedCards)) return [];
   return playedCards.flatMap((played) =>
     played.card.value === roleCard("farmer") && roleOf(playerOf(played)) === "farmer"
       ? [{ farmer: playerOf(played), card: played.card }]

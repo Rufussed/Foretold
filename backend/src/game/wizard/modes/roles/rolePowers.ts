@@ -1,5 +1,5 @@
 import { normalizeGameOptions } from "../../gameOptions.js";
-import type { Suit } from "../../models/card.js";
+import { isWizard, type Suit } from "../../models/card.js";
 import type { GamePlayer, PlayedCard, WizardGameState } from "../../models/wizardGame.js";
 import { WizardRules } from "../../services/wizardRules.js";
 import { harvest, plant, plantedBy } from "./farmer.js";
@@ -105,6 +105,8 @@ export function applyRolePowers(game: WizardGameState, stealSpot?: number): void
     bounce(game, action);
   }
 
+  applyWizardUnforging(game);
+
   // Off suit, the steal or the service brings no points; a Servant who wins
   // the trick is still tipped (settleTrickPowers).
   if (action?.role === "thief") {
@@ -165,6 +167,21 @@ function applyPeace(game: WizardGameState): void {
 
   const stopped = stoppedBy(playedCards, playedCards.length - 1, game.trumpSuit, rolesOf(game));
   trick.roleActions = [...(trick.roleActions ?? []), { role: "king", by: king, on: king, card: thirteen.card, stopped }];
+}
+
+// A Wizard just played wins the trick: armour a Smith's 6 forged in it
+// earlier is taken back, as under the King's peace.
+function applyWizardUnforging(game: WizardGameState): void {
+  const trick = game.currentTrick;
+  if (!trick.playedCards.length || !isWizard(trick.playedCards.at(-1)!.card)) return;
+
+  for (const action of trick.roleActions ?? []) {
+    // A forge is the Smith's action on themself, with no points.
+    if (action.role !== "smith" || action.undone || action.points !== undefined || action.by !== action.on) continue;
+    const smith = game.players.find((player) => player.username === action.by);
+    if (smith) smith.armor = Math.max(0, (smith.armor ?? 0) - 1);
+    action.undone = true;
+  }
 }
 
 // A Smith's 6 just played, with its power on: a piece of armour, if they

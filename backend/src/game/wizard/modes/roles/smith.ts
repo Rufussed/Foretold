@@ -13,7 +13,9 @@ export interface ArmorHolder {
 }
 
 // The Smith's power, a must: their 6 played in the lead suit or as a trump
-// forges a piece of armour. It stays from round to round until used.
+// forges a piece of armour. It stays from round to round until used. Not
+// after a Wizard; and a Wizard played after it takes the piece back
+// (rolePowers.ts).
 export const forgesArmor = (playedCards: PlayedCard[], trumpSuit: Suit | null, roleOf: RoleOf): boolean =>
   powerOn(playedCards, playedCards.length - 1, "smith", trumpSuit, roleOf);
 

@@ -3,7 +3,7 @@ import type { PublicWizardGameState } from "../../../../backend/src/game/wizard/
 import { burnsWinner, FIRE_BURN } from "../../../../backend/src/game/wizard/modes/roles/master/colourWizards";
 import { rolesName } from "../role-names";
 import type { RoleAction } from "../../../../backend/src/game/wizard/modes/roles/roles";
-import { kingHumbledAt, playerOf, powerOn, rolePowerOn, rolesOfPlayers, wizardBlocked, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
+import { kingHumbledAt, playerOf, powerOn, rolePowerOn, rolesOfPlayers, wizardBlocked, wizardStopped, type RoleOf } from "../../../../backend/src/game/wizard/modes/roles/rolePlay";
 import { stealFails } from "../../../../backend/src/game/wizard/modes/roles/thief";
 import { trickRolesIn } from "../../../../backend/src/game/wizard/modes/roles/master/trickRoles";
 import { WizardRules } from "../../../../backend/src/game/wizard/services/wizardRules";
@@ -144,6 +144,19 @@ export function masterMessages(previous: PublicWizardGameState, next: PublicWiza
         ? t(`ann.youWizardBlocked.${blocked}` as MessageKey)
         : t(`ann.wizardBlocked.${blocked}` as MessageKey, { name: announcedName(by) }),
       username: by,
+      role: true,
+    });
+  }
+
+  // A Wizard just played after a Farmer's 4, a Shepherd's 5 or a Smith's 6:
+  // no seed, no sheep, and the armour is taken back (backend rolePlay.ts
+  // wizardStopped). The same words as when the Wizard came first.
+  for (const stopped of sameTrick ? wizardStopped(next.currentTrick.playedCards, next.trumpSuit, roleOf) : []) {
+    messages.push({
+      text: stopped.by === local
+        ? t(`ann.youWizardBlocked.${stopped.role}` as MessageKey)
+        : t(`ann.wizardBlocked.${stopped.role}` as MessageKey, { name: announcedName(stopped.by) }),
+      username: stopped.by,
       role: true,
     });
   }

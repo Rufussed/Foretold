@@ -57,9 +57,17 @@ export function kingHumbledAt(playedCards: PlayedCard[], trumpSuit: Suit | null,
 // lowering, no choice, no battle, and no pride paid for a trump 9.
 export const WIZARD_BLOCKED_ROLES: readonly RoleId[] = ["warrior", "gambler", "duke", "prophet"];
 
+// The roles whose power a Wizard anywhere in the trick stops, before or
+// after their card: the Wizard wins it, and its winner takes no seed and no
+// sheep, and the Smith's armour forged in it is taken back (rolePowers.ts).
+export const WIZARD_STOPPED_ROLES: readonly RoleId[] = ["farmer", "shepherd", "smith"];
+
 // Whether a Wizard was played before this place in the trick.
 const wizardBefore = (playedCards: PlayedCard[], index: number): boolean =>
   playedCards.slice(0, index).some((played) => isWizard(played.card));
+
+// Whether a Wizard is anywhere in the trick so far.
+export const wizardIn = (playedCards: PlayedCard[]): boolean => playedCards.some((played) => isWizard(played.card));
 
 // Whether the card at this place in the trick has its role's power on: the
 // role's card, played by a player of that role, in the lead suit or as a
@@ -74,7 +82,8 @@ export function powerOn(
   roleOf: RoleOf,
 ): boolean {
   return cardPowerOn(playedCards, index, role, trumpSuit, roleOf)
-    && !(WIZARD_BLOCKED_ROLES.includes(role) && wizardBefore(playedCards, index));
+    && !(WIZARD_BLOCKED_ROLES.includes(role) && wizardBefore(playedCards, index))
+    && !(WIZARD_STOPPED_ROLES.includes(role) && wizardIn(playedCards));
 }
 
 // The card's power as it would be with no Wizard in the trick.
@@ -128,10 +137,45 @@ export function wizardBlocked(
 ): RoleId | undefined {
   const played = playedCards[index];
   const role = played && roleOf(playerOf(played));
-  return role && WIZARD_BLOCKED_ROLES.includes(role) && wizardBefore(playedCards, index)
-    && cardPowerOn(playedCards, index, role, trumpSuit, roleOf)
+  return role && (WIZARD_BLOCKED_ROLES.includes(role) || WIZARD_STOPPED_ROLES.includes(role))
+    && wizardBefore(playedCards, index) && powerWithoutWizard(playedCards, index, role, trumpSuit, roleOf)
     ? role
     : undefined;
+}
+
+// Whether the card at this place would have its power on with no Wizard in
+// the trick: the Farmer's 4 and the Shepherd's 5 in any suit, the others as
+// cardPowerOn says.
+function powerWithoutWizard(
+  playedCards: PlayedCard[],
+  index: number,
+  role: RoleId,
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): boolean {
+  const played = playedCards[index]!;
+  return role === "farmer" || role === "shepherd"
+    ? played.card.value === roleCard(role) && roleOf(playerOf(played)) === role && !kingsPeace(playedCards, trumpSuit, roleOf)
+    : cardPowerOn(playedCards, index, role, trumpSuit, roleOf);
+}
+
+// A Wizard just played, the trick's last card: the Farmers, Shepherds and
+// Smiths whose cards came before it and lose their power to it (a seed or
+// sheep not given, armour taken back). Those after an earlier Wizard
+// already lost it to that one.
+export function wizardStopped(
+  playedCards: PlayedCard[],
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): { by: string; role: RoleId }[] {
+  const last = playedCards.length - 1;
+  if (last < 1 || !isWizard(playedCards[last]!.card) || wizardBefore(playedCards, last)) return [];
+  return playedCards.slice(0, last).flatMap((played, index) => {
+    const role = roleOf(playerOf(played));
+    return role && WIZARD_STOPPED_ROLES.includes(role) && powerWithoutWizard(playedCards, index, role, trumpSuit, roleOf)
+      ? [{ by: playerOf(played), role }]
+      : [];
+  });
 }
 
 // Whether the card at this place is a role's card played with its power on,
@@ -153,7 +197,7 @@ export function rolePowerOn(
     return false;
   }
 
-  return (role === "farmer" || role === "shepherd") && !kingsPeace(playedCards, trumpSuit, roleOf)
+  return (role === "farmer" || role === "shepherd") && !kingsPeace(playedCards, trumpSuit, roleOf) && !wizardIn(playedCards)
     || powerOn(playedCards, index, role, trumpSuit, roleOf);
 }
 

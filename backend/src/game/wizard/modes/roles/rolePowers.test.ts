@@ -619,6 +619,63 @@ describe("the Shepherd in a game", () => {
   });
 });
 
+describe("a Wizard in the trick", () => {
+  const find = (game: { players: GamePlayer[] }, name: string) => game.players.find((p) => p.username === name)!;
+
+  it("plants no Farmer's seed, the Wizard before or after the 4", () => {
+    const after = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "farmer", card: card(4), role: "farmer" },
+      { name: "ben", card: card(14) },
+    ]);
+    const before = playTrick("roles", [
+      { name: "ben", card: card(14) },
+      { name: "farmer", card: card(4, "Blue"), role: "farmer" },
+      { name: "ana", card: card(8) },
+    ], undefined, "Blue");
+
+    expect(find(after.game, "ben").seeds).toBeUndefined();
+    expect(find(before.game, "ben").seeds).toBeUndefined();
+  });
+
+  it("gives no Shepherd's sheep", () => {
+    const { game } = playTrick("roles", [
+      { name: "ana", card: card(8) },
+      { name: "shepherd", card: card(5), role: "shepherd" },
+      { name: "ben", card: card(14) },
+    ]);
+
+    expect(find(game, "ben").sheep).toBeUndefined();
+  });
+
+  it("stops a Smith's 6 after it from forging", () => {
+    const { game } = playTrick("roles", [
+      { name: "ben", card: card(14) },
+      { name: "smith", card: card(6), role: "smith" },
+      { name: "ana", card: card(8) },
+    ]);
+
+    expect(find(game, "smith").armor ?? 0).toBe(0);
+  });
+
+  it("takes back the armour a Smith's 6 before it forged, but not armour worn before", () => {
+    const { game, trick } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "smith", card: card(6), role: "smith" },
+        { name: "ben", card: card(14) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "smith")!.armor = 1;
+      },
+    );
+
+    expect(find(game, "smith").armor).toBe(1);
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "smith", undone: true });
+  });
+});
+
 describe("the Smith in a game", () => {
   const find = (game: { players: GamePlayer[] }, name: string) => game.players.find((p) => p.username === name)!;
 
