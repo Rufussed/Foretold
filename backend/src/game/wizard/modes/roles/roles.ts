@@ -97,6 +97,11 @@ export interface RoleAction {
   // left out. For a Priest's faith (on is the Priest themself, card their 8),
   // who paid them, the same way; points is the faith in all.
   trades?: { player: string; points: number }[];
+  // A Thief's 1 or a Servant's 2 played off suit (neither the suit led nor a
+  // trump): the swap happens, but no points move for it.
+  offSuit?: true;
+  // A Farmer's seed given: how many, when more than one (their trump 4).
+  seeds?: number;
   // Undone by the King's peace: a steal, a service or a Smith's armour,
   // swapped and paid back (modes/roles/king.ts). Kept so it was told once.
   undone?: true;

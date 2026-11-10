@@ -143,6 +143,50 @@ describe("the Thief in a game", () => {
   });
 });
 
+describe("the Thief off suit", () => {
+  it("steals the card just before, but takes no points", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "ben", card: card(13) },
+        { name: "thief", card: card(1, "Green"), role: "thief" },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.score = 50;
+      },
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("thief");
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "thief", on: "ben", points: 0, offSuit: true });
+    expect(score("thief")).toBe(0);
+    expect(score("ben")).toBe(50);
+  });
+});
+
+describe("the Servant off suit", () => {
+  it("receives the next card with no service points, but is tipped for winning", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "serv", card: card(2, "Green"), role: "servant" },
+        { name: "ben", card: card(13) },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.score = 50;
+      },
+      "Blue",
+    );
+
+    expect(trick.winnerUsername).toBe("serv");
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "servant", on: "ben", points: 0, offSuit: true });
+    expect(score("serv")).toBe(SERVANT_BONUS);
+    expect(score("ben")).toBe(50 - SERVANT_BONUS);
+  });
+});
+
 describe("the Servant in a game", () => {
   it("receives the 13, wins the trick and is tipped by the player served", () => {
     const { trick, score } = playTrick(
@@ -315,6 +359,40 @@ describe("the Farmer in a game", () => {
 
     expect(game.players.find((p) => p.username === "ben")?.seeds).toEqual({ farmer: 1 });
     expect(trick.roleActions?.[0]).toMatchObject({ role: "farmer", by: "farmer", on: "ben" });
+  });
+
+  it("plants two seeds with a trump 4", () => {
+    const { game, trick } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "farmer", card: card(4, "Blue"), role: "farmer" },
+        { name: "ben", card: card(13, "Blue") },
+      ],
+      undefined,
+      "Blue",
+    );
+
+    expect(game.players.find((p) => p.username === "ben")?.seeds).toEqual({ farmer: 2 });
+    expect(trick.roleActions?.[0]).toMatchObject({ role: "farmer", on: "ben", seeds: 2 });
+  });
+
+  it("plants only as many seeds of a trump 4 as the winner has room for", () => {
+    const { game, trick } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "farmer", card: card(4, "Blue"), role: "farmer" },
+        { name: "ben", card: card(13, "Blue") },
+      ],
+      (players) => {
+        players.find((p) => p.username === "ben")!.seeds = { other: 3 };
+      },
+      "Blue",
+    );
+
+    expect(game.players.find((p) => p.username === "ben")?.seeds).toEqual({ other: 3, farmer: 1 });
+    expect(trick.roleActions?.[0]?.seeds).toBeUndefined();
   });
 
   it("is an ordinary 4 in a Classic game", () => {

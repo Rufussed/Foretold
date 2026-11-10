@@ -685,6 +685,10 @@ export const en = {
   "ann.serves": "{name} the Servant receives {victim}'s {card}.",
   "ann.youServe": "As the Servant, you receive {victim}'s {card}.",
   "ann.servesYours": "{name} the Servant receives your {card}.",
+  // Roles mode: a Thief's 1 or a Servant's 2 off suit, and a Farmer's trump 4.
+  "ann.offSuitSteal": "Off suit: no points stolen.",
+  "ann.offSuitServe": "Off suit, the Servant takes the initiative to serve a stranger: no service points.",
+  "ann.doubleSeed": "A trump 4: two seeds.",
   "ann.fishes": "{name} the Fisher fishes {victim}'s {card}.",
   "ann.youFish": "As the Fisher, you fish {victim}'s {card}.",
   "ann.fishesYours": "{name} the Fisher fishes your {card}.",

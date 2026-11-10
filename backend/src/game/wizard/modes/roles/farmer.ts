@@ -22,7 +22,7 @@ export const seedCount = (seeds: Seeds | undefined): number =>
   Object.values(seeds ?? {}).reduce((sum, count) => sum + count, 0);
 
 // The Farmer's power, a must: each Farmer's 4 plants a seed for whoever wins
-// the trick, wherever the 4 ended up. Unlike the other roles' cards, the 4
+// the trick, wherever the 4 ended up; a trump 4 plants two. Unlike the other roles' cards, the 4
 // plants in any suit: off the lead suit it only loses, which suits a seed.
 export function plantedBy(playedCards: PlayedCard[], roleOf: RoleOf): { farmer: string; card: Card }[] {
   return playedCards.flatMap((played) =>
@@ -31,16 +31,19 @@ export function plantedBy(playedCards: PlayedCard[], roleOf: RoleOf): { farmer: 
       : []);
 }
 
-// The trick's winner takes the Farmer's seed, unless they already hold as
-// many as they can: then it is lost. A Farmer never takes their own seed.
-export function plant(winner: SeedHolder, farmer: string): boolean {
-  if (winner.username === farmer || seedCount(winner.seeds) >= MAX_SEEDS) {
-    return false;
+// The trick's winner takes the Farmer's seeds: one, or two for the Farmer's
+// trump 4, as many as they have room for; the rest are lost. A Farmer never
+// takes their own seed. Returns how many were planted.
+export function plant(winner: SeedHolder, farmer: string, count = 1): number {
+  const planted = Math.min(count, MAX_SEEDS - seedCount(winner.seeds));
+
+  if (winner.username === farmer || planted <= 0) {
+    return 0;
   }
 
-  winner.seeds = { ...winner.seeds, [farmer]: (winner.seeds?.[farmer] ?? 0) + 1 };
+  winner.seeds = { ...winner.seeds, [farmer]: (winner.seeds?.[farmer] ?? 0) + planted };
 
-  return true;
+  return planted;
 }
 
 // The Farmer made their prediction exactly: once the round is scored, every

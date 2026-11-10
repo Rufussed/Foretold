@@ -34,19 +34,19 @@ describe("plant", () => {
   it("gives the trick's winner a seed of that Farmer", () => {
     const ben: { username: string; score: number; seeds?: Record<string, number> } = { username: "ben", score: 0 };
 
-    expect(plant(ben, "farmer")).toBe(true);
-    expect(plant(ben, "farmer")).toBe(true);
+    expect(plant(ben, "farmer")).toBe(1);
+    expect(plant(ben, "farmer")).toBe(1);
     expect(ben.seeds).toEqual({ farmer: 2 });
   });
 
   it("never gives a Farmer their own seed", () => {
-    expect(plant({ username: "farmer", score: 0 }, "farmer")).toBe(false);
+    expect(plant({ username: "farmer", score: 0 }, "farmer")).toBe(0);
   });
 
   it("loses the seed when the winner already holds the most, of all Farmers", () => {
     const ben = { username: "ben", score: 0, seeds: { farmer: 3, farmer2: 1 } };
 
-    expect(plant(ben, "farmer")).toBe(false);
+    expect(plant(ben, "farmer")).toBe(0);
     expect(seedCount(ben.seeds)).toBe(MAX_SEEDS);
   });
 });

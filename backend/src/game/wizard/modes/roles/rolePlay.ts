@@ -63,7 +63,7 @@ const wizardBefore = (playedCards: PlayedCard[], index: number): boolean =>
 
 // Whether the card at this place in the trick has its role's power on: the
 // role's card, played by a player of that role, in the lead suit or as a
-// trump. A trick opened by a Wizard (after any Jesters) has no lead suit and
+// trump (the Thief's 1 and the Servant's 2 in any suit). A trick opened by a Wizard (after any Jesters) has no lead suit and
 // anyone may play anything, so there the card works in any suit - but not
 // for the roles that must win the trick (WIZARD_BLOCKED_ROLES).
 export function powerOn(
@@ -95,9 +95,27 @@ function cardPowerOn(
     return false;
   }
 
+  // The Thief's 1 and the Servant's 2 work in any suit; off suit they only
+  // swap, with no points (offSuit below).
+  if (role === "thief" || role === "servant") {
+    return true;
+  }
+
+  return !offSuit(playedCards, index, trumpSuit, roleOf);
+}
+
+// Whether the card at this place is neither in the suit led nor a trump.
+// Never after a Wizard lead or for the card that leads.
+export function offSuit(
+  playedCards: PlayedCard[],
+  index: number,
+  trumpSuit: Suit | null,
+  roleOf: RoleOf,
+): boolean {
+  const played = playedCards[index];
   const leadSuit = rules.getLeadSuit(playedCards.slice(0, index + 1), trumpSuit, trickRolesOf(roleOf));
 
-  return leadSuit === null || played.card.suit === leadSuit || played.card.suit === trumpSuit;
+  return !!played && leadSuit !== null && played.card.suit !== leadSuit && played.card.suit !== trumpSuit;
 }
 
 // The role whose card at this place lost its power to a Wizard played before
@@ -117,8 +135,9 @@ export function wizardBlocked(
 }
 
 // Whether the card at this place is a role's card played with its power on,
-// whatever comes of it: the Farmer's 4 and the Shepherd's 5 in any suit, the
-// other basic roles' cards in the lead suit or as a trump. The colour
+// whatever comes of it: the Farmer's 4 and the Shepherd's 5 in any suit (the
+// Thief's 1 and the Servant's 2 too, through powerOn), the other basic roles'
+// cards in the lead suit or as a trump. The colour
 // Wizards have no card. For the table to show the power the moment it is
 // played.
 export function rolePowerOn(

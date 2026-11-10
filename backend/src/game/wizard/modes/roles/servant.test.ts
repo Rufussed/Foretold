@@ -38,10 +38,10 @@ describe("findService", () => {
     expect(findService([play("serv", 2), play("ben", 0)], null, roleOf)).toBeNull();
   });
 
-  it("does nothing with a 2 that is neither the lead suit nor a trump", () => {
+  it("receives the next card after a 2 that is neither the lead suit nor a trump", () => {
     const trick = [play("ana", 5), play("serv", 2, "Green"), play("ben", 12)];
 
-    expect(findService(trick, "Blue", roleOf)).toBeNull();
+    expect(findService(trick, "Blue", roleOf)).toMatchObject({ role: "servant", by: "serv", on: "ben" });
   });
 
   it("meets a Thief's 1 and a second Servant's 2 as equals: nothing happens", () => {

@@ -10,7 +10,7 @@ import { battlesIn, PRIDE_POINTS, VICTORY_POINTS } from "./warrior.js";
 import { BET_LOSS_POINTS, BET_WIN_POINTS, betsIn, LUCKY_POINTS, luckIn } from "./gambler.js";
 import { FORESIGHT_POINTS, foresightsIn } from "./prophet.js";
 import { botGrant, dukeWinning, GRANT_POINTS, KEEP_POINTS } from "./duke.js";
-import { kingsPeace, playerOf, rolesOfPlayers, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
+import { kingsPeace, offSuit, playerOf, rolesOfPlayers, swapLastTwo, swapOwners, type RoleOf } from "./rolePlay.js";
 import { bringsPeace, PEACE_POINTS, peaceTribute, stoppedBy, TAX_POINTS, taxIn } from "./king.js";
 import { findService, SERVANT_BONUS, SERVICE_POINTS, tippers } from "./servant.js";
 import { AIR_TAKE, airSwitch, burnsWinner, colourWizardBonus, FIRE_BURN, isColourWizard } from "./master/colourWizards.js";
@@ -89,6 +89,12 @@ export function applyRolePowers(game: WizardGameState, stealSpot?: number): void
     applyPeace(game);
     return;
   }
+  // Whether the card that may act is off suit, read before any swap: the
+  // Thief's 1 is the last card, the Servant's 2 the one before it.
+  const last = trick.playedCards.length - 1;
+  const offSuitAt = (index: number) => offSuit(trick.playedCards, index, game.trumpSuit, roleOf);
+  const thiefOff = offSuitAt(last);
+  const servantOff = last > 0 && offSuitAt(last - 1);
   const action = playPower(trick.playedCards, game.trumpSuit, roleOf, stealSpot, armorOf(game));
 
   if (action) {
@@ -99,11 +105,15 @@ export function applyRolePowers(game: WizardGameState, stealSpot?: number): void
     bounce(game, action);
   }
 
+  // Off suit, the steal or the service brings no points; a Servant who wins
+  // the trick is still tipped (settleTrickPowers).
   if (action?.role === "thief") {
-    action.points = movePoints(game, action.on, action.by, "thief", STEAL_POINTS);
+    if (thiefOff) action.offSuit = true;
+    action.points = thiefOff ? 0 : movePoints(game, action.on, action.by, "thief", STEAL_POINTS);
   }
   if (action?.role === "servant") {
-    action.points = movePoints(game, action.on, action.by, "servant", SERVICE_POINTS);
+    if (servantOff) action.offSuit = true;
+    action.points = servantOff ? 0 : movePoints(game, action.on, action.by, "servant", SERVICE_POINTS);
   }
 
   applyForging(game);
@@ -210,8 +220,10 @@ function applyFarming(game: WizardGameState, winner: GamePlayer): RoleAction[] {
   const trick = game.currentTrick;
 
   for (const { farmer, card } of plantedBy(trick.playedCards, rolesOf(game))) {
-    if (plant(winner, farmer)) {
-      actions.push({ role: "farmer", by: farmer, on: winner.username, card });
+    // A trump 4 plants two seeds, as many as the winner has room for.
+    const seeds = plant(winner, farmer, card.suit === game.trumpSuit ? 2 : 1);
+    if (seeds) {
+      actions.push({ role: "farmer", by: farmer, on: winner.username, card, ...(seeds > 1 ? { seeds } : {}) });
     }
   }
 

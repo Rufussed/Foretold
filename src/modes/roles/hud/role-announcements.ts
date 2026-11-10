@@ -469,7 +469,12 @@ export function roleMessages(
       return { text, username: action.by, atTrickEnd: true, ...about };
     }
     const [youUse, usedOnYou, used] = textsFor(action);
-    const text = action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values);
+    // Off suit, a steal or service brings no points; a trump 4 plants two
+    // seeds (backend rolePowers.ts).
+    const extra = action.offSuit
+      ? ` ${t(action.role === "thief" ? "ann.offSuitSteal" : "ann.offSuitServe")}`
+      : action.seeds && action.seeds > 1 ? ` ${t("ann.doubleSeed")}` : "";
+    const text = (action.by === local ? t(youUse, values) : action.on === local ? t(usedOnYou, values) : t(used, values)) + extra;
     return { text, username: action.by, atTrickEnd: AT_TRICK_END.includes(action.role), ...about };
   });
 }

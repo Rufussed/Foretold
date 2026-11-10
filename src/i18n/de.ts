@@ -686,6 +686,10 @@ export const de: Record<MessageKey, string> = {
   "ann.serves": "{name}, der Diener, bekommt von {victim} die Karte {card}.",
   "ann.youServe": "Als Diener bekommst du von {victim} die Karte {card}.",
   "ann.servesYours": "{name}, der Diener, bekommt deine Karte {card}.",
+  // Roles mode: a Thief's 1 or a Servant's 2 off suit, and a Farmer's trump 4.
+  "ann.offSuitSteal": "Nicht in der Farbe: keine Punkte gestohlen.",
+  "ann.offSuitServe": "Nicht in der Farbe ergreift der Diener die Initiative, einem Fremden zu dienen: kein Trinkgeld für den Dienst.",
+  "ann.doubleSeed": "Eine Trumpf-4: zwei Samen.",
   "ann.fishes": "{name}, der Fischer, angelt {victim} die Karte {card} weg.",
   "ann.youFish": "Als Fischer angelst du {victim} die Karte {card} weg.",
   "ann.fishesYours": "{name}, der Fischer, angelt dir die Karte {card} weg.",

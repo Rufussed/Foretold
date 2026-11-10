@@ -96,14 +96,14 @@ describe("countPowerUses", () => {
     expect(ana.powerUses).toBe(1);
   });
 
-  it("does not count a Thief's 1 off the lead suit, not a trump", () => {
+  it("counts a Thief's 1 off the lead suit too: it still swaps", () => {
     const ana = player("ana", { role: "thief" });
     const players = [ana, player("ben"), player("cy")];
     const state = game(players, {
       currentTrick: { playedCards: [play("ben", 8), play("ana", 1, "Blue")], winnerUsername: null },
     });
     countPowerUses(state, "ben", roles({ ana: "thief" }));
-    expect(ana.powerUses).toBeUndefined();
+    expect(ana.powerUses).toBe(1);
   });
 });
 
