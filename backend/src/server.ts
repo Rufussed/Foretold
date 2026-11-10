@@ -1,3 +1,4 @@
+import { logEvent } from "./logging/eventLog.js";
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import db from "./db/database.js";
@@ -209,6 +210,8 @@ try {
   });
 
   console.log(`Wizard backend running at http://${host}:${port}`);
+  // A restart cuts every game short for a moment; the event log shows when.
+  logEvent("server-started", { port });
 } catch (error) {
   server.log.error(error);
   process.exit(1);

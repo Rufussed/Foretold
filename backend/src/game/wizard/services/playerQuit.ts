@@ -1,3 +1,4 @@
+import { logEvent } from "../../../logging/eventLog.js";
 import { isBotName } from "../models/bot.js";
 import type { GamePlayer, WizardGameState } from "../models/wizardGame.js";
 import { normalizeGameOptions } from "../gameOptions.js";
@@ -32,6 +33,7 @@ export function quitPlayer(game: WizardGameState, username: string): void {
   if (player) {
     player.quit = true;
     player.missedTurns = 0;
+    logEvent("player-quit", { room: game.roomId, users: [username], round: game.currentRound });
   }
 }
 

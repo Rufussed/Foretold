@@ -32,6 +32,9 @@ interface Stat {
   lost: number;
 }
 
+// A simulation, not real games: nothing goes to the event log (logging/eventLog.ts).
+process.env.LOG_EVENTS = "off";
+
 const service = new WizardGameService();
 const bots = new WizardBotService(service);
 

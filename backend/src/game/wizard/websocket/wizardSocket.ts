@@ -1,3 +1,4 @@
+import { logError } from "../../../logging/eventLog.js";
 import type { FastifyInstance } from "fastify";
 import type { WebSocket } from "@fastify/websocket";
 import { WizardGameService } from "../services/wizardGameService.js";
@@ -187,7 +188,7 @@ export function registerWizardSocket(
 				// Not awaited, so a throw in here would otherwise be an unhandled
 				// rejection, and Node ends the process for those: one room's failure
 				// would end every other game on the server too.
-				console.error(`[wizard] runner failed for room ${roomId}:`, error);
+				logError("game-runner", error, { room: roomId });
 			});
 
 			socket.on("message", (rawMessage: { toString(): string }) => {
@@ -358,7 +359,7 @@ export function registerWizardSocket(
 					runner.notifyAction(roomId);
 
 					runner.run(roomId).catch((error) => {
-						console.error(`[wizard] runner failed for room ${roomId}:`, error);
+						logError("game-runner", error, { room: roomId });
 					});
 
 				} catch (error) {

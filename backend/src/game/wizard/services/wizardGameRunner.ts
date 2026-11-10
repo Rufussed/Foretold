@@ -1,3 +1,4 @@
+import { logError } from "../../../logging/eventLog.js";
 import { WizardBotService } from "./wizardBotService.js";
 import { WizardGameService } from "./wizardGameService.js";
 import { wizardSessionManager } from "./wizardSessionManager.js";
@@ -66,8 +67,14 @@ export class WizardGameRunner {
           // Give the frontend time to receive/display the final state.
           await this.wait(WIZARD_TIMING.finishedHoldMs, pace);
 
-          // Record statistics and remove the temporary game/room data.
-          wizardGameCompletionService.completeGame(game);
+          // Record statistics and remove the temporary game/room data. A
+          // failure is logged with its room (logging/eventLog.ts).
+          try {
+            wizardGameCompletionService.completeGame(game);
+          } catch (error) {
+            logError("game-end", error, { room: roomId, users: game.players.map((player) => player.username) });
+            throw error;
+          }
 
           // Finally remove the active in-memory game.
           wizardSessionManager.deleteGame(roomId);

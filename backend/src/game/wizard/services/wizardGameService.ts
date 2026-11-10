@@ -1,4 +1,5 @@
 import { DeckService } from "./deckService.js";
+import { logCardPlayed, logRoundEnded, logTrickWon } from "../../../logging/gameEvents.js";
 import { WizardRules } from "./wizardRules.js";
 import { forbiddenPrediction } from "../gameplayRules.js";
 import { GAMEPLAY_PACE, clampPace } from "../gameplayPace.js";
@@ -324,6 +325,8 @@ export class WizardGameService {
     };
 
     game.currentTrick.playedCards.push(playedCard);
+    // The event log, after the roles' powers (logging/gameEvents.ts).
+    const actionsBefore = game.currentTrick.roleActions?.length ?? 0;
 
     if (normalizeGameOptions(game.options).mode === "roles") {
       const index = game.currentTrick.playedCards.length - 1;
@@ -338,6 +341,7 @@ export class WizardGameService {
     if (normalizeGameOptions(game.options).mode === "roles") {
       applyRolePowers(game, stealSpot);
     }
+    logCardPlayed(game, playedCard, actionsBefore);
 
     if (game.currentTrick.playedCards.length === game.players.length) {
       this.completeTrick(game);
@@ -454,6 +458,7 @@ export class WizardGameService {
     if (normalizeGameOptions(game.options).mode === "sabotage") {
       earnCardPower(game, winner);
     }
+    logTrickWon(game, winnerUsername);
 
     return winnerUsername;
   }
@@ -541,6 +546,7 @@ export class WizardGameService {
     if (normalizeGameOptions(game.options).mode === "roles") {
       applyRoundEndPowers(game);
     }
+    logRoundEnded(game);
 
     if (game.currentRound === game.totalRounds) {
       game.status = "finished";

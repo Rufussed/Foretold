@@ -4,6 +4,7 @@ import { UserService } from "../services/userService.js";
 import db from "../db/database.js";
 import { EMAIL_PATTERN } from "./auth.js";
 import { setRolesAllOpen } from "../game/wizard/modes/roles/roleAccess.js";
+import { logsPlays, readEvents, setLogPlays, type EventKind } from "../logging/eventLog.js";
 
 interface IdParams {
   id: string;
@@ -36,6 +37,29 @@ export default async function adminRoutes(
   );
 
   server.get("/rooms", async () => adminService.listRooms());
+
+  // The server's event log (logging/eventLog.ts), newest first: by room, by
+  // player or by kind of event, any of them.
+  server.get<{ Querystring: { room?: string; user?: string; kind?: string; limit?: string } }>("/events", async (request) => {
+    const { room, user, kind, limit } = request.query;
+    const roomId = room ? Number(room) : undefined;
+    return {
+      events: readEvents({
+        ...(roomId !== undefined && Number.isInteger(roomId) ? { room: roomId } : {}),
+        ...(user ? { user } : {}),
+        ...(kind ? { kind: kind as EventKind } : {}),
+        ...(limit ? { limit: Number(limit) } : {}),
+      }),
+      logsPlays: logsPlays(),
+    };
+  });
+
+  // Every card played and trick won in the log too, until the server
+  // restarts (LOG_PLAYS=1 keeps it on from the start).
+  server.post<{ Body: { on?: unknown } }>("/events/plays", async (request) => {
+    setLogPlays(request.body?.on === true);
+    return { logsPlays: logsPlays() };
+  });
 
   server.get("/users", async () => adminService.listUsers());
 

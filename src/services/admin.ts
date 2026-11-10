@@ -25,6 +25,21 @@ export interface AdminUser {
   emailVerified: boolean;
 }
 
+// One line of the server's event log (backend logging/eventLog.ts).
+export interface ServerEvent {
+  at: string;
+  kind: string;
+  room?: number;
+  users?: string[];
+  [field: string]: unknown;
+}
+
+export interface ServerEvents {
+  events: ServerEvent[];
+  // Whether every card played and trick won is logged now.
+  logsPlays: boolean;
+}
+
 // Calls the /admin routes as the signed-in account; the server decides
 // whether that account is an admin.
 async function adminRequest<T>(path: string, method = "GET", body?: unknown): Promise<T> {
@@ -81,4 +96,19 @@ export async function confirmAllAdminEmails(): Promise<number> {
 // Sets an account's email to a new address, confirmed at once.
 export async function setAdminEmail(userId: number, email: string): Promise<void> {
   await adminRequest(`/users/${userId}/email`, "POST", { email });
+}
+
+// The latest server events, newest first, filtered by room, player or kind.
+export function listServerEvents(filter: { room?: string; user?: string; kind?: string; limit?: number }): Promise<ServerEvents> {
+  const query = new URLSearchParams();
+  if (filter.room) query.set("room", filter.room);
+  if (filter.user) query.set("user", filter.user);
+  if (filter.kind) query.set("kind", filter.kind);
+  if (filter.limit) query.set("limit", String(filter.limit));
+  return adminRequest<ServerEvents>(`/events?${query.toString()}`);
+}
+
+// Switches the logging of every card played and trick won on or off.
+export async function setLogPlays(on: boolean): Promise<boolean> {
+  return (await adminRequest<{ logsPlays: boolean }>("/events/plays", "POST", { on })).logsPlays;
 }

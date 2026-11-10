@@ -16,14 +16,22 @@ import { sealPoints, sealState, type RoleRecord, type SealLevelId } from "./seal
 // point more (sealLevels.ts).
 
 export function countsForRoleProgress(game: WizardGameState): boolean {
-  if (normalizeGameOptions(game.options).mode !== "roles") return false;
+  return roleProgressSkip(game) === null;
+}
+
+// Why a finished game does not count for the seals, for the event log; null
+// when it counts.
+export function roleProgressSkip(game: WizardGameState): string | null {
+  if (normalizeGameOptions(game.options).mode !== "roles") return "not a Roles game";
 
   const fullRounds = fullRoundCount(game.players.length);
-  if (fullRounds === undefined || game.totalRounds < Math.ceil(fullRounds / 2)) return false;
+  if (fullRounds === undefined || game.totalRounds < Math.ceil(fullRounds / 2)) {
+    return `too short: ${game.totalRounds} rounds, ${fullRounds === undefined ? "?" : Math.ceil(fullRounds / 2)} needed`;
+  }
 
   // Bots from before personalities existed play as Apprentices.
   const bots = game.players.filter((player) => isBotName(player.username));
-  return bots.length === 0 || bots.some((bot) => bot.botPersonality === "adept");
+  return bots.length === 0 || bots.some((bot) => bot.botPersonality === "adept") ? null : "only Apprentice NPCs";
 }
 
 // Whether the game ran its full length.
@@ -75,10 +83,13 @@ export function recordRoleGame(userId: number, record: RoleGameRecord): void {
 }
 
 // The hook for the completion service: records the game if it counts.
-export function recordRoleProgress(game: WizardGameState, player: GamePlayer, userId: number, won: boolean): void {
-  if (!countsForRoleProgress(game)) return;
+// Returns what it recorded, for the event log.
+export function recordRoleProgress(game: WizardGameState, player: GamePlayer, userId: number, won: boolean): RoleGameRecord[] {
+  if (!countsForRoleProgress(game)) return [];
   const full = isFullRoleGame(game);
-  for (const record of roleGameRecords(player, won)) recordRoleGame(userId, { ...record, full });
+  const records = roleGameRecords(player, won).map((record) => ({ ...record, full }));
+  for (const record of records) recordRoleGame(userId, record);
+  return records;
 }
 
 // A player's record with every role they have a row for, for the Profile.

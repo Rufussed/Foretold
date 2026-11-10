@@ -1,3 +1,5 @@
+import { logError } from "../../../logging/eventLog.js";
+import { logGameStarted } from "../../../logging/gameEvents.js";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 import { randomUUID } from "node:crypto";
 import { BOT_NAME_SUFFIX, isBotName, seatNameFor } from "../models/bot.js";
@@ -170,7 +172,7 @@ export default async function wizardRoutes(
     broadcastGameState(roomId, wizardGameService);
     wizardGameRunner.notifyAction(roomId);
     wizardGameRunner.run(roomId).catch((error) => {
-      console.error(`[wizard] runner failed for room ${roomId}:`, error);
+      logError("game-runner", error, { room: roomId });
     });
 
     return false;
@@ -249,6 +251,7 @@ export default async function wizardRoutes(
     if (!wizardSessionManager.saveGameIfAbsent(game)) {
       return null;
     }
+    logGameStarted(game);
 
     const humanPlayerIds = db
       .prepare(`
@@ -273,7 +276,10 @@ export default async function wizardRoutes(
 
     wizardLobbyManager.setRoomStatus(room.id, "playing");
 
-    void wizardGameRunner.run(room.id);
+    // Not awaited: a throw is logged, never left to end the server.
+    wizardGameRunner.run(room.id).catch((error) => {
+      logError("game-runner", error, { room: room.id });
+    });
 
     return game;
   };

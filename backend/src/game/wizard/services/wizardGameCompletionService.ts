@@ -1,7 +1,9 @@
+import { logEvent } from "../../../logging/eventLog.js";
 import db, { transaction } from "../../../db/database.js";
 import { isBotName } from "../models/bot.js";
 import { fullRoundCount } from "../models/rounds.js";
-import { recordRoleProgress } from "../modes/roles/roleProgress.js";
+import { normalizeGameOptions } from "../gameOptions.js";
+import { recordRoleProgress, roleProgressSkip } from "../modes/roles/roleProgress.js";
 import type { WizardGameState } from "../models/wizardGame.js";
 import { playerOpponentRepository } from "./playerOpponentRepository.js";
 import { playerStatsRepository } from "./playerStatsRepository.js";
@@ -85,6 +87,9 @@ class WizardGameCompletionService {
     const fullGame =
       fullRounds !== undefined && game.totalRounds >= fullRounds;
 
+    // What was saved for each human, for the event log.
+    const saved: Record<string, unknown>[] = [];
+
     transaction(() => {
       for (const player of countsForNoOne(room) ? [] : game.players) {
         if (isBotName(player.username)) {
@@ -122,7 +127,15 @@ class WizardGameCompletionService {
             player.colorTricks ?? {},
           );
           // Roles mode: the Profile's seals (modes/roles/roleProgress.ts).
-          recordRoleProgress(game, player, roomPlayer.userId, winner?.username === player.username);
+          const seals = recordRoleProgress(game, player, roomPlayer.userId, winner?.username === player.username);
+          saved.push({
+            name: player.username,
+            won: winner?.username === player.username,
+            score: player.score,
+            seals: seals.map((record) => ({ role: record.role, won: record.won, full: record.full ?? false })),
+          });
+        } else {
+          saved.push({ name: player.username, quit: true, score: player.score });
         }
 
         for (const opponent of game.players) {
@@ -187,6 +200,18 @@ class WizardGameCompletionService {
         `).run(room.createdBy);
       }
     });
+
+    // The event log (logging/eventLog.ts): what the game saved for each
+    // human, or why it saved nothing.
+    logEvent("game-ended", {
+      room: game.roomId,
+      users: game.players.map((player) => player.username),
+      winner: winner?.username,
+      fullGame,
+      ...(countsForNoOne(room) ? { notCounted: "guest or invite room" } : {}),
+      ...(normalizeGameOptions(game.options).mode === "roles" ? { seals: roleProgressSkip(game) ?? "counted" } : {}),
+      saved,
+    });
   }
 
   expireGame(game: WizardGameState): void {
@@ -214,6 +239,13 @@ class WizardGameCompletionService {
         WHERE room_id = ?
       `)
       .all(game.roomId) as RoomPlayerInfo[];
+
+    logEvent("game-expired", {
+      room: game.roomId,
+      users: game.players.map((player) => player.username),
+      round: game.currentRound,
+      of: game.totalRounds,
+    });
 
     transaction(() => {
       for (const player of countsForNoOne(room) ? [] : game.players) {

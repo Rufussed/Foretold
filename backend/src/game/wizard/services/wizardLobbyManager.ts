@@ -1,3 +1,4 @@
+import { logEvent } from "../../../logging/eventLog.js";
 import { randomBytes } from "node:crypto";
 import db, { transaction } from "../../../db/database.js";
 import { isAvatarId, type AvatarId } from "../models/avatar.js";
@@ -254,6 +255,8 @@ class WizardLobbyManager {
         VALUES (?, ?, ?)
       `,
     ).run(roomId, createdBy, username);
+
+    logEvent("room-created", { room: roomId, users: [username], name, mode: normalizeGameOptions(options).mode, maxPlayers: validMax, guestRoom: isGuestRoom });
 
     return this.getRoomById(roomId) as Room;
   }

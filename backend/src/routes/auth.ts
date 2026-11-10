@@ -1,3 +1,4 @@
+import { logEvent } from "../logging/eventLog.js";
 import bcrypt from "bcryptjs";
 import type { FastifyInstance } from "fastify";
 import { UserService } from "../services/userService.js";
@@ -244,6 +245,7 @@ export default async function authRoutes(
         const user = UserService.createUser(username, passwordHash, trimmedEmail);
 
         playerStatsRepository.initializeForUser(user.id);
+        logEvent("signup", { users: [user.username] });
 
         // No session yet: the account opens once the mailed link is followed
         // (POST /verify-email). A mail that fails can be asked for again
@@ -280,6 +282,8 @@ export default async function authRoutes(
 		: UserService.getUserByUsername(username);
 
 		if (!user) {
+		// An email typed in is not logged, only that it matched no one.
+		logEvent("login-failed", { tried: username.includes("@") ? "an email" : username.slice(0, 40), reason: "no such account" });
 		return reply.status(401).send({
 			error: "Invalid username or password",
 		});
@@ -291,6 +295,7 @@ export default async function authRoutes(
 		);
 
 		if (!passwordMatches) {
+		logEvent("login-failed", { users: [user.username], reason: "wrong password" });
 		return reply.status(401).send({
 			error: "Invalid username or password",
 		});
@@ -298,12 +303,14 @@ export default async function authRoutes(
 
 		// Only after the password, so this says nothing to a stranger.
 		if (!user.emailVerified) {
+		logEvent("login-failed", { users: [user.username], reason: "email not confirmed" });
 		return reply.status(403).send({
 			error: "Please confirm your email first",
 		});
 		}
 
 		const token = signSessionToken(user);
+		logEvent("login", { users: [user.username] });
 
 		return reply.send({
 		token,

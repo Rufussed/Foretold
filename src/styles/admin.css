@@ -93,3 +93,42 @@
   margin: 0;
   color: rgba(244, 234, 216, 0.5);
 }
+
+/* The server log (pages/Admin.ts). */
+.admin-log-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.admin-log-filter input,
+.admin-log-filter select,
+.admin-log-filter button {
+  padding: 5px 10px;
+  font-size: 0.78rem;
+}
+
+.admin-log-plays {
+  margin-left: auto;
+}
+
+.admin-log-table td {
+  vertical-align: top;
+}
+
+.admin-log-table pre {
+  margin: 0;
+  font-size: 0.72rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.admin-log-room {
+  padding: 2px 8px;
+  font-size: 0.72rem;
+}
+
+.admin-log-error td {
+  color: #e08a6a;
+}
