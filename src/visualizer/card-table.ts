@@ -606,8 +606,8 @@ export function createCardTable({
           localBlindCard: () => blind.localCard(),
         });
       }
-      // Roles mode: the Power of Earth's "+3" on its earth cards
-      // (modes/roles/master/earth-boost.ts).
+      // Roles mode: the Power of Earth's "+3" on its earth cards, and a
+      // Shepherd's "+1" to "+3" on their 5 (modes/roles/master/earth-boost.ts).
       if (game) applyEarthBoost(game.state(), { localUsername: game.localUsername, cardObject: (key) => cards.cardObject(key) });
       rewards.update(deltaSeconds);
       burst.update(deltaSeconds);

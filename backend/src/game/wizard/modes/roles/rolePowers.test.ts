@@ -481,6 +481,78 @@ describe("the Farmer in a game", () => {
   });
 });
 
+describe("the Shepherd's boosted 5", () => {
+  const withSheep = (count: number) => (players: GamePlayer[]) => {
+    const ana = players.find((p) => p.username === "ana")!;
+    ana.sheep = { shepherd: count };
+    ana.score = 100;
+  };
+
+  it("counts 1 higher per sheep out and wins a tie: with 2 out it beats a 7", () => {
+    const { trick, score } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(7) },
+        { name: "shepherd", card: card(5), role: "shepherd" },
+        { name: "ben", card: card(3) },
+      ],
+      withSheep(2),
+    );
+
+    expect(trick.winnerUsername).toBe("shepherd");
+    expect(score("shepherd")).toBe(2 * SHEEP_POINTS);
+  });
+
+  it("still loses to a higher card, and the winner takes a sheep", () => {
+    const { game, trick } = playTrick(
+      "roles",
+      [
+        { name: "ana", card: card(8) },
+        { name: "shepherd", card: card(5), role: "shepherd" },
+        { name: "ben", card: card(3) },
+      ],
+      withSheep(2),
+    );
+
+    expect(trick.winnerUsername).toBe("ana");
+    expect(game.players.find((p) => p.username === "ana")?.sheep).toEqual({ shepherd: 3 });
+  });
+
+  it("is a plain 5 with no sheep out", () => {
+    const { trick } = playTrick("roles", [
+      { name: "ana", card: card(5, "Green") },
+      { name: "shepherd", card: card(5, "Green"), role: "shepherd" },
+      { name: "ben", card: card(3) },
+    ]);
+
+    expect(trick.winnerUsername).toBe("ana");
+  });
+
+  it("goes no higher than +3", () => {
+    const rolesFor = trickRolesIn({
+      options: { mode: "roles" },
+      players: [
+        { username: "shepherd", role: "shepherd" },
+        { username: "ana", sheep: { shepherd: 5 } },
+      ],
+    });
+
+    expect(rolesFor?.boostOf?.({ username: "shepherd", card: card(5) })).toBe(3);
+  });
+
+  it("is a plain 5 once someone else took it", () => {
+    const rolesFor = trickRolesIn({
+      options: { mode: "roles" },
+      players: [
+        { username: "shepherd", role: "shepherd" },
+        { username: "thief", role: "thief", sheep: { shepherd: 2 } },
+      ],
+    });
+
+    expect(rolesFor?.boostOf?.({ username: "thief", playedBy: "shepherd", card: card(5) })).toBe(0);
+  });
+});
+
 describe("the Shepherd in a game", () => {
   it("gives a sheep to the trick's winner", () => {
     const { game, trick } = playTrick("roles", [

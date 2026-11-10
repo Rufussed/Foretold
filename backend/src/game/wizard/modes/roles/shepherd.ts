@@ -18,11 +18,19 @@ export interface SheepHolder {
   sheep?: Sheep;
 }
 
+// The Shepherd's 5 counts one higher for each of their sheep out with other
+// players, at most FLOCK, so +1 to +3, like the Green Wizard's boost: against
+// cards of its suit, and a boosted card that draws level wins. Only the
+// Shepherd's own 5, while they hold it; a 5 a Thief, Servant or Fisher took
+// is a plain 5. Back to a plain 5 once the flock comes home. The rules apply
+// it through master/trickRoles.ts.
+export const sheepBoost = (out: number): number => Math.max(0, Math.min(out, FLOCK));
+
 export const sheepCount = (sheep: Sheep | undefined): number =>
   Object.values(sheep ?? {}).reduce((sum, count) => sum + count, 0);
 
 // How many of this Shepherd's sheep are out with other players.
-export const sheepOut = (players: SheepHolder[], shepherd: string): number =>
+export const sheepOut = (players: readonly { sheep?: Sheep }[], shepherd: string): number =>
   players.reduce((sum, holder) => sum + (holder.sheep?.[shepherd] ?? 0), 0);
 
 // The Shepherd's power, a must: each Shepherd's 5 gives a sheep to whoever
