@@ -314,10 +314,22 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "news") {
       panelContainer.innerHTML = renderInfoPanel(
         t("news.title"),
+        // Newest first. A new entry: its date, title and text in en.ts and
+        // de.ts, and its key at the top of this list.
         `
-          <p class="home-modal-copy">
-            ${t("news.empty")}
-          </p>
+          <div class="home-story home-news">
+            ${(["launch"] as const)
+              .map(
+                (entry) => `
+                  <article class="home-news-entry">
+                    <p class="home-news-date">${t(`news.${entry}.date`)}</p>
+                    <h3 class="home-news-heading">${t(`news.${entry}.title`)}</h3>
+                    <p class="home-modal-copy">${t(`news.${entry}.text`)}</p>
+                  </article>
+                `,
+              )
+              .join("")}
+          </div>
         `,
       );
       attachCloseEvent();

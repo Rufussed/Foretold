@@ -73,6 +73,9 @@ export const de: Record<MessageKey, string> = {
 
   "news.title": "News",
   "news.empty": "Hier erscheinen Neuigkeiten und Spiel-Updates.",
+  "news.launch.date": "13. November 2026",
+  "news.launch.title": "Willkommen bei Foretold!",
+  "news.launch.text": "Heute öffnen wir die Website für alle, und wir sind gespannt, wie euch unser Spiel gefällt. Viel Spaß! Künftige Neuigkeiten findet ihr hier.",
 
   "contact.title": "Kontakt",
   "contact.question": "Fragen, Feedback, Vorschläge oder Hinweise zum Urheberrecht?",

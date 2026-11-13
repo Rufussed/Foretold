@@ -72,6 +72,9 @@ export const en = {
 
   "news.title": "News",
   "news.empty": "News and game updates will appear here.",
+  "news.launch.date": "13 November 2026",
+  "news.launch.title": "Welcome to Foretold!",
+  "news.launch.text": "Today we open the website to everyone, and we are excited to see how you like playing our game. Have fun! Future updates will be announced here.",
 
   "contact.title": "Contact",
   "contact.question": "Questions, feedback, suggestions, or copyright concerns?",

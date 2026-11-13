@@ -860,6 +860,28 @@
   margin-top: 16px;
 }
 
+/* The News window (pages/Home.ts): one entry per update, newest first. */
+.home-news-entry + .home-news-entry {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #2d2b24;
+}
+
+.home-news-date {
+  margin: 0;
+  color: #9a8f7a;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+
+.home-news-heading {
+  margin: 4px 0 8px;
+  color: #e09a38;
+  font-family: "Cinzel Variable", serif;
+  font-size: 20px;
+  font-weight: 700;
+}
+
 .home-rules-section {
   border-top: 1px solid #2d2b24;
   padding: 16px 0 2px;
