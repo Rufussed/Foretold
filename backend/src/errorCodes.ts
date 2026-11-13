@@ -18,6 +18,7 @@ const MESSAGES = {
   emailInvalid: ["Please enter a valid email"],
   emailTaken: ["Email is already in use"],
   emailNotVerified: ["Please confirm your email first"],
+  tooManyLogins: ["Too many failed sign-ins. Please wait a few minutes and try again"],
   linkInvalid: ["This link is invalid or has expired"],
   unauthorized: ["Unauthorized", "Invalid or missing token"],
 

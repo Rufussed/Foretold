@@ -642,6 +642,7 @@ export const en = {
   "error.emailInvalid": "Please enter a valid email",
   "error.emailTaken": "This email already has an account",
   "error.emailNotVerified": "Please confirm your email first. The link is in the mail we sent you.",
+  "error.tooManyLogins": "Too many failed sign-ins. Please wait a few minutes and try again.",
   "error.linkInvalid": "This link is invalid or has expired",
   "error.unauthorized": "Unauthorized",
   "error.postEmpty": "Write something first",

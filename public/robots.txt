@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+# Account and game data come from the server, not pages worth listing.
+Disallow: /users/
+Disallow: /wizard/
+Disallow: /admin/
+Disallow: /posts/
+Disallow: /roles/
+Disallow: /health
+
+Sitemap: https://foretold.live/sitemap.xml

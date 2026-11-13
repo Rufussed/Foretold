@@ -9,6 +9,7 @@ import { friendService } from "../game/wizard/services/friendService.js";
 import { containsProfanity } from "../services/profanityFilter.js";
 import { emailTokenService, type EmailTokenPurpose } from "../services/emailTokenService.js";
 import { mailLanguage, mailService, type MailLanguage } from "../services/mailService.js";
+import { clearFailures, recordFailure, secondsLocked } from "../services/loginLimiter.js";
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_-]{3,20}$/;
 // Something@something.something: enough to catch a typo, and the mailed link
@@ -275,6 +276,18 @@ export default async function authRoutes(
 		});
 		}
 
+		// Too many wrong passwords for this login lately: no more tries for
+		// now (services/loginLimiter.ts). Checked before the password, so a
+		// locked login gives a guesser nothing.
+		const waitSeconds = secondsLocked(username);
+		if (waitSeconds > 0) {
+		logEvent("login-failed", { tried: username.includes("@") ? "an email" : username.slice(0, 40), reason: "too many tries" });
+		reply.header("Retry-After", String(waitSeconds));
+		return reply.status(429).send({
+			error: "Too many failed sign-ins. Please wait a few minutes and try again",
+		});
+		}
+
 		// The login field takes the wizard name or the email. Names cannot
 		// contain "@", so an "@" means an email.
 		const user = username.includes("@")
@@ -284,6 +297,7 @@ export default async function authRoutes(
 		if (!user) {
 		// An email typed in is not logged, only that it matched no one.
 		logEvent("login-failed", { tried: username.includes("@") ? "an email" : username.slice(0, 40), reason: "no such account" });
+		recordFailure(username);
 		return reply.status(401).send({
 			error: "Invalid username or password",
 		});
@@ -296,10 +310,14 @@ export default async function authRoutes(
 
 		if (!passwordMatches) {
 		logEvent("login-failed", { users: [user.username], reason: "wrong password" });
+		recordFailure(username);
 		return reply.status(401).send({
 			error: "Invalid username or password",
 		});
 		}
+
+		// The right password: earlier wrong ones no longer count.
+		clearFailures(username);
 
 		// Only after the password, so this says nothing to a stranger.
 		if (!user.emailVerified) {

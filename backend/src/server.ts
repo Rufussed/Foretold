@@ -21,6 +21,7 @@ import { wizardGameCompletionService } from "./game/wizard/services/wizardGameCo
 import { wizardSessionManager } from "./game/wizard/services/wizardSessionManager.js";
 import { cleanUpGuests, deleteGuestUser } from "./game/wizard/services/guestCleanup.js";
 import { withErrorCode } from "./errorCodes.js";
+import { addressForLog } from "./logging/addressForLog.js";
 
 // A rejection nobody handled ends the Node process, which on single-process
 // hosting takes every live game and the site itself down with it. One room's
@@ -34,7 +35,22 @@ process.on("uncaughtException", (error) => {
 });
 
 const server = Fastify({
-    logger: true,
+    logger: {
+      serializers: {
+        // Fastify's own request fields, with the address cleaned.
+        req(request) {
+          return {
+            method: request.method,
+            url: addressForLog(request.url),
+            host: request.host,
+            remoteAddress: request.ip,
+            ...(request.socket?.remotePort === undefined
+              ? {}
+              : { remotePort: request.socket.remotePort }),
+          };
+        },
+      },
+    },
     ajv: {
         customOptions: {
             removeAdditional: false,
@@ -82,6 +98,24 @@ const corsOrigins = process.env.CORS_ORIGINS
 server.addHook("preSerialization", async (_request, _reply, payload) =>
   withErrorCode(payload),
 );
+
+// Security headers on every reply, page and API alike:
+// - the site may not be shown inside another site's frame (so no one can lay
+//   a fake page over ours to steal clicks), and no plugins or foreign <base>;
+// - browsers take files as the type the server says, never guessing;
+// - once seen over https, the browser keeps to https for this site for a year.
+// A full Content-Security-Policy (which scripts, styles and streams may load)
+// is a bigger step: it has to be tried against the music stream, the 3D
+// models and the fonts before it goes live.
+server.addHook("onSend", async (_request, reply, payload) => {
+  reply.header("Content-Security-Policy", "frame-ancestors 'none'; object-src 'none'; base-uri 'self'");
+  reply.header("X-Frame-Options", "DENY");
+  reply.header("X-Content-Type-Options", "nosniff");
+  if (process.env.PORT) {
+    reply.header("Strict-Transport-Security", "max-age=31536000");
+  }
+  return payload;
+});
 
 await server.register(cors, {
   origin: corsOrigins,
@@ -140,11 +174,6 @@ if (existsSync(frontendDist)) {
         "Cache-Control",
         hashed ? "public, max-age=31536000, immutable" : "no-cache",
       );
-      // The site is a private demo while it uses AMIGO's Wizard name and art,
-      // so search engines are told to leave out every file it serves - card
-      // art included, not just the page. Remove this (and the robots meta tag
-      // in index.html) when the site goes public as our own game.
-      response.header("X-Robots-Tag", "noindex, nofollow, noimageindex");
     },
   });
 }

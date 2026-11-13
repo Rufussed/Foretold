@@ -643,6 +643,7 @@ export const de: Record<MessageKey, string> = {
   "error.emailInvalid": "Bitte gib eine gültige E-Mail ein",
   "error.emailTaken": "Für diese E-Mail gibt es schon ein Konto",
   "error.emailNotVerified": "Bitte bestätige zuerst deine E-Mail. Der Link steht in der Mail, die wir dir geschickt haben.",
+  "error.tooManyLogins": "Zu viele fehlgeschlagene Anmeldungen. Bitte warte ein paar Minuten und versuche es dann erneut.",
   "error.linkInvalid": "Dieser Link ist ungültig oder abgelaufen",
   "error.unauthorized": "Bitte melde dich erneut an",
   "error.postEmpty": "Schreib zuerst etwas",
