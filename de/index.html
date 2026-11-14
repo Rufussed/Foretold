@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Foretold" />
+    <meta name="theme-color" content="#080907" />
+    <!-- SomaFM refuses a localhost referer for its stream, so none is sent. -->
+    <meta name="referrer" content="no-referrer" />
+    <title>Foretold – kostenloses Online-Kartenspiel nach Wizard und Oh Hell</title>
+    <!-- The German copy of index.html: the same game, started in German
+         (src/i18n/index.ts looks at the address), with German texts for
+         search engines and link previews. Keep it in step with index.html. -->
+    <meta
+      name="description"
+      content="Foretold ist ein kostenloses Online-Kartenspiel mit Zauberern, Narren und Weitsicht. Sag in jeder Runde voraus, wie viele Stiche du machst, und sorge dafür, dass es eintrifft. Ein Stichspiel aus der Familie von Wizard und Oh Hell. Spiel mit Freunden oder Computergegnern direkt im Browser."
+    />
+    <link rel="canonical" href="https://foretold.live/de/" />
+    <link rel="alternate" hreflang="en" href="https://foretold.live/" />
+    <link rel="alternate" hreflang="de" href="https://foretold.live/de/" />
+    <link rel="alternate" hreflang="x-default" href="https://foretold.live/" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Foretold" />
+    <meta property="og:locale" content="de_DE" />
+    <meta property="og:title" content="Foretold – kostenloses Online-Stichspiel mit Zauberern" />
+    <meta
+      property="og:description"
+      content="Sag voraus, wie viele Stiche du machst, und sorge dafür, dass es eintrifft. Mit Freunden oder Computergegnern, kostenlos im Browser."
+    />
+    <meta property="og:url" content="https://foretold.live/de/" />
+    <meta property="og:image" content="https://foretold.live/og-image.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Das Foretold-Logo: ein Zauberergesicht über dem Wort FORETOLD" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <!-- Für Suchmaschinen, auf der Seite nie sichtbar. -->
+    <meta
+      name="keywords"
+      content="Kartenspiel, Wizard Kartenspiel, Zauberer Kartenspiel, Zauberer und Narren, Stichspiel, Stiche ansagen, Stiche vorhersagen, Wizard, Oh Hell, Online-Kartenspiel, Kartenspiel online kostenlos, Mehrspieler-Kartenspiel, Strategie-Kartenspiel"
+    />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "VideoGame",
+        "name": "Foretold",
+        "url": "https://foretold.live/de/",
+        "image": "https://foretold.live/og-image.jpg",
+        "description": "Ein kostenloses Online-Kartenspiel mit Zauberern, Narren und Weitsicht: Sag in jeder Runde voraus, wie viele Stiche du machst, und sorge dafür, dass es eintrifft. Ein Stichspiel aus der Familie von Wizard und Oh Hell.",
+        "genre": ["Kartenspiel", "Stichspiel", "Strategie-Kartenspiel"],
+        "keywords": "Wizard Kartenspiel, Zauberer, Stiche ansagen, vorhersagen, Foretold, Kartenspiel, Stichspiel, Oh Hell",
+        "playMode": ["MultiPlayer", "SinglePlayer"],
+        "gamePlatform": "Webbrowser",
+        "applicationCategory": "Game",
+        "operatingSystem": "Jedes (Webbrowser)",
+        "inLanguage": "de",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "EUR" }
+      }
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

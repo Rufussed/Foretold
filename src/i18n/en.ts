@@ -631,6 +631,7 @@ export const en = {
 
   "about.title": "Story",
   "rules.title": "Rules",
+  "rules.openAsPage": "Open the rules as a page to share or print",
   "legal.title": "Copyright & Legal",
 
   "error.invalidCredentials": "Invalid wizard name, email or password",

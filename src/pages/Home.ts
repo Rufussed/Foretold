@@ -305,7 +305,18 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
     if (activePanel === "rules") {
       panelContainer.innerHTML = renderInfoPanel(
         t("rules.title"),
-        rulesHtml(),
+        // The same rules also stand as a page of their own (how-to-play/,
+        // de/spielanleitung/), to share or print; this link also shows
+        // search engines the way there.
+        `${rulesHtml()}
+          <p class="home-modal-copy home-rules-page-link">
+            <a
+              class="home-modal-link"
+              href="${getLanguage() === "de" ? "/de/spielanleitung/" : "/how-to-play/"}"
+              target="_blank"
+              rel="noopener"
+            >${t("rules.openAsPage")}</a>
+          </p>`,
       );
 
       attachCloseEvent();
@@ -427,9 +438,9 @@ export async function renderHomePage(container: HTMLElement): Promise<void> {
             ${t("contact.emailUs")}
             <a
               class="home-modal-link"
-              href="mailto:wizard.platform@gmail.com"
+              href="mailto:developer@foretold.live"
             >
-              wizard.platform@gmail.com
+              developer@foretold.live
             </a>
           </p>
         `,

@@ -608,12 +608,14 @@ export const TURN_HOURGLASS = {
 // ══════════════════════════════════════════════════════════════════════════
 
 export const CARDS = {
-  // Face colour for each suit, as CSS colours.
+  // Each suit's colour, as CSS colours: the trump chooser's swatches and the
+  // trump card's rim. Yellow is air's cream, as on its card art (the same
+  // cream as the Profile's colours, styles/profile.css), not a plain yellow.
   suitColors: {
     Red: "#c62828",
     Green: "#2e7d32",
     Blue: "#1565c0",
-    Yellow: "#f9a825",
+    Yellow: "#e2c98a",
   } as Record<string, string>,
 
   // Trump card colour when there's no trump suit: a Jester was turned up, or a

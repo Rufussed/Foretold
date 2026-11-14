@@ -882,6 +882,13 @@
   font-weight: 700;
 }
 
+/* Under the Rules window's scroll box: the same rules as a page of their own. */
+.home-rules-page-link {
+  margin-top: 14px;
+  font-size: 14px;
+  text-align: center;
+}
+
 .home-rules-section {
   border-top: 1px solid #2d2b24;
   padding: 16px 0 2px;

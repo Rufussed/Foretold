@@ -632,6 +632,7 @@ export const de: Record<MessageKey, string> = {
 
   "about.title": "Geschichte",
   "rules.title": "Regeln",
+  "rules.openAsPage": "Regeln als eigene Seite öffnen, zum Teilen oder Drucken",
   "legal.title": "Urheberrecht & Rechtliches",
 
   "error.invalidCredentials": "Zauberername, E-Mail oder Passwort ist falsch",

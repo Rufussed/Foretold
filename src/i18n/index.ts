@@ -7,16 +7,19 @@ export type Language = "en" | "de";
 const LANGUAGE_KEY = "wizardLanguage";
 const dictionaries: Record<Language, Record<MessageKey, string>> = { en, de };
 
-// A choice made with the switch wins; otherwise a German browser starts in
-// German and everyone else in English.
+// A choice made with the switch wins; otherwise the German address
+// (foretold.live/de/, de/index.html) and a German browser start in German,
+// and everyone else in English.
 function initialLanguage(): Language {
   try {
     const saved = localStorage.getItem(LANGUAGE_KEY);
     if (saved === "en" || saved === "de") return saved;
   } catch {
-    // No storage: fall back to the browser's language.
+    // No storage: fall back to the address and the browser's language.
   }
 
+  const path = window.location.pathname;
+  if (path === "/de" || path.startsWith("/de/")) return "de";
   return navigator.language.toLowerCase().startsWith("de") ? "de" : "en";
 }
 

@@ -1,6 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+<!-- Every page of the site (vite.config.ts lists them), each with its
+     other-language copy, so search engines show the right one. -->
+<urlset
+  xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+>
   <url>
     <loc>https://foretold.live/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foretold.live/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://foretold.live/de/" />
+  </url>
+  <url>
+    <loc>https://foretold.live/de/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foretold.live/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://foretold.live/de/" />
+  </url>
+  <url>
+    <loc>https://foretold.live/how-to-play/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foretold.live/how-to-play/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://foretold.live/de/spielanleitung/" />
+  </url>
+  <url>
+    <loc>https://foretold.live/de/spielanleitung/</loc>
+    <xhtml:link rel="alternate" hreflang="en" href="https://foretold.live/how-to-play/" />
+    <xhtml:link rel="alternate" hreflang="de" href="https://foretold.live/de/spielanleitung/" />
   </url>
 </urlset>
